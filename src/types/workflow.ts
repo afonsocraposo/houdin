@@ -27,19 +27,17 @@ export interface WorkflowDefinition {
 
 // Trigger type definitions
 export interface TriggerNodeData {
-  triggerType: 'page-load' | 'component-load' | 'delay' | 'url-match'
+  triggerType: 'page-load' | 'component-load' | 'delay'
   config: {
     selector?: string // For component-load trigger
     delay?: number // For delay trigger (in milliseconds)
-    urlPattern?: string // For url-match trigger
   }
 }
 
 // Condition type definitions
 export interface ConditionNodeData {
-  conditionType: 'url-match' | 'element-exists' | 'custom-condition'
+  conditionType: 'element-exists' | 'custom-condition'
   config: {
-    urlPattern?: string // For url-match condition
     selector?: string // For element-exists condition
     customScript?: string // For custom-condition
   }
@@ -78,11 +76,9 @@ export const NODE_CATEGORIES = {
   triggers: [
     { type: 'page-load', label: 'Page Load', icon: '📄', description: 'Trigger when page finishes loading' },
     { type: 'component-load', label: 'Component Load', icon: '🎯', description: 'Trigger when specific element appears' },
-    { type: 'delay', label: 'Delay', icon: '⏰', description: 'Trigger after a delay' },
-    { type: 'url-match', label: 'URL Match', icon: '🔗', description: 'Trigger when URL matches pattern' }
+    { type: 'delay', label: 'Delay', icon: '⏰', description: 'Trigger after a delay' }
   ],
   conditions: [
-    { type: 'url-match', label: 'URL Match', icon: '🔗', description: 'Check if URL matches pattern' },
     { type: 'element-exists', label: 'Element Exists', icon: '🎯', description: 'Check if element exists on page' },
     { type: 'custom-condition', label: 'Custom Condition', icon: '⚡', description: 'Custom JavaScript condition' }
   ],

@@ -36,17 +36,6 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
 
   const renderTriggerProperties = (data: TriggerNodeData) => {
     switch (data.triggerType) {
-      case 'url-match':
-        return (
-          <TextInput
-            label="URL Pattern"
-            placeholder="*://github.com/*/pull/*"
-            description="Use * for wildcards"
-            value={data.config.urlPattern || ''}
-            onChange={(e) => updateNodeData('config.urlPattern', e.target.value)}
-          />
-        );
-      
       case 'component-load':
         return (
           <TextInput
@@ -200,17 +189,6 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
 
   const renderConditionProperties = (data: ConditionNodeData) => {
     switch (data.conditionType) {
-      case 'url-match':
-        return (
-          <TextInput
-            label="URL Pattern"
-            placeholder="*://github.com/*/pull/*"
-            description="Use * for wildcards"
-            value={data.config.urlPattern || ''}
-            onChange={(e) => updateNodeData('config.urlPattern', e.target.value)}
-          />
-        );
-      
       case 'element-exists':
         return (
           <TextInput
