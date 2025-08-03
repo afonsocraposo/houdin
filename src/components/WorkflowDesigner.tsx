@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Title, Grid, Stack, Button, Group, TextInput, Switch, Card, Text } from '@mantine/core';
 import { IconDeviceFloppy, IconPlayerPlay, IconArrowLeft } from '@tabler/icons-react';
-import { WorkflowCanvas } from './WorkflowCanvas';
+import { ReactFlowCanvas } from './ReactFlowCanvas';
 import { NodeProperties } from './NodeProperties';
 import { WorkflowNode, WorkflowConnection, WorkflowDefinition } from '../types/workflow';
 
@@ -149,7 +149,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
             <Card withBorder padding="lg" h="600px">
               <Stack gap="md">
                 <Title order={4}>Workflow Canvas</Title>
-                <WorkflowCanvas
+                <ReactFlowCanvas
                   nodes={nodes}
                   connections={connections}
                   onNodesChange={setNodes}
