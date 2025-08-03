@@ -66,17 +66,6 @@ function ConfigApp() {
         workflowConfig: {},
     });
 
-    useEffect(() => {
-        // Load existing recipes from storage
-        if (typeof chrome !== "undefined" && chrome.storage) {
-            chrome.storage.sync.get(["recipes"], (result) => {
-                if (result && result.recipes) {
-                    setRecipes(result.recipes);
-                }
-            });
-        }
-    }, []);
-
     const saveRecipes = (newRecipes: Recipe[]) => {
         setRecipes(newRecipes);
         if (typeof chrome !== "undefined" && chrome.storage) {
@@ -180,7 +169,7 @@ function ConfigApp() {
                 <div style={{ textAlign: "center" }}>
                     <IconSettings size={48} />
                     <Title order={1} mt="sm">
-                        changeme Configuration 2
+                        changeme Configuration
                     </Title>
                     <Text size="sm" c="dimmed">
                         Create workflow recipes to inject components and automate tasks on
