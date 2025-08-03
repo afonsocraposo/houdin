@@ -17,6 +17,7 @@ import {
   ActionIcon,
   Table,
   Accordion,
+  Tabs,
 } from "@mantine/core";
 import {
   IconSettings,
@@ -25,16 +26,23 @@ import {
   IconPlus,
   IconTrash,
   IconEdit,
+  IconNetwork,
+  IconList,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { StorageManager } from "../services/storage";
 import { Recipe } from "../types";
+import { WorkflowDesigner } from "../components/WorkflowDesigner";
+import { WorkflowDefinition } from "../types/workflow";
 
 function ConfigApp() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [saved, setSaved] = useState(false);
+  const [currentView, setCurrentView] = useState<'recipes' | 'workflows' | 'designer'>('recipes');
+  const [editingWorkflow, setEditingWorkflow] = useState<WorkflowDefinition | null>(null);
   const storageManager = StorageManager.getInstance();
 
   // Form state for recipe creation/editing
@@ -51,17 +59,30 @@ function ConfigApp() {
   });
 
   useEffect(() => {
-    // Load existing recipes from storage using StorageManager
-    const loadRecipes = async () => {
+    // Load existing recipes and workflows from storage using StorageManager
+    const loadData = async () => {
       try {
-        const loadedRecipes = await storageManager.getRecipes();
+        const [loadedRecipes, loadedWorkflows] = await Promise.all([
+          storageManager.getRecipes(),
+          storageManager.getWorkflows()
+        ]);
+        
         setRecipes(loadedRecipes);
+        setWorkflows(loadedWorkflows);
       } catch (error) {
-        console.error('Failed to load recipes:', error);
+        console.error('Failed to load data:', error);
       }
     };
     
-    loadRecipes();
+    loadData();
+
+    // Set up storage change listener
+    const handleStorageChange = (updatedRecipes: any[], updatedWorkflows: any[]) => {
+      setRecipes(updatedRecipes);
+      setWorkflows(updatedWorkflows);
+    };
+
+    storageManager.onStorageChanged(handleStorageChange);
   }, []);
 
   const saveRecipes = async (newRecipes: Recipe[]) => {
@@ -72,6 +93,55 @@ function ConfigApp() {
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Failed to save recipes:', error);
+    }
+  };
+
+  const handleWorkflowSave = async (workflow: WorkflowDefinition) => {
+    try {
+      const updatedWorkflows = editingWorkflow 
+        ? workflows.map(w => w.id === workflow.id ? workflow : w)
+        : [...workflows, workflow];
+      
+      await storageManager.saveWorkflows(updatedWorkflows);
+      setWorkflows(updatedWorkflows);
+      setCurrentView('workflows');
+      setEditingWorkflow(null);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error('Failed to save workflow:', error);
+    }
+  };
+
+  const handleCreateWorkflow = () => {
+    setEditingWorkflow(null);
+    setCurrentView('designer');
+  };
+
+  const handleEditWorkflow = (workflow: WorkflowDefinition) => {
+    setEditingWorkflow(workflow);
+    setCurrentView('designer');
+  };
+
+  const handleDeleteWorkflow = async (id: string) => {
+    try {
+      const updatedWorkflows = workflows.filter(w => w.id !== id);
+      await storageManager.saveWorkflows(updatedWorkflows);
+      setWorkflows(updatedWorkflows);
+    } catch (error) {
+      console.error('Failed to delete workflow:', error);
+    }
+  };
+
+  const handleToggleWorkflow = async (id: string) => {
+    try {
+      const updatedWorkflows = workflows.map(w =>
+        w.id === id ? { ...w, enabled: !w.enabled } : w
+      );
+      await storageManager.saveWorkflows(updatedWorkflows);
+      setWorkflows(updatedWorkflows);
+    } catch (error) {
+      console.error('Failed to toggle workflow:', error);
     }
   };
 
@@ -162,17 +232,27 @@ function ConfigApp() {
     saveRecipes(newRecipes);
   };
 
+  // Show workflow designer if in designer view
+  if (currentView === 'designer') {
+    return (
+      <WorkflowDesigner
+        workflow={editingWorkflow || undefined}
+        onSave={handleWorkflowSave}
+        onCancel={() => setCurrentView('workflows')}
+      />
+    );
+  }
+
   return (
-    <Container size="lg" py="xl">
+    <Container size="xl" py="xl">
       <Stack gap="lg">
         <div style={{ textAlign: "center" }}>
           <IconSettings size={48} />
           <Title order={1} mt="sm">
-            changeme Configuration 2
+            changeme Configuration
           </Title>
           <Text size="sm" c="dimmed">
-            Create workflow recipes to inject components and automate tasks on
-            any website
+            Create workflow recipes to inject components and automate tasks on any website
           </Text>
         </div>
 
@@ -180,10 +260,10 @@ function ConfigApp() {
           <Notification
             icon={<IconCheck size={18} />}
             color="green"
-            title="Recipes Saved!"
+            title="Saved!"
             onClose={() => setSaved(false)}
           >
-            Your workflow recipes have been saved successfully.
+            Your changes have been saved successfully.
           </Notification>
         )}
 
@@ -193,89 +273,180 @@ function ConfigApp() {
           color="blue"
         >
           You can always access this configuration page by typing{" "}
-          <Badge variant="light">https://changeme.config</Badge> in your browser
-          address bar.
+          <Badge variant="light">https://changeme.config</Badge> in your browser address bar.
         </Alert>
 
-        <Card withBorder padding="lg">
-          <Group justify="space-between" mb="md">
-            <Title order={3}>Workflow Recipes</Title>
-            <Group>
-              <Button variant="outline" onClick={loadExamples}>
-                Load Examples
-              </Button>
-              <Button
-                leftSection={<IconPlus size={16} />}
-                onClick={handleCreateRecipe}
-              >
-                Create Recipe
-              </Button>
-            </Group>
-          </Group>
+        <Tabs value={currentView} onChange={(value) => setCurrentView(value as any)}>
+          <Tabs.List>
+            <Tabs.Tab value="recipes" leftSection={<IconList size={16} />}>
+              Legacy Recipes
+            </Tabs.Tab>
+            <Tabs.Tab value="workflows" leftSection={<IconNetwork size={16} />}>
+              Visual Workflows
+            </Tabs.Tab>
+          </Tabs.List>
 
-          {recipes.length === 0 ? (
-            <Text c="dimmed" ta="center" py="xl">
-              No recipes created yet. Click "Create Recipe" to get started!
-            </Text>
-          ) : (
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>URL Pattern</Table.Th>
-                  <Table.Th>Component</Table.Th>
-                  <Table.Th>Workflow</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                  <Table.Th>Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {recipes.map((recipe) => (
-                  <Table.Tr key={recipe.id}>
-                    <Table.Td>
-                      <Text fw={500}>{recipe.name}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {recipe.urlPattern}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge variant="light">{recipe.componentType}</Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge variant="outline">{recipe.workflowType}</Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Switch
-                        checked={recipe.enabled}
-                        onChange={() => handleToggleRecipe(recipe.id)}
-                        size="sm"
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        <ActionIcon
-                          variant="subtle"
-                          onClick={() => handleEditRecipe(recipe)}
-                        >
-                          <IconEdit size={16} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          onClick={() => handleDeleteRecipe(recipe.id)}
-                        >
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          )}
-        </Card>
+          <Tabs.Panel value="recipes">
+            <Card withBorder padding="lg" mt="md">
+              <Group justify="space-between" mb="md">
+                <Title order={3}>Legacy Recipes</Title>
+                <Group>
+                  <Button variant="outline" onClick={loadExamples}>
+                    Load Examples
+                  </Button>
+                  <Button
+                    leftSection={<IconPlus size={16} />}
+                    onClick={handleCreateRecipe}
+                  >
+                    Create Recipe
+                  </Button>
+                </Group>
+              </Group>
+
+              {recipes.length === 0 ? (
+                <Text c="dimmed" ta="center" py="xl">
+                  No recipes created yet. Click "Create Recipe" to get started!
+                </Text>
+              ) : (
+                <Table>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Name</Table.Th>
+                      <Table.Th>URL Pattern</Table.Th>
+                      <Table.Th>Component</Table.Th>
+                      <Table.Th>Workflow</Table.Th>
+                      <Table.Th>Status</Table.Th>
+                      <Table.Th>Actions</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {recipes.map((recipe) => (
+                      <Table.Tr key={recipe.id}>
+                        <Table.Td>
+                          <Text fw={500}>{recipe.name}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {recipe.urlPattern}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge variant="light">{recipe.componentType}</Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge variant="outline">{recipe.workflowType}</Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Switch
+                            checked={recipe.enabled}
+                            onChange={() => handleToggleRecipe(recipe.id)}
+                            size="sm"
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <Group gap="xs">
+                            <ActionIcon
+                              variant="subtle"
+                              onClick={() => handleEditRecipe(recipe)}
+                            >
+                              <IconEdit size={16} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              onClick={() => handleDeleteRecipe(recipe.id)}
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Group>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              )}
+            </Card>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="workflows">
+            <Card withBorder padding="lg" mt="md">
+              <Group justify="space-between" mb="md">
+                <Title order={3}>Visual Workflows</Title>
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  onClick={handleCreateWorkflow}
+                >
+                  Create Workflow
+                </Button>
+              </Group>
+
+              {workflows.length === 0 ? (
+                <Stack align="center" py="xl">
+                  <IconNetwork size={64} color="gray" />
+                  <Text c="dimmed" ta="center">
+                    No workflows created yet. Visual workflows provide a more intuitive way to create complex automations.
+                  </Text>
+                  <Button onClick={handleCreateWorkflow} mt="md">
+                    Create Your First Workflow
+                  </Button>
+                </Stack>
+              ) : (
+                <Table>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Name</Table.Th>
+                      <Table.Th>Description</Table.Th>
+                      <Table.Th>Nodes</Table.Th>
+                      <Table.Th>Status</Table.Th>
+                      <Table.Th>Actions</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {workflows.map((workflow) => (
+                      <Table.Tr key={workflow.id}>
+                        <Table.Td>
+                          <Text fw={500}>{workflow.name}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {workflow.description || 'No description'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge variant="light">{workflow.nodes.length} nodes</Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Switch
+                            checked={workflow.enabled}
+                            onChange={() => handleToggleWorkflow(workflow.id)}
+                            size="sm"
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <Group gap="xs">
+                            <ActionIcon
+                              variant="subtle"
+                              onClick={() => handleEditWorkflow(workflow)}
+                            >
+                              <IconEdit size={16} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              onClick={() => handleDeleteWorkflow(workflow.id)}
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Group>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              )}
+            </Card>
+          </Tabs.Panel>
+        </Tabs>
 
         <Modal
           opened={modalOpen}
