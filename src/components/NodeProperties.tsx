@@ -47,7 +47,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
           />
         );
       
-      case 'element-click':
+      case 'component-load':
         return (
           <TextInput
             label="Element Selector"
@@ -55,6 +55,17 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
             description="CSS selector for the element"
             value={data.config.selector || ''}
             onChange={(e) => updateNodeData('config.selector', e.target.value)}
+          />
+        );
+      
+      case 'delay':
+        return (
+          <TextInput
+            label="Delay (milliseconds)"
+            placeholder="1000"
+            description="Delay in milliseconds"
+            value={data.config.delay?.toString() || ''}
+            onChange={(e) => updateNodeData('config.delay', parseInt(e.target.value) || 0)}
           />
         );
       
@@ -79,8 +90,8 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
               label="Target Selector"
               placeholder=".header, #main-content"
               description="Where to inject the component"
-              value={data.config.selector || ''}
-              onChange={(e) => updateNodeData('config.selector', e.target.value)}
+              value={data.config.targetSelector || ''}
+              onChange={(e) => updateNodeData('config.targetSelector', e.target.value)}
             />
             
             <Select
@@ -106,7 +117,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
               placeholder="background: #007bff; color: white; padding: 8px 16px;"
               rows={3}
               value={data.config.componentStyle || ''}
-              onChange={(e) => updateNodeData('config.componentStyle', e.target.value)}
+              onChange={(e) => updateNodeData('config.componentStyle', e.target.value)}  
             />
           </Stack>
         );
@@ -150,6 +161,17 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
           </Stack>
         );
       
+      case 'element-click':
+        return (
+          <TextInput
+            label="Element Selector"
+            placeholder=".button, #submit"
+            description="CSS selector for the element to click"
+            value={data.config.selector || ''}
+            onChange={(e) => updateNodeData('config.selector', e.target.value)}
+          />
+        );
+      
       case 'navigate':
         return (
           <TextInput
@@ -178,6 +200,17 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
 
   const renderConditionProperties = (data: ConditionNodeData) => {
     switch (data.conditionType) {
+      case 'url-match':
+        return (
+          <TextInput
+            label="URL Pattern"
+            placeholder="*://github.com/*/pull/*"
+            description="Use * for wildcards"
+            value={data.config.urlPattern || ''}
+            onChange={(e) => updateNodeData('config.urlPattern', e.target.value)}
+          />
+        );
+      
       case 'element-exists':
         return (
           <TextInput
@@ -189,46 +222,15 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
           />
         );
       
-      case 'text-contains':
-        return (
-          <Stack gap="md">
-            <TextInput
-              label="Element Selector"
-              placeholder=".text-element, #content"
-              description="Element to check text content"
-              value={data.config.selector || ''}
-              onChange={(e) => updateNodeData('config.selector', e.target.value)}
-            />
-            
-            <TextInput
-              label="Text to Find"
-              placeholder="success, error, completed"
-              value={data.config.text || ''}
-              onChange={(e) => updateNodeData('config.text', e.target.value)}
-            />
-          </Stack>
-        );
-      
-      case 'url-contains':
-        return (
-          <TextInput
-            label="URL Fragment"
-            placeholder="/dashboard, ?status=success"
-            description="Text that should be in the URL"
-            value={data.config.url || ''}
-            onChange={(e) => updateNodeData('config.url', e.target.value)}
-          />
-        );
-      
-      case 'custom':
+      case 'custom-condition':
         return (
           <Textarea
             label="Custom Condition (JavaScript)"
             placeholder="return document.querySelector('.element').textContent.includes('text');"
             description="Return true or false"
             rows={4}
-            value={data.config.customCondition || ''}
-            onChange={(e) => updateNodeData('config.customCondition', e.target.value)}
+            value={data.config.customScript || ''}
+            onChange={(e) => updateNodeData('config.customScript', e.target.value)}
           />
         );
       

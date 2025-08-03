@@ -3,8 +3,8 @@ export interface WorkflowNode {
   type: 'trigger' | 'action' | 'condition'
   position: { x: number; y: number }
   data: any
-  inputs: string[]
-  outputs: string[]
+  inputs?: string[]
+  outputs?: string[]
 }
 
 export interface WorkflowConnection {
@@ -19,63 +19,79 @@ export interface WorkflowDefinition {
   id: string
   name: string
   description?: string
+  urlPattern: string
   nodes: WorkflowNode[]
   connections: WorkflowConnection[]
   enabled: boolean
 }
 
-// Node type definitions
+// Trigger type definitions
 export interface TriggerNodeData {
-  triggerType: 'url-match' | 'element-click' | 'page-load' | 'storage-change'
+  triggerType: 'page-load' | 'component-load' | 'delay' | 'url-match'
   config: {
-    urlPattern?: string
-    selector?: string
-    event?: string
+    selector?: string // For component-load trigger
+    delay?: number // For delay trigger (in milliseconds)
+    urlPattern?: string // For url-match trigger
   }
 }
 
-export interface ActionNodeData {
-  actionType: 'inject-component' | 'copy-content' | 'show-modal' | 'navigate' | 'custom-script'
+// Condition type definitions
+export interface ConditionNodeData {
+  conditionType: 'url-match' | 'element-exists' | 'custom-condition'
   config: {
+    urlPattern?: string // For url-match condition
+    selector?: string // For element-exists condition
+    customScript?: string // For custom-condition
+  }
+}
+
+// Action type definitions
+export interface ActionNodeData {
+  actionType: 'inject-component' | 'copy-content' | 'show-modal' | 'custom-script' | 'navigate' | 'element-click'
+  config: {
+    // Inject component config
     componentType?: 'button' | 'input' | 'text'
     componentText?: string
     componentStyle?: string
-    selector?: string
+    targetSelector?: string
+    
+    // Copy content config
     sourceSelector?: string
+    
+    // Show modal config
     modalTitle?: string
     modalContent?: string
-    navigateUrl?: string
+    
+    // Custom script config
     customScript?: string
-  }
-}
-
-export interface ConditionNodeData {
-  conditionType: 'element-exists' | 'text-contains' | 'url-contains' | 'custom'
-  config: {
+    
+    // Navigate config
+    navigateUrl?: string
+    
+    // Element click config
     selector?: string
-    text?: string
-    url?: string
-    customCondition?: string
   }
 }
 
 // Node categories for the toolbox
 export const NODE_CATEGORIES = {
   triggers: [
-    { type: 'url-match', label: 'URL Pattern', icon: '🌐', description: 'Trigger when URL matches pattern' },
-    { type: 'page-load', label: 'Page Load', icon: '📄', description: 'Trigger when page loads' },
-    { type: 'element-click', label: 'Element Click', icon: '👆', description: 'Trigger when element is clicked' }
+    { type: 'page-load', label: 'Page Load', icon: '📄', description: 'Trigger when page finishes loading' },
+    { type: 'component-load', label: 'Component Load', icon: '🎯', description: 'Trigger when specific element appears' },
+    { type: 'delay', label: 'Delay', icon: '⏰', description: 'Trigger after a delay' },
+    { type: 'url-match', label: 'URL Match', icon: '🔗', description: 'Trigger when URL matches pattern' }
+  ],
+  conditions: [
+    { type: 'url-match', label: 'URL Match', icon: '🔗', description: 'Check if URL matches pattern' },
+    { type: 'element-exists', label: 'Element Exists', icon: '🎯', description: 'Check if element exists on page' },
+    { type: 'custom-condition', label: 'Custom Condition', icon: '⚡', description: 'Custom JavaScript condition' }
   ],
   actions: [
     { type: 'inject-component', label: 'Inject Component', icon: '🔧', description: 'Add button, input, or text to page' },
     { type: 'copy-content', label: 'Copy Content', icon: '📋', description: 'Copy text from page element' },
     { type: 'show-modal', label: 'Show Modal', icon: '💬', description: 'Display modal with content' },
-    { type: 'navigate', label: 'Navigate', icon: '🔗', description: 'Navigate to URL' },
-    { type: 'custom-script', label: 'Custom Script', icon: '⚡', description: 'Run custom JavaScript' }
-  ],
-  conditions: [
-    { type: 'element-exists', label: 'Element Exists', icon: '🔍', description: 'Check if element exists' },
-    { type: 'text-contains', label: 'Text Contains', icon: '📝', description: 'Check if text contains value' },
-    { type: 'url-contains', label: 'URL Contains', icon: '🌐', description: 'Check if URL contains value' }
+    { type: 'custom-script', label: 'Custom Script', icon: '⚡', description: 'Run custom JavaScript' },
+    { type: 'navigate', label: 'Navigate', icon: '🧭', description: 'Navigate to a URL' },
+    { type: 'element-click', label: 'Element Click', icon: '👆', description: 'Click on an element' }
   ]
 } as const

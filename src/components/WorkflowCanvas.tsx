@@ -358,7 +358,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             </Group>
 
             {/* Input connection points */}
-            {node.inputs.map((input, index) => {
+            {(node.inputs || []).map((input, index) => {
               const isConnected = connections.some(c => c.target === node.id && c.targetHandle === input);
               const canConnect = connectionMode?.isConnecting && 
                 connectionMode.sourceNodeId !== node.id &&
@@ -395,7 +395,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             })}
 
             {/* Output connection points */}
-            {node.outputs.map((output, index) => {
+            {(node.outputs || []).map((output, index) => {
               const isActive = connectionMode?.sourceNodeId === node.id && connectionMode?.sourceHandle === output;
               
               return (

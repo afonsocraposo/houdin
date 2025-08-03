@@ -1,13 +1,3 @@
-export const matchesUrlPattern = (pattern: string, url: string): boolean => {
-  // Convert simple wildcard pattern to regex
-  const regexPattern = pattern
-    .replace(/\*/g, '.*')
-    .replace(/\?/g, '.')
-  
-  const regex = new RegExp(`^${regexPattern}$`)
-  return regex.test(url)
-}
-
 export const copyToClipboard = async (text: string): Promise<void> => {
   try {
     await navigator.clipboard.writeText(text)
