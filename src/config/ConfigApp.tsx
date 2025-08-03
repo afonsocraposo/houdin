@@ -31,14 +31,17 @@ import { WorkflowDefinition } from "../types/workflow";
 function ConfigApp() {
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [saved, setSaved] = useState(false);
-  const [editingWorkflow, setEditingWorkflow] = useState<WorkflowDefinition | null>(null);
+  const [editingWorkflow, setEditingWorkflow] =
+    useState<WorkflowDefinition | null>(null);
   const storageManager = StorageManager.getInstance();
   const navigate = useNavigate();
   const location = useLocation();
   const { workflowId } = useParams<{ workflowId?: string }>();
 
   // Determine current view from URL pathname
-  const currentView = location.pathname.includes('/designer') ? 'designer' : 'workflows';
+  const currentView = location.pathname.includes("/designer")
+    ? "designer"
+    : "workflows";
 
   useEffect(() => {
     // Load existing workflows from storage using StorageManager
@@ -47,10 +50,10 @@ function ConfigApp() {
         const loadedWorkflows = await storageManager.getWorkflows();
         setWorkflows(loadedWorkflows);
       } catch (error) {
-        console.error('Failed to load workflows:', error);
+        console.error("Failed to load workflows:", error);
       }
     };
-    
+
     loadData();
 
     // Set up storage change listener
@@ -64,7 +67,7 @@ function ConfigApp() {
   // Separate effect to handle editing workflow based on URL changes
   useEffect(() => {
     if (workflowId && workflows.length > 0) {
-      const workflow = workflows.find(w => w.id === workflowId);
+      const workflow = workflows.find((w) => w.id === workflowId);
       setEditingWorkflow(workflow || null);
     } else if (!workflowId) {
       setEditingWorkflow(null);
@@ -73,58 +76,58 @@ function ConfigApp() {
 
   const handleWorkflowSave = async (workflow: WorkflowDefinition) => {
     try {
-      const updatedWorkflows = editingWorkflow 
-        ? workflows.map(w => w.id === workflow.id ? workflow : w)
+      const updatedWorkflows = editingWorkflow
+        ? workflows.map((w) => (w.id === workflow.id ? workflow : w))
         : [...workflows, workflow];
-      
+
       await storageManager.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
-      navigate('/');  // Navigate back to workflows list
+      navigate("/"); // Navigate back to workflows list
       setEditingWorkflow(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error('Failed to save workflow:', error);
+      console.error("Failed to save workflow:", error);
     }
   };
 
   const handleCreateWorkflow = () => {
-    navigate('/designer');  // Navigate to designer without workflow ID
+    navigate("/designer"); // Navigate to designer without workflow ID
   };
 
   const handleEditWorkflow = (workflow: WorkflowDefinition) => {
-    navigate(`/designer/${workflow.id}`);  // Navigate to designer with workflow ID
+    navigate(`/designer/${workflow.id}`); // Navigate to designer with workflow ID
   };
 
   const handleDeleteWorkflow = async (id: string) => {
     try {
-      const updatedWorkflows = workflows.filter(w => w.id !== id);
+      const updatedWorkflows = workflows.filter((w) => w.id !== id);
       await storageManager.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
     } catch (error) {
-      console.error('Failed to delete workflow:', error);
+      console.error("Failed to delete workflow:", error);
     }
   };
 
   const handleToggleWorkflow = async (id: string) => {
     try {
-      const updatedWorkflows = workflows.map(w =>
-        w.id === id ? { ...w, enabled: !w.enabled } : w
+      const updatedWorkflows = workflows.map((w) =>
+        w.id === id ? { ...w, enabled: !w.enabled } : w,
       );
       await storageManager.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
     } catch (error) {
-      console.error('Failed to toggle workflow:', error);
+      console.error("Failed to toggle workflow:", error);
     }
   };
 
   // Show workflow designer if in designer view
-  if (currentView === 'designer') {
+  if (currentView === "designer") {
     return (
       <WorkflowDesigner
         workflow={editingWorkflow || undefined}
         onSave={handleWorkflowSave}
-        onCancel={() => navigate('/')}
+        onCancel={() => navigate("/")}
       />
     );
   }
@@ -138,7 +141,8 @@ function ConfigApp() {
             changeme Configuration
           </Title>
           <Text size="sm" c="dimmed">
-            Create visual workflows to inject components and automate tasks on any website
+            Create visual workflows to inject components and automate tasks on
+            any website
           </Text>
         </div>
 
@@ -159,7 +163,8 @@ function ConfigApp() {
           color="blue"
         >
           You can always access this configuration page by typing{" "}
-          <Badge variant="light">https://changeme.config</Badge> in your browser address bar.
+          <Badge variant="light">https://changeme.config</Badge> in your browser
+          address bar.
         </Alert>
 
         <Card withBorder padding="lg" mt="md">
@@ -177,7 +182,8 @@ function ConfigApp() {
             <Stack align="center" py="xl">
               <IconNetwork size={64} color="gray" />
               <Text c="dimmed" ta="center">
-                No workflows created yet. Visual workflows provide an intuitive way to create complex automations.
+                No workflows created yet. Visual workflows provide an intuitive
+                way to create complex automations.
               </Text>
               <Button onClick={handleCreateWorkflow} mt="md">
                 Create Your First Workflow
@@ -191,28 +197,36 @@ function ConfigApp() {
                   <Table.Th>URL Pattern</Table.Th>
                   <Table.Th>Description</Table.Th>
                   <Table.Th>Nodes</Table.Th>
-                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Enabled</Table.Th>
                   <Table.Th>Actions</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {workflows.map((workflow) => (
+                {workflows
+                  .sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0))
+                  .map((workflow) => (
                   <Table.Tr key={workflow.id}>
                     <Table.Td>
                       <Text fw={500}>{workflow.name}</Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" c="dimmed" style={{ fontFamily: 'monospace' }}>
-                        {workflow.urlPattern || 'No pattern set'}
+                      <Text
+                        size="sm"
+                        c="dimmed"
+                        style={{ fontFamily: "monospace" }}
+                      >
+                        {workflow.urlPattern || "No pattern set"}
                       </Text>
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" c="dimmed">
-                        {workflow.description || 'No description'}
+                        {workflow.description || "No description"}
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Badge variant="light">{workflow.nodes.length} nodes</Badge>
+                      <Badge variant="light">
+                        {workflow.nodes.length} nodes
+                      </Badge>
                     </Table.Td>
                     <Table.Td>
                       <Switch

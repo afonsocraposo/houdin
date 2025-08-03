@@ -227,12 +227,11 @@ export class WorkflowExecutor {
       const textContent = element.textContent || "";
       // Store the output in the execution context
       this.context.setOutput(nodeId, textContent);
-      showNotification(`Element content captured: "${textContent.substring(0, 50)}${textContent.length > 50 ? '...' : ''}"`);
     } else {
       showNotification("Element not found for content extraction", "error");
       this.context.setOutput(nodeId, "");
     }
-    
+
     // Execute connected actions after capturing content
     await this.executeConnectedActionsFromNode(nodeId);
   }
@@ -264,7 +263,6 @@ export class WorkflowExecutor {
     component.setAttribute("data-workflow-injected", "true");
     component.setAttribute("data-workflow-id", this.workflow.id);
     targetElement.appendChild(component);
-    showNotification("Component injected successfully!");
   }
 
   private async executeCopyContent(actionData: ActionNodeData): Promise<void> {

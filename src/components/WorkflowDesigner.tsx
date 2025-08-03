@@ -61,7 +61,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       urlPattern: workflowUrlPattern,
       nodes,
       connections,
-      enabled: workflowEnabled
+      enabled: workflowEnabled,
+      lastUpdated: Date.now()
     };
 
     onSave(workflowDefinition);

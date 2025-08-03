@@ -23,6 +23,7 @@ export interface WorkflowDefinition {
   nodes: WorkflowNode[]
   connections: WorkflowConnection[]
   enabled: boolean
+  lastUpdated?: number
 }
 
 // Workflow execution context for storing action outputs
