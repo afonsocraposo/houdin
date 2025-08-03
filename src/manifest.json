@@ -3,6 +3,11 @@
   "name": "changeme",
   "version": "1.0.0",
   "description": "A cross-browser extension built with TypeScript, Mantine UI, and Vite",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "changeme@example.com"
+    }
+  },
   "permissions": [
     "activeTab",
     "storage",

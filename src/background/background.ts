@@ -1,9 +1,6 @@
 console.log('Background script loaded')
 
-// Cross-browser compatibility
-declare const browser: any
-
-const runtime = typeof browser !== 'undefined' ? browser : chrome
+const runtime = (typeof browser !== 'undefined' ? browser : chrome) as any
 
 runtime.runtime.onInstalled.addListener(() => {
   console.log('Extension installed')
