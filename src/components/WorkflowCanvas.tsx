@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Group, Text, ActionIcon, Card, Button } from '@mantine/core';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { WorkflowNode, WorkflowConnection, NODE_CATEGORIES } from '../types/workflow';
+import { copyToClipboard, showNotification } from '../utils/helpers';
 
 interface WorkflowCanvasProps {
   nodes: WorkflowNode[];
@@ -112,6 +113,12 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     onNodesChange([...nodes, newNode]);
     setShowNodePalette(false);
   };
+
+  const handleCopyNodeId = useCallback(async (nodeId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent node selection
+    await copyToClipboard(nodeId);
+    showNotification(`Node ID copied: ${nodeId}`);
+  }, []);
 
   const deleteNode = (nodeId: string) => {
     const updatedNodes = nodes.filter(n => n.id !== nodeId);
@@ -352,9 +359,20 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             <Group justify="space-between" mb="xs">
               <Group gap="xs">
                 <Text size="lg">{getNodeIcon(node)}</Text>
-                <Text size="sm" fw={500} c={getNodeColor(node)}>
-                  {getNodeLabel(node)}
-                </Text>
+                <div>
+                  <Text size="sm" fw={500} c={getNodeColor(node)}>
+                    {getNodeLabel(node)}
+                  </Text>
+                  <Text size="xs" c="dimmed" style={{ 
+                    fontFamily: 'monospace', 
+                    cursor: 'pointer',
+                    userSelect: 'all'
+                  }}
+                  onClick={(e) => handleCopyNodeId(node.id, e)}
+                  title="Click to copy node ID">
+                    {node.id}
+                  </Text>
+                </div>
               </Group>
               <ActionIcon
                 size="sm"

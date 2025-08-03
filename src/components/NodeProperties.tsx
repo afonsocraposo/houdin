@@ -8,14 +8,14 @@ interface NodePropertiesProps {
 }
 
 export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpdate }) => {
-  // Ensure default values are set for inject-component nodes
+  // Ensure default values are set for action nodes
   useEffect(() => {
     if (node && node.type === 'action') {
       const actionData = node.data as ActionNodeData;
-      if (actionData.actionType === 'inject-component') {
-        let needsUpdate = false;
-        const updatedConfig = { ...actionData.config };
+      let needsUpdate = false;
+      const updatedConfig = { ...actionData.config };
 
+      if (actionData.actionType === 'inject-component') {
         // Set default componentType if missing
         if (!updatedConfig.componentType) {
           updatedConfig.componentType = 'button';
@@ -33,17 +33,23 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
           updatedConfig.targetSelector = 'body';
           needsUpdate = true;
         }
-
-        if (needsUpdate) {
-          const updatedNode = {
-            ...node,
-            data: {
-              ...node.data,
-              config: updatedConfig
-            }
-          };
-          onNodeUpdate(updatedNode);
+      } else if (actionData.actionType === 'get-element-content') {
+        // Set default elementSelector if missing
+        if (!updatedConfig.elementSelector) {
+          updatedConfig.elementSelector = 'h1';
+          needsUpdate = true;
         }
+      }
+
+      if (needsUpdate) {
+        const updatedNode = {
+          ...node,
+          data: {
+            ...node.data,
+            config: updatedConfig
+          }
+        };
+        onNodeUpdate(updatedNode);
       }
     }
   }, [node, onNodeUpdate]);
@@ -151,6 +157,17 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
           </Stack>
         );
       
+      case 'get-element-content':
+        return (
+          <TextInput
+            label="Element Selector"
+            placeholder=".title, #content, h1"
+            description="CSS selector for the element to extract content from"
+            value={data.config.elementSelector || ''}
+            onChange={(e) => updateNodeData('config.elementSelector', e.target.value)}
+          />
+        );
+      
       case 'copy-content':
         return (
           <TextInput
@@ -166,24 +183,26 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
         return (
           <Stack gap="md">
             <TextInput
-              label="Source Selector"
+              label="Source Selector (Legacy)"
               placeholder=".content, #description"
-              description="Element to get content from"
+              description="Element to get content from (deprecated - use variables instead)"
               value={data.config.sourceSelector || ''}
               onChange={(e) => updateNodeData('config.sourceSelector', e.target.value)}
             />
             
             <TextInput
               label="Modal Title"
-              placeholder="Information, Details, etc."
+              placeholder="Information, {{node-id}} Data"
+              description="Title of the modal. Use {{node-id}} to reference action outputs"
               value={data.config.modalTitle || ''}
               onChange={(e) => updateNodeData('config.modalTitle', e.target.value)}
             />
             
-            <TextInput
-              label="Modal Content Prefix"
-              placeholder="Copied content: "
-              description="Text to show before the copied content"
+            <Textarea
+              label="Modal Content"
+              placeholder="The extracted content is: {{get-content-node}}"
+              description="Content to display. Use {{node-id}} to reference action outputs"
+              rows={4}
               value={data.config.modalContent || ''}
               onChange={(e) => updateNodeData('config.modalContent', e.target.value)}
             />

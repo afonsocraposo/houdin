@@ -25,6 +25,14 @@ export interface WorkflowDefinition {
   enabled: boolean
 }
 
+// Workflow execution context for storing action outputs
+export interface WorkflowExecutionContext {
+  outputs: Record<string, any>
+  setOutput(nodeId: string, value: any): void
+  getOutput(nodeId: string): any
+  interpolateVariables(text: string): string
+}
+
 // Trigger type definitions
 export interface TriggerNodeData {
   triggerType: 'page-load' | 'component-load' | 'delay'
@@ -45,7 +53,7 @@ export interface ConditionNodeData {
 
 // Action type definitions
 export interface ActionNodeData {
-  actionType: 'inject-component' | 'copy-content' | 'show-modal' | 'custom-script' | 'navigate' | 'element-click'
+  actionType: 'inject-component' | 'copy-content' | 'show-modal' | 'custom-script' | 'navigate' | 'element-click' | 'get-element-content'
   config: {
     // Inject component config
     componentType?: 'button' | 'input' | 'text'
@@ -68,6 +76,9 @@ export interface ActionNodeData {
     
     // Element click config
     selector?: string
+    
+    // Get element content config
+    elementSelector?: string
   }
 }
 
@@ -84,6 +95,7 @@ export const NODE_CATEGORIES = {
   ],
   actions: [
     { type: 'inject-component', label: 'Inject Component', icon: '🔧', description: 'Add button, input, or text to page' },
+    { type: 'get-element-content', label: 'Get Element Content', icon: '📖', description: 'Extract text content from page element' },
     { type: 'copy-content', label: 'Copy Content', icon: '📋', description: 'Copy text from page element' },
     { type: 'show-modal', label: 'Show Modal', icon: '💬', description: 'Display modal with content' },
     { type: 'custom-script', label: 'Custom Script', icon: '⚡', description: 'Run custom JavaScript' },
@@ -91,3 +103,18 @@ export const NODE_CATEGORIES = {
     { type: 'element-click', label: 'Element Click', icon: '👆', description: 'Click on an element' }
   ]
 } as const
+
+// Helper function to check if a component type can trigger next actions
+export function canComponentTriggerActions(componentType: string): boolean {
+  return componentType === 'button' || componentType === 'input';
+}
+
+// Helper function to check if a node can have outgoing connections
+export function canNodeHaveOutgoingConnections(node: WorkflowNode): boolean {
+  if (node.type === 'action' && node.data?.actionType === 'inject-component') {
+    const componentType = node.data?.config?.componentType;
+    return canComponentTriggerActions(componentType);
+  }
+  // All other node types can have outgoing connections
+  return true;
+}

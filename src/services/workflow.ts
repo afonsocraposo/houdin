@@ -3,16 +3,62 @@ import {
   WorkflowNode,
   ActionNodeData,
   TriggerNodeData,
+  WorkflowExecutionContext,
 } from "../types/workflow";
 import { copyToClipboard, showNotification } from "../utils/helpers";
 import { createModal } from "../components/Modal";
 import { ComponentFactory } from "../components/ComponentFactory";
 
+class ExecutionContext implements WorkflowExecutionContext {
+  outputs: Record<string, any> = {};
+
+  setOutput(nodeId: string, value: any): void {
+    this.outputs[nodeId] = value;
+  }
+
+  getOutput(nodeId: string): any {
+    return this.outputs[nodeId];
+  }
+
+  interpolateVariables(text: string): string {
+    if (!text) return text;
+
+    // Replace variables in format {{nodeId}} or {{nodeId.property}}
+    return text.replace(/\{\{([^}]+)\}\}/g, (match, expression) => {
+      const parts = expression.trim().split(".");
+      const nodeId = parts[0];
+      const property = parts[1];
+
+      const output = this.getOutput(nodeId);
+      if (output === undefined) return match; // Keep original if not found
+
+      if (property && typeof output === "object" && output !== null) {
+        return String(output[property] || match);
+      }
+
+      return String(output);
+    });
+  }
+}
+
 export class WorkflowExecutor {
   private observerTimeouts: Map<string, number> = new Map();
   private delayTimeouts: Map<string, number> = new Map();
+  private eventListener: (event: Event) => void;
+  private context: ExecutionContext;
 
-  constructor(private workflow: WorkflowDefinition) {}
+  constructor(private workflow: WorkflowDefinition) {
+    this.context = new ExecutionContext();
+
+    // Set up listener for component triggers
+    this.eventListener = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.workflowId === this.workflow.id) {
+        this.executeConnectedActionsFromNode(customEvent.detail.nodeId);
+      }
+    };
+    document.addEventListener("workflow-component-trigger", this.eventListener);
+  }
 
   async execute(): Promise<void> {
     console.log("Executing workflow:", this.workflow.name);
@@ -132,12 +178,31 @@ export class WorkflowExecutor {
     }
   }
 
+  private async executeConnectedActionsFromNode(nodeId: string): Promise<void> {
+    // Find all actions connected to this node
+    const connections = this.workflow.connections.filter(
+      (conn) => conn.source === nodeId,
+    );
+
+    for (const connection of connections) {
+      const actionNode = this.workflow.nodes.find(
+        (n) => n.id === connection.target,
+      );
+      if (actionNode && actionNode.type === "action") {
+        await this.executeAction(actionNode);
+      }
+    }
+  }
+
   private async executeAction(node: WorkflowNode): Promise<void> {
     const actionData = node.data as ActionNodeData;
 
     switch (actionData.actionType) {
       case "inject-component":
-        await this.executeInjectComponent(actionData);
+        await this.executeInjectComponent(actionData, node.id);
+        break;
+      case "get-element-content":
+        await this.executeGetElementContent(actionData, node.id);
         break;
       case "copy-content":
         await this.executeCopyContent(actionData);
@@ -151,8 +216,30 @@ export class WorkflowExecutor {
     }
   }
 
+  private async executeGetElementContent(
+    actionData: ActionNodeData,
+    nodeId: string,
+  ): Promise<void> {
+    const element = document.querySelector(
+      actionData.config.elementSelector || "",
+    );
+    if (element) {
+      const textContent = element.textContent || "";
+      // Store the output in the execution context
+      this.context.setOutput(nodeId, textContent);
+      showNotification(`Element content captured: "${textContent.substring(0, 50)}${textContent.length > 50 ? '...' : ''}"`);
+    } else {
+      showNotification("Element not found for content extraction", "error");
+      this.context.setOutput(nodeId, "");
+    }
+    
+    // Execute connected actions after capturing content
+    await this.executeConnectedActionsFromNode(nodeId);
+  }
+
   private async executeInjectComponent(
     actionData: ActionNodeData,
+    nodeId?: string,
   ): Promise<void> {
     const targetElement = document.querySelector(
       actionData.config.targetSelector || "body",
@@ -165,7 +252,15 @@ export class WorkflowExecutor {
       return;
     }
 
-    const component = ComponentFactory.create(actionData.config);
+    // Only pass workflow info for interactive components (button/input)
+    const isInteractive =
+      actionData.config.componentType === "button" ||
+      actionData.config.componentType === "input";
+    const component = ComponentFactory.create(
+      actionData.config,
+      isInteractive ? this.workflow.id : undefined,
+      isInteractive ? nodeId : undefined,
+    );
     component.setAttribute("data-workflow-injected", "true");
     component.setAttribute("data-workflow-id", this.workflow.id);
     targetElement.appendChild(component);
@@ -186,8 +281,14 @@ export class WorkflowExecutor {
   }
 
   private async executeShowModal(actionData: ActionNodeData): Promise<void> {
-    let modalContent = actionData.config.modalContent || "";
+    let modalTitle = this.context.interpolateVariables(
+      actionData.config.modalTitle || "Workflow Result",
+    );
+    let modalContent = this.context.interpolateVariables(
+      actionData.config.modalContent || "",
+    );
 
+    // Legacy support: If sourceSelector is provided, append its content
     if (actionData.config.sourceSelector) {
       const sourceElement = document.querySelector(
         actionData.config.sourceSelector,
@@ -198,10 +299,7 @@ export class WorkflowExecutor {
       }
     }
 
-    createModal(
-      actionData.config.modalTitle || "Workflow Result",
-      modalContent,
-    );
+    createModal(modalTitle, modalContent);
   }
 
   private async executeCustomScript(actionData: ActionNodeData): Promise<void> {
@@ -227,5 +325,11 @@ export class WorkflowExecutor {
       clearTimeout(timeoutId);
     });
     this.delayTimeouts.clear();
+
+    // Remove event listener
+    document.removeEventListener(
+      "workflow-component-trigger",
+      this.eventListener,
+    );
   }
 }
