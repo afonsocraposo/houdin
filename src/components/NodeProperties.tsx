@@ -179,36 +179,27 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
           />
         );
       
-      case 'show-modal':
-        return (
-          <Stack gap="md">
-            <TextInput
-              label="Source Selector (Legacy)"
-              placeholder=".content, #description"
-              description="Element to get content from (deprecated - use variables instead)"
-              value={data.config.sourceSelector || ''}
-              onChange={(e) => updateNodeData('config.sourceSelector', e.target.value)}
-            />
-            
-            <TextInput
-              label="Modal Title"
-              placeholder="Information, {{node-id}} Data"
-              description="Title of the modal. Use {{node-id}} to reference action outputs"
-              value={data.config.modalTitle || ''}
-              onChange={(e) => updateNodeData('config.modalTitle', e.target.value)}
-            />
-            
-            <Textarea
-              label="Modal Content"
-              placeholder="The extracted content is: {{get-content-node}}"
-              description="Content to display. Use {{node-id}} to reference action outputs"
-              rows={4}
-              value={data.config.modalContent || ''}
-              onChange={(e) => updateNodeData('config.modalContent', e.target.value)}
-            />
-          </Stack>
-        );
-      
+       case 'show-modal':
+         return (
+           <Stack gap="md">
+             <TextInput
+               label="Modal Title"
+               placeholder="Information, {{node-id}} Data"
+               description="Title of the modal. Use {{node-id}} to reference action outputs"
+               value={data.config.modalTitle || ''}
+               onChange={(e) => updateNodeData('config.modalTitle', e.target.value)}
+             />
+             
+             <Textarea
+               label="Modal Content"
+               placeholder="The extracted content is: {{get-content-node}}"
+               description="Content to display. Use {{node-id}} to reference action outputs"
+               rows={4}
+               value={data.config.modalContent || ''}
+               onChange={(e) => updateNodeData('config.modalContent', e.target.value)}
+             />
+           </Stack>
+         );      
       case 'element-click':
         return (
           <TextInput
