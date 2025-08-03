@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Title, Grid, Stack, Button, Group, TextInput, Switch, Card, Text } from '@mantine/core';
 import { IconDeviceFloppy, IconPlayerPlay, IconArrowLeft } from '@tabler/icons-react';
 import { WorkflowCanvas } from './WorkflowCanvas';
@@ -23,6 +23,19 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   const [nodes, setNodes] = useState<WorkflowNode[]>(workflow?.nodes || []);
   const [connections, setConnections] = useState<WorkflowConnection[]>(workflow?.connections || []);
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
+
+  // Update state when workflow prop changes (e.g., when loading from URL)
+  useEffect(() => {
+    if (workflow) {
+      setWorkflowName(workflow.name || '');
+      setWorkflowDescription(workflow.description || '');
+      setWorkflowUrlPattern(workflow.urlPattern || '*://*/*');
+      setWorkflowEnabled(workflow.enabled ?? true);
+      setNodes(workflow.nodes || []);
+      setConnections(workflow.connections || []);
+      setSelectedNode(null); // Reset selected node when workflow changes
+    }
+  }, [workflow]);
 
   const handleNodeUpdate = (updatedNode: WorkflowNode) => {
     const updatedNodes = nodes.map(n => n.id === updatedNode.id ? updatedNode : n);

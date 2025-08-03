@@ -23,6 +23,7 @@ import {
   IconNetwork,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { StorageManager } from "../services/storage";
 import { WorkflowDesigner } from "../components/WorkflowDesigner";
 import { WorkflowDefinition } from "../types/workflow";
@@ -30,9 +31,14 @@ import { WorkflowDefinition } from "../types/workflow";
 function ConfigApp() {
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [saved, setSaved] = useState(false);
-  const [currentView, setCurrentView] = useState<'workflows' | 'designer'>('workflows');
   const [editingWorkflow, setEditingWorkflow] = useState<WorkflowDefinition | null>(null);
   const storageManager = StorageManager.getInstance();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { workflowId } = useParams<{ workflowId?: string }>();
+
+  // Determine current view from URL pathname
+  const currentView = location.pathname.includes('/designer') ? 'designer' : 'workflows';
 
   useEffect(() => {
     // Load existing workflows from storage using StorageManager
@@ -53,7 +59,17 @@ function ConfigApp() {
     };
 
     storageManager.onStorageChanged(handleStorageChange);
-  }, []);
+  }, []); // Load workflows once on mount
+
+  // Separate effect to handle editing workflow based on URL changes
+  useEffect(() => {
+    if (workflowId && workflows.length > 0) {
+      const workflow = workflows.find(w => w.id === workflowId);
+      setEditingWorkflow(workflow || null);
+    } else if (!workflowId) {
+      setEditingWorkflow(null);
+    }
+  }, [workflowId, workflows]); // Update editing workflow when URL or workflows change
 
   const handleWorkflowSave = async (workflow: WorkflowDefinition) => {
     try {
@@ -63,7 +79,7 @@ function ConfigApp() {
       
       await storageManager.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
-      setCurrentView('workflows');
+      navigate('/');  // Navigate back to workflows list
       setEditingWorkflow(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -73,13 +89,11 @@ function ConfigApp() {
   };
 
   const handleCreateWorkflow = () => {
-    setEditingWorkflow(null);
-    setCurrentView('designer');
+    navigate('/designer');  // Navigate to designer without workflow ID
   };
 
   const handleEditWorkflow = (workflow: WorkflowDefinition) => {
-    setEditingWorkflow(workflow);
-    setCurrentView('designer');
+    navigate(`/designer/${workflow.id}`);  // Navigate to designer with workflow ID
   };
 
   const handleDeleteWorkflow = async (id: string) => {
@@ -110,7 +124,7 @@ function ConfigApp() {
       <WorkflowDesigner
         workflow={editingWorkflow || undefined}
         onSave={handleWorkflowSave}
-        onCancel={() => setCurrentView('workflows')}
+        onCancel={() => navigate('/')}
       />
     );
   }
