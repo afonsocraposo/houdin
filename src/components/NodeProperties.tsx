@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack, TextInput, Select, Textarea, Text, Card, Group } from '@mantine/core';
 import { WorkflowNode, TriggerNodeData, ActionNodeData, ConditionNodeData } from '../types/workflow';
 
@@ -8,6 +8,46 @@ interface NodePropertiesProps {
 }
 
 export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpdate }) => {
+  // Ensure default values are set for inject-component nodes
+  useEffect(() => {
+    if (node && node.type === 'action') {
+      const actionData = node.data as ActionNodeData;
+      if (actionData.actionType === 'inject-component') {
+        let needsUpdate = false;
+        const updatedConfig = { ...actionData.config };
+
+        // Set default componentType if missing
+        if (!updatedConfig.componentType) {
+          updatedConfig.componentType = 'button';
+          needsUpdate = true;
+        }
+
+        // Set default componentText if missing
+        if (!updatedConfig.componentText) {
+          updatedConfig.componentText = 'Button';
+          needsUpdate = true;
+        }
+
+        // Set default targetSelector if missing
+        if (!updatedConfig.targetSelector) {
+          updatedConfig.targetSelector = 'body';
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          const updatedNode = {
+            ...node,
+            data: {
+              ...node.data,
+              config: updatedConfig
+            }
+          };
+          onNodeUpdate(updatedNode);
+        }
+      }
+    }
+  }, [node, onNodeUpdate]);
+
   if (!node) {
     return (
       <Card withBorder p="md" style={{ minHeight: '300px' }}>

@@ -88,11 +88,23 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   }, [draggedNode, handleMouseMove, handleMouseUp]);
 
   const createNode = (type: string, category: 'triggers' | 'actions' | 'conditions') => {
+    const nodeType = category.slice(0, -1) as 'trigger' | 'action' | 'condition'
+    let defaultConfig = {}
+    
+    // Set default configuration based on node type
+    if (nodeType === 'action' && type === 'inject-component') {
+      defaultConfig = {
+        componentType: 'button',
+        componentText: 'Button',
+        targetSelector: 'body'
+      }
+    }
+    
     const newNode: WorkflowNode = {
-      id: `${category.slice(0, -1)}-${Date.now()}`,
-      type: category.slice(0, -1) as 'trigger' | 'action' | 'condition',
+      id: `${nodeType}-${Date.now()}`,
+      type: nodeType,
       position: { x: 100, y: 100 },
-      data: { [category.slice(0, -1) + 'Type']: type, config: {} },
+      data: { [nodeType + 'Type']: type, config: defaultConfig },
       inputs: category === 'triggers' ? [] : ['input'],
       outputs: category === 'conditions' ? ['true', 'false'] : ['output']
     };
