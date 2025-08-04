@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
         return JSON.parse(readFileSync(manifestPath, "utf-8"));
       },
       watchFilePaths: ["src", "public", "icons"],
-      additionalInputs: ["src/content/content.ts", "src/config/config.html"],
+      additionalInputs: ["src/content/content.ts", "src/content/elementSelector.ts", "src/config/config.html"],
     }),
   ],
   build: {
