@@ -8,6 +8,7 @@ import {
 import { copyToClipboard, showNotification } from "../utils/helpers";
 import { createModal } from "../components/Modal";
 import { ComponentFactory } from "../components/ComponentFactory";
+import { OpenAIService } from "./openai";
 
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
@@ -213,6 +214,9 @@ export class WorkflowExecutor {
       case "custom-script":
         await this.executeCustomScript(actionData);
         break;
+      case "llm-openai":
+        await this.executeLLMOpenAI(actionData, node.id);
+        break;
     }
   }
 
@@ -309,6 +313,54 @@ export class WorkflowExecutor {
         console.error("Error executing custom script:", error);
         showNotification("Error executing custom script", "error");
       }
+    }
+  }
+
+  private async executeLLMOpenAI(
+    actionData: ActionNodeData,
+    nodeId: string,
+  ): Promise<void> {
+    try {
+      const { credentialId, model, prompt, maxTokens, temperature } = actionData.config;
+
+      if (!credentialId) {
+        showNotification("No OpenAI credential selected", "error");
+        return;
+      }
+
+      if (!prompt) {
+        showNotification("No prompt provided for OpenAI", "error");
+        return;
+      }
+
+      // Interpolate variables in the prompt
+      const interpolatedPrompt = this.context.interpolateVariables(prompt);
+
+      // Show loading notification
+      showNotification("Calling OpenAI API...");
+
+      // Call OpenAI API
+      const response = await OpenAIService.callChatCompletion(
+        credentialId,
+        model || 'gpt-3.5-turbo',
+        interpolatedPrompt,
+        maxTokens || 150,
+        temperature || 0.7
+      );
+
+      // Store the response in the execution context
+      this.context.setOutput(nodeId, response);
+
+      // Show success notification
+      showNotification("OpenAI response received");
+
+      // Execute connected actions after receiving response
+      await this.executeConnectedActionsFromNode(nodeId);
+    } catch (error) {
+      console.error("Error executing OpenAI action:", error);
+      showNotification(`OpenAI API error: ${error}`, "error");
+      // Store empty response on error
+      this.context.setOutput(nodeId, "");
     }
   }
 

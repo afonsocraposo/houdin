@@ -20,13 +20,19 @@
   },
   "options_page": "src/config/config.html",
   "background": {
-    "scripts": ["src/background/background.ts"],
+    "scripts": [
+      "src/background/background.ts"
+    ],
     "persistent": false
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/content.ts"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/content.ts"
+      ]
     }
   ],
   "web_accessible_resources": [

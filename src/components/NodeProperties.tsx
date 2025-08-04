@@ -1,6 +1,8 @@
-import React, { useEffect } from 'react';
-import { Stack, TextInput, Select, Textarea, Text, Card, Group } from '@mantine/core';
+import React, { useEffect, useState } from 'react';
+import { Stack, TextInput, Select, Textarea, Text, Card, Group, NumberInput } from '@mantine/core';
 import { WorkflowNode, TriggerNodeData, ActionNodeData, ConditionNodeData } from '../types/workflow';
+import { Credential } from '../types/credentials';
+import { StorageManager } from '../services/storage';
 
 interface NodePropertiesProps {
   node: WorkflowNode | null;
@@ -8,6 +10,23 @@ interface NodePropertiesProps {
 }
 
 export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpdate }) => {
+  const [openaiCredentials, setOpenaiCredentials] = useState<Credential[]>([]);
+  const storageManager = StorageManager.getInstance();
+
+  // Load OpenAI credentials
+  useEffect(() => {
+    const loadCredentials = async () => {
+      try {
+        const openaiCreds = await storageManager.getCredentialsByService('openai');
+        setOpenaiCredentials(openaiCreds);
+      } catch (error) {
+        console.error('Failed to load OpenAI credentials:', error);
+      }
+    };
+
+    loadCredentials();
+  }, []);
+
   // Ensure default values are set for action nodes
   useEffect(() => {
     if (node && node.type === 'action') {
@@ -221,20 +240,80 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({ node, onNodeUpda
           />
         );
       
-      case 'custom-script':
-        return (
-          <Textarea
-            label="Custom JavaScript"
-            placeholder="alert('Hello World!'); console.log('Custom script executed');"
-            rows={6}
-            value={data.config.customScript || ''}
-            onChange={(e) => updateNodeData('config.customScript', e.target.value)}
-          />
-        );
+       case 'custom-script':
+         return (
+           <Textarea
+             label="Custom JavaScript"
+             placeholder="alert('Hello World!'); console.log('Custom script executed');"
+             rows={6}
+             value={data.config.customScript || ''}
+             onChange={(e) => updateNodeData('config.customScript', e.target.value)}
+           />
+         );
+       
+       case 'llm-openai':
+         return (
+           <Stack gap="md">
+             <Select
+               label="OpenAI Credential"
+               placeholder="Select an OpenAI API key"
+               data={openaiCredentials.map(cred => ({
+                 value: cred.id,
+                 label: cred.name
+               }))}
+               value={data.config.credentialId || ''}
+               onChange={(value) => updateNodeData('config.credentialId', value)}
+               required
+             />
+             
+             <Select
+               label="Model"
+               data={[
+                 { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+                 { value: 'gpt-4', label: 'GPT-4' },
+                 { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+                 { value: 'gpt-4o', label: 'GPT-4o' }
+               ]}
+               value={data.config.model || 'gpt-3.5-turbo'}
+               onChange={(value) => updateNodeData('config.model', value)}
+             />
+             
+             <Textarea
+               label="Prompt"
+               placeholder="You are a helpful assistant. User input: {{get-content-node}}"
+               description="Use {{node-id}} to reference outputs from other actions"
+               rows={4}
+               value={data.config.prompt || ''}
+               onChange={(e) => updateNodeData('config.prompt', e.target.value)}
+               required
+             />
+             
+             <NumberInput
+               label="Max Tokens"
+               placeholder="150"
+               description="Maximum number of tokens to generate"
+               min={1}
+               max={4000}
+               value={data.config.maxTokens || 150}
+               onChange={(value) => updateNodeData('config.maxTokens', value)}
+             />
+             
+             <NumberInput
+               label="Temperature"
+               placeholder="0.7"
+               description="Controls randomness (0 = deterministic, 1 = creative)"
+               min={0}
+               max={1}
+               step={0.1}
+               decimalScale={1}
+               value={data.config.temperature || 0.7}
+               onChange={(value) => updateNodeData('config.temperature', value)}
+             />
+           </Stack>
+         );
       
-      default:
-        return null;
-    }
+       default:
+         return null;    }
   };
 
   const renderConditionProperties = (data: ConditionNodeData) => {

@@ -54,7 +54,7 @@ export interface ConditionNodeData {
 
 // Action type definitions
 export interface ActionNodeData {
-  actionType: 'inject-component' | 'copy-content' | 'show-modal' | 'custom-script' | 'navigate' | 'element-click' | 'get-element-content'
+  actionType: 'inject-component' | 'copy-content' | 'show-modal' | 'custom-script' | 'navigate' | 'element-click' | 'get-element-content' | 'llm-openai'
   config: {
     // Inject component config
     componentType?: 'button' | 'input' | 'text'
@@ -80,6 +80,13 @@ export interface ActionNodeData {
     
     // Get element content config
     elementSelector?: string
+    
+    // LLM OpenAI config
+    credentialId?: string
+    prompt?: string
+    model?: 'gpt-3.5-turbo' | 'gpt-4' | 'gpt-4-turbo' | 'gpt-4o'
+    maxTokens?: number
+    temperature?: number
   }
 }
 
@@ -101,7 +108,8 @@ export const NODE_CATEGORIES = {
     { type: 'show-modal', label: 'Show Modal', icon: '💬', description: 'Display modal with content' },
     { type: 'custom-script', label: 'Custom Script', icon: '⚡', description: 'Run custom JavaScript' },
     { type: 'navigate', label: 'Navigate', icon: '🧭', description: 'Navigate to a URL' },
-    { type: 'element-click', label: 'Element Click', icon: '👆', description: 'Click on an element' }
+    { type: 'element-click', label: 'Element Click', icon: '👆', description: 'Click on an element' },
+    { type: 'llm-openai', label: 'LLM OpenAI', icon: '🤖', description: 'Send prompt to OpenAI and get response' }
   ]
 } as const
 
