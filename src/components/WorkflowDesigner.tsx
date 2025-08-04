@@ -10,6 +10,9 @@ import {
     Switch,
     Card,
     Text,
+    Box,
+    Transition,
+    Paper,
 } from "@mantine/core";
 import {
     IconDeviceFloppy,
@@ -107,7 +110,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
     const handleExport = () => {
         if (!workflowName.trim()) {
-            alert("Please enter a workflow name before exporting");
             return;
         }
 
@@ -128,127 +130,132 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     };
 
     return (
-        <Container size="xl" py="xl">
-            <Stack gap="lg">
-                <Group justify="space-between" align="center">
-                    <Title order={2}>
-                        {workflow ? "Edit Workflow" : "Create New Workflow"}
-                    </Title>
-                    <Group>
-                        <Button
-                            variant="outline"
-                            leftSection={<IconArrowLeft size={16} />}
-                            onClick={onCancel}
-                        >
-                            Back to Workflows
-                        </Button>
-                        <Button
-                            variant="outline"
-                            leftSection={<IconDownload size={16} />}
-                            onClick={handleExport}
-                        >
-                            Export
-                        </Button>
-                        <Button
-                            variant="outline"
-                            leftSection={<IconPlayerPlay size={16} />}
-                            onClick={handleTest}
-                        >
-                            Test
-                        </Button>
-                        <Button
-                            leftSection={<IconDeviceFloppy size={16} />}
-                            onClick={handleSave}
-                        >
-                            Save Workflow
-                        </Button>
+        <Container fluid pt="xl" px="0" h="100vh">
+            <Stack h="100%">
+                <Stack gap="lg" px="md">
+                    <Group justify="space-between" align="center">
+                        <Title order={2}>
+                            {workflow ? "Edit Workflow" : "Create New Workflow"}
+                        </Title>
+                        <Group>
+                            <Button
+                                variant="outline"
+                                leftSection={<IconArrowLeft size={16} />}
+                                onClick={onCancel}
+                            >
+                                Back to Workflows
+                            </Button>
+                            <Button
+                                variant="outline"
+                                leftSection={<IconDownload size={16} />}
+                                onClick={handleExport}
+                            >
+                                Export
+                            </Button>
+                            <Button
+                                variant="outline"
+                                leftSection={<IconPlayerPlay size={16} />}
+                                onClick={handleTest}
+                            >
+                                Test
+                            </Button>
+                            <Button
+                                leftSection={<IconDeviceFloppy size={16} />}
+                                onClick={handleSave}
+                            >
+                                Save Workflow
+                            </Button>
+                        </Group>
                     </Group>
-                </Group>
 
-                <Card withBorder padding="lg">
-                    <Stack gap="md">
-                        <Title order={4}>Workflow Settings</Title>
-                        <Grid>
-                            <Grid.Col span={6}>
-                                <TextInput
-                                    label="Workflow Name"
-                                    placeholder="Enter workflow name"
-                                    value={workflowName}
-                                    onChange={(e) => setWorkflowName(e.target.value)}
-                                />
-                            </Grid.Col>
-                            <Grid.Col span={6}>
-                                <TextInput
-                                    label="URL Pattern"
-                                    placeholder="*://example.com/* or https://github.com/*/pull/*"
-                                    description="Use * for wildcards. The workflow will only run on matching URLs."
-                                    value={workflowUrlPattern}
-                                    onChange={(e) => setWorkflowUrlPattern(e.target.value)}
-                                />
-                            </Grid.Col>
-                            <Grid.Col span={8}>
-                                <TextInput
-                                    label="Description (Optional)"
-                                    placeholder="Describe what this workflow does"
-                                    value={workflowDescription}
-                                    onChange={(e) => setWorkflowDescription(e.target.value)}
-                                />
-                            </Grid.Col>
-                            <Grid.Col span={4}>
-                                <Switch
-                                    label="Enabled"
-                                    description="Whether this workflow is active"
-                                    checked={workflowEnabled}
-                                    onChange={(e) => setWorkflowEnabled(e.target.checked)}
-                                />
-                            </Grid.Col>
-                        </Grid>
-                    </Stack>
-                </Card>
-
-                <Grid>
-                    <Grid.Col span={9}>
-                        <Card withBorder padding="lg" h="600px">
-                            <Stack gap="md">
-                                <Title order={4}>Workflow Canvas</Title>
-                                <ReactFlowCanvas
-                                    nodes={nodes}
-                                    connections={connections}
-                                    onNodesChange={setNodes}
-                                    onConnectionsChange={setConnections}
-                                    selectedNode={selectedNode}
-                                    onNodeSelect={setSelectedNode}
-                                />
-                            </Stack>
-                        </Card>
-                    </Grid.Col>
-                    <Grid.Col span={3}>
-                        <Card withBorder padding="lg" h="600px">
-                            <Stack gap="md">
-                                <Title order={4}>Node Properties</Title>
-                                {selectedNode ? (
-                                    <NodeProperties
-                                        node={selectedNode}
-                                        onNodeUpdate={handleNodeUpdate}
+                    <Card withBorder padding="lg">
+                        <Stack gap="md">
+                            <Title order={4}>Workflow Settings</Title>
+                            <Grid>
+                                <Grid.Col span={6}>
+                                    <TextInput
+                                        label="Workflow Name"
+                                        placeholder="Enter workflow name"
+                                        value={workflowName}
+                                        onChange={(e) => setWorkflowName(e.target.value)}
                                     />
-                                ) : (
-                                    <Text c="dimmed" ta="center" py="xl">
-                                        Select a node to edit its properties
-                                    </Text>
-                                )}
-                            </Stack>
-                        </Card>
-                    </Grid.Col>
-                </Grid>
-            </Stack>
+                                </Grid.Col>
+                                <Grid.Col span={6}>
+                                    <TextInput
+                                        label="URL Pattern"
+                                        placeholder="*://example.com/* or https://github.com/*/pull/*"
+                                        description="Use * for wildcards. The workflow will only run on matching URLs."
+                                        value={workflowUrlPattern}
+                                        onChange={(e) => setWorkflowUrlPattern(e.target.value)}
+                                    />
+                                </Grid.Col>
+                                <Grid.Col span={8}>
+                                    <TextInput
+                                        label="Description (Optional)"
+                                        placeholder="Describe what this workflow does"
+                                        value={workflowDescription}
+                                        onChange={(e) => setWorkflowDescription(e.target.value)}
+                                    />
+                                </Grid.Col>
+                                <Grid.Col span={4}>
+                                    <Switch
+                                        label="Enabled"
+                                        description="Whether this workflow is active"
+                                        checked={workflowEnabled}
+                                        onChange={(e) => setWorkflowEnabled(e.target.checked)}
+                                    />
+                                </Grid.Col>
+                            </Grid>
+                        </Stack>
+                    </Card>
+                </Stack>
 
-            {workflowName.trim() && (
-                <ExportModal
-                    opened={exportModalOpened}
-                    onClose={() => setExportModalOpened(false)}
-                    workflow={getCurrentWorkflowDefinition()}
-                />
-            )}
+                {workflowName.trim() && (
+                    <ExportModal
+                        opened={exportModalOpened}
+                        onClose={() => setExportModalOpened(false)}
+                        workflow={getCurrentWorkflowDefinition()}
+                    />
+                )}
+
+                <Box flex={1} style={{ position: "relative" }}>
+                    <ReactFlowCanvas
+                        nodes={nodes}
+                        connections={connections}
+                        onNodesChange={setNodes}
+                        onConnectionsChange={setConnections}
+                        selectedNode={selectedNode}
+                        onNodeSelect={setSelectedNode}
+                    />
+                    <Transition
+                        mounted={selectedNode !== null}
+                        transition="slide-left"
+                        duration={200}
+                        timingFunction="ease"
+                    >
+                        {(styles) => (
+                            <Paper
+                                shadow="md"
+                                p="md"
+                                h="100%"
+                                style={{
+                                    ...styles,
+                                    position: "absolute",
+                                    top: 0,
+                                    right: 0,
+                                    width: 300,
+                                    zIndex: 1,
+                                }}
+                            >
+                                <NodeProperties
+                                    node={selectedNode}
+                                    onNodeUpdate={handleNodeUpdate}
+                                />
+                            </Paper>
+                        )}
+                    </Transition>
+                </Box>
+            </Stack>
         </Container>
     );
 };
