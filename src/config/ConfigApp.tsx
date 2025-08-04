@@ -199,7 +199,7 @@ function ConfigApp() {
                 <div style={{ textAlign: "center" }}>
                     <IconSettings size={48} />
                     <Title order={1} mt="sm">
-                        changeme Configuration23
+                        changeme Configuration
                     </Title>
                     <Text size="sm" c="dimmed">
                         Create visual workflows to inject components and automate tasks on
