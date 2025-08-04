@@ -1,9 +1,9 @@
-import { StorageManager } from './storage';
+import { StorageManager } from "./storage";
 
 export interface OpenAIRequest {
   model: string;
   messages: Array<{
-    role: 'system' | 'user' | 'assistant';
+    role: "system" | "user" | "assistant";
     content: string;
   }>;
   max_tokens?: number;
@@ -34,21 +34,29 @@ interface HttpResponse {
 }
 
 export class OpenAIService {
-  private static readonly API_BASE_URL = 'https://api.openai.com/v1';
+  private static readonly API_BASE_URL = "https://api.openai.com/v1";
 
-  private static async makeBackgroundRequest(request: HttpRequest): Promise<HttpResponse> {
+  private static async makeBackgroundRequest(
+    request: HttpRequest,
+  ): Promise<HttpResponse> {
     return new Promise((resolve, reject) => {
-      const runtime = (typeof browser !== 'undefined' ? browser : chrome) as any;
-      
+      const runtime = (
+        typeof browser !== "undefined" ? browser : chrome
+      ) as any;
+
       runtime.runtime.sendMessage(
-        { type: 'HTTP_REQUEST', request },
-        (response: { success: boolean; response?: HttpResponse; error?: string }) => {
+        { type: "HTTP_REQUEST", request },
+        (response: {
+          success: boolean;
+          response?: HttpResponse;
+          error?: string;
+        }) => {
           if (response.success && response.response) {
             resolve(response.response);
           } else {
-            reject(new Error(response.error || 'Request failed'));
+            reject(new Error(response.error || "Request failed"));
           }
-        }
+        },
       );
     });
   }
@@ -58,20 +66,20 @@ export class OpenAIService {
     model: string,
     prompt: string,
     maxTokens: number = 150,
-    temperature: number = 0.7
+    temperature: number = 0.7,
   ): Promise<string> {
     try {
       // Get the credential
       const storageManager = StorageManager.getInstance();
       const credentials = await storageManager.getCredentials();
-      const credential = credentials.find(c => c.id === credentialId);
-      
+      const credential = credentials.find((c) => c.id === credentialId);
+
       if (!credential) {
-        throw new Error('OpenAI credential not found');
+        throw new Error("OpenAI credential not found");
       }
 
-      if (credential.service !== 'openai') {
-        throw new Error('Invalid credential: not an OpenAI credential');
+      if (credential.service !== "openai") {
+        throw new Error("Invalid credential: not an OpenAI credential");
       }
 
       // Prepare the request
@@ -79,40 +87,43 @@ export class OpenAIService {
         model,
         messages: [
           {
-            role: 'user',
-            content: prompt
-          }
+            role: "user",
+            content: prompt,
+          },
         ],
-        max_tokens: maxTokens,
-        temperature
+        // max_tokens: maxTokens,
+        // temperature
       };
 
       // Make the API call through background script
       const response = await this.makeBackgroundRequest({
         url: `${this.API_BASE_URL}/chat/completions`,
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${credential.value}`,
-          'Accept': 'application/json'
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${credential.value}`,
+          Accept: "application/json",
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        const errorMessage = response.data?.error?.message || response.statusText || 'Unknown error';
+        const errorMessage =
+          response.data?.error?.message ||
+          response.statusText ||
+          "Unknown error";
         throw new Error(`OpenAI API error: ${errorMessage}`);
       }
 
       const data: OpenAIResponse = response.data;
-      
+
       if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response from OpenAI API');
+        throw new Error("No response from OpenAI API");
       }
 
       return data.choices[0].message.content;
     } catch (error) {
-      console.error('OpenAI API call failed:', error);
+      console.error("OpenAI API call failed:", error);
       throw error;
     }
   }

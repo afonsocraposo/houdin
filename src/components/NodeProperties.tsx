@@ -310,10 +310,11 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
             <Select
               label="Model"
               data={[
-                { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
-                { value: "gpt-4", label: "GPT-4" },
-                { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-                { value: "gpt-4o", label: "GPT-4o" },
+                { label: "GPT-4o (Omni)", value: "gpt-4o" },
+                { label: "GPT-4 Turbo", value: "gpt-4-turbo" },
+                { label: "GPT-4o Mini", value: "o4-mini" },
+                { label: "GPT-3.5 Turbo", value: "gpt-3.5-turbo" },
+                { label: "GPT-3.5 Turbo (16k)", value: "gpt-3.5-turbo-16k" },
               ]}
               value={data.config.model || "gpt-3.5-turbo"}
               onChange={(value) => updateNodeData("config.model", value)}
