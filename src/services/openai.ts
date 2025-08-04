@@ -1,3 +1,5 @@
+import { StorageManager } from './storage';
+
 export interface OpenAIRequest {
   model: string;
   messages: Array<{
@@ -16,7 +18,41 @@ export interface OpenAIResponse {
   }>;
 }
 
+interface HttpRequest {
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+interface HttpResponse {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  data?: any;
+  error?: string;
+}
+
 export class OpenAIService {
+  private static readonly API_BASE_URL = 'https://api.openai.com/v1';
+
+  private static async makeBackgroundRequest(request: HttpRequest): Promise<HttpResponse> {
+    return new Promise((resolve, reject) => {
+      const runtime = (typeof browser !== 'undefined' ? browser : chrome) as any;
+      
+      runtime.runtime.sendMessage(
+        { type: 'HTTP_REQUEST', request },
+        (response: { success: boolean; response?: HttpResponse; error?: string }) => {
+          if (response.success && response.response) {
+            resolve(response.response);
+          } else {
+            reject(new Error(response.error || 'Request failed'));
+          }
+        }
+      );
+    });
+  }
+
   static async callChatCompletion(
     credentialId: string,
     model: string,
@@ -25,27 +61,56 @@ export class OpenAIService {
     temperature: number = 0.7
   ): Promise<string> {
     try {
-      // Send message to background script to make the API call
-      const runtime = (typeof browser !== 'undefined' ? browser : chrome) as any;
+      // Get the credential
+      const storageManager = StorageManager.getInstance();
+      const credentials = await storageManager.getCredentials();
+      const credential = credentials.find(c => c.id === credentialId);
       
-      const response = await new Promise<{success: boolean, data?: string, error?: string}>((resolve) => {
-        runtime.runtime.sendMessage({
-          type: 'OPENAI_API_CALL',
-          data: {
-            credentialId,
-            model,
-            prompt,
-            maxTokens,
-            temperature
-          }
-        }, resolve);
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Unknown error from background script');
+      if (!credential) {
+        throw new Error('OpenAI credential not found');
       }
 
-      return response.data || '';
+      if (credential.service !== 'openai') {
+        throw new Error('Invalid credential: not an OpenAI credential');
+      }
+
+      // Prepare the request
+      const requestBody: OpenAIRequest = {
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: maxTokens,
+        temperature
+      };
+
+      // Make the API call through background script
+      const response = await this.makeBackgroundRequest({
+        url: `${this.API_BASE_URL}/chat/completions`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${credential.value}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorMessage = response.data?.error?.message || response.statusText || 'Unknown error';
+        throw new Error(`OpenAI API error: ${errorMessage}`);
+      }
+
+      const data: OpenAIResponse = response.data;
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No response from OpenAI API');
+      }
+
+      return data.choices[0].message.content;
     } catch (error) {
       console.error('OpenAI API call failed:', error);
       throw error;
