@@ -21,11 +21,15 @@ import {
   IconTrash,
   IconEdit,
   IconNetwork,
+  IconDownload,
+  IconUpload,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { StorageManager } from "../services/storage";
 import { WorkflowDesigner } from "../components/WorkflowDesigner";
+import { ImportModal } from "../components/ImportModal";
+import { ExportModal } from "../components/ExportModal";
 import { WorkflowDefinition } from "../types/workflow";
 
 function ConfigApp() {
@@ -33,6 +37,9 @@ function ConfigApp() {
   const [saved, setSaved] = useState(false);
   const [editingWorkflow, setEditingWorkflow] =
     useState<WorkflowDefinition | null>(null);
+  const [importModalOpened, setImportModalOpened] = useState(false);
+  const [exportModalOpened, setExportModalOpened] = useState(false);
+  const [workflowToExport, setWorkflowToExport] = useState<WorkflowDefinition | null>(null);
   const storageManager = StorageManager.getInstance();
   const navigate = useNavigate();
   const location = useLocation();
@@ -121,6 +128,24 @@ function ConfigApp() {
     }
   };
 
+  const handleExportWorkflow = (workflow: WorkflowDefinition) => {
+    setWorkflowToExport(workflow);
+    setExportModalOpened(true);
+  };
+
+  const handleImportWorkflow = async (workflow: WorkflowDefinition) => {
+    try {
+      const updatedWorkflows = [...workflows, workflow];
+      await storageManager.saveWorkflows(updatedWorkflows);
+      setWorkflows(updatedWorkflows);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error("Failed to import workflow:", error);
+      alert("Failed to import workflow. Please try again.");
+    }
+  };
+
   // Show workflow designer if in designer view
   if (currentView === "designer") {
     return (
@@ -169,13 +194,22 @@ function ConfigApp() {
 
         <Card withBorder padding="lg" mt="md">
           <Group justify="space-between" mb="md">
-            <Title order={3}>Visual Workflows</Title>
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={handleCreateWorkflow}
-            >
-              Create Workflow
-            </Button>
+            <Title order={3}>Workflows</Title>
+            <Group>
+              <Button
+                variant="outline"
+                leftSection={<IconUpload size={16} />}
+                onClick={() => setImportModalOpened(true)}
+              >
+                Import Workflow
+              </Button>
+              <Button
+                leftSection={<IconPlus size={16} />}
+                onClick={handleCreateWorkflow}
+              >
+                Create Workflow
+              </Button>
+            </Group>
           </Group>
 
           {workflows.length === 0 ? (
@@ -205,55 +239,65 @@ function ConfigApp() {
                 {workflows
                   .sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0))
                   .map((workflow) => (
-                  <Table.Tr key={workflow.id}>
-                    <Table.Td>
-                      <Text fw={500}>{workflow.name}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text
-                        size="sm"
-                        c="dimmed"
-                        style={{ fontFamily: "monospace" }}
-                      >
-                        {workflow.urlPattern || "No pattern set"}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {workflow.description || "No description"}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge variant="light">
-                        {workflow.nodes.length} nodes
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Switch
-                        checked={workflow.enabled}
-                        onChange={() => handleToggleWorkflow(workflow.id)}
-                        size="sm"
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        <ActionIcon
-                          variant="subtle"
-                          onClick={() => handleEditWorkflow(workflow)}
+                    <Table.Tr key={workflow.id}>
+                      <Table.Td>
+                        <Text fw={500}>{workflow.name}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text
+                          size="sm"
+                          c="dimmed"
+                          style={{ fontFamily: "monospace" }}
                         >
-                          <IconEdit size={16} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          onClick={() => handleDeleteWorkflow(workflow.id)}
-                        >
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
+                          {workflow.urlPattern || "No pattern set"}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed">
+                          {workflow.description || "No description"}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge variant="light">
+                          {workflow.nodes.length} nodes
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Switch
+                          checked={workflow.enabled}
+                          onChange={() => handleToggleWorkflow(workflow.id)}
+                          size="sm"
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap="xs">
+                          <ActionIcon
+                            variant="subtle"
+                            onClick={() => handleEditWorkflow(workflow)}
+                            title="Edit workflow"
+                          >
+                            <IconEdit size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="blue"
+                            onClick={() => handleExportWorkflow(workflow)}
+                            title="Export workflow"
+                          >
+                            <IconDownload size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            onClick={() => handleDeleteWorkflow(workflow.id)}
+                            title="Delete workflow"
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
               </Table.Tbody>
             </Table>
           )}
@@ -263,6 +307,23 @@ function ConfigApp() {
           changeme Extension v1.0.0 - Workflow Automation Made Simple
         </Text>
       </Stack>
+
+      <ImportModal
+        opened={importModalOpened}
+        onClose={() => setImportModalOpened(false)}
+        onImport={handleImportWorkflow}
+      />
+
+      {workflowToExport && (
+        <ExportModal
+          opened={exportModalOpened}
+          onClose={() => {
+            setExportModalOpened(false);
+            setWorkflowToExport(null);
+          }}
+          workflow={workflowToExport}
+        />
+      )}
     </Container>
   );
 }

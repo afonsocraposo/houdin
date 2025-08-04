@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Title, Grid, Stack, Button, Group, TextInput, Switch, Card, Text } from '@mantine/core';
-import { IconDeviceFloppy, IconPlayerPlay, IconArrowLeft } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconPlayerPlay, IconArrowLeft, IconDownload } from '@tabler/icons-react';
 import { ReactFlowCanvas } from './ReactFlowCanvas';
 import { NodeProperties } from './NodeProperties';
+import { ExportModal } from './ExportModal';
 import { WorkflowNode, WorkflowConnection, WorkflowDefinition } from '../types/workflow';
 
 interface WorkflowDesignerProps {
@@ -23,6 +24,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   const [nodes, setNodes] = useState<WorkflowNode[]>(workflow?.nodes || []);
   const [connections, setConnections] = useState<WorkflowConnection[]>(workflow?.connections || []);
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
+  const [exportModalOpened, setExportModalOpened] = useState(false);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
@@ -73,6 +75,28 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     alert('Workflow testing is not yet implemented');
   };
 
+  const handleExport = () => {
+    if (!workflowName.trim()) {
+      alert('Please enter a workflow name before exporting');
+      return;
+    }
+
+    setExportModalOpened(true);
+  };
+
+  const getCurrentWorkflowDefinition = (): WorkflowDefinition => {
+    return {
+      id: workflow?.id || `workflow-${Date.now()}`,
+      name: workflowName,
+      description: workflowDescription,
+      urlPattern: workflowUrlPattern,
+      nodes,
+      connections,
+      enabled: workflowEnabled,
+      lastUpdated: Date.now()
+    };
+  };
+
   return (
     <Container size="xl" py="xl">
       <Stack gap="lg">
@@ -87,6 +111,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               onClick={onCancel}
             >
               Back to Workflows
+            </Button>
+            <Button
+              variant="outline"
+              leftSection={<IconDownload size={16} />}
+              onClick={handleExport}
+            >
+              Export
             </Button>
             <Button
               variant="outline"
@@ -180,6 +211,14 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           </Grid.Col>
         </Grid>
       </Stack>
+
+      {workflowName.trim() && (
+        <ExportModal
+          opened={exportModalOpened}
+          onClose={() => setExportModalOpened(false)}
+          workflow={getCurrentWorkflowDefinition()}
+        />
+      )}
     </Container>
   );
 };
