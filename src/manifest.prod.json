@@ -8,30 +8,20 @@
       "id": "changeme@example.com"
     }
   },
-  "permissions": [
-    "activeTab",
-    "storage",
-    "tabs"
-  ],
+  "permissions": ["activeTab", "storage", "tabs"],
   "browser_action": {
     "default_popup": "src/popup/popup.html",
     "default_title": "changeme"
   },
   "options_page": "src/config/config.html",
   "background": {
-    "scripts": [
-      "src/background/background.ts"
-    ],
+    "scripts": ["src/background/background.ts"],
     "persistent": false
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "src/content/content.ts"
-      ]
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content.ts"]
     }
   ],
   "web_accessible_resources": [
@@ -39,9 +29,9 @@
     "src/config/config.html"
   ],
   "icons": {
-    "16": "icons/icon-16.png",
-    "32": "icons/icon-32.png",
-    "48": "icons/icon-48.png",
-    "128": "icons/icon-128.png"
+    "16": "public/icons/icon-16.png",
+    "32": "public/icons/icon-32.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
   }
 }

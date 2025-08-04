@@ -19,7 +19,11 @@ export default defineConfig(({ mode }) => ({
         return JSON.parse(readFileSync(manifestPath, "utf-8"));
       },
       watchFilePaths: ["src", "public", "icons"],
-      additionalInputs: ["src/content/content.ts", "src/content/elementSelector.ts", "src/config/config.html"],
+      additionalInputs: [
+        "src/content/content.ts",
+        "src/content/elementSelector.ts",
+        "src/config/config.html",
+      ],
     }),
   ],
   build: {
@@ -30,7 +34,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  publicDir: "icons",
+  publicDir: "public",
   server: {
     port: 5173,
     hmr: {
