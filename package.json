@@ -1,7 +1,7 @@
 {
   "name": "changeme",
   "version": "1.0.0",
-  "description": "A cross-browser extension built with TypeScript, Mantine UI, and Vite",
+  "description": "Browser automation made easy. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
     "dev": "vite",

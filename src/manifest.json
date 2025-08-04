@@ -2,14 +2,13 @@
   "manifest_version": 2,
   "name": "changeme",
   "version": "1.0.0",
-  "description": "A cross-browser extension built with TypeScript, Mantine UI, and Vite",
+  "description": "Browser automation made easy. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "browser_specific_settings": {
     "gecko": {
       "id": "changeme@example.com"
     }
   },
   "permissions": ["activeTab", "storage", "tabs"],
-  "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:5173 http://localhost:5174; object-src 'self'",
   "browser_action": {
     "default_popup": "src/popup/popup.html",
     "default_title": "changeme"
