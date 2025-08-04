@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
                     readFileSync(resolve(__dirname, "src/manifest.json"), "utf-8"),
                 );
             },
-            watchFilePaths: ["src", "public", "icons"],
+            watchFilePaths: ["src", "public", "icons", "manifest.json"],
             additionalInputs: [
                 "src/content/content.ts",
                 "src/content/elementSelector.ts",

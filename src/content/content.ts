@@ -1,34 +1,34 @@
-import { ContentInjector } from '../services/injector'
+import { ContentInjector } from "../services/injector";
 
-console.log('Content script loaded')
+console.log("Content script loaded");
 
 // Prevent multiple initializations
 if ((window as any).changemeExtensionInitialized) {
-  console.log('changeme extension already initialized, skipping')
+    console.log("changeme extension already initialized, skipping");
 } else {
-  (window as any).changemeExtensionInitialized = true
-  
-  let contentInjector: ContentInjector
+    (window as any).changemeExtensionInitialized = true;
 
-  const initContentScript = () => {
-    console.log('changeme extension content script initialized')
-    
-    contentInjector = new ContentInjector()
-    contentInjector.initialize()
-  }
+    let contentInjector: ContentInjector;
 
-  // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initContentScript)
-  } else {
-    initContentScript()
-  }
+    const initContentScript = () => {
+        console.log("changeme extension content script initialized");
 
-  // Cleanup on page unload
-  window.addEventListener('beforeunload', () => {
-    if (contentInjector) {
-      contentInjector.destroy()
+        contentInjector = new ContentInjector();
+        contentInjector.initialize();
+    };
+
+    // Initialize when DOM is ready
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initContentScript);
+    } else {
+        initContentScript();
     }
-    (window as any).changemeExtensionInitialized = false
-  })
+
+    // Cleanup on page unload
+    window.addEventListener("beforeunload", () => {
+        if (contentInjector) {
+            contentInjector.destroy();
+        }
+        (window as any).changemeExtensionInitialized = false;
+    });
 }

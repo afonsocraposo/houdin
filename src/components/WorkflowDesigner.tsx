@@ -9,7 +9,6 @@ import {
     TextInput,
     Switch,
     Card,
-    Text,
     Box,
     Transition,
     Paper,
