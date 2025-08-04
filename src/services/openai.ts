@@ -91,8 +91,8 @@ export class OpenAIService {
             content: prompt,
           },
         ],
-        // max_tokens: maxTokens,
-        // temperature
+        max_tokens: maxTokens,
+        temperature
       };
 
       // Make the API call through background script
