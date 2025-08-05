@@ -214,7 +214,7 @@ export class WorkflowExecutor {
         await this.executeShowModal(actionData);
         break;
       case "custom-script":
-        await this.executeCustomScript(actionData);
+        await this.executeCustomScript(actionData, node.id);
         break;
       case "llm-openai":
         await this.executeLLMOpenAI(actionData, node.id);
@@ -292,34 +292,91 @@ export class WorkflowExecutor {
       actionData.config.modalContent || "",
     );
 
-    // Legacy support: If sourceSelector is provided, append its content
-    if (actionData.config.sourceSelector) {
-      const sourceElement = document.querySelector(
-        actionData.config.sourceSelector,
-      );
-      if (sourceElement) {
-        const textContent = sourceElement.textContent || "";
-        modalContent += "\n\n" + textContent;
-      }
-    }
-
     createModal(modalTitle, modalContent);
   }
 
-  private async executeCustomScript(actionData: ActionNodeData): Promise<void> {
+  private async executeCustomScript(
+    actionData: ActionNodeData,
+    nodeId: string,
+  ): Promise<void> {
     if (actionData.config.customScript) {
       try {
-        // Run in the content script context
-        // const func = new Function(actionData.config.customScript);
-        // func();
+        // Create a promise that resolves when the script sends back data
+        const result = await this.executeScriptWithOutput(
+          actionData.config.customScript,
+          nodeId,
+        );
 
-        // Inject the script directly into the page
-        this.injectInlineScript(actionData.config.customScript);
+        // Store the output in the execution context
+        this.context.setOutput(nodeId, result);
+
+        // Execute connected actions after receiving response
+        await this.executeConnectedActionsFromNode(nodeId);
       } catch (error) {
         console.error("Error executing custom script:", error);
         showNotification("Error executing custom script", "error");
+        this.context.setOutput(nodeId, ""); // Store empty on error
       }
     }
+  }
+
+  private executeScriptWithOutput(
+    scriptCode: string,
+    nodeId: string,
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error("Script execution timeout"));
+      }, 10000); // 10 second timeout
+
+      // Listen for response from injected script
+      const responseHandler = (event: CustomEvent) => {
+        if (event.detail?.nodeId === nodeId) {
+          clearTimeout(timeoutId);
+          window.removeEventListener(
+            "workflow-script-response",
+            responseHandler as EventListener,
+          );
+          resolve(event.detail.result);
+        }
+      };
+
+      window.addEventListener(
+        "workflow-script-response",
+        responseHandler as EventListener,
+      );
+
+      // Inject script that includes response mechanism
+      const wrappedScript = `
+            (function() {
+                try {
+                    // Your custom script code here
+                    ${scriptCode}
+
+                    // If script doesn't manually send response, send undefined
+                    // Scripts can override this by calling sendWorkflowResponse() themselves
+                    if (typeof Return !== 'function') {
+                        window.dispatchEvent(new CustomEvent('workflow-script-response', {
+                            detail: { nodeId: '${nodeId}', result: undefined }
+                        }));
+                    }
+                } catch (error) {
+                    window.dispatchEvent(new CustomEvent('workflow-script-response', {
+                        detail: { nodeId: '${nodeId}', result: null, error: error.message }
+                    }));
+                }
+            })();
+
+            // Helper function for scripts to send data back
+            function Return(data) {
+                window.dispatchEvent(new CustomEvent('workflow-script-response', {
+                    detail: { nodeId: '${nodeId}', result: data }
+                }));
+            }
+        `;
+
+      this.injectInlineScript(wrappedScript);
+    });
   }
 
   private injectInlineScript(code: string) {

@@ -8,6 +8,7 @@ function App() {
   const handleClick = () => {
     // open a new tab with a specific URL
     browserAPI.tabs.create({ url: "https://changeme.config" });
+    window.close();
   };
 
   const handleSelectElement = async () => {
