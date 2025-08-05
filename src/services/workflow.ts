@@ -10,8 +10,6 @@ import { createModal } from "../components/Modal";
 import { ComponentFactory } from "../components/ComponentFactory";
 import { OpenAIService } from "./openai";
 
-const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
-
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
 
@@ -261,6 +259,11 @@ export class WorkflowExecutor {
     const isInteractive =
       actionData.config.componentType === "button" ||
       actionData.config.componentType === "input";
+    if (actionData.config.componentText) {
+      actionData.config.componentText = this.context.interpolateVariables(
+        actionData.config.componentText,
+      );
+    }
     const component = ComponentFactory.create(
       actionData.config,
       isInteractive ? this.workflow.id : undefined,
