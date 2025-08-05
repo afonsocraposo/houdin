@@ -12,8 +12,6 @@ if ((window as any).changemeExtensionInitialized) {
 
   const initContentScript = () => {
     console.log("changeme extension content script initialized");
-    console.log(window);
-    console.log(window.profitwell);
 
     contentInjector = new ContentInjector();
     contentInjector.initialize();

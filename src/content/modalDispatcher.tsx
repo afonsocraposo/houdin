@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createRoot } from "react-dom/client";
 import App from "./modalDispacherApp";
-import mantineStyles from "@mantine/core/styles.css?inline";
+/* eslint-disable-next-line import/no-unresolved */
+// import mantineStyles from "@mantine/core/styles.css?inline";
 import { createTheme, MantineProvider } from "@mantine/core";
 
 const injectReact = (rootId: string): void => {
@@ -25,7 +26,7 @@ const injectReact = (rootId: string): void => {
 
     // Inject Mantine styles into the Shadow DOM
     const mantineStyleTag = document.createElement("style");
-    mantineStyleTag.textContent = mantineStyles;
+    // mantineStyleTag.textContent = mantineStyles;
     shadowRoot.appendChild(mantineStyleTag);
 
     // Create a React root and render the app
