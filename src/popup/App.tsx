@@ -54,7 +54,7 @@ function App() {
             fullWidth
             leftSection={<IconPointer size={16} />}
           >
-            Select Element
+            Element Inspector
           </Button>
         </Stack>
       </Container>
