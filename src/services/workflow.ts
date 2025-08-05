@@ -10,6 +10,8 @@ import { createModal } from "../components/Modal";
 import { ComponentFactory } from "../components/ComponentFactory";
 import { OpenAIService } from "./openai";
 
+const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
+
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
 
@@ -307,8 +309,12 @@ export class WorkflowExecutor {
   private async executeCustomScript(actionData: ActionNodeData): Promise<void> {
     if (actionData.config.customScript) {
       try {
-        const func = new Function(actionData.config.customScript);
-        func();
+        // Run in the content script context
+        // const func = new Function(actionData.config.customScript);
+        // func();
+
+        // Inject the script directly into the page
+        this.injectInlineScript(actionData.config.customScript);
       } catch (error) {
         console.error("Error executing custom script:", error);
         showNotification("Error executing custom script", "error");
@@ -316,12 +322,20 @@ export class WorkflowExecutor {
     }
   }
 
+  private injectInlineScript(code: string) {
+    const script = document.createElement("script");
+    script.textContent = code;
+    document.head.appendChild(script);
+    script.remove(); // Clean up
+  }
+
   private async executeLLMOpenAI(
     actionData: ActionNodeData,
     nodeId: string,
   ): Promise<void> {
     try {
-      const { credentialId, model, prompt, maxTokens, temperature } = actionData.config;
+      const { credentialId, model, prompt, maxTokens, temperature } =
+        actionData.config;
 
       if (!credentialId) {
         showNotification("No OpenAI credential selected", "error");
@@ -342,10 +356,10 @@ export class WorkflowExecutor {
       // Call OpenAI API
       const response = await OpenAIService.callChatCompletion(
         credentialId,
-        model || 'gpt-3.5-turbo',
+        model || "gpt-3.5-turbo",
         interpolatedPrompt,
         maxTokens || 150,
-        temperature || 0.7
+        temperature || 0.7,
       );
 
       // Store the response in the execution context
