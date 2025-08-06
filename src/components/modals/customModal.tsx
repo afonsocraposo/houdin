@@ -1,4 +1,4 @@
-import { Button, Modal, Text } from "@mantine/core";
+import { Modal, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 
 interface ElementSelectedModalProps {
@@ -13,7 +13,6 @@ export default function CustomModal({
   const [opened, { close }] = useDisclosure(true);
   return (
     <Modal opened={opened} onClose={close} title={title}>
-      <Button>Test</Button>
       <Text>{content}</Text>
     </Modal>
   );
