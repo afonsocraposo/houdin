@@ -7,6 +7,7 @@ import mantineNotificationsStyles from "@mantine/notifications/styles.css?inline
 import MantineDispatcher from "../content/mantineDispatcher";
 import CustomMantineProvider from "../content/mantineProvider";
 
+const MANTINE_INJECTOR_ROOT_ID = "mantine-injector-root";
 export class ContentInjector {
   private workflows: WorkflowDefinition[] = [];
   private storageManager: StorageManager;
@@ -22,7 +23,6 @@ export class ContentInjector {
 
   async initialize(): Promise<void> {
     console.log("Content injector initialized");
-    this.injectReact("mantine-injector-root");
     await this.loadWorkflows();
     this.setupStorageListener();
     this.processWorkflows();
@@ -41,13 +41,14 @@ export class ContentInjector {
     });
   }
 
-  public getParentShadowRoot(
-    target: HTMLElement,
+  private static getParentShadowRoot(
+    target: Element,
     rootId: string,
   ): { root: Root | null; hostDiv: HTMLElement | null } {
     try {
-      const container = document.createElement("div");
+      const container = document.createElement("span");
       container.id = rootId;
+      container.setAttribute("data-workflow-injected", "true");
 
       // Attach a Shadow Root
       const shadowRoot = container.attachShadow({ mode: "closed" });
@@ -66,7 +67,7 @@ export class ContentInjector {
       shadowRoot.appendChild(notificationsStyleTag);
 
       // Create a container for React to mount
-      const hostDiv = document.createElement("div");
+      const hostDiv = document.createElement("span");
       hostDiv.setAttribute("id", "app");
       shadowRoot.appendChild(hostDiv);
 
@@ -79,10 +80,12 @@ export class ContentInjector {
     return { root: null, hostDiv: null };
   }
 
-  private injectReact(rootId: string): void {
-    const body = document.querySelector("body");
-    if (!body) throw new Error("Body element not found.");
-    const { root, hostDiv } = this.getParentShadowRoot(body, rootId);
+  public static injectMantineComponentInTarget(
+    rootId: string,
+    component: JSX.Element,
+    target: Element,
+  ): void {
+    const { root, hostDiv } = this.getParentShadowRoot(target, rootId);
     if (!root || !hostDiv) {
       console.error("Failed to create React root or app element.");
       return;
@@ -90,8 +93,18 @@ export class ContentInjector {
     root.render(
       CustomMantineProvider({
         parent: hostDiv,
-        children: MantineDispatcher(),
+        children: component,
       }),
+    );
+  }
+
+  private injectMantineDispatcher(rootId: string): void {
+    const body = document.querySelector("body");
+    if (!body) throw new Error("Body element not found.");
+    ContentInjector.injectMantineComponentInTarget(
+      rootId,
+      MantineDispatcher(),
+      body,
     );
   }
 
@@ -128,7 +141,7 @@ export class ContentInjector {
     }, 500);
   }
 
-  private processWorkflows(): void {
+  private async processWorkflows(): Promise<void> {
     // Clear processing timeout
     if (this.processTimeout) {
       clearTimeout(this.processTimeout);
@@ -145,13 +158,19 @@ export class ContentInjector {
         this.matchesUrlPattern(workflow.urlPattern, currentUrl),
     );
 
+    // Remove any previously injected components for workflows that no longer match
+    this.cleanupInjectedComponents();
+
+    // Inject Mantine dispatcher
+    this.injectMantineDispatcher(MANTINE_INJECTOR_ROOT_ID);
+
+    // wait 100ms
+    await new Promise((resolve) => setTimeout(resolve, 1));
+
     if (matchingWorkflows.length > 0) {
       console.log(
         `Found ${matchingWorkflows.length} matching workflows for ${currentUrl}`,
       );
-
-      // Remove any previously injected components for workflows that no longer match
-      this.cleanupInjectedComponents();
 
       // Start new executors for matching workflows
       matchingWorkflows.forEach((workflow) => {
@@ -162,9 +181,6 @@ export class ContentInjector {
           console.error(`Error executing workflow ${workflow.name}:`, error);
         });
       });
-    } else {
-      // No matching workflows, clean up any injected components
-      this.cleanupInjectedComponents();
     }
   }
 
@@ -176,6 +192,7 @@ export class ContentInjector {
   }
 
   private cleanupInjectedComponents(): void {
+    console.debug("Cleaning up injected components");
     // Remove all components injected by workflows
     const injectedComponents = document.querySelectorAll(
       '[data-workflow-injected="true"]',
