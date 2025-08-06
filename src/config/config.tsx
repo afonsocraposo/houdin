@@ -4,6 +4,10 @@ import { MantineProvider } from '@mantine/core'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import '@mantine/core/styles.css'
 import ConfigApp from './ConfigApp'
+import { initializeActions } from '../services/actionInitializer'
+
+// Initialize actions for the config/designer interface
+initializeActions();
 
 const container = document.getElementById('root')
 if (container) {

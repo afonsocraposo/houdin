@@ -1,6 +1,10 @@
 import { ContentInjector } from "../services/injector";
+import { initializeActions } from "../services/actionInitializer";
 
 console.log("Content script loaded");
+
+// Initialize actions first
+initializeActions();
 
 // Prevent multiple initializations
 if ((window as any).changemeExtensionInitialized) {

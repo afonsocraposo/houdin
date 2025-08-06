@@ -5,12 +5,8 @@ import {
   TriggerNodeData,
   WorkflowExecutionContext,
 } from "../types/workflow";
-import { copyToClipboard } from "../utils/helpers";
-import { ComponentFactory } from "../components/ComponentFactory";
-import { OpenAIService } from "./openai";
-import { ModalService } from "./modal";
 import { NotificationService } from "./notification";
-import { ContentInjector } from "./injector";
+import { ActionRegistry } from "./actionRegistry";
 
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
@@ -205,257 +201,45 @@ export class WorkflowExecutor {
 
   private async executeAction(node: WorkflowNode): Promise<void> {
     const actionData = node.data as ActionNodeData;
+    const actionRegistry = ActionRegistry.getInstance();
 
-    switch (actionData.actionType) {
-      case "inject-component":
-        await this.executeInjectComponent(actionData, node.id);
-        break;
-      case "get-element-content":
-        await this.executeGetElementContent(actionData, node.id);
-        break;
-      case "copy-content":
-        await this.executeCopyContent(actionData);
-        break;
-      case "show-modal":
-        await this.executeShowModal(actionData);
-        break;
-      case "custom-script":
-        await this.executeCustomScript(actionData, node.id);
-        break;
-      case "llm-openai":
-        await this.executeLLMOpenAI(actionData, node.id);
-        break;
-    }
-  }
-
-  private async executeGetElementContent(
-    actionData: ActionNodeData,
-    nodeId: string,
-  ): Promise<void> {
-    const element = document.querySelector(
-      actionData.config.elementSelector || "",
-    );
-    if (element) {
-      const textContent = element.textContent || "";
-      // Store the output in the execution context
-      this.context.setOutput(nodeId, textContent);
-    } else {
-      NotificationService.showErrorNotification({
-        message: "Element not found for content extraction",
-      });
-      this.context.setOutput(nodeId, "");
-    }
-
-    // Execute connected actions after capturing content
-    await this.executeConnectedActionsFromNode(nodeId);
-  }
-
-  private async executeInjectComponent(
-    actionData: ActionNodeData,
-    nodeId: string,
-  ): Promise<void> {
-    const targetElement = document.querySelector(
-      actionData.config.targetSelector || "body",
-    );
-    if (!targetElement) {
-      NotificationService.showErrorNotification({
-        message: "Target element not found for component injection",
-      });
-      return;
-    }
-
-    // Only pass workflow info for interactive components (button/input)
-    if (actionData.config.componentText) {
-      actionData.config.componentText = this.context.interpolateVariables(
-        actionData.config.componentText,
-      );
-    }
-    const component = ComponentFactory.create(
-      actionData.config,
-      this.workflow.id,
-      nodeId,
-    );
-    ContentInjector.injectMantineComponentInTarget(
-      `container-${this.workflow.id}`,
-      component,
-      targetElement,
-    );
-  }
-
-  private async executeCopyContent(actionData: ActionNodeData): Promise<void> {
-    const sourceElement = document.querySelector(
-      actionData.config.sourceSelector || "",
-    );
-    if (sourceElement) {
-      const textContent = sourceElement.textContent || "";
-      await copyToClipboard(textContent);
-      NotificationService.showNotification({
-        title: "Content copied to clipboard!",
-      });
-    } else {
-      NotificationService.showErrorNotification({
-        message: "Source element not found",
-      });
-    }
-  }
-
-  private async executeShowModal(actionData: ActionNodeData): Promise<void> {
-    let modalTitle = this.context.interpolateVariables(
-      actionData.config.modalTitle || "Workflow Result",
-    );
-    let modalContent = this.context.interpolateVariables(
-      actionData.config.modalContent || "",
-    );
-
-    ModalService.showModal({ title: modalTitle, content: modalContent });
-  }
-
-  private async executeCustomScript(
-    actionData: ActionNodeData,
-    nodeId: string,
-  ): Promise<void> {
-    if (actionData.config.customScript) {
+    // Try to execute with the new action system first
+    if (actionRegistry.hasAction(actionData.actionType)) {
       try {
-        // Create a promise that resolves when the script sends back data
-        const result = await this.executeScriptWithOutput(
-          actionData.config.customScript,
-          nodeId,
-        );
-
-        // Store the output in the execution context
-        this.context.setOutput(nodeId, result);
-
-        // Execute connected actions after receiving response
-        await this.executeConnectedActionsFromNode(nodeId);
-      } catch (error) {
-        console.error("Error executing custom script:", error);
-        NotificationService.showErrorNotification({
-          message: "Error executing custom script",
+        // Create extended context with workflow ID
+        const extendedContext = Object.assign(this.context, {
+          workflowId: this.workflow.id
         });
-        this.context.setOutput(nodeId, ""); // Store empty on error
+
+        await actionRegistry.execute(
+          actionData.actionType,
+          actionData.config,
+          extendedContext,
+          node.id
+        );
+        
+        // Execute connected actions after completion (for actions that need it)
+        if (actionData.actionType === "get-element-content" || actionData.actionType === "custom-script" || actionData.actionType === "llm-openai") {
+          await this.executeConnectedActionsFromNode(node.id);
+        }
+        
+        return;
+      } catch (error) {
+        console.error(`Error executing action ${actionData.actionType}:`, error);
+        NotificationService.showErrorNotification({
+          message: `Error executing ${actionData.actionType}: ${error}`,
+        });
+        return;
       }
     }
-  }
 
-  private executeScriptWithOutput(
-    scriptCode: string,
-    nodeId: string,
-  ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error("Script execution timeout"));
-      }, 10000); // 10 second timeout
-
-      // Listen for response from injected script
-      const responseHandler = (event: CustomEvent) => {
-        if (event.detail?.nodeId === nodeId) {
-          clearTimeout(timeoutId);
-          window.removeEventListener(
-            "workflow-script-response",
-            responseHandler as EventListener,
-          );
-          resolve(event.detail.result);
-        }
-      };
-
-      window.addEventListener(
-        "workflow-script-response",
-        responseHandler as EventListener,
-      );
-
-      // Inject script that includes response mechanism
-      const wrappedScript = `
-            (function() {
-                try {
-                    // Your custom script code here
-                    ${scriptCode}
-
-                    // If script doesn't manually send response, send undefined
-                    // Scripts can override this by calling sendWorkflowResponse() themselves
-                    if (typeof Return !== 'function') {
-                        window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                            detail: { nodeId: '${nodeId}', result: undefined }
-                        }));
-                    }
-                } catch (error) {
-                    window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                        detail: { nodeId: '${nodeId}', result: null, error: error.message }
-                    }));
-                }
-            })();
-
-            // Helper function for scripts to send data back
-            function Return(data) {
-                window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                    detail: { nodeId: '${nodeId}', result: data }
-                }));
-            }
-        `;
-
-      this.injectInlineScript(wrappedScript);
+    // Fallback: No actions should reach here anymore since we've converted them all
+    console.error(`Unknown action type: ${actionData.actionType}`);
+    NotificationService.showErrorNotification({
+      message: `Unknown action type: ${actionData.actionType}`,
     });
   }
 
-  private injectInlineScript(code: string) {
-    const script = document.createElement("script");
-    script.textContent = code;
-    document.head.appendChild(script);
-    script.remove(); // Clean up
-  }
-
-  private async executeLLMOpenAI(
-    actionData: ActionNodeData,
-    nodeId: string,
-  ): Promise<void> {
-    try {
-      const { credentialId, model, prompt, maxTokens, temperature } =
-        actionData.config;
-
-      if (!credentialId) {
-        NotificationService.showErrorNotification({
-          message: "No OpenAI credential selected",
-        });
-        return;
-      }
-
-      if (!prompt) {
-        NotificationService.showErrorNotification({
-          message: "No prompt provided for OpenAI",
-        });
-        return;
-      }
-
-      // Interpolate variables in the prompt
-      const interpolatedPrompt = this.context.interpolateVariables(prompt);
-
-      // Show loading notification
-      NotificationService.showNotification({
-        title: "Calling OpenAI API...",
-      });
-
-      // Call OpenAI API
-      const response = await OpenAIService.callChatCompletion(
-        credentialId,
-        model || "gpt-3.5-turbo",
-        interpolatedPrompt,
-        maxTokens || 150,
-        temperature || 0.7,
-      );
-
-      // Store the response in the execution context
-      this.context.setOutput(nodeId, response);
-
-      // Execute connected actions after receiving response
-      await this.executeConnectedActionsFromNode(nodeId);
-    } catch (error) {
-      console.error("Error executing OpenAI action:", error);
-      NotificationService.showErrorNotification({
-        message: `OpenAI API error: ${error}`,
-      });
-      // Store empty response on error
-      this.context.setOutput(nodeId, "");
-    }
-  }
 
   destroy(): void {
     // Clean up any active timeouts and observers
