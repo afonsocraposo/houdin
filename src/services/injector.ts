@@ -61,6 +61,12 @@ export class ContentInjector {
       mantineStyleTag.textContent = mantineStyles;
       shadowRoot.appendChild(mantineStyleTag);
 
+      // const styleTag = document.createElement("style");
+      // styleTag.textContent = `:host {
+      //     color: unset;
+      //   }`;
+      // shadowRoot.appendChild(styleTag);
+
       // Inject Mantine Notifications styles into the Shadow DOM
       const notificationsStyleTag = document.createElement("style");
       notificationsStyleTag.textContent = mantineNotificationsStyles;

@@ -1,4 +1,4 @@
-import { ColorSchemeScript, createTheme, MantineProvider } from "@mantine/core";
+import { createTheme, MantineProvider } from "@mantine/core";
 
 declare global {
   interface WindowEventMap {
@@ -16,10 +16,9 @@ export default function CustomMantineProvider({
 }) {
   return (
     <>
-      <ColorSchemeScript defaultColorScheme="auto" />
       <MantineProvider
-        forceColorScheme="light"
-        cssVariablesSelector="#app"
+        forceColorScheme="dark"
+        cssVariablesSelector=":host, #app"
         getRootElement={() => parent}
         theme={createTheme({
           components: {

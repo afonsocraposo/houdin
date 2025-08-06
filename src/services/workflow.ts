@@ -57,6 +57,10 @@ export class WorkflowExecutor {
     this.eventListener = (event: Event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail?.workflowId === this.workflow.id) {
+        this.context.setOutput(
+          customEvent.detail.nodeId,
+          customEvent.detail.data,
+        );
         this.executeConnectedActionsFromNode(customEvent.detail.nodeId);
       }
     };

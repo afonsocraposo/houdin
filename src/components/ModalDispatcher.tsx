@@ -18,7 +18,9 @@ export default function ModalDispatcher() {
   }, []);
   return (
     <>
-      {modal === "elementSelected" && <ElementSelectedModal data={modalData} />}
+      {modal === "elementSelected" && (
+        <ElementSelectedModal data={modalData} key={Math.random()} />
+      )}
       {modal === "customModal" && <CustomModal data={modalData} />}
     </>
   );
