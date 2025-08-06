@@ -1,9 +1,13 @@
 import { useEffect } from "react";
-import { Notifications } from "@mantine/notifications";
+import { notifications, Notifications } from "@mantine/notifications";
 export default function NotificationDispatcher() {
   useEffect(() => {
     const handleNotificationDispatch = (event: CustomEvent) => {
-      console.log("Notification event received:", event);
+      const notificationProps = event.detail;
+      notifications.show({
+        ...notificationProps,
+        position: "top-right",
+      });
     };
 
     window.addEventListener("notificationDispatch", handleNotificationDispatch);

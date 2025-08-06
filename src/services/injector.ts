@@ -4,6 +4,7 @@ import { WorkflowExecutor } from "../services/workflow";
 import MantineApp from "../content/mantineApp";
 import { createRoot } from "react-dom/client";
 import mantineStyles from "@mantine/core/styles.css?inline";
+import mantineNotificationsStyles from "@mantine/notifications/styles.css?inline";
 
 export class ContentInjector {
   private workflows: WorkflowDefinition[] = [];
@@ -62,6 +63,11 @@ export class ContentInjector {
       const mantineStyleTag = document.createElement("style");
       mantineStyleTag.textContent = mantineStyles;
       shadowRoot.appendChild(mantineStyleTag);
+
+      // Inject Mantine Notifications styles into the Shadow DOM
+      const notificationsStyleTag = document.createElement("style");
+      notificationsStyleTag.textContent = mantineNotificationsStyles;
+      shadowRoot.appendChild(notificationsStyleTag);
 
       // Create a React root and render the app
       const root = createRoot(appElement);

@@ -5,10 +5,11 @@ import {
   TriggerNodeData,
   WorkflowExecutionContext,
 } from "../types/workflow";
-import { copyToClipboard, showNotification } from "../utils/helpers";
+import { copyToClipboard } from "../utils/helpers";
 import { ComponentFactory } from "../components/ComponentFactory";
 import { OpenAIService } from "./openai";
 import { ModalService } from "./modal";
+import { NotificationService } from "./notification";
 
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
@@ -80,7 +81,9 @@ export class WorkflowExecutor {
       }
     } catch (error) {
       console.error("Error executing workflow:", error);
-      showNotification(`Error executing ${this.workflow.name}`, "error");
+      NotificationService.showErrorNotification({
+        message: `Error executing ${this.workflow.name}`,
+      });
     }
   }
 
@@ -232,7 +235,9 @@ export class WorkflowExecutor {
       // Store the output in the execution context
       this.context.setOutput(nodeId, textContent);
     } else {
-      showNotification("Element not found for content extraction", "error");
+      NotificationService.showErrorNotification({
+        message: "Element not found for content extraction",
+      });
       this.context.setOutput(nodeId, "");
     }
 
@@ -248,10 +253,9 @@ export class WorkflowExecutor {
       actionData.config.targetSelector || "body",
     );
     if (!targetElement) {
-      showNotification(
-        "Target element not found for component injection",
-        "error",
-      );
+      NotificationService.showErrorNotification({
+        message: "Target element not found for component injection",
+      });
       return;
     }
 
@@ -281,9 +285,13 @@ export class WorkflowExecutor {
     if (sourceElement) {
       const textContent = sourceElement.textContent || "";
       await copyToClipboard(textContent);
-      showNotification("Content copied to clipboard!");
+      NotificationService.showNotification({
+        title: "Content copied to clipboard!",
+      });
     } else {
-      showNotification("Source element not found", "error");
+      NotificationService.showErrorNotification({
+        message: "Source element not found",
+      });
     }
   }
 
@@ -295,7 +303,7 @@ export class WorkflowExecutor {
       actionData.config.modalContent || "",
     );
 
-    ModalService.showModal(modalTitle, modalContent);
+    ModalService.showModal({ title: modalTitle, content: modalContent });
   }
 
   private async executeCustomScript(
@@ -317,7 +325,9 @@ export class WorkflowExecutor {
         await this.executeConnectedActionsFromNode(nodeId);
       } catch (error) {
         console.error("Error executing custom script:", error);
-        showNotification("Error executing custom script", "error");
+        NotificationService.showErrorNotification({
+          message: "Error executing custom script",
+        });
         this.context.setOutput(nodeId, ""); // Store empty on error
       }
     }
@@ -398,12 +408,16 @@ export class WorkflowExecutor {
         actionData.config;
 
       if (!credentialId) {
-        showNotification("No OpenAI credential selected", "error");
+        NotificationService.showErrorNotification({
+          message: "No OpenAI credential selected",
+        });
         return;
       }
 
       if (!prompt) {
-        showNotification("No prompt provided for OpenAI", "error");
+        NotificationService.showErrorNotification({
+          message: "No prompt provided for OpenAI",
+        });
         return;
       }
 
@@ -411,7 +425,9 @@ export class WorkflowExecutor {
       const interpolatedPrompt = this.context.interpolateVariables(prompt);
 
       // Show loading notification
-      showNotification("Calling OpenAI API...");
+      NotificationService.showNotification({
+        title: "Calling OpenAI API...",
+      });
 
       // Call OpenAI API
       const response = await OpenAIService.callChatCompletion(
@@ -425,14 +441,13 @@ export class WorkflowExecutor {
       // Store the response in the execution context
       this.context.setOutput(nodeId, response);
 
-      // Show success notification
-      showNotification("OpenAI response received");
-
       // Execute connected actions after receiving response
       await this.executeConnectedActionsFromNode(nodeId);
     } catch (error) {
       console.error("Error executing OpenAI action:", error);
-      showNotification(`OpenAI API error: ${error}`, "error");
+      NotificationService.showErrorNotification({
+        message: `OpenAI API error: ${error}`,
+      });
       // Store empty response on error
       this.context.setOutput(nodeId, "");
     }

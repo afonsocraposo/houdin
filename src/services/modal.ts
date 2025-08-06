@@ -1,9 +1,15 @@
 export class ModalService {
-  public static showModal(modalTitle: string, modalContent: string): void {
+  public static showModal({
+    title,
+    content,
+  }: {
+    title: string;
+    content: string;
+  }): void {
     const modalEvent = new CustomEvent("modalDispatch", {
       detail: {
         type: "customModal",
-        data: { title: modalTitle, content: modalContent },
+        data: { title, content },
       },
     });
     window.dispatchEvent(modalEvent);
