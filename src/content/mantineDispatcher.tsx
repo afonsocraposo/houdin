@@ -1,6 +1,5 @@
 import ModalDispatcher from "../components/ModalDispatcher";
 import NotificationDispatcher from "../components/NotificationDispatcher";
-import CustomMantineProvider from "./mantineProvider";
 
 declare global {
   interface WindowEventMap {
@@ -9,12 +8,12 @@ declare global {
   }
 }
 
-const MantineDispatcher = (parent: HTMLElement) => {
+const MantineDispatcher = () => {
   return (
-    <CustomMantineProvider parent={parent}>
+    <>
       <ModalDispatcher />
       <NotificationDispatcher />
-    </CustomMantineProvider>
+    </>
   );
 };
 

@@ -5,6 +5,7 @@ import { createRoot, Root } from "react-dom/client";
 import mantineStyles from "@mantine/core/styles.css?inline";
 import mantineNotificationsStyles from "@mantine/notifications/styles.css?inline";
 import MantineDispatcher from "../content/mantineDispatcher";
+import CustomMantineProvider from "../content/mantineProvider";
 
 export class ContentInjector {
   private workflows: WorkflowDefinition[] = [];
@@ -43,16 +44,16 @@ export class ContentInjector {
   public getParentShadowRoot(
     target: HTMLElement,
     rootId: string,
-  ): { root: Root | null; appElement: HTMLElement | null } {
+  ): { root: Root | null; hostDiv: HTMLElement | null } {
     try {
-      const app = document.createElement("div");
-      app.id = rootId;
+      const container = document.createElement("div");
+      container.id = rootId;
 
       // Attach a Shadow Root
-      const shadowRoot = app.attachShadow({ mode: "closed" });
+      const shadowRoot = container.attachShadow({ mode: "closed" });
 
-      // Append the app container to the body
-      target.append(app);
+      // Append the container to the body
+      target.append(container);
 
       // Inject Mantine styles into the Shadow DOM
       const mantineStyleTag = document.createElement("style");
@@ -65,28 +66,33 @@ export class ContentInjector {
       shadowRoot.appendChild(notificationsStyleTag);
 
       // Create a container for React to mount
-      const appElement = document.createElement("div");
-      appElement.setAttribute("id", "app");
-      shadowRoot.appendChild(appElement);
+      const hostDiv = document.createElement("div");
+      hostDiv.setAttribute("id", "app");
+      shadowRoot.appendChild(hostDiv);
 
       // Create a React root and render the app
-      const root = createRoot(appElement);
-      return { root: root, appElement };
+      const root = createRoot(hostDiv);
+      return { root, hostDiv };
     } catch (error) {
       console.error("Error Injecting React:", error);
     }
-    return { root: null, appElement: null };
+    return { root: null, hostDiv: null };
   }
 
   private injectReact(rootId: string): void {
     const body = document.querySelector("body");
     if (!body) throw new Error("Body element not found.");
-    const { root, appElement } = this.getParentShadowRoot(body, rootId);
-    if (!root || !appElement) {
+    const { root, hostDiv } = this.getParentShadowRoot(body, rootId);
+    if (!root || !hostDiv) {
       console.error("Failed to create React root or app element.");
       return;
     }
-    root.render(MantineDispatcher(appElement));
+    root.render(
+      CustomMantineProvider({
+        parent: hostDiv,
+        children: MantineDispatcher(),
+      }),
+    );
   }
 
   private setupUrlChangeListener(): void {
