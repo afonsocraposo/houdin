@@ -1,10 +1,11 @@
 import { WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
 import { WorkflowExecutor } from "../services/workflow";
-import MantineApp from "../content/mantineApp";
-import { createRoot } from "react-dom/client";
+import MantineApp from "../content/mantineProvider";
+import { createRoot, Root } from "react-dom/client";
 import mantineStyles from "@mantine/core/styles.css?inline";
 import mantineNotificationsStyles from "@mantine/notifications/styles.css?inline";
+import MantineDispatcher from "../content/mantineDispatcher";
 
 export class ContentInjector {
   private workflows: WorkflowDefinition[] = [];
@@ -40,11 +41,11 @@ export class ContentInjector {
     });
   }
 
-  private injectReact(rootId: string): void {
+  public getParentShadowRoot(
+    target: HTMLElement,
+    rootId: string,
+  ): { root: Root | null; appElement: HTMLElement | null } {
     try {
-      const body = document.querySelector("body");
-      if (!body) throw new Error("Body element not found.");
-
       const app = document.createElement("div");
       app.id = rootId;
 
@@ -52,7 +53,7 @@ export class ContentInjector {
       const shadowRoot = app.attachShadow({ mode: "closed" });
 
       // Append the app container to the body
-      body.append(app);
+      target.append(app);
 
       // Create a container for React to mount
       const appElement = document.createElement("div");
@@ -71,11 +72,22 @@ export class ContentInjector {
 
       // Create a React root and render the app
       const root = createRoot(appElement);
-      root.render(MantineApp(appElement));
-      console.debug("Modal dispatcher injected successfully.");
+      return { root: root, appElement };
     } catch (error) {
       console.error("Error Injecting React:", error);
     }
+    return { root: null, appElement: null };
+  }
+
+  private injectReact(rootId: string): void {
+    const body = document.querySelector("body");
+    if (!body) throw new Error("Body element not found.");
+    const { root, appElement } = this.getParentShadowRoot(body, rootId);
+    if (!root || !appElement) {
+      console.error("Failed to create React root or app element.");
+      return;
+    }
+    root.render(MantineDispatcher(appElement));
   }
 
   private setupUrlChangeListener(): void {

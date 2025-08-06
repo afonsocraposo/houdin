@@ -1,8 +1,6 @@
 import { createTheme, MantineProvider } from "@mantine/core";
-import ModalDispatcher from "../components/ModalDispatcher";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import NotificationDispatcher from "../components/NotificationDispatcher";
 
 declare global {
   interface WindowEventMap {
@@ -11,7 +9,13 @@ declare global {
   }
 }
 
-const App = (parent: HTMLElement) => {
+export default function CustomMantineProvider({
+  parent,
+  children,
+}: {
+  parent: HTMLElement;
+  children: React.ReactNode;
+}) {
   return (
     <MantineProvider
       defaultColorScheme="auto"
@@ -28,10 +32,7 @@ const App = (parent: HTMLElement) => {
         },
       })}
     >
-      <ModalDispatcher />
-      <NotificationDispatcher />
+      {children}
     </MantineProvider>
   );
-};
-
-export default App;
+}
