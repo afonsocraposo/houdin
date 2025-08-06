@@ -113,36 +113,54 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
           ? `2px solid ${getNodeColor(nodeData)}`
           : "1px solid #dee2e6",
         background: "white",
+        overflow: "visible", // Allow handles to show outside the card
       }}
     >
       {/* Input handles */}
-      {(nodeData.inputs || []).map((input: string, index: number) => (
+      {(nodeData.inputs || []).map((input: string) => (
         <Handle
           key={input}
           type="target"
           position={Position.Left}
           id={input}
           style={{
-            top: 40 + index * 20,
-            background: "#495057",
+            top: "50%",
+            transformOrigin: "center",
             width: 16,
             height: 16,
+            background: "#adb5bd",
+            border: "2px solid #fff",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#495057";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#adb5bd";
           }}
         />
       ))}
 
       {/* Output handles */}
-      {(nodeData.outputs || []).map((output: string, index: number) => (
+      {(nodeData.outputs || []).map((output: string) => (
         <Handle
           key={output}
           type="source"
           position={Position.Right}
           id={output}
           style={{
-            top: 40 + index * 20,
-            background: getNodeColor(nodeData),
+            top: "50%",
             width: 16,
             height: 16,
+            background: "#adb5bd",
+            border: "2px solid #fff",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#495057";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#adb5bd";
           }}
         />
       ))}
@@ -344,10 +362,14 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
   }, [onNodeSelect]);
 
   const getLayoutedElements = useCallback(
-    (nodes: WorkflowNode[], edges: WorkflowConnection[], direction = "TB") => {
+    (nodes: WorkflowNode[], edges: WorkflowConnection[]) => {
       const dagreGraph = new dagre.graphlib.Graph();
       dagreGraph.setDefaultEdgeLabel(() => ({}));
-      dagreGraph.setGraph({ rankdir: direction });
+      dagreGraph.setGraph({
+        rankdir: "LR", // Left to right layout
+        nodesep: 100, // Horizontal spacing between nodes
+        ranksep: 150, // Vertical spacing between ranks/levels
+      });
 
       nodes.forEach((node) => {
         dagreGraph.setNode(node.id, { width: 200, height: 150 });
@@ -359,51 +381,16 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
 
       dagre.layout(dagreGraph);
 
-      // Get connected nodes from dagre
-      const connectedNodes = new Set();
-      edges.forEach((edge) => {
-        connectedNodes.add(edge.source);
-        connectedNodes.add(edge.target);
-      });
-
-      // Position disconnected nodes horizontally
-      const disconnectedNodes = nodes.filter(
-        (node) => !connectedNodes.has(node.id),
-      );
-      let maxX = 0;
-
-      // Find the rightmost position of connected nodes
-      nodes.forEach((node) => {
-        if (connectedNodes.has(node.id)) {
-          const nodeWithPosition = dagreGraph.node(node.id);
-          maxX = Math.max(maxX, nodeWithPosition.x + 100);
-        }
-      });
-
+      // Apply dagre positions directly to all nodes
       const newNodes = nodes.map((node) => {
-        if (connectedNodes.has(node.id)) {
-          // Use dagre positioning for connected nodes
-          const nodeWithPosition = dagreGraph.node(node.id);
-          return {
-            ...node,
-            position: {
-              x: nodeWithPosition.x - 100,
-              y: nodeWithPosition.y - 75,
-            },
-          };
-        } else {
-          // Position disconnected nodes horizontally to the right
-          const disconnectedIndex = disconnectedNodes.findIndex(
-            (n) => n.id === node.id,
-          );
-          return {
-            ...node,
-            position: {
-              x: maxX + 250 + disconnectedIndex * 250,
-              y: 100,
-            },
-          };
-        }
+        const nodeWithPosition = dagreGraph.node(node.id);
+        return {
+          ...node,
+          position: {
+            x: nodeWithPosition.x - 100, // Center the node (width/2)
+            y: nodeWithPosition.y - 75, // Center the node (height/2)
+          },
+        };
       });
 
       return { nodes: newNodes, edges };
@@ -415,7 +402,6 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
     const { nodes: layoutedNodes } = getLayoutedElements(
       workflowNodes,
       workflowConnections,
-      "LR",
     );
     onNodesChange(layoutedNodes);
   }, [workflowNodes, workflowConnections, onNodesChange, getLayoutedElements]);
@@ -453,7 +439,6 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
     const { nodes: layoutedNodes } = getLayoutedElements(
       updatedNodes,
       workflowConnections,
-      "LR",
     );
     onNodesChange(layoutedNodes);
     setShowNodePalette(false);
