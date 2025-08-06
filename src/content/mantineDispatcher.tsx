@@ -1,6 +1,4 @@
 import ModalDispatcher from "../components/ModalDispatcher";
-import "@mantine/core/styles.css";
-import "@mantine/notifications/styles.css";
 import NotificationDispatcher from "../components/NotificationDispatcher";
 import CustomMantineProvider from "./mantineProvider";
 
