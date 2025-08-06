@@ -10,6 +10,7 @@ import { ComponentFactory } from "../components/ComponentFactory";
 import { OpenAIService } from "./openai";
 import { ModalService } from "./modal";
 import { NotificationService } from "./notification";
+import { ContentInjector } from "./injector";
 
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
@@ -247,7 +248,7 @@ export class WorkflowExecutor {
 
   private async executeInjectComponent(
     actionData: ActionNodeData,
-    nodeId?: string,
+    nodeId: string,
   ): Promise<void> {
     const targetElement = document.querySelector(
       actionData.config.targetSelector || "body",
@@ -260,9 +261,6 @@ export class WorkflowExecutor {
     }
 
     // Only pass workflow info for interactive components (button/input)
-    const isInteractive =
-      actionData.config.componentType === "button" ||
-      actionData.config.componentType === "input";
     if (actionData.config.componentText) {
       actionData.config.componentText = this.context.interpolateVariables(
         actionData.config.componentText,
@@ -270,12 +268,14 @@ export class WorkflowExecutor {
     }
     const component = ComponentFactory.create(
       actionData.config,
-      isInteractive ? this.workflow.id : undefined,
-      isInteractive ? nodeId : undefined,
+      this.workflow.id,
+      nodeId,
     );
-    component.setAttribute("data-workflow-injected", "true");
-    component.setAttribute("data-workflow-id", this.workflow.id);
-    targetElement.appendChild(component);
+    ContentInjector.injectMantineComponentInTarget(
+      `container-${this.workflow.id}`,
+      component,
+      targetElement,
+    );
   }
 
   private async executeCopyContent(actionData: ActionNodeData): Promise<void> {
