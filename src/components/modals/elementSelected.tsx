@@ -18,7 +18,12 @@ export default function ElementSelectedModal({
 }: ElementSelectedModalProps) {
   const [opened, { close }] = useDisclosure(true);
   return (
-    <Modal opened={opened} onClose={close} title="Element Inspector">
+    <Modal
+      opened={opened}
+      onClose={close}
+      title="Element Inspector"
+      trapFocus={false}
+    >
       <Stack justify="stretch">
         <InfoRow label="Selector" value={selector} />
         <InfoRow label="Tag Name" value={element.tagName} />

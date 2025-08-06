@@ -12,7 +12,7 @@ export default function CustomModal({
 }: ElementSelectedModalProps) {
   const [opened, { close }] = useDisclosure(true);
   return (
-    <Modal opened={opened} onClose={close} title={title}>
+    <Modal opened={opened} onClose={close} title={title} trapFocus={false}>
       <Text>{content}</Text>
     </Modal>
   );
