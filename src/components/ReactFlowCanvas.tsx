@@ -98,10 +98,11 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
     }
   };
 
-  const deleteNode = () => {
-    // This will be handled by the parent component
-    const event = new CustomEvent("deleteNode", { detail: { nodeId: id } });
-    window.dispatchEvent(event);
+  const deleteNode = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (nodeData.onDeleteNode) {
+      nodeData.onDeleteNode(id);
+    }
   };
 
   return (
@@ -190,6 +191,29 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
 }) => {
   const [showNodePalette, setShowNodePalette] = useState(false);
 
+  // Handle node deletion directly
+  const handleNodeDeletion = useCallback(
+    (nodeId: string) => {
+      // Always clear selection first, regardless of which node is being deleted
+      onNodeSelect(null);
+
+      // Then update nodes and connections
+      const updatedNodes = workflowNodes.filter((n) => n.id !== nodeId);
+      const updatedConnections = workflowConnections.filter(
+        (c) => c.source !== nodeId && c.target !== nodeId,
+      );
+      onNodesChange(updatedNodes);
+      onConnectionsChange(updatedConnections);
+    },
+    [
+      workflowNodes,
+      workflowConnections,
+      onNodesChange,
+      onConnectionsChange,
+      onNodeSelect,
+    ],
+  );
+
   // Convert workflow nodes to React Flow nodes
   const reactFlowNodes: Node[] = useMemo(
     () =>
@@ -197,10 +221,10 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
         id: node.id,
         type: "custom",
         position: node.position,
-        data: { ...node.data, ...node }, // Include all node data
+        data: { ...node.data, ...node, onDeleteNode: handleNodeDeletion }, // Include delete handler
         selected: selectedNode?.id === node.id,
       })),
-    [workflowNodes, selectedNode],
+    [workflowNodes, selectedNode, handleNodeDeletion],
   );
 
   // Convert workflow connections to React Flow edges
@@ -318,36 +342,6 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
     setShowNodePalette(false);
     onNodeSelect(null);
   }, [onNodeSelect]);
-
-  // Handle node deletion
-  React.useEffect(() => {
-    const handleDeleteNode = (event: CustomEvent) => {
-      const { nodeId } = event.detail;
-      const updatedNodes = workflowNodes.filter((n) => n.id !== nodeId);
-      const updatedConnections = workflowConnections.filter(
-        (c) => c.source !== nodeId && c.target !== nodeId,
-      );
-      onNodesChange(updatedNodes);
-      onConnectionsChange(updatedConnections);
-      if (selectedNode?.id === nodeId) {
-        onNodeSelect(null);
-      }
-    };
-
-    window.addEventListener("deleteNode", handleDeleteNode as EventListener);
-    return () =>
-      window.removeEventListener(
-        "deleteNode",
-        handleDeleteNode as EventListener,
-      );
-  }, [
-    workflowNodes,
-    workflowConnections,
-    onNodesChange,
-    onConnectionsChange,
-    selectedNode,
-    onNodeSelect,
-  ]);
 
   const getLayoutedElements = useCallback(
     (nodes: WorkflowNode[], edges: WorkflowConnection[], direction = "TB") => {
@@ -489,7 +483,6 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
           type: "smoothstep",
           animated: false,
         }}
-        fitView
         attributionPosition="bottom-left"
       >
         <Background />
