@@ -1,9 +1,44 @@
 import { Text } from "@mantine/core";
+import { CSSProperties } from "react";
 
 interface TextProps {
   recipe: any;
 }
 
 export default function TextFactory({ recipe }: TextProps) {
-  return <Text>{recipe.componentText || "Hello world"}</Text>;
+  // Build styles object from recipe properties
+  const textStyle: CSSProperties = {};
+  
+  // Apply text color if specified
+  if (recipe.textColor) {
+    textStyle.color = recipe.textColor;
+  }
+  
+  // Parse and apply custom styles
+  if (recipe.customStyle) {
+    try {
+      // Simple CSS parser for the custom styles
+      const customStyles = recipe.customStyle.split(';')
+        .filter((style: string) => style.trim())
+        .reduce((acc: Record<string, any>, style: string) => {
+          const [property, value] = style.split(':').map((s: string) => s.trim());
+          if (property && value) {
+            // Convert kebab-case to camelCase for React style properties
+            const camelCaseProperty = property.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+            acc[camelCaseProperty] = value;
+          }
+          return acc;
+        }, {});
+      
+      Object.assign(textStyle, customStyles);
+    } catch (error) {
+      console.warn('Failed to parse custom styles:', recipe.customStyle);
+    }
+  }
+
+  return (
+    <Text style={textStyle}>
+      {recipe.componentText || "Hello world"}
+    </Text>
+  );
 }

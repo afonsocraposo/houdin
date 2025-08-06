@@ -1,8 +1,9 @@
 import { WorkflowExecutionContext } from './workflow';
+import { ReactElement } from 'react';
 
 // Configuration property types for action schemas
 export interface ActionConfigProperty {
-  type: 'text' | 'textarea' | 'select' | 'number';
+  type: 'text' | 'textarea' | 'select' | 'number' | 'color' | 'custom';
   label: string;
   placeholder?: string;
   description?: string;
@@ -19,6 +20,24 @@ export interface ActionConfigProperty {
   
   // For textarea
   rows?: number;
+  
+  // For color type
+  allowDefault?: boolean; // If true, includes "Default" option
+  
+  // For custom type
+  render?: (values: Record<string, any>) => ReactElement | null;
+  
+  // Conditional display
+  showWhen?: {
+    field: string;
+    value: string | string[];
+  };
+}
+
+// Custom section for schema
+export interface ActionConfigCustomSection {
+  id: string;
+  render: (values: Record<string, any>) => ReactElement | null;
 }
 
 // Schema definition for action configuration
