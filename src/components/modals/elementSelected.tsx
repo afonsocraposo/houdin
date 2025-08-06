@@ -1,19 +1,20 @@
 import { Modal, Stack, Textarea, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import CopyToClipboardButton from "../../components/CopyToClibooardButton";
+import CopyToClipboardButton from "../CopyToClibooardButton";
 
 interface ElementSelectedModalProps {
-  selector: string;
-  element: {
-    tagName: string;
-    id: string | null;
-    className: string | null;
-    textContent: string;
+  data: {
+    selector: string;
+    element: {
+      tagName: string;
+      id: string | null;
+      className: string | null;
+      textContent: string;
+    };
   };
 }
 export default function ElementSelectedModal({
-  selector,
-  element,
+  data: { selector, element },
 }: ElementSelectedModalProps) {
   const [opened, { close }] = useDisclosure(true);
   return (

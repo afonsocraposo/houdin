@@ -31,8 +31,7 @@
       ],
       "js": [
         "src/content/content.ts",
-        "src/content/elementSelector.ts",
-        "src/content/modalDispatcher.tsx"
+        "src/content/elementSelector.ts"
       ]
     }
   ],

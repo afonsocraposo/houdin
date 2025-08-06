@@ -6,9 +6,9 @@ import {
   WorkflowExecutionContext,
 } from "../types/workflow";
 import { copyToClipboard, showNotification } from "../utils/helpers";
-import { createModal } from "../components/Modal";
 import { ComponentFactory } from "../components/ComponentFactory";
 import { OpenAIService } from "./openai";
+import { ModalService } from "./modal";
 
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
@@ -295,7 +295,7 @@ export class WorkflowExecutor {
       actionData.config.modalContent || "",
     );
 
-    createModal(modalTitle, modalContent);
+    ModalService.showModal(modalTitle, modalContent);
   }
 
   private async executeCustomScript(
