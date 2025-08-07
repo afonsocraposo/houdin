@@ -11,7 +11,10 @@
   "permissions": [
     "activeTab",
     "storage",
-    "tabs"
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
   ],
   "browser_action": {
     "default_popup": "src/popup/popup.html",
@@ -22,7 +25,7 @@
     "scripts": [
       "src/background/background.ts"
     ],
-    "persistent": false
+    "persistent": true
   },
   "content_scripts": [
     {

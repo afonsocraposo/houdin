@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Button, Text } from "@mantine/core";
+import { Button } from "@mantine/core";
 
 function formatKeyCombo(event: KeyboardEvent): string {
   const keys = [];

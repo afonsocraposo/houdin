@@ -3,6 +3,7 @@ import { PageLoadTrigger } from "./triggers/pageLoadTrigger";
 import { ComponentLoadTrigger } from "./triggers/componentLoadTrigger";
 import { DelayTrigger } from "./triggers/delayTrigger";
 import { KeyPressTrigger } from "./triggers/onKeyPressTrigger";
+import { HttpRequestTrigger } from "./triggers/httpRequestTrigger";
 
 // Initialize and register all triggers
 export function initializeTriggers(): void {
@@ -13,6 +14,7 @@ export function initializeTriggers(): void {
   registry.register(new ComponentLoadTrigger());
   registry.register(new DelayTrigger());
   registry.register(new KeyPressTrigger());
+  registry.register(new HttpRequestTrigger());
 }
 
 // Export for convenience

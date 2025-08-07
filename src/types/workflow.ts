@@ -36,10 +36,12 @@ export interface WorkflowExecutionContext {
 
 // Trigger type definitions
 export interface TriggerNodeData {
-  triggerType: "page-load" | "component-load" | "delay";
+  triggerType: "page-load" | "component-load" | "delay" | "http-request";
   config: {
     selector?: string; // For component-load trigger
     delay?: number; // For delay trigger (in milliseconds)
+    urlPattern?: string; // For http-request trigger
+    method?: string; // For http-request trigger
   };
 }
 

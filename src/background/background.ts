@@ -1,4 +1,4 @@
-console.log("Background script loaded");
+import { HttpListenerService } from '../services/httpListener';
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -17,6 +17,28 @@ interface HttpResponse {
   error?: string;
 }
 
+// Initialize HTTP listener service
+let httpListener: HttpListenerService;
+
+try {
+  httpListener = HttpListenerService.getInstance(runtime);
+
+  // Set up callback to handle HTTP triggers
+  httpListener.setTriggerCallback((data, triggerNodeId, workflowId) => {
+    // Find the tab that made the request
+    runtime.tabs.sendMessage(data.request.tabId, {
+      type: 'HTTP_REQUEST_TRIGGER',
+      data,
+      triggerNodeId,
+      workflowId
+    }).catch((error: any) => {
+      console.error('Error sending HTTP trigger message:', error);
+    });
+  });
+} catch (error) {
+  console.error("Failed to initialize HttpListenerService:", error);
+}
+
 runtime.runtime.onMessage.addListener(
   (message: any, _sender: any, sendResponse: (response: any) => void) => {
     if (message.type === "HTTP_REQUEST") {
@@ -26,6 +48,26 @@ runtime.runtime.onMessage.addListener(
           sendResponse({ success: false, error: error.message }),
         );
       return true; // Will respond asynchronously
+    } else if (message.type === "REGISTER_HTTP_TRIGGER") {
+      if (httpListener) {
+        httpListener.registerTrigger(
+          message.workflowId,
+          message.triggerNodeId,
+          message.urlPattern,
+          message.method
+        );
+      } else {
+        console.error("HttpListenerService not available for trigger registration");
+      }
+    } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
+      if (httpListener) {
+        httpListener.unregisterTrigger(
+          message.workflowId,
+          message.triggerNodeId
+        );
+      } else {
+        console.error("HttpListenerService not available for trigger unregistration");
+      }
     }
   },
 );
@@ -79,12 +121,12 @@ runtime.runtime.onInstalled.addListener(() => {
 
 // For manifest v2, use browserAction instead of action
 if (runtime.browserAction) {
-  runtime.browserAction.onClicked.addListener((tab: any) => {
-    console.log("Extension icon clicked", tab);
+  runtime.browserAction.onClicked.addListener((_tab: any) => {
+    // Extension icon clicked
   });
 } else if (runtime.action) {
-  runtime.action.onClicked.addListener((tab: any) => {
-    console.log("Extension icon clicked", tab);
+  runtime.action.onClicked.addListener((_tab: any) => {
+    // Extension icon clicked
   });
 }
 
