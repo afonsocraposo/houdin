@@ -5,13 +5,19 @@ import {
   TriggerSetupResult,
 } from "../../types/triggers";
 
-export class HttpRequestTrigger extends BaseTrigger {
+// HTTP Request Trigger Configuration
+export interface HttpRequestTriggerConfig {
+  urlPattern: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'ANY';
+}
+
+export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
   readonly metadata = {
     type: "http-request",
     label: "HTTP Request",
     icon: "🌐",
     description:
-      "Trigger when an HTTP request matches the specified URL pattern (⚠️ only requests triggered after the page loads will be captured)",
+      "Trigger when an HTTP request matches the specified URL pattern",
   };
 
   getConfigSchema(): TriggerConfigSchema {
@@ -42,7 +48,7 @@ export class HttpRequestTrigger extends BaseTrigger {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): HttpRequestTriggerConfig {
     return {
       urlPattern: "",
       method: "ANY",
@@ -50,7 +56,7 @@ export class HttpRequestTrigger extends BaseTrigger {
   }
 
   async setup(
-    config: Record<string, any>,
+    config: HttpRequestTriggerConfig,
     context: TriggerExecutionContext,
     onTrigger: () => Promise<void>,
   ): Promise<TriggerSetupResult> {

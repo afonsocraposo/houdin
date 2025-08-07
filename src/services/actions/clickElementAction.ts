@@ -6,7 +6,11 @@ import {
 } from "../../types/actions";
 import { NotificationService } from "../notification";
 
-export class ClickElementAction extends BaseAction {
+interface ClickElementActionConfig {
+  elementSelector: string;
+}
+
+export class ClickElementAction extends BaseAction<ClickElementActionConfig> {
   readonly metadata: ActionMetadata = {
     type: "click-element",
     label: "Click Element",
@@ -29,14 +33,14 @@ export class ClickElementAction extends BaseAction {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): ClickElementActionConfig {
     return {
       elementSelector: "button",
     };
   }
 
   async execute(
-    config: Record<string, any>,
+    config: ClickElementActionConfig,
     context: ActionExecutionContext,
     nodeId: string,
   ): Promise<void> {

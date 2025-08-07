@@ -6,7 +6,11 @@ import {
   TriggerSetupResult,
 } from "../../types/triggers";
 
-export class KeyPressTrigger extends BaseTrigger {
+interface KeyPressTriggerConfig {
+  keyCombo: string;
+}
+
+export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig> {
   readonly metadata = {
     type: "key-press",
     label: "Key Press",
@@ -37,14 +41,14 @@ export class KeyPressTrigger extends BaseTrigger {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): KeyPressTriggerConfig {
     return {
       keyCombo: "",
     };
   }
 
   async setup(
-    config: Record<string, any>,
+    config: KeyPressTriggerConfig,
     _context: TriggerExecutionContext,
     onTrigger: () => Promise<void>,
   ): Promise<TriggerSetupResult> {

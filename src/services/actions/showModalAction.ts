@@ -1,7 +1,12 @@
 import { BaseAction, ActionConfigSchema, ActionMetadata, ActionExecutionContext } from '../../types/actions';
 import { ModalService } from '../modal';
 
-export class ShowModalAction extends BaseAction {
+interface ShowModalActionConfig {
+  modalTitle: string;
+  modalContent: string;
+}
+
+export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
   readonly metadata: ActionMetadata = {
     type: 'show-modal',
     label: 'Show Modal',
@@ -31,7 +36,7 @@ export class ShowModalAction extends BaseAction {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): ShowModalActionConfig {
     return {
       modalTitle: 'Workflow Result',
       modalContent: ''
@@ -39,7 +44,7 @@ export class ShowModalAction extends BaseAction {
   }
 
   async execute(
-    config: Record<string, any>,
+    config: ShowModalActionConfig,
     context: ActionExecutionContext,
     _nodeId: string
   ): Promise<void> {

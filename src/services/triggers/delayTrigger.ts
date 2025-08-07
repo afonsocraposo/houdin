@@ -1,6 +1,10 @@
 import { BaseTrigger, TriggerConfigSchema, TriggerExecutionContext, TriggerSetupResult } from '../../types/triggers';
 
-export class DelayTrigger extends BaseTrigger {
+interface DelayTriggerConfig {
+  delay: number;
+}
+
+export class DelayTrigger extends BaseTrigger<DelayTriggerConfig> {
   readonly metadata = {
     type: 'delay',
     label: 'Delay',
@@ -24,14 +28,14 @@ export class DelayTrigger extends BaseTrigger {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): DelayTriggerConfig {
     return {
       delay: 1000
     };
   }
 
   async setup(
-    config: Record<string, any>,
+    config: DelayTriggerConfig,
     _context: TriggerExecutionContext,
     onTrigger: () => Promise<void>
   ): Promise<TriggerSetupResult> {

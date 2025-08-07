@@ -1,6 +1,10 @@
 import { BaseTrigger, TriggerConfigSchema, TriggerExecutionContext, TriggerSetupResult } from '../../types/triggers';
 
-export class PageLoadTrigger extends BaseTrigger {
+interface PageLoadTriggerConfig {
+  // Empty config for page load trigger
+}
+
+export class PageLoadTrigger extends BaseTrigger<PageLoadTriggerConfig> {
   readonly metadata = {
     type: 'page-load',
     label: 'Page Load',
@@ -14,12 +18,12 @@ export class PageLoadTrigger extends BaseTrigger {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): PageLoadTriggerConfig {
     return {};
   }
 
   async setup(
-    _config: Record<string, any>,
+    _config: PageLoadTriggerConfig,
     _context: TriggerExecutionContext,
     onTrigger: () => Promise<void>
   ): Promise<TriggerSetupResult> {

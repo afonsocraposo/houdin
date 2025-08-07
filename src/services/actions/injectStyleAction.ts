@@ -6,7 +6,11 @@ import {
 } from "../../types/actions";
 import { NotificationService } from "../notification";
 
-export class InjectStyleAction extends BaseAction {
+interface InjectStyleActionConfig {
+  customScript: string;
+}
+
+export class InjectStyleAction extends BaseAction<InjectStyleActionConfig> {
   readonly metadata: ActionMetadata = {
     type: "inject-style",
     label: "Inject Style",
@@ -31,14 +35,14 @@ export class InjectStyleAction extends BaseAction {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): InjectStyleActionConfig {
     return {
       customScript: "",
     };
   }
 
   async execute(
-    config: Record<string, any>,
+    config: InjectStyleActionConfig,
     _context: ActionExecutionContext,
     _nodeId: string,
   ): Promise<void> {

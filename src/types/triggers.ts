@@ -32,18 +32,18 @@ export interface TriggerSetupResult {
 }
 
 // Abstract base class for all triggers
-export abstract class BaseTrigger {
+export abstract class BaseTrigger<TConfig = Record<string, any>> {
   abstract readonly metadata: TriggerMetadata;
   
   // Get the configuration schema for this trigger
   abstract getConfigSchema(): TriggerConfigSchema;
   
   // Get default configuration values
-  abstract getDefaultConfig(): Record<string, any>;
+  abstract getDefaultConfig(): TConfig;
   
   // Setup the trigger and return cleanup function
   abstract setup(
-    config: Record<string, any>, 
+    config: TConfig, 
     context: TriggerExecutionContext,
     onTrigger: () => Promise<void>
   ): Promise<TriggerSetupResult>;
@@ -54,7 +54,8 @@ export abstract class BaseTrigger {
   }
   
   // Get configuration with defaults applied
-  getConfigWithDefaults(config: Record<string, any>): Record<string, any> {
-    return applyDefaults(config, this.getConfigSchema(), this.getDefaultConfig());
+  getConfigWithDefaults(config: Record<string, any>): TConfig {
+    const defaults = this.getDefaultConfig();
+    return applyDefaults(config, this.getConfigSchema(), defaults as Record<string, any>) as TConfig;
   }
 }

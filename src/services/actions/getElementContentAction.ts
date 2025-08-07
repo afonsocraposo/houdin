@@ -1,7 +1,11 @@
 import { BaseAction, ActionConfigSchema, ActionMetadata, ActionExecutionContext } from '../../types/actions';
 import { NotificationService } from '../notification';
 
-export class GetElementContentAction extends BaseAction {
+interface GetElementContentActionConfig {
+  elementSelector: string;
+}
+
+export class GetElementContentAction extends BaseAction<GetElementContentActionConfig> {
   readonly metadata: ActionMetadata = {
     type: 'get-element-content',
     label: 'Get Element Content',
@@ -24,14 +28,14 @@ export class GetElementContentAction extends BaseAction {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): GetElementContentActionConfig {
     return {
       elementSelector: 'h1'
     };
   }
 
   async execute(
-    config: Record<string, any>,
+    config: GetElementContentActionConfig,
     context: ActionExecutionContext,
     nodeId: string
   ): Promise<void> {

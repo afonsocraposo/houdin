@@ -26,18 +26,18 @@ export interface ActionExecutionContext extends WorkflowExecutionContext {
 }
 
 // Abstract base class for all actions
-export abstract class BaseAction {
+export abstract class BaseAction<TConfig = Record<string, any>> {
   abstract readonly metadata: ActionMetadata;
   
   // Get the configuration schema for this action
   abstract getConfigSchema(): ActionConfigSchema;
   
   // Get default configuration values
-  abstract getDefaultConfig(): Record<string, any>;
+  abstract getDefaultConfig(): TConfig;
   
   // Execute the action
   abstract execute(
-    config: Record<string, any>, 
+    config: TConfig, 
     context: ActionExecutionContext, 
     nodeId: string
   ): Promise<void>;
@@ -48,7 +48,8 @@ export abstract class BaseAction {
   }
   
   // Get configuration with defaults applied
-  getConfigWithDefaults(config: Record<string, any>): Record<string, any> {
-    return applyDefaults(config, this.getConfigSchema(), this.getDefaultConfig());
+  getConfigWithDefaults(config: Record<string, any>): TConfig {
+    const defaults = this.getDefaultConfig();
+    return applyDefaults(config, this.getConfigSchema(), defaults as Record<string, any>) as TConfig;
   }
 }

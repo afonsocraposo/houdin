@@ -2,7 +2,11 @@ import { BaseAction, ActionConfigSchema, ActionMetadata, ActionExecutionContext 
 import { copyToClipboard } from '../../utils/helpers';
 import { NotificationService } from '../notification';
 
-export class CopyContentAction extends BaseAction {
+interface CopyContentActionConfig {
+  sourceSelector: string;
+}
+
+export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
   readonly metadata: ActionMetadata = {
     type: 'copy-content',
     label: 'Copy Content',
@@ -24,14 +28,14 @@ export class CopyContentAction extends BaseAction {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): CopyContentActionConfig {
     return {
       sourceSelector: ''
     };
   }
 
   async execute(
-    config: Record<string, any>,
+    config: CopyContentActionConfig,
     _context: ActionExecutionContext,
     _nodeId: string
   ): Promise<void> {

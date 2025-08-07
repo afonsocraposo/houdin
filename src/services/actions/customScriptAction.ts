@@ -6,7 +6,12 @@ import {
 } from "../../types/actions";
 import { NotificationService } from "../notification";
 
-export class CustomScriptAction extends BaseAction {
+// Custom Script Action Configuration
+export interface CustomScriptActionConfig {
+  customScript: string;
+}
+
+export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
   readonly metadata: ActionMetadata = {
     type: "custom-script",
     label: "Custom Script",
@@ -32,14 +37,14 @@ export class CustomScriptAction extends BaseAction {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): CustomScriptActionConfig {
     return {
       customScript: "",
     };
   }
 
   async execute(
-    config: Record<string, any>,
+    config: CustomScriptActionConfig,
     context: ActionExecutionContext,
     nodeId: string,
   ): Promise<void> {

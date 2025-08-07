@@ -35,69 +35,21 @@ export interface WorkflowExecutionContext {
 }
 
 // Trigger type definitions
-export interface TriggerNodeData {
-  triggerType: "page-load" | "component-load" | "delay" | "http-request";
-  config: {
-    selector?: string; // For component-load trigger
-    delay?: number; // For delay trigger (in milliseconds)
-    urlPattern?: string; // For http-request trigger
-    method?: string; // For http-request trigger
-  };
+export interface TriggerNodeData<T = Record<string, any>> {
+  triggerType: string;
+  config: T;
 }
 
 // Condition type definitions
-export interface ConditionNodeData {
-  conditionType: "element-exists" | "custom-condition";
-  config: {
-    selector?: string; // For element-exists condition
-    customScript?: string; // For custom-condition
-  };
+export interface ConditionNodeData<T = Record<string, any>> {
+  conditionType: string;
+  config: T;
 }
 
 // Action type definitions
-export interface ActionNodeData {
-  actionType:
-    | "inject-component"
-    | "copy-content"
-    | "show-modal"
-    | "custom-script"
-    | "navigate"
-    | "element-click"
-    | "get-element-content"
-    | "llm-openai";
-  config: {
-    // Inject component config
-    componentType?: "button" | "input" | "text";
-    componentText?: string;
-    componentStyle?: string;
-    targetSelector?: string;
-
-    // Copy content config
-    sourceSelector?: string;
-
-    // Show modal config
-    modalTitle?: string;
-    modalContent?: string;
-
-    // Custom script config
-    customScript?: string;
-
-    // Navigate config
-    navigateUrl?: string;
-
-    // Element click config
-    selector?: string;
-
-    // Get element content config
-    elementSelector?: string;
-
-    // LLM OpenAI config
-    credentialId?: string;
-    prompt?: string;
-    model?: "gpt-3.5-turbo" | "gpt-4" | "gpt-4-turbo" | "gpt-4o";
-    maxTokens?: number;
-    temperature?: number;
-  };
+export interface ActionNodeData<T = Record<string, any>> {
+  actionType: string;
+  config: T;
 }
 
 // Helper function to check if a component type can trigger next actions

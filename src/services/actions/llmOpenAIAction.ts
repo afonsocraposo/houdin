@@ -2,7 +2,15 @@ import { BaseAction, ActionConfigSchema, ActionMetadata, ActionExecutionContext 
 import { OpenAIService } from '../openai';
 import { NotificationService } from '../notification';
 
-export class LLMOpenAIAction extends BaseAction {
+interface LLMOpenAIActionConfig {
+  credentialId: string;
+  model: string;
+  prompt: string;
+  maxTokens: number;
+  temperature: number;
+}
+
+export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
   readonly metadata: ActionMetadata = {
     type: 'llm-openai',
     label: 'LLM OpenAI',
@@ -64,7 +72,7 @@ export class LLMOpenAIAction extends BaseAction {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): LLMOpenAIActionConfig {
     return {
       credentialId: '',
       model: 'gpt-3.5-turbo',
@@ -75,7 +83,7 @@ export class LLMOpenAIAction extends BaseAction {
   }
 
   async execute(
-    config: Record<string, any>,
+    config: LLMOpenAIActionConfig,
     context: ActionExecutionContext,
     nodeId: string
   ): Promise<void> {

@@ -9,7 +9,18 @@ import { ContentInjector } from "../injector";
 import { NotificationService } from "../notification";
 import React from "react";
 
-export class InjectComponentAction extends BaseAction {
+interface InjectComponentActionConfig {
+  targetSelector: string;
+  componentType: string;
+  componentText: string;
+  buttonColor?: string;
+  buttonTextColor?: string;
+  textColor?: string;
+  inputPlaceholder?: string;
+  customStyle?: string;
+}
+
+export class InjectComponentAction extends BaseAction<InjectComponentActionConfig> {
   readonly metadata: ActionMetadata = {
     type: "inject-component",
     label: "Inject Component",
@@ -123,21 +134,21 @@ export class InjectComponentAction extends BaseAction {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): InjectComponentActionConfig {
     return {
       targetSelector: "body",
       componentType: "button",
       componentText: "Button",
-      buttonColor: undefined, // Default (undefined)
-      buttonTextColor: undefined, // Default (undefined)
-      textColor: undefined, // Default (undefined)
+      buttonColor: undefined,
+      buttonTextColor: undefined,
+      textColor: undefined,
       inputPlaceholder: "",
       customStyle: "",
     };
   }
 
   async execute(
-    config: Record<string, any>,
+    config: InjectComponentActionConfig,
     context: ActionExecutionContext,
     nodeId: string,
   ): Promise<void> {

@@ -1,6 +1,10 @@
 import { BaseTrigger, TriggerConfigSchema, TriggerExecutionContext, TriggerSetupResult } from '../../types/triggers';
 
-export class ComponentLoadTrigger extends BaseTrigger {
+interface ComponentLoadTriggerConfig {
+  selector: string;
+}
+
+export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig> {
   readonly metadata = {
     type: 'component-load',
     label: 'Component Load',
@@ -22,14 +26,14 @@ export class ComponentLoadTrigger extends BaseTrigger {
     };
   }
 
-  getDefaultConfig(): Record<string, any> {
+  getDefaultConfig(): ComponentLoadTriggerConfig {
     return {
       selector: ''
     };
   }
 
   async setup(
-    config: Record<string, any>,
+    config: ComponentLoadTriggerConfig,
     _context: TriggerExecutionContext,
     onTrigger: () => Promise<void>
   ): Promise<TriggerSetupResult> {
