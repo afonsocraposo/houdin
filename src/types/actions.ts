@@ -3,7 +3,7 @@ import { ReactElement } from 'react';
 
 // Configuration property types for action schemas
 export interface ActionConfigProperty {
-  type: 'text' | 'textarea' | 'select' | 'number' | 'color' | 'custom';
+  type: 'text' | 'textarea' | 'select' | 'number' | 'color' | 'code' | 'custom';
   label: string;
   placeholder?: string;
   description?: string;
@@ -21,8 +21,9 @@ export interface ActionConfigProperty {
   // For textarea
   rows?: number;
   
-  // For color type
-  allowDefault?: boolean; // If true, includes "Default" option
+  // For code type
+  language?: string; // Programming language for syntax highlighting (js, css, html, etc.)
+  height?: string | number; // Editor height
   
   // For custom type
   render?: (values: Record<string, any>) => ReactElement | null;

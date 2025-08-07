@@ -13,11 +13,12 @@ export class CustomScriptAction extends BaseAction {
     return {
       properties: {
         customScript: {
-          type: 'textarea',
+          type: 'code',
           label: 'Custom JavaScript',
           placeholder: 'alert(\'Hello World!\'); console.log(\'Custom script executed\');',
           description: 'JavaScript code to execute. Use Return(data) to send data to next actions.',
-          rows: 6,
+          language: 'javascript',
+          height: 200,
           required: true
         }
       }

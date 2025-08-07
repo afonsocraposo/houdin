@@ -241,7 +241,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                   position: "absolute",
                   top: 0,
                   right: 0,
-                  width: 300,
+                  width: 400,
                   zIndex: 1,
                 }}
               >

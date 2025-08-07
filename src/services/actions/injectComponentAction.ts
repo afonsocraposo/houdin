@@ -112,11 +112,12 @@ export class InjectComponentAction extends BaseAction {
 
         // Advanced styling (for all types)
         customStyle: {
-          type: "textarea",
+          type: "code",
           label: "Custom CSS (Advanced)",
           placeholder: "margin: 10px; border-radius: 4px;",
           description: "Additional CSS properties",
-          rows: 3,
+          language: "text",
+          height: 100,
         },
       },
     };
