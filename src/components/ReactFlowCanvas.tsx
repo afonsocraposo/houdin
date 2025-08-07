@@ -55,10 +55,18 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
   const handleCopyNodeId = useCallback(
     async (nodeId: string, event: React.MouseEvent) => {
       event.stopPropagation();
-      await copyToClipboard(nodeId);
-      NotificationService.showNotification({
-        message: `Node ID copied: ${nodeId}`,
-      });
+      const success = await copyToClipboard(nodeId);
+      if (success) {
+        NotificationService.showNotification({
+          message: `Node ID copied: ${nodeId}`,
+          timeout: 1000,
+        });
+      } else {
+        NotificationService.showErrorNotification({
+          message: `Failed to copy node ID: ${nodeId}`,
+          timeout: 1000,
+        });
+      }
     },
     [],
   );

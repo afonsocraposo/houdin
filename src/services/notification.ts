@@ -12,7 +12,7 @@ export class NotificationService {
       detail: {
         title,
         message,
-        autoclose: timeout,
+        autoClose: timeout,
       },
     });
     window.dispatchEvent(notificationEvent);
@@ -32,7 +32,7 @@ export class NotificationService {
         title,
         message,
         color: "red",
-        autoclose: timeout,
+        autoClose: timeout,
       },
     });
     window.dispatchEvent(notificationEvent);
