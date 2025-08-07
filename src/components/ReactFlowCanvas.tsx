@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
   Node,
   Edge,
   useNodesState,
@@ -15,6 +16,7 @@ import {
   ConnectionLineType,
   NodeChange,
   EdgeChange,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
@@ -207,7 +209,15 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
   );
 };
 
-export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
+export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
+  return (
+    <ReactFlowProvider>
+      <ReactFlowCanvasInner {...props} />
+    </ReactFlowProvider>
+  );
+};
+
+const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   nodes: workflowNodes,
   connections: workflowConnections,
   onNodesChange,
@@ -216,6 +226,21 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
   selectedNode,
 }) => {
   const [showNodePalette, setShowNodePalette] = useState(false);
+  const reactFlowInstance = useReactFlow();
+
+  // Center and zoom to fit on initial load and when nodes change
+  useEffect(() => {
+    if (workflowNodes.length > 0) {
+      // Set zoom to 100% (1.0) and center the nodes
+      setTimeout(() => {
+        reactFlowInstance.fitView({
+          padding: 0.1,
+          minZoom: 1,
+          maxZoom: 1,
+        });
+      }, 100); // Small delay to ensure nodes are rendered
+    }
+  }, [workflowNodes.length, reactFlowInstance]);
 
   // Handle node deletion directly
   const handleNodeDeletion = useCallback(
@@ -476,7 +501,13 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
           type: "smoothstep",
           animated: false,
         }}
-        attributionPosition="bottom-left"
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        fitView
+        fitViewOptions={{
+          padding: 0.1,
+          minZoom: 1,
+          maxZoom: 1,
+        }}
       >
         <Background />
         <Controls />
