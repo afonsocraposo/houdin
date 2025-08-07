@@ -58,14 +58,24 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
     // Use schema-based rendering for triggers that have been migrated
     if (triggerRegistry.hasTrigger(data.triggerType)) {
+      const trigger = triggerRegistry.getTrigger(data.triggerType);
       const schema = triggerRegistry.getConfigSchema(data.triggerType);
-      if (schema) {
+      
+      if (trigger && schema) {
         return (
-          <SchemaBasedProperties
-            schema={schema}
-            values={data.config}
-            onChange={(key, value) => updateNodeData(`config.${key}`, value)}
-          />
+          <Stack gap="md">
+            {/* Trigger description */}
+            <Text size="sm" c="dimmed">
+              {trigger.metadata.description}
+            </Text>
+            
+            {/* Configuration */}
+            <SchemaBasedProperties
+              schema={schema}
+              values={data.config}
+              onChange={(key, value) => updateNodeData(`config.${key}`, value)}
+            />
+          </Stack>
         );
       }
     }
@@ -78,14 +88,24 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
     // Use schema-based rendering for actions that have been migrated
     if (actionRegistry.hasAction(data.actionType)) {
+      const action = actionRegistry.getAction(data.actionType);
       const schema = actionRegistry.getConfigSchema(data.actionType);
-      if (schema) {
+      
+      if (action && schema) {
         return (
-          <SchemaBasedProperties
-            schema={schema}
-            values={data.config}
-            onChange={(key, value) => updateNodeData(`config.${key}`, value)}
-          />
+          <Stack gap="md">
+            {/* Action description */}
+            <Text size="sm" c="dimmed">
+              {action.metadata.description}
+            </Text>
+            
+            {/* Configuration */}
+            <SchemaBasedProperties
+              schema={schema}
+              values={data.config}
+              onChange={(key, value) => updateNodeData(`config.${key}`, value)}
+            />
+          </Stack>
         );
       }
     }
@@ -139,11 +159,33 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     }
   };
 
+  const getNodeTitle = (node: WorkflowNode): string => {
+    if (node.type === "trigger") {
+      const data = node.data as TriggerNodeData;
+      const triggerRegistry = TriggerRegistry.getInstance();
+      const trigger = triggerRegistry.getTrigger(data.triggerType);
+      return trigger ? `${trigger.metadata.icon} ${trigger.metadata.label}` : "Trigger";
+    }
+    
+    if (node.type === "action") {
+      const data = node.data as ActionNodeData;
+      const actionRegistry = ActionRegistry.getInstance();
+      const action = actionRegistry.getAction(data.actionType);
+      return action ? `${action.metadata.icon} ${action.metadata.label}` : "Action";
+    }
+    
+    if (node.type === "condition") {
+      return "Condition";
+    }
+    
+    return "Node";
+  };
+
   return (
     <ScrollArea h="100%">
       <Group mb="md">
         <Text fw={500} c={getNodeTypeColor(node.type)}>
-          {node.type.charAt(0).toUpperCase() + node.type.slice(1)} Node
+          {getNodeTitle(node)}
         </Text>
       </Group>
       <Stack gap="md">
