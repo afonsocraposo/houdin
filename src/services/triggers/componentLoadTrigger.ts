@@ -4,8 +4,8 @@ export class ComponentLoadTrigger extends BaseTrigger {
   readonly metadata = {
     type: 'component-load',
     label: 'Component Load',
-    icon: '🔍',
-    description: 'Triggers when a specific component/element appears on the page'
+    icon: '🎯',
+    description: 'Trigger when specific element appears'
   };
 
   getConfigSchema(): TriggerConfigSchema {

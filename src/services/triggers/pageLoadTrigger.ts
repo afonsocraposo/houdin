@@ -4,8 +4,8 @@ export class PageLoadTrigger extends BaseTrigger {
   readonly metadata = {
     type: 'page-load',
     label: 'Page Load',
-    icon: '🌐',
-    description: 'Triggers when the page is loaded'
+    icon: '📄',
+    description: 'Trigger when page finishes loading'
   };
 
   getConfigSchema(): TriggerConfigSchema {
