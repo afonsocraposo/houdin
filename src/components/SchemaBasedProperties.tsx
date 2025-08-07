@@ -9,19 +9,9 @@ import {
   InputLabel,
   Text,
 } from "@mantine/core";
-import AceEditor from "react-ace";
 import { ActionConfigSchema, ActionConfigProperty } from "../types/actions";
 import { CredentialsSelect } from "./CredentialsSelect";
-
-// Import ace editor modes and themes
-import "ace-builds/src-noconflict/mode-javascript";
-import "ace-builds/src-noconflict/mode-css";
-import "ace-builds/src-noconflict/mode-html";
-import "ace-builds/src-noconflict/mode-json";
-import "ace-builds/src-noconflict/mode-typescript";
-import "ace-builds/src-noconflict/theme-monokai";
-import "ace-builds/src-noconflict/theme-github";
-import "ace-builds/src-noconflict/ext-language_tools";
+import CodeEditor from "./CodeEditor";
 
 interface SchemaBasedPropertiesProps {
   schema: ActionConfigSchema;
@@ -156,49 +146,30 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
                 {property.description}
               </Text>
             )}
-            <AceEditor
-              mode={property.language || "javascript"}
-              theme="github"
+            <CodeEditor
+              language={property.language}
               value={value}
               onChange={(val) => onChange(key, val)}
-              name={`ace-editor-${key}`}
-              width="100%"
-              height={
-                typeof property.height === "number"
-                  ? `${property.height}px`
-                  : property.height || "200px"
-              }
-              editorProps={{ $blockScrolling: true }}
-              setOptions={{
-                enableBasicAutocompletion: true,
-                enableLiveAutocompletion: true,
-                enableSnippets: true,
-                showLineNumbers: true,
-                tabSize: 2,
-                fontSize: 14,
-              }}
+              height={property.height || 200}
               placeholder={property.placeholder}
-              style={{
-                border: "1px solid #ced4da",
-                borderRadius: "4px",
-              }}
+              key={key}
             />
           </div>
         );
 
-       case "credentials":
-         return (
-           <CredentialsSelect
-             key={key}
-             label={property.label}
-             placeholder={property.placeholder}
-             description={property.description}
-             value={value}
-             onChange={(val) => onChange(key, val)}
-             required={property.required}
-             service={property.service}
-           />
-         );
+      case "credentials":
+        return (
+          <CredentialsSelect
+            key={key}
+            label={property.label}
+            placeholder={property.placeholder}
+            description={property.description}
+            value={value}
+            onChange={(val) => onChange(key, val)}
+            required={property.required}
+            service={property.service}
+          />
+        );
       case "custom":
         return property.render ? (
           <div key={key}>
