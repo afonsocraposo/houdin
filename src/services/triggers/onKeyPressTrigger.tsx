@@ -23,16 +23,15 @@ export class KeyPressTrigger extends BaseTrigger {
           description:
             "Set the key combination that will trigger this workflow",
           required: true,
-          render: (values: Record<string, any>, onChange: (key: string, value: any) => void) => {
-            console.log("Custom render function called", values);
-            return <div style={{padding: '10px', border: '1px solid #ccc', borderRadius: '4px'}}>
-              <div>Custom Key Binding Component</div>
-              <KeybindingSetter 
-                value={values.keyCombo} 
-                onChange={(combo) => onChange('keyCombo', combo)}
-              />
-            </div>;
-          },
+          render: (
+            values: Record<string, any>,
+            onChange: (key: string, value: any) => void,
+          ) => (
+            <KeybindingSetter
+              value={values.keyCombo}
+              onChange={(combo) => onChange("keyCombo", combo)}
+            />
+          ),
         },
       },
     };
