@@ -1,46 +1,53 @@
-import { BaseAction, ActionConfigSchema, ActionMetadata, ActionExecutionContext } from '../../types/actions';
-import { NotificationService } from '../notification';
+import {
+  BaseAction,
+  ActionConfigSchema,
+  ActionMetadata,
+  ActionExecutionContext,
+} from "../../types/actions";
+import { NotificationService } from "../notification";
 
 export class CustomScriptAction extends BaseAction {
   readonly metadata: ActionMetadata = {
-    type: 'custom-script',
-    label: 'Custom Script',
-    icon: '⚡',
-    description: 'Run custom JavaScript'
+    type: "custom-script",
+    label: "Custom Script",
+    icon: "⚡",
+    description: "Run custom JavaScript",
   };
 
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
         customScript: {
-          type: 'code',
-          label: 'Custom JavaScript',
-          placeholder: 'alert(\'Hello World!\'); console.log(\'Custom script executed\');',
-          description: 'JavaScript code to execute. Use Return(data) to send data to next actions.',
-          language: 'javascript',
+          type: "code",
+          label: "Custom JavaScript",
+          placeholder:
+            "alert('Hello World!'); console.log('Custom script executed');",
+          description:
+            "JavaScript code to execute. Use Return(data) to send data to next actions.",
+          language: "javascript",
           height: 200,
-          required: true
-        }
-      }
+          required: true,
+        },
+      },
     };
   }
 
   getDefaultConfig(): Record<string, any> {
     return {
-      customScript: ''
+      customScript: "",
     };
   }
 
   async execute(
     config: Record<string, any>,
     context: ActionExecutionContext,
-    nodeId: string
+    nodeId: string,
   ): Promise<void> {
     const { customScript } = config;
-    
+
     if (!customScript) {
       NotificationService.showErrorNotification({
-        message: 'No script provided',
+        message: "No script provided",
       });
       return;
     }
@@ -52,18 +59,21 @@ export class CustomScriptAction extends BaseAction {
       // Store the output in the execution context
       context.setOutput(nodeId, result);
     } catch (error) {
-      console.error('Error executing custom script:', error);
+      console.error("Error executing custom script:", error);
       NotificationService.showErrorNotification({
-        message: 'Error executing custom script',
+        message: "Error executing custom script",
       });
-      context.setOutput(nodeId, ''); // Store empty on error
+      context.setOutput(nodeId, ""); // Store empty on error
     }
   }
 
-  private executeScriptWithOutput(scriptCode: string, nodeId: string): Promise<any> {
+  private executeScriptWithOutput(
+    scriptCode: string,
+    nodeId: string,
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        reject(new Error('Script execution timeout'));
+        reject(new Error("Script execution timeout"));
       }, 10000); // 10 second timeout
 
       // Listen for response from injected script
@@ -71,7 +81,7 @@ export class CustomScriptAction extends BaseAction {
         if (event.detail?.nodeId === nodeId) {
           clearTimeout(timeoutId);
           window.removeEventListener(
-            'workflow-script-response',
+            "workflow-script-response",
             responseHandler as EventListener,
           );
           resolve(event.detail.result);
@@ -79,7 +89,7 @@ export class CustomScriptAction extends BaseAction {
       };
 
       window.addEventListener(
-        'workflow-script-response',
+        "workflow-script-response",
         responseHandler as EventListener,
       );
 
@@ -118,10 +128,10 @@ export class CustomScriptAction extends BaseAction {
 
   private injectInlineScript(code: string) {
     // Use blob URL to avoid CSP violations with inline scripts
-    const blob = new Blob([code], { type: 'application/javascript' });
+    const blob = new Blob([code], { type: "application/javascript" });
     const url = URL.createObjectURL(blob);
-    
-    const script = document.createElement('script');
+
+    const script = document.createElement("script");
     script.src = url;
     script.onload = () => {
       URL.revokeObjectURL(url); // Clean up blob URL
@@ -131,7 +141,7 @@ export class CustomScriptAction extends BaseAction {
       URL.revokeObjectURL(url); // Clean up blob URL on error
       script.remove(); // Clean up script element
     };
-    
+
     document.head.appendChild(script);
   }
 }

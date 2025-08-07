@@ -14,6 +14,26 @@ ace.config.set("modePath", "");
 ace.config.set("themePath", "");
 ace.config.set("workerPath", "");
 ace.config.set("loadWorkerFromBlob", false);
+
+// Add custom CSS for placeholder styling
+const placeholderStyles = `
+  .ace-editor-custom .ace_placeholder {
+    font-family: Monaco, Menlo, Ubuntu Mono, monospace !important;
+    font-size: 14px !important;
+    color: #999 !important;
+    font-style: normal !important;
+transform: none !important;
+margin: 0 !important;
+padding: 0  4px  !important;
+  }
+`;
+
+// Inject styles
+if (typeof document !== "undefined") {
+  const style = document.createElement("style");
+  style.textContent = placeholderStyles;
+  document.head.appendChild(style);
+}
 // import { useColorScheme } from "@mantine/hooks";
 
 interface CodeEditorProps {
@@ -59,13 +79,18 @@ export default function CodeEditor({
         highlightGutterLine: false,
         showPrintMargin: false,
         foldStyle: "manual",
+        fontSize: 14,
+        fontFamily: "Monaco, Menlo, Ubuntu Mono, monospace",
       }}
       highlightActiveLine={false}
       placeholder={placeholder}
       style={{
         border: "1px solid #ced4da",
         borderRadius: "4px",
+        fontFamily: "Monaco, Menlo, Ubuntu Mono, monospace",
+        fontSize: "14px",
       }}
+      className="ace-editor-custom"
     />
   );
 }
