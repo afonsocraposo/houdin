@@ -62,7 +62,7 @@ export class InjectComponentAction extends BaseAction {
           type: "text",
           label: "Component Text",
           placeholder: "Click me, Enter text, etc.",
-          defaultValue: "Button",
+          defaultValue: "Hello",
         },
 
         // Button-specific properties
@@ -92,7 +92,7 @@ export class InjectComponentAction extends BaseAction {
           type: "color",
           label: "Text Color",
           description: "Color of the text",
-          allowDefault: true,
+          defaultValue: "#000000",
           showWhen: {
             field: "componentType",
             value: "text",

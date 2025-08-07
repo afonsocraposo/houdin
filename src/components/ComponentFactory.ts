@@ -23,11 +23,6 @@ export class ComponentFactory {
       default:
         return TextFactory({ recipe });
     }
-
-    // Apply custom styles
-    // if (recipe.componentStyle) {
-    //   element.style.cssText = recipe.componentStyle;
-    // }
   }
 
   private static triggerNextAction(
