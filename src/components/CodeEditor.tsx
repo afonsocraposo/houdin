@@ -7,7 +7,7 @@ import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github_light_default";
 import "ace-builds/src-noconflict/theme-github_dark";
 import "ace-builds/src-noconflict/ext-language_tools";
-import { useColorScheme } from "@mantine/hooks";
+// import { useColorScheme } from "@mantine/hooks";
 
 interface CodeEditorProps {
   language?: string;

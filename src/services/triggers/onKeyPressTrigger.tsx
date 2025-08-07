@@ -11,16 +11,28 @@ export class KeyPressTrigger extends BaseTrigger {
     type: "key-press",
     label: "Key Press",
     icon: "⌨️",
-    description: "Trigger when a specific key is pressed",
+    description: "Trigger when a specific key combination is pressed",
   };
 
   getConfigSchema(): TriggerConfigSchema {
     return {
       properties: {
-        keyCode: {
+        keyCombo: {
           type: "custom",
-          label: "Key Code",
-          render: (_values: Record<string, any>) => <KeybindingSetter />,
+          label: "Key Combination",
+          description:
+            "Set the key combination that will trigger this workflow",
+          required: true,
+          render: (values: Record<string, any>, onChange: (key: string, value: any) => void) => {
+            console.log("Custom render function called", values);
+            return <div style={{padding: '10px', border: '1px solid #ccc', borderRadius: '4px'}}>
+              <div>Custom Key Binding Component</div>
+              <KeybindingSetter 
+                value={values.keyCombo} 
+                onChange={(combo) => onChange('keyCombo', combo)}
+              />
+            </div>;
+          },
         },
       },
     };
@@ -28,7 +40,7 @@ export class KeyPressTrigger extends BaseTrigger {
 
   getDefaultConfig(): Record<string, any> {
     return {
-      selector: "",
+      keyCombo: "",
     };
   }
 
@@ -37,45 +49,46 @@ export class KeyPressTrigger extends BaseTrigger {
     _context: TriggerExecutionContext,
     onTrigger: () => Promise<void>,
   ): Promise<TriggerSetupResult> {
-    const selector = config.selector;
+    const { keyCombo } = config;
 
-    // Check if element already exists
-    const existingElement = document.querySelector(selector);
-    if (existingElement) {
-      await onTrigger();
+    if (!keyCombo) {
+      console.warn("No key combination configured for key press trigger");
       return {};
     }
 
-    // Set up observer to watch for element
-    const observer = new MutationObserver(async (mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === "childList") {
-          const element = document.querySelector(selector);
-          if (element) {
-            observer.disconnect();
-            await onTrigger();
-            return;
-          }
-        }
+    const handleKeyPress = async (event: KeyboardEvent) => {
+      const pressedCombo = this.formatKeyCombo(event);
+
+      if (pressedCombo === keyCombo) {
+        event.preventDefault();
+        await onTrigger();
       }
-    });
+    };
 
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
-    // Clean up after 30 seconds to prevent memory leaks
-    const timeoutId = window.setTimeout(() => {
-      observer.disconnect();
-      console.log(`Component load trigger timed out for selector: ${selector}`);
-    }, 30000);
+    // Add global key listener
+    window.addEventListener("keyup", handleKeyPress);
 
     return {
       cleanup: () => {
-        observer.disconnect();
-        clearTimeout(timeoutId);
+        window.removeEventListener("keyup", handleKeyPress);
       },
     };
+  }
+
+  private formatKeyCombo(event: KeyboardEvent): string {
+    const keys = [];
+
+    if (event.ctrlKey) keys.push("Ctrl");
+    if (event.altKey) keys.push("Alt");
+    if (event.metaKey) keys.push("Meta");
+    if (event.shiftKey) keys.push("Shift");
+
+    const mainKey = event.key;
+
+    if (!["Control", "Shift", "Alt", "Meta"].includes(mainKey)) {
+      keys.push(mainKey.length === 1 ? mainKey.toUpperCase() : mainKey);
+    }
+
+    return keys.join(" + ");
   }
 }

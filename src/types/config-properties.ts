@@ -48,7 +48,7 @@ export interface CodeConfigProperty extends BaseConfigProperty {
 
 export interface CustomConfigProperty extends BaseConfigProperty {
   type: 'custom';
-  render: (values: Record<string, any>) => ReactElement | null;
+  render: (values: Record<string, any>, onChange: (key: string, value: any) => void) => ReactElement | null;
 }
 
 export interface CredentialsConfigProperty extends BaseConfigProperty {

@@ -15,6 +15,7 @@ import {
   ConditionNodeData,
 } from "../types/workflow";
 import { ActionRegistry } from "../services/actionRegistry";
+import { TriggerRegistry } from "../services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
 
 interface NodePropertiesProps {
@@ -53,41 +54,23 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   };
 
   const renderTriggerProperties = (data: TriggerNodeData) => {
-    switch (data.triggerType) {
-      case "component-load":
+    const triggerRegistry = TriggerRegistry.getInstance();
+
+    // Use schema-based rendering for triggers that have been migrated
+    if (triggerRegistry.hasTrigger(data.triggerType)) {
+      const schema = triggerRegistry.getConfigSchema(data.triggerType);
+      if (schema) {
         return (
-          <TextInput
-            label="Element Selector"
-            placeholder=".button, #submit"
-            description="CSS selector for the element"
-            value={data.config.selector || ""}
-            onChange={(e) => updateNodeData("config.selector", e.target.value)}
+          <SchemaBasedProperties
+            schema={schema}
+            values={data.config}
+            onChange={(key, value) => updateNodeData(`config.${key}`, value)}
           />
         );
-
-      case "delay":
-        return (
-          <TextInput
-            label="Delay (milliseconds)"
-            placeholder="1000"
-            description="Delay in milliseconds"
-            value={data.config.delay?.toString() || ""}
-            onChange={(e) =>
-              updateNodeData("config.delay", parseInt(e.target.value) || 0)
-            }
-          />
-        );
-
-      case "page-load":
-        return (
-          <Text size="sm" c="dimmed">
-            This trigger activates when the page loads. No configuration needed.
-          </Text>
-        );
-
-      default:
-        return null;
+      }
     }
+
+    return null;
   };
 
   const renderActionProperties = (data: ActionNodeData) => {

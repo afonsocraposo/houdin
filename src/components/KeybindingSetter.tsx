@@ -18,15 +18,27 @@ function formatKeyCombo(event: KeyboardEvent): string {
   return keys.join(" + ");
 }
 
-export function KeybindingSetter() {
+interface KeybindingSetterProps {
+  value?: string;
+  onChange?: (keyCombo: string) => void;
+}
+
+export function KeybindingSetter({ value, onChange }: KeybindingSetterProps) {
   const [isListening, setIsListening] = useState(false);
-  const [keyCombo, setKeyCombo] = useState<string | null>(null);
+  const [keyCombo, setKeyCombo] = useState<string>(value || "");
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Sync with external value changes
+  useEffect(() => {
+    if (value !== undefined && value !== keyCombo) {
+      setKeyCombo(value);
+    }
+  }, [value]);
 
   useEffect(() => {
     if (!isListening) return;
 
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyPress = (event: KeyboardEvent) => {
       event.preventDefault();
 
       if (event.key === "Escape") {
@@ -38,28 +50,22 @@ export function KeybindingSetter() {
       if (combo) {
         setKeyCombo(combo);
         setIsListening(false);
+        // Notify parent component of the change
+        onChange?.(combo);
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isListening]);
+    window.addEventListener("keyup", handleKeyPress);
+    return () => window.removeEventListener("keyup", handleKeyPress);
+  }, [isListening, onChange]);
 
   return (
-    <div>
-      <Button
-        onClick={() => setIsListening(true)}
-        ref={buttonRef}
-        variant={isListening ? "outline" : "filled"}
-      >
-        {isListening ? "Press any key..." : keyCombo || "Set Keybinding"}
-      </Button>
-
-      {keyCombo && !isListening && (
-        <Text size="sm" mt="sm" c="dimmed">
-          Keybinding: <strong>{keyCombo}</strong>
-        </Text>
-      )}
-    </div>
+    <Button
+      onClick={() => setIsListening(true)}
+      ref={buttonRef}
+      variant={isListening ? "outline" : "filled"}
+    >
+      {isListening ? "Press any key..." : keyCombo || "Set Keybinding"}
+    </Button>
   );
 }

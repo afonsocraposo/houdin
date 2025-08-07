@@ -9,12 +9,12 @@ import {
   InputLabel,
   Text,
 } from "@mantine/core";
-import { ActionConfigSchema, ActionConfigProperty } from "../types/actions";
+import { ConfigSchema, ConfigProperty } from "../types/config-properties";
 import { CredentialsSelect } from "./CredentialsSelect";
 import CodeEditor from "./CodeEditor";
 
 interface SchemaBasedPropertiesProps {
-  schema: ActionConfigSchema;
+  schema: ConfigSchema;
   values: Record<string, any>;
   onChange: (path: string, value: any) => void;
 }
@@ -25,7 +25,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
   onChange,
 }) => {
   // Check if a property should be shown based on showWhen condition
-  const shouldShowProperty = (property: ActionConfigProperty): boolean => {
+  const shouldShowProperty = (property: ConfigProperty): boolean => {
     if (!property.showWhen) return true;
 
     const { field, value: conditionValue } = property.showWhen;
@@ -38,7 +38,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
     return fieldValue === conditionValue;
   };
 
-  const renderProperty = (key: string, property: ActionConfigProperty) => {
+  const renderProperty = (key: string, property: ConfigProperty) => {
     if (!shouldShowProperty(property)) {
       return null;
     }
@@ -171,14 +171,13 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           />
         );
       case "custom":
-        return property.render ? (
+        return (
           <div key={key}>
             <InputLabel mb="xs">{property.label}</InputLabel>
             <br />
-            {property.render(values)}
+            {property.render(values, onChange)}
           </div>
-        ) : null;
-
+        );
       default:
         return null;
     }
