@@ -56,6 +56,7 @@ export class InjectStyleAction extends BaseAction {
 
   private injectInlineStyle(code: string) {
     const script = document.createElement("style");
+    script.setAttribute("data-workflow-injected", "true");
     script.textContent = code;
     document.head.appendChild(script);
   }
