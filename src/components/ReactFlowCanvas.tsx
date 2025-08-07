@@ -376,7 +376,7 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
       dagreGraph.setGraph({
         rankdir: "LR", // Left to right layout
         nodesep: 100, // Horizontal spacing between nodes
-        ranksep: 150, // Vertical spacing between ranks/levels
+        ranksep: 100, // Vertical spacing between ranks/levels
       });
 
       nodes.forEach((node) => {
