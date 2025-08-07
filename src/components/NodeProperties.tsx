@@ -6,7 +6,7 @@ import {
   Group,
   ScrollArea,
 } from "@mantine/core";
-import { WorkflowNode, NodeData } from "../types/workflow";
+import { WorkflowNode } from "../types/workflow";
 import { ActionRegistry } from "../services/actionRegistry";
 import { TriggerRegistry } from "../services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
@@ -46,13 +46,18 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     onNodeUpdate(updatedNode);
   };
 
-  const renderTriggerProperties = (data: NodeData) => {
+  const renderTriggerProperties = (data: any) => {
     const triggerRegistry = TriggerRegistry.getInstance();
+    const triggerType = data.triggerType;
+
+    if (!triggerType) {
+      return <Text c="red">No trigger type found</Text>;
+    }
 
     // Use schema-based rendering for triggers that have been migrated
-    if (triggerRegistry.hasTrigger(data.type)) {
-      const trigger = triggerRegistry.getTrigger(data.type);
-      const schema = triggerRegistry.getConfigSchema(data.type);
+    if (triggerRegistry.hasTrigger(triggerType)) {
+      const trigger = triggerRegistry.getTrigger(triggerType);
+      const schema = triggerRegistry.getConfigSchema(triggerType);
 
       if (trigger && schema) {
         return (
@@ -76,13 +81,18 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     return null;
   };
 
-  const renderActionProperties = (data: NodeData) => {
+  const renderActionProperties = (data: any) => {
     const actionRegistry = ActionRegistry.getInstance();
+    const actionType = data.actionType;
+
+    if (!actionType) {
+      return <Text c="red">No action type found</Text>;
+    }
 
     // Use schema-based rendering for actions that have been migrated
-    if (actionRegistry.hasAction(data.type)) {
-      const action = actionRegistry.getAction(data.type);
-      const schema = actionRegistry.getConfigSchema(data.type);
+    if (actionRegistry.hasAction(actionType)) {
+      const action = actionRegistry.getAction(actionType);
+      const schema = actionRegistry.getConfigSchema(actionType);
 
       if (action && schema) {
         return (
@@ -107,8 +117,10 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     return null;
   };
 
-  const renderConditionProperties = (data: NodeData) => {
-    switch (data.type) {
+  const renderConditionProperties = (data: any) => {
+    const conditionType = data.conditionType;
+    
+    switch (conditionType) {
       default:
         return null;
     }
@@ -129,18 +141,18 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   const getNodeTitle = (node: WorkflowNode): string => {
     if (node.type === "trigger") {
-      const data = node.data as NodeData;
+      const triggerType = node.data?.triggerType;
       const triggerRegistry = TriggerRegistry.getInstance();
-      const trigger = triggerRegistry.getTrigger(data.type);
+      const trigger = triggerRegistry.getTrigger(triggerType);
       return trigger
         ? `${trigger.metadata.icon} ${trigger.metadata.label}`
         : "Trigger";
     }
 
     if (node.type === "action") {
-      const data = node.data as NodeData;
+      const actionType = node.data?.actionType;
       const actionRegistry = ActionRegistry.getInstance();
-      const action = actionRegistry.getAction(data.type);
+      const action = actionRegistry.getAction(actionType);
       return action
         ? `${action.metadata.icon} ${action.metadata.label}`
         : "Action";
@@ -162,10 +174,8 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       </Group>
       <Stack gap="md">
         {node.type === "trigger" && renderTriggerProperties(node.data)}
-        {node.type === "action" &&
-          renderActionProperties(node.data as NodeData)}
-        {node.type === "condition" &&
-          renderConditionProperties(node.data as NodeData)}
+        {node.type === "action" && renderActionProperties(node.data)}
+        {node.type === "condition" && renderConditionProperties(node.data)}
       </Stack>
     </ScrollArea>
   );
