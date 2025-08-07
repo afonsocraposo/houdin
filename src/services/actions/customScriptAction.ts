@@ -21,9 +21,9 @@ export class CustomScriptAction extends BaseAction {
           type: "code",
           label: "Custom JavaScript",
           placeholder:
-            "alert('Hello World!'); console.log('Custom script executed');",
+            "// Access workflow context variables:\n// const prevResult = Get('nodeId'); // Get output from another node\n// const text = interpolate('Hello {{nodeId}}!'); // Interpolate variables\n\nalert('Hello World!');\nconsole.log('Custom script executed');\n\n// Use Return(data) to send data to next actions\n// Return({ message: 'Success' });",
           description:
-            "JavaScript code to execute. Use Return(data) to send data to next actions.",
+            "JavaScript code to execute. Use Get(nodeId) to access variables from other nodes. Use Return(data) to send data to next actions.",
           language: "javascript",
           height: 200,
           required: true,
@@ -54,7 +54,11 @@ export class CustomScriptAction extends BaseAction {
 
     try {
       // Create a promise that resolves when the script sends back data
-      const result = await this.executeScriptWithOutput(customScript, nodeId);
+      const result = await this.executeScriptWithOutput(
+        customScript,
+        nodeId,
+        context,
+      );
 
       // Store the output in the execution context
       context.setOutput(nodeId, result);
@@ -70,6 +74,7 @@ export class CustomScriptAction extends BaseAction {
   private executeScriptWithOutput(
     scriptCode: string,
     nodeId: string,
+    context: ActionExecutionContext,
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
@@ -93,10 +98,43 @@ export class CustomScriptAction extends BaseAction {
         responseHandler as EventListener,
       );
 
-      // Inject script that includes response mechanism
+      // Prepare context data for the script
+      const contextData = {
+        outputs: context.outputs,
+        workflowId: context.workflowId,
+      };
+
+      // Inject script that includes response mechanism and context
       const wrappedScript = `
             (function() {
                 try {
+                    // Inject workflow context into global scope
+                    window.WorkflowContext = ${JSON.stringify(contextData)};
+
+                    // Helper function to get output from another node
+                    window.Get = function(nodeId) {
+                        return window.WorkflowContext.outputs[nodeId];
+                    };
+
+                    // Helper function to interpolate variables like {{nodeId}}
+                    window.interpolate = function(text) {
+                        if (!text) return text;
+                        return text.replace(/\\{\\{([^}]+)\\}\\}/g, function(match, expression) {
+                            const parts = expression.trim().split('.');
+                            const nodeId = parts[0];
+                            const property = parts[1];
+
+                            const output = window.WorkflowContext.outputs[nodeId];
+                            if (output === undefined) return match;
+
+                            if (property && typeof output === 'object' && output !== null) {
+                                return String(output[property] || match);
+                            }
+
+                            return String(output);
+                        });
+                    };
+
                     // Your custom script code here
                     ${scriptCode}
 
