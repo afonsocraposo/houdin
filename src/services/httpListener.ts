@@ -57,6 +57,12 @@ export class HttpListenerService {
 
   registerTrigger(workflowId: string, triggerNodeId: string, urlPattern: string, method: string): void {
     const triggerKey = `${workflowId}-${triggerNodeId}`;
+    
+    // Skip if already registered
+    if (this.triggers.has(triggerKey)) {
+      return;
+    }
+    
     this.triggers.set(triggerKey, {
       workflowId,
       triggerNodeId,
@@ -219,6 +225,13 @@ export class HttpListenerService {
 
   private matchesMethod(requestMethod: string, configMethod: string): boolean {
     return configMethod === 'ANY' || requestMethod.toUpperCase() === configMethod.toUpperCase();
+  }
+
+  clearAllTriggers(): void {
+    this.triggers.clear();
+    if (this.isListening) {
+      this.stopListening();
+    }
   }
 
   destroy(): void {

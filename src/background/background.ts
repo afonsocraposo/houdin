@@ -1,4 +1,5 @@
 import { HttpListenerService } from '../services/httpListener';
+import { StorageManager } from '../services/storage';
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -35,8 +36,47 @@ try {
       console.error('Error sending HTTP trigger message:', error);
     });
   });
+
+  // Pre-register HTTP triggers for active workflows
+  initializeActiveHttpTriggers();
 } catch (error) {
   console.error("Failed to initialize HttpListenerService:", error);
+}
+
+async function initializeActiveHttpTriggers(): Promise<void> {
+  try {
+    // Clear existing triggers first
+    if (httpListener) {
+      httpListener.clearAllTriggers();
+    }
+    
+    const storageManager = StorageManager.getInstance();
+    const workflows = await storageManager.getWorkflows();
+    
+    // Find all enabled workflows with HTTP triggers
+    for (const workflow of workflows) {
+      if (!workflow.enabled) continue;
+      
+      const httpTriggerNodes = workflow.nodes.filter(node => 
+        node.type === 'trigger' && 
+        node.data?.triggerType === 'http-request'
+      );
+      
+      for (const triggerNode of httpTriggerNodes) {
+        const config = triggerNode.data?.config;
+        if (config?.urlPattern) {
+          httpListener.registerTrigger(
+            workflow.id,
+            triggerNode.id,
+            config.urlPattern,
+            config.method || 'ANY'
+          );
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error initializing active HTTP triggers:', error);
+  }
 }
 
 runtime.runtime.onMessage.addListener(
@@ -68,6 +108,9 @@ runtime.runtime.onMessage.addListener(
       } else {
         console.error("HttpListenerService not available for trigger unregistration");
       }
+    } else if (message.type === "SYNC_HTTP_TRIGGERS") {
+      // Re-sync HTTP triggers for active workflows
+      initializeActiveHttpTriggers();
     }
   },
 );

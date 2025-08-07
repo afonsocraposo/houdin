@@ -35,6 +35,10 @@ export class ContentInjector {
     this.storageManager.onStorageChanged((workflows) => {
       console.log("Workflows updated, reloading...");
       this.workflows = workflows;
+      
+      // Sync HTTP triggers in background script
+      chrome.runtime.sendMessage({ type: 'SYNC_HTTP_TRIGGERS' });
+      
       this.scheduleProcessing();
     });
   }
