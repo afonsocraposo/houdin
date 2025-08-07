@@ -117,9 +117,21 @@ export class CustomScriptAction extends BaseAction {
   }
 
   private injectInlineScript(code: string) {
+    // Use blob URL to avoid CSP violations with inline scripts
+    const blob = new Blob([code], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    
     const script = document.createElement('script');
-    script.textContent = code;
+    script.src = url;
+    script.onload = () => {
+      URL.revokeObjectURL(url); // Clean up blob URL
+      script.remove(); // Clean up script element
+    };
+    script.onerror = () => {
+      URL.revokeObjectURL(url); // Clean up blob URL on error
+      script.remove(); // Clean up script element
+    };
+    
     document.head.appendChild(script);
-    script.remove(); // Clean up
   }
 }
