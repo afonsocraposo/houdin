@@ -43,7 +43,7 @@ export default function TextFactory({ recipe }: TextProps) {
 
   return (
     <Text style={textStyle} c={recipe.componentText ? undefined : "dimmed"}>
-      {recipe.componentText || "Empty"}
+      {recipe.componentText}
     </Text>
   );
 }
