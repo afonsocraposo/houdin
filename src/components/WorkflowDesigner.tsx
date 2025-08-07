@@ -102,11 +102,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     onSave(workflowDefinition);
   };
 
-  const handleTest = () => {
-    console.log("Testing workflow:", { nodes, connections });
-    alert("Workflow testing is not yet implemented");
-  };
-
   const handleExport = () => {
     if (!workflowName.trim()) {
       return;
@@ -150,13 +145,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 onClick={handleExport}
               >
                 Export
-              </Button>
-              <Button
-                variant="outline"
-                leftSection={<IconPlayerPlay size={16} />}
-                onClick={handleTest}
-              >
-                Test
               </Button>
               <Button
                 leftSection={<IconDeviceFloppy size={16} />}
