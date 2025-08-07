@@ -35,20 +35,8 @@ export interface WorkflowExecutionContext {
 }
 
 // Trigger type definitions
-export interface TriggerNodeData<T = Record<string, any>> {
-  triggerType: string;
-  config: T;
-}
-
-// Condition type definitions
-export interface ConditionNodeData<T = Record<string, any>> {
-  conditionType: string;
-  config: T;
-}
-
-// Action type definitions
-export interface ActionNodeData<T = Record<string, any>> {
-  actionType: string;
+export interface NodeData<T = Record<string, any>> {
+  type: string;
   config: T;
 }
 

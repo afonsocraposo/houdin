@@ -15,7 +15,8 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
     type: 'llm-openai',
     label: 'LLM OpenAI',
     icon: '🤖',
-    description: 'Send prompt to OpenAI and get response'
+    description: 'Send prompt to OpenAI and get response',
+    completion: true
   };
 
   getConfigSchema(): ActionConfigSchema {

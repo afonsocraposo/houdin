@@ -10,7 +10,8 @@ export class GetElementContentAction extends BaseAction<GetElementContentActionC
     type: 'get-element-content',
     label: 'Get Element Content',
     icon: '📖',
-    description: 'Extract text content from page element'
+    description: 'Extract text content from page element',
+    completion: true
   };
 
   getConfigSchema(): ActionConfigSchema {

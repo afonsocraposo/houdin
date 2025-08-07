@@ -18,6 +18,7 @@ export interface ActionMetadata {
   label: string;
   icon: string;
   description: string;
+  completion?: boolean; // Whether this action triggers connected actions after completion
 }
 
 // Extended execution context that includes workflow info

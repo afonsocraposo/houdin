@@ -1,19 +1,12 @@
 import React from "react";
 import {
   Stack,
-  TextInput,
-  Textarea,
   Text,
   Card,
   Group,
   ScrollArea,
 } from "@mantine/core";
-import {
-  WorkflowNode,
-  TriggerNodeData,
-  ActionNodeData,
-  ConditionNodeData,
-} from "../types/workflow";
+import { WorkflowNode, NodeData } from "../types/workflow";
 import { ActionRegistry } from "../services/actionRegistry";
 import { TriggerRegistry } from "../services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
@@ -53,14 +46,14 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     onNodeUpdate(updatedNode);
   };
 
-  const renderTriggerProperties = (data: TriggerNodeData) => {
+  const renderTriggerProperties = (data: NodeData) => {
     const triggerRegistry = TriggerRegistry.getInstance();
 
     // Use schema-based rendering for triggers that have been migrated
-    if (triggerRegistry.hasTrigger(data.triggerType)) {
-      const trigger = triggerRegistry.getTrigger(data.triggerType);
-      const schema = triggerRegistry.getConfigSchema(data.triggerType);
-      
+    if (triggerRegistry.hasTrigger(data.type)) {
+      const trigger = triggerRegistry.getTrigger(data.type);
+      const schema = triggerRegistry.getConfigSchema(data.type);
+
       if (trigger && schema) {
         return (
           <Stack gap="md">
@@ -68,7 +61,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
             <Text size="sm" c="dimmed">
               {trigger.metadata.description}
             </Text>
-            
+
             {/* Configuration */}
             <SchemaBasedProperties
               schema={schema}
@@ -83,14 +76,14 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     return null;
   };
 
-  const renderActionProperties = (data: ActionNodeData) => {
+  const renderActionProperties = (data: NodeData) => {
     const actionRegistry = ActionRegistry.getInstance();
 
     // Use schema-based rendering for actions that have been migrated
-    if (actionRegistry.hasAction(data.actionType)) {
-      const action = actionRegistry.getAction(data.actionType);
-      const schema = actionRegistry.getConfigSchema(data.actionType);
-      
+    if (actionRegistry.hasAction(data.type)) {
+      const action = actionRegistry.getAction(data.type);
+      const schema = actionRegistry.getConfigSchema(data.type);
+
       if (action && schema) {
         return (
           <Stack gap="md">
@@ -98,7 +91,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
             <Text size="sm" c="dimmed">
               {action.metadata.description}
             </Text>
-            
+
             {/* Configuration */}
             <SchemaBasedProperties
               schema={schema}
@@ -114,33 +107,8 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     return null;
   };
 
-  const renderConditionProperties = (data: ConditionNodeData) => {
-    switch (data.conditionType) {
-      case "element-exists":
-        return (
-          <TextInput
-            label="Element Selector"
-            placeholder=".element, #id"
-            description="CSS selector to check for existence"
-            value={data.config.selector || ""}
-            onChange={(e) => updateNodeData("config.selector", e.target.value)}
-          />
-        );
-
-      case "custom-condition":
-        return (
-          <Textarea
-            label="Custom Condition (JavaScript)"
-            placeholder="return document.querySelector('.element').textContent.includes('text');"
-            description="Return true or false"
-            rows={4}
-            value={data.config.customScript || ""}
-            onChange={(e) =>
-              updateNodeData("config.customScript", e.target.value)
-            }
-          />
-        );
-
+  const renderConditionProperties = (data: NodeData) => {
+    switch (data.type) {
       default:
         return null;
     }
@@ -161,23 +129,27 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   const getNodeTitle = (node: WorkflowNode): string => {
     if (node.type === "trigger") {
-      const data = node.data as TriggerNodeData;
+      const data = node.data as NodeData;
       const triggerRegistry = TriggerRegistry.getInstance();
-      const trigger = triggerRegistry.getTrigger(data.triggerType);
-      return trigger ? `${trigger.metadata.icon} ${trigger.metadata.label}` : "Trigger";
+      const trigger = triggerRegistry.getTrigger(data.type);
+      return trigger
+        ? `${trigger.metadata.icon} ${trigger.metadata.label}`
+        : "Trigger";
     }
-    
+
     if (node.type === "action") {
-      const data = node.data as ActionNodeData;
+      const data = node.data as NodeData;
       const actionRegistry = ActionRegistry.getInstance();
-      const action = actionRegistry.getAction(data.actionType);
-      return action ? `${action.metadata.icon} ${action.metadata.label}` : "Action";
+      const action = actionRegistry.getAction(data.type);
+      return action
+        ? `${action.metadata.icon} ${action.metadata.label}`
+        : "Action";
     }
-    
+
     if (node.type === "condition") {
       return "Condition";
     }
-    
+
     return "Node";
   };
 
@@ -189,12 +161,11 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
         </Text>
       </Group>
       <Stack gap="md">
-        {node.type === "trigger" &&
-          renderTriggerProperties(node.data as TriggerNodeData)}
+        {node.type === "trigger" && renderTriggerProperties(node.data)}
         {node.type === "action" &&
-          renderActionProperties(node.data as ActionNodeData)}
+          renderActionProperties(node.data as NodeData)}
         {node.type === "condition" &&
-          renderConditionProperties(node.data as ConditionNodeData)}
+          renderConditionProperties(node.data as NodeData)}
       </Stack>
     </ScrollArea>
   );

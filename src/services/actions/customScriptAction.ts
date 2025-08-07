@@ -13,10 +13,11 @@ export interface CustomScriptActionConfig {
 
 export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
   readonly metadata: ActionMetadata = {
-    type: "custom-script",
-    label: "Custom Script",
-    icon: "⚡",
-    description: "Run custom JavaScript",
+    type: 'custom-script',
+    label: 'Custom Script',
+    icon: '🔧',
+    description: 'Execute custom JavaScript code',
+    completion: true
   };
 
   getConfigSchema(): ActionConfigSchema {

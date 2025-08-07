@@ -1,9 +1,8 @@
 import {
   WorkflowDefinition,
   WorkflowNode,
-  ActionNodeData,
-  TriggerNodeData,
   WorkflowExecutionContext,
+  NodeData,
 } from "../types/workflow";
 import { NotificationService } from "./notification";
 import { ActionRegistry } from "./actionRegistry";
@@ -49,7 +48,7 @@ export class WorkflowExecutor {
 
   constructor(private workflow: WorkflowDefinition) {
     this.context = new ExecutionContext();
-    
+
     // Initialize triggers registry
     initializeTriggers();
     this.triggerRegistry = TriggerRegistry.getInstance();
@@ -94,26 +93,29 @@ export class WorkflowExecutor {
   }
 
   private async setupTrigger(node: WorkflowNode): Promise<void> {
-    const triggerData = node.data as TriggerNodeData;
-    
+    const triggerData = node.data as NodeData;
+
     // Create trigger execution context
-    const triggerContext: TriggerExecutionContext = Object.assign(this.context, {
-      workflowId: this.workflow.id,
-      triggerNode: node
-    });
+    const triggerContext: TriggerExecutionContext = Object.assign(
+      this.context,
+      {
+        workflowId: this.workflow.id,
+        triggerNode: node,
+      },
+    );
 
     // Use trigger registry to setup the trigger
     try {
       await this.triggerRegistry.setupTrigger(
-        triggerData.triggerType,
+        triggerData.type,
         triggerData.config,
         triggerContext,
         async () => {
           await this.executeConnectedActions(node);
-        }
+        },
       );
     } catch (error) {
-      console.error(`Error setting up trigger ${triggerData.triggerType}:`, error);
+      console.error(`Error setting up trigger ${triggerData.type}:`, error);
       NotificationService.showErrorNotification({
         message: `Error setting up trigger: ${error}`,
       });
@@ -155,46 +157,46 @@ export class WorkflowExecutor {
   }
 
   private async executeAction(node: WorkflowNode): Promise<void> {
-    const actionData = node.data as ActionNodeData;
+    const actionData = node.data as NodeData;
     const actionRegistry = ActionRegistry.getInstance();
 
     // Try to execute with the new action system first
-    if (actionRegistry.hasAction(actionData.actionType)) {
+    if (actionRegistry.hasAction(actionData.type)) {
       try {
         // Create extended context with workflow ID
         const extendedContext = Object.assign(this.context, {
-          workflowId: this.workflow.id
+          workflowId: this.workflow.id,
         });
 
         await actionRegistry.execute(
-          actionData.actionType,
+          actionData.type,
           actionData.config,
           extendedContext,
-          node.id
+          node.id,
         );
-        
+
         // Execute connected actions after completion (for actions that need it)
-        if (actionData.actionType === "get-element-content" || actionData.actionType === "custom-script" || actionData.actionType === "llm-openai") {
+        const action = actionRegistry.getAction(actionData.type);
+        if (action?.metadata.completion) {
           await this.executeConnectedActionsFromNode(node.id);
         }
-        
+
         return;
       } catch (error) {
-        console.error(`Error executing action ${actionData.actionType}:`, error);
+        console.error(`Error executing action ${actionData.type}:`, error);
         NotificationService.showErrorNotification({
-          message: `Error executing ${actionData.actionType}: ${error}`,
+          message: `Error executing ${actionData.type}: ${error}`,
         });
         return;
       }
     }
 
     // Fallback: No actions should reach here anymore since we've converted them all
-    console.error(`Unknown action type: ${actionData.actionType}`);
+    console.error(`Unknown action type: ${actionData.type}`);
     NotificationService.showErrorNotification({
-      message: `Unknown action type: ${actionData.actionType}`,
+      message: `Unknown action type: ${actionData.type}`,
     });
   }
-
 
   destroy(): void {
     // Clean up all active triggers using the trigger registry
