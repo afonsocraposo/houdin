@@ -7,6 +7,8 @@ import {
 } from "../types/workflow";
 import { NotificationService } from "./notification";
 import { ActionRegistry } from "./actionRegistry";
+import { TriggerRegistry, initializeTriggers } from "./triggerInitializer";
+import { TriggerExecutionContext } from "../types/triggers";
 
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
@@ -41,13 +43,16 @@ class ExecutionContext implements WorkflowExecutionContext {
 }
 
 export class WorkflowExecutor {
-  private observerTimeouts: Map<string, number> = new Map();
-  private delayTimeouts: Map<string, number> = new Map();
-  private eventListener: (event: Event) => void;
   private context: ExecutionContext;
+  private eventListener: (event: Event) => void;
+  private triggerRegistry: TriggerRegistry;
 
   constructor(private workflow: WorkflowDefinition) {
     this.context = new ExecutionContext();
+    
+    // Initialize triggers registry
+    initializeTriggers();
+    this.triggerRegistry = TriggerRegistry.getInstance();
 
     // Set up listener for component triggers
     this.eventListener = (event: Event) => {
@@ -90,79 +95,29 @@ export class WorkflowExecutor {
 
   private async setupTrigger(node: WorkflowNode): Promise<void> {
     const triggerData = node.data as TriggerNodeData;
-
-    switch (triggerData.triggerType) {
-      case "page-load":
-        // Page is already loaded when this is called, so trigger immediately
-        await this.executeConnectedActions(node);
-        break;
-
-      case "component-load":
-        if (triggerData.config.selector) {
-          await this.setupComponentLoadTrigger(
-            node,
-            triggerData.config.selector,
-          );
-        }
-        break;
-
-      case "delay":
-        if (triggerData.config.delay) {
-          await this.setupDelayTrigger(node, triggerData.config.delay);
-        }
-        break;
-    }
-  }
-
-  private async setupComponentLoadTrigger(
-    node: WorkflowNode,
-    selector: string,
-  ): Promise<void> {
-    // Check if element already exists
-    const existingElement = document.querySelector(selector);
-    if (existingElement) {
-      await this.executeConnectedActions(node);
-      return;
-    }
-
-    // Set up observer to watch for element
-    const observer = new MutationObserver(async (mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === "childList") {
-          const element = document.querySelector(selector);
-          if (element) {
-            observer.disconnect();
-            await this.executeConnectedActions(node);
-            return;
-          }
-        }
-      }
+    
+    // Create trigger execution context
+    const triggerContext: TriggerExecutionContext = Object.assign(this.context, {
+      workflowId: this.workflow.id,
+      triggerNode: node
     });
 
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
-    // Clean up after 30 seconds to prevent memory leaks
-    const timeoutId = window.setTimeout(() => {
-      observer.disconnect();
-      console.log(`Component load trigger timed out for selector: ${selector}`);
-    }, 30000);
-
-    this.observerTimeouts.set(node.id, timeoutId);
-  }
-
-  private async setupDelayTrigger(
-    node: WorkflowNode,
-    delay: number,
-  ): Promise<void> {
-    const timeoutId = window.setTimeout(async () => {
-      await this.executeConnectedActions(node);
-      this.delayTimeouts.delete(node.id);
-    }, delay);
-
-    this.delayTimeouts.set(node.id, timeoutId);
+    // Use trigger registry to setup the trigger
+    try {
+      await this.triggerRegistry.setupTrigger(
+        triggerData.triggerType,
+        triggerData.config,
+        triggerContext,
+        async () => {
+          await this.executeConnectedActions(node);
+        }
+      );
+    } catch (error) {
+      console.error(`Error setting up trigger ${triggerData.triggerType}:`, error);
+      NotificationService.showErrorNotification({
+        message: `Error setting up trigger: ${error}`,
+      });
+    }
   }
 
   private async executeConnectedActions(
@@ -242,16 +197,8 @@ export class WorkflowExecutor {
 
 
   destroy(): void {
-    // Clean up any active timeouts and observers
-    this.observerTimeouts.forEach((timeoutId) => {
-      clearTimeout(timeoutId);
-    });
-    this.observerTimeouts.clear();
-
-    this.delayTimeouts.forEach((timeoutId) => {
-      clearTimeout(timeoutId);
-    });
-    this.delayTimeouts.clear();
+    // Clean up all active triggers using the trigger registry
+    this.triggerRegistry.cleanupAllTriggers();
 
     // Remove event listener
     document.removeEventListener(

@@ -41,11 +41,14 @@ import { IconPlus, IconTrash, IconLayoutGrid } from "@tabler/icons-react";
 import {
   WorkflowNode,
   WorkflowConnection,
-  NODE_CATEGORIES,
 } from "../types/workflow";
 import { copyToClipboard } from "../utils/helpers";
 import dagre from "@dagrejs/dagre";
 import { NotificationService } from "../services/notification";
+import { ActionRegistry } from "../services/actionRegistry";
+import { TriggerRegistry } from "../services/triggerRegistry";
+import { initializeTriggers } from "../services/triggerInitializer";
+import { initializeActions } from "../services/actionInitializer";
 
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
@@ -80,25 +83,45 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
   );
 
   const getNodeIcon = (node: WorkflowNode) => {
-    const allCategories = [
-      ...NODE_CATEGORIES.triggers,
-      ...NODE_CATEGORIES.actions,
-      ...NODE_CATEGORIES.conditions,
-    ];
+    // Initialize registries to ensure they're loaded
+    initializeTriggers();
+    initializeActions();
+    
+    const actionRegistry = ActionRegistry.getInstance();
+    const triggerRegistry = TriggerRegistry.getInstance();
+    
     const nodeType = node.data[node.type + "Type"];
-    const definition = allCategories.find((cat) => cat.type === nodeType);
-    return definition?.icon || "❓";
+    
+    if (node.type === "action") {
+      const action = actionRegistry.getAction(nodeType);
+      return action?.metadata.icon || "❓";
+    } else if (node.type === "trigger") {
+      const trigger = triggerRegistry.getTrigger(nodeType);
+      return trigger?.metadata.icon || "❓";
+    }
+    
+    return "❓";
   };
 
   const getNodeLabel = (node: WorkflowNode) => {
-    const allCategories = [
-      ...NODE_CATEGORIES.triggers,
-      ...NODE_CATEGORIES.actions,
-      ...NODE_CATEGORIES.conditions,
-    ];
+    // Initialize registries to ensure they're loaded
+    initializeTriggers();
+    initializeActions();
+    
+    const actionRegistry = ActionRegistry.getInstance();
+    const triggerRegistry = TriggerRegistry.getInstance();
+    
     const nodeType = node.data[node.type + "Type"];
-    const definition = allCategories.find((cat) => cat.type === nodeType);
-    return definition?.label || nodeType;
+    
+    if (node.type === "action") {
+      const action = actionRegistry.getAction(nodeType);
+      return action?.metadata.label || "Unknown";
+    } else if (node.type === "trigger") {
+      const trigger = triggerRegistry.getTrigger(nodeType);
+      return trigger?.metadata.label || "Unknown";
+    }
+    
+    return "Unknown";
   };
 
   const getNodeColor = (node: WorkflowNode) => {
@@ -619,6 +642,35 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     }
   };
 
+  // Helper function to get node categories from registries
+  const getNodeCategories = () => {
+    // Initialize registries to ensure they're loaded
+    initializeTriggers();
+    initializeActions();
+    
+    const actionRegistry = ActionRegistry.getInstance();
+    const triggerRegistry = TriggerRegistry.getInstance();
+    
+    const categories = {
+      triggers: triggerRegistry.getAllTriggerMetadata().map(metadata => ({
+        type: metadata.type,
+        label: metadata.label,
+        icon: metadata.icon,
+        description: metadata.description
+      })),
+      actions: actionRegistry.getAllActionMetadata().map(metadata => ({
+        type: metadata.type,
+        label: metadata.label,
+        icon: metadata.icon,
+        description: metadata.description
+      })),
+      // TODO: Add conditions when we have a condition registry
+      conditions: []
+    };
+    
+    return categories;
+  };
+
   // Define custom node types
   const nodeTypes = useMemo(
     () => ({
@@ -697,7 +749,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             <Text fw={500} mb="md">
               Add Node
             </Text>
-            {Object.entries(NODE_CATEGORIES).map(([category, items]) => (
+            {Object.entries(getNodeCategories()).map(([category, items]) => (
               <div key={category}>
                 <Text size="sm" fw={500} c="dimmed" tt="capitalize" mb="xs">
                   {category}
