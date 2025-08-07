@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -227,10 +233,12 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 }) => {
   const [showNodePalette, setShowNodePalette] = useState(false);
   const reactFlowInstance = useReactFlow();
+  const hasInitialized = useRef(false);
 
-  // Center and zoom to fit on initial load and when nodes change
+  // Center and zoom to fit only on initial load
   useEffect(() => {
-    if (workflowNodes.length > 0) {
+    if (workflowNodes.length > 0 && !hasInitialized.current) {
+      hasInitialized.current = true;
       // Set zoom to 100% (1.0) and center the nodes
       setTimeout(() => {
         reactFlowInstance.fitView({
@@ -396,37 +404,79 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
   const getLayoutedElements = useCallback(
     (nodes: WorkflowNode[], edges: WorkflowConnection[]) => {
-      const dagreGraph = new dagre.graphlib.Graph();
-      dagreGraph.setDefaultEdgeLabel(() => ({}));
-      dagreGraph.setGraph({
-        rankdir: "LR", // Left to right layout
-        nodesep: 100, // Horizontal spacing between nodes
-        ranksep: 100, // Vertical spacing between ranks/levels
-      });
-
-      nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: 200, height: 150 });
-      });
-
+      // Separate connected and disconnected nodes
+      const connectedNodeIds = new Set();
       edges.forEach((edge) => {
-        dagreGraph.setEdge(edge.source, edge.target);
+        connectedNodeIds.add(edge.source);
+        connectedNodeIds.add(edge.target);
       });
 
-      dagre.layout(dagreGraph);
+      const connectedNodes = nodes.filter((node) =>
+        connectedNodeIds.has(node.id),
+      );
+      const disconnectedNodes = nodes.filter(
+        (node) => !connectedNodeIds.has(node.id),
+      );
 
-      // Apply dagre positions directly to all nodes
-      const newNodes = nodes.map((node) => {
-        const nodeWithPosition = dagreGraph.node(node.id);
+      let layoutedConnectedNodes: WorkflowNode[] = [];
+      let rightmostX = 0;
+
+      // Layout connected nodes using dagre if there are any
+      if (connectedNodes.length > 0) {
+        const dagreGraph = new dagre.graphlib.Graph();
+        dagreGraph.setDefaultEdgeLabel(() => ({}));
+        dagreGraph.setGraph({
+          rankdir: "LR", // Left to right layout
+          nodesep: 100, // Horizontal spacing between nodes
+          ranksep: 100, // Vertical spacing between ranks/levels
+        });
+
+        connectedNodes.forEach((node) => {
+          dagreGraph.setNode(node.id, { width: 200, height: 150 });
+        });
+
+        edges.forEach((edge) => {
+          if (
+            connectedNodeIds.has(edge.source) &&
+            connectedNodeIds.has(edge.target)
+          ) {
+            dagreGraph.setEdge(edge.source, edge.target);
+          }
+        });
+
+        dagre.layout(dagreGraph);
+
+        // Apply dagre positions to connected nodes
+        layoutedConnectedNodes = connectedNodes.map((node) => {
+          const nodeWithPosition = dagreGraph.node(node.id);
+          const newX = nodeWithPosition.x - 100; // Center the node (width/2)
+          rightmostX = Math.max(rightmostX, newX);
+          return {
+            ...node,
+            position: {
+              x: newX,
+              y: nodeWithPosition.y - 75, // Center the node (height/2)
+            },
+          };
+        });
+      }
+
+      // Position disconnected nodes to the right of connected nodes
+      const layoutedDisconnectedNodes = disconnectedNodes.map((node, index) => {
         return {
           ...node,
           position: {
-            x: nodeWithPosition.x - 100, // Center the node (width/2)
-            y: nodeWithPosition.y - 75, // Center the node (height/2)
+            x: rightmostX + 300 + index * 300, // Start 300px to the right, then space by 300px
+            y: 0, // Vertical spacing for multiple disconnected nodes
           },
         };
       });
 
-      return { nodes: newNodes, edges };
+      const allLayoutedNodes = [
+        ...layoutedConnectedNodes,
+        ...layoutedDisconnectedNodes,
+      ];
+      return { nodes: allLayoutedNodes, edges };
     },
     [],
   );
@@ -457,24 +507,116 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       };
     }
 
+    // Calculate position for new node (center-right of existing nodes)
+    let newPosition = { x: 300, y: 100 }; // Default position for first node
+
+    if (workflowNodes.length > 0) {
+      // Find the rightmost node
+      const rightmostNode = workflowNodes.reduce((rightmost, node) =>
+        node.position.x > rightmost.position.x ? node : rightmost,
+      );
+
+      // Find the center Y position of all nodes
+      const totalY = workflowNodes.reduce(
+        (sum, node) => sum + node.position.y,
+        0,
+      );
+      const centerY = totalY / workflowNodes.length;
+
+      // Position new node to the right with some spacing (300px)
+      newPosition = {
+        x: rightmostNode.position.x + 300,
+        y: centerY,
+      };
+    }
+
     const newNode: WorkflowNode = {
       id: `${nodeType}-${Date.now()}`,
       type: nodeType,
-      position: { x: 0, y: 0 }, // Temporary position, will be updated by layout
+      position: newPosition,
       data: { [nodeType + "Type"]: type, config: defaultConfig },
       inputs: category === "triggers" ? [] : ["input"],
       outputs: category === "conditions" ? ["true", "false"] : ["output"],
     };
 
     const updatedNodes = [...workflowNodes, newNode];
-
-    // Auto-arrange after adding the new node
-    const { nodes: layoutedNodes } = getLayoutedElements(
-      updatedNodes,
-      workflowConnections,
-    );
-    onNodesChange(layoutedNodes);
+    onNodesChange(updatedNodes);
     setShowNodePalette(false);
+
+    // Pan to include the new node in view while preserving zoom level
+    setTimeout(() => {
+      const currentZoom = reactFlowInstance.getZoom();
+      const viewport = reactFlowInstance.getViewport();
+      
+      // If zoomed in beyond 100%, reset to 100% first
+      if (currentZoom > 1) {
+        reactFlowInstance.setViewport({ x: viewport.x, y: viewport.y, zoom: 1 }, { duration: 300 });
+        
+        // After zoom reset, pan to show the new node
+        setTimeout(() => {
+          panToShowNode(newPosition);
+        }, 350);
+      } else {
+        // Maintain current zoom and just pan
+        panToShowNode(newPosition);
+      }
+    }, 100);
+
+    function panToShowNode(nodePosition: { x: number; y: number }) {
+      const currentViewport = reactFlowInstance.getViewport();
+      const currentZoom = reactFlowInstance.getZoom();
+      
+      // Get the current viewport dimensions
+      const canvasElement = document.querySelector('.react-flow__viewport');
+      if (!canvasElement) return;
+      
+      const canvasRect = canvasElement.getBoundingClientRect();
+      const canvasWidth = canvasRect.width;
+      const canvasHeight = canvasRect.height;
+      
+      // Calculate node position in screen coordinates
+      const nodeScreenX = (nodePosition.x + currentViewport.x) * currentZoom;
+      const nodeScreenY = (nodePosition.y + currentViewport.y) * currentZoom;
+      
+      // Node dimensions
+      const nodeWidth = 200 * currentZoom;
+      const nodeHeight = 150 * currentZoom;
+      
+      // Check if node is visible with some padding
+      const padding = 50;
+      const isVisible = 
+        nodeScreenX >= padding &&
+        nodeScreenY >= padding &&
+        nodeScreenX + nodeWidth <= canvasWidth - padding &&
+        nodeScreenY + nodeHeight <= canvasHeight - padding;
+      
+      if (!isVisible) {
+        // Calculate how much we need to pan to show the node
+        let deltaX = 0;
+        let deltaY = 0;
+        
+        // Horizontal panning
+        if (nodeScreenX < padding) {
+          deltaX = (padding - nodeScreenX) / currentZoom;
+        } else if (nodeScreenX + nodeWidth > canvasWidth - padding) {
+          deltaX = (canvasWidth - padding - nodeWidth - nodeScreenX) / currentZoom;
+        }
+        
+        // Vertical panning
+        if (nodeScreenY < padding) {
+          deltaY = (padding - nodeScreenY) / currentZoom;
+        } else if (nodeScreenY + nodeHeight > canvasHeight - padding) {
+          deltaY = (canvasHeight - padding - nodeHeight - nodeScreenY) / currentZoom;
+        }
+        
+        // Apply the pan
+        reactFlowInstance.setViewport({
+          x: currentViewport.x + deltaX,
+          y: currentViewport.y + deltaY,
+          zoom: currentZoom
+        }, { duration: 300 });
+      }
+    }
   };
 
   // Define custom node types
