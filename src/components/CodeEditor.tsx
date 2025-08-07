@@ -6,7 +6,14 @@ import "ace-builds/src-noconflict/mode-html";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github_light_default";
 import "ace-builds/src-noconflict/theme-github_dark";
-import "ace-builds/src-noconflict/ext-language_tools";
+import ace from "ace-builds/src-noconflict/ace";
+
+// Configure ace for extension environment
+ace.config.set("basePath", "");
+ace.config.set("modePath", "");
+ace.config.set("themePath", "");
+ace.config.set("workerPath", "");
+ace.config.set("loadWorkerFromBlob", false);
 // import { useColorScheme } from "@mantine/hooks";
 
 interface CodeEditorProps {
@@ -15,7 +22,7 @@ interface CodeEditorProps {
   onChange: (value: string) => void;
   height?: number | string;
   placeholder?: string;
-  key: string;
+  editorKey: string;
 }
 export default function CodeEditor({
   language,
@@ -23,7 +30,7 @@ export default function CodeEditor({
   onChange,
   height,
   placeholder,
-  key,
+  editorKey,
 }: CodeEditorProps) {
   // const colorscheme = useColorScheme();
   return (
@@ -33,14 +40,14 @@ export default function CodeEditor({
       value={value}
       onChange={(val) => onChange(val)}
       wrapEnabled={true}
-      name={`ace-editor-${key}`}
+      name={`ace-editor-${editorKey}`}
       width="100%"
       height={typeof height === "number" ? `${height}px` : height || "200px"}
       editorProps={{ $blockScrolling: true }}
       setOptions={{
-        enableBasicAutocompletion: true,
-        enableLiveAutocompletion: true,
-        enableSnippets: true,
+        enableBasicAutocompletion: false,
+        enableLiveAutocompletion: false,
+        enableSnippets: false,
         showLineNumbers: true,
         tabSize: 2,
         highlightActiveLine: false,

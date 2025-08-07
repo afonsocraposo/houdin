@@ -152,7 +152,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
               onChange={(val) => onChange(key, val)}
               height={property.height || 200}
               placeholder={property.placeholder}
-              key={key}
+              editorKey={key}
             />
           </div>
         );
