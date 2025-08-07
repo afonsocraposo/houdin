@@ -11,6 +11,7 @@ import {
 } from "@mantine/core";
 import AceEditor from "react-ace";
 import { ActionConfigSchema, ActionConfigProperty } from "../types/actions";
+import { CredentialsSelect } from "./CredentialsSelect";
 
 // Import ace editor modes and themes
 import "ace-builds/src-noconflict/mode-javascript";
@@ -185,6 +186,19 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           </div>
         );
 
+       case "credentials":
+         return (
+           <CredentialsSelect
+             key={key}
+             label={property.label}
+             placeholder={property.placeholder}
+             description={property.description}
+             value={value}
+             onChange={(val) => onChange(key, val)}
+             required={property.required}
+             service={property.service}
+           />
+         );
       case "custom":
         return property.render ? (
           <div key={key}>

@@ -1,9 +1,10 @@
 import { WorkflowExecutionContext } from './workflow';
 import { ReactElement } from 'react';
+import { Credential } from './credentials';
 
 // Configuration property types for action schemas
 export interface ActionConfigProperty {
-  type: 'text' | 'textarea' | 'select' | 'number' | 'color' | 'code' | 'custom';
+  type: 'text' | 'textarea' | 'select' | 'number' | 'color' | 'code' | 'custom' | 'credentials';
   label: string;
   placeholder?: string;
   description?: string;
@@ -27,6 +28,9 @@ export interface ActionConfigProperty {
   
   // For custom type
   render?: (values: Record<string, any>) => ReactElement | null;
+  
+  // For credentials type
+  service?: Credential['service']; // Filter credentials by service type
   
   // Conditional display
   showWhen?: {

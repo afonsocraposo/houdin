@@ -1,8 +1,6 @@
 import { BaseAction, ActionConfigSchema, ActionMetadata, ActionExecutionContext } from '../../types/actions';
 import { OpenAIService } from '../openai';
 import { NotificationService } from '../notification';
-import { StorageManager } from '../storage';
-import { Credential } from '../../types/credentials';
 
 export class LLMOpenAIAction extends BaseAction {
   readonly metadata: ActionMetadata = {
@@ -12,30 +10,16 @@ export class LLMOpenAIAction extends BaseAction {
     description: 'Send prompt to OpenAI and get response'
   };
 
-  async getCredentialOptions(): Promise<{ value: string; label: string }[]> {
-    try {
-      const storageManager = StorageManager.getInstance();
-      const credentials = await storageManager.getCredentialsByService('openai');
-      return credentials.map((cred: Credential) => ({
-        value: cred.id,
-        label: cred.name
-      }));
-    } catch (error) {
-      console.error('Failed to load OpenAI credentials:', error);
-      return [];
-    }
-  }
-
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
         credentialId: {
-          type: 'select',
+          type: 'credentials',
+          service: 'openai',
           label: 'OpenAI Credential',
           placeholder: 'Select an OpenAI API key',
           description: 'Choose the OpenAI API credential to use',
-          required: true,
-          options: [] // Will be populated dynamically
+          required: true
         },
         model: {
           type: 'select',
