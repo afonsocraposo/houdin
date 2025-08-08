@@ -11,8 +11,8 @@ interface LLMOpenAIActionConfig {
   credentialId: string;
   model: string;
   prompt: string;
-  maxTokens: number;
-  temperature: number;
+  maxTokens?: number; // Made optional
+  temperature?: number; // Made optional
 }
 
 export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
@@ -60,21 +60,23 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
         maxTokens: {
           type: "number",
           label: "Max Tokens",
-          placeholder: "150",
-          description: "Maximum number of tokens to generate",
+          placeholder: "1000",
+          description:
+            "Maximum number of tokens to generate (optional, uses model default if not set)",
           min: 1,
           max: 4000,
-          defaultValue: 150,
+          required: false, // Made optional
         },
         temperature: {
           type: "number",
           label: "Temperature",
           placeholder: "0.7",
-          description: "Controls randomness (0 = deterministic, 1 = creative)",
+          description:
+            "Controls randomness (optional, uses model default if not set)",
           min: 0,
           max: 1,
           step: 0.1,
-          defaultValue: 0.7,
+          required: false, // Made optional
         },
       },
     };
@@ -85,8 +87,7 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
       credentialId: "",
       model: "gpt-4o-mini",
       prompt: "",
-      maxTokens: 150,
-      temperature: 0.7,
+      // maxTokens and temperature are now optional and won't be included in defaults
     };
   }
 

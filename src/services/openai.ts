@@ -66,8 +66,8 @@ export class OpenAIService {
     credentialId: string,
     model: string,
     prompt: string,
-    maxTokens: number = 150,
-    temperature: number = 0.7,
+    maxTokens?: number, // Made optional
+    temperature?: number, // Made optional
   ): Promise<string> {
     try {
       // Get the credential
@@ -97,7 +97,7 @@ export class OpenAIService {
         throw new Error("Invalid OpenAI credential configuration");
       }
 
-      // Prepare the request
+      // Prepare the request body
       const requestBody: OpenAIRequest = {
         model,
         messages: [
@@ -106,9 +106,15 @@ export class OpenAIService {
             content: prompt,
           },
         ],
-        max_tokens: maxTokens,
-        temperature,
       };
+
+      // Only include optional parameters if they're provided
+      if (maxTokens !== undefined) {
+        requestBody.max_tokens = maxTokens;
+      }
+      if (temperature !== undefined) {
+        requestBody.temperature = temperature;
+      }
 
       // Prepare headers with auth
       const headers: Record<string, string> = {
