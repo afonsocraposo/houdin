@@ -1,7 +1,8 @@
 import { Container, Title, Text, Button, Stack } from "@mantine/core";
-import { IconBrandChrome, IconPointer } from "@tabler/icons-react";
+import { IconPointer } from "@tabler/icons-react";
 import { useEffect } from "react";
 import { initializeCredentials } from "../services/credentialInitializer";
+import iconSvg from "../assets/icons/icon.svg";
 
 function App() {
   // Cross-browser API compatibility
@@ -42,7 +43,7 @@ function App() {
       <Container size="xs" p="md" style={{ width: "300px", height: "400px" }}>
         <Stack gap="md">
           <div style={{ textAlign: "center" }}>
-            <IconBrandChrome size={48} />
+            <img src={iconSvg} alt="changeme icon" style={{ width: 48, height: 48 }} />
             <Title order={2} mt="sm">
               changeme
             </Title>
