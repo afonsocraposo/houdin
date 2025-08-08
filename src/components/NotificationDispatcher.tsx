@@ -32,7 +32,7 @@ export default function NotificationDispatcher() {
 
   return (
     <>
-      <Notifications />
+      <Notifications zIndex={1001} />
     </>
   ); // No UI component needed, just handling events
 }

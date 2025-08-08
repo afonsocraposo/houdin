@@ -1,4 +1,5 @@
 import { StorageManager } from "./storage";
+import { CredentialRegistry } from "./credentialRegistry";
 
 export interface OpenAIRequest {
   model: string;
@@ -71,6 +72,7 @@ export class OpenAIService {
     try {
       // Get the credential
       const storageManager = StorageManager.getInstance();
+      const credentialRegistry = CredentialRegistry.getInstance();
       const credentials = await storageManager.getCredentials();
       const credential = credentials.find((c) => c.id === credentialId);
 
@@ -78,8 +80,21 @@ export class OpenAIService {
         throw new Error("OpenAI credential not found");
       }
 
-      if (credential.service !== "openai") {
+      if (credential.type !== "openai") {
         throw new Error("Invalid credential: not an OpenAI credential");
+      }
+
+      // Get authentication details from registry
+      const auth = credentialRegistry.getAuth(
+        credential.type,
+        credential.config,
+      ) as {
+        apiKey: string;
+        organizationId?: string;
+      };
+
+      if (!auth || !auth.apiKey) {
+        throw new Error("Invalid OpenAI credential configuration");
       }
 
       // Prepare the request
@@ -92,18 +107,26 @@ export class OpenAIService {
           },
         ],
         max_tokens: maxTokens,
-        temperature
+        temperature,
       };
+
+      // Prepare headers with auth
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.apiKey}`,
+        Accept: "application/json",
+      };
+
+      // Add organization header if present
+      if (auth.organizationId) {
+        headers["OpenAI-Organization"] = auth.organizationId;
+      }
 
       // Make the API call through background script
       const response = await this.makeBackgroundRequest({
         url: `${this.API_BASE_URL}/chat/completions`,
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${credential.value}`,
-          Accept: "application/json",
-        },
+        headers,
         body: JSON.stringify(requestBody),
       });
 

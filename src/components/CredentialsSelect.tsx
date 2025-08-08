@@ -10,7 +10,7 @@ interface CredentialsSelectProps {
   value: string;
   onChange: (value: string | null) => void;
   required?: boolean;
-  service?: Credential['service'];
+  credentialType?: string; // Updated to use credentialType instead of service
 }
 
 export const CredentialsSelect: React.FC<CredentialsSelectProps> = ({
@@ -20,14 +20,14 @@ export const CredentialsSelect: React.FC<CredentialsSelectProps> = ({
   value,
   onChange,
   required,
-  service,
+  credentialType,
 }) => {
   const [loading, setLoading] = useState(true);
   const [options, setOptions] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
     loadCredentials();
-  }, [service]);
+  }, [credentialType]);
 
   const loadCredentials = async () => {
     setLoading(true);
@@ -35,8 +35,8 @@ export const CredentialsSelect: React.FC<CredentialsSelectProps> = ({
       const storageManager = StorageManager.getInstance();
       let credentials: Credential[];
       
-      if (service) {
-        credentials = await storageManager.getCredentialsByService(service);
+      if (credentialType) {
+        credentials = await storageManager.getCredentialsByType(credentialType);
       } else {
         credentials = await storageManager.getCredentials();
       }

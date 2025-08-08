@@ -1,9 +1,16 @@
 import { Container, Title, Text, Button, Stack } from "@mantine/core";
 import { IconBrandChrome, IconPointer } from "@tabler/icons-react";
+import { useEffect } from "react";
+import { initializeCredentials } from "../services/credentialInitializer";
 
 function App() {
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
+
+  // Initialize credentials on app startup
+  useEffect(() => {
+    initializeCredentials();
+  }, []);
 
   const handleClick = () => {
     // open a new tab with a specific URL

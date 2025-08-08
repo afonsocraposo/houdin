@@ -46,6 +46,19 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
     const value = values[key] ?? property.defaultValue ?? "";
 
     switch (property.type) {
+      case "string":
+        return (
+          <TextInput
+            key={key}
+            label={property.label}
+            placeholder={property.placeholder}
+            description={property.description}
+            value={value}
+            onChange={(e) => onChange(key, e.target.value)}
+            required={property.required}
+            type={property.sensitive ? "password" : "text"}
+          />
+        );
       case "text":
         return (
           <TextInput
@@ -167,7 +180,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             value={value}
             onChange={(val) => onChange(key, val)}
             required={property.required}
-            service={property.service}
+            credentialType={property.credentialType}
           />
         );
       case "custom":

@@ -15,7 +15,6 @@ import {
 } from "@mantine/core";
 import {
   IconDeviceFloppy,
-  IconPlayerPlay,
   IconArrowLeft,
   IconDownload,
 } from "@tabler/icons-react";

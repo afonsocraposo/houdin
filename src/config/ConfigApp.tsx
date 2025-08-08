@@ -15,6 +15,7 @@ import {
   Tabs,
 } from "@mantine/core";
 import logoSvg from "../assets/icons/icon.svg";
+import { initializeCredentials } from "../services/credentialInitializer";
 import {
   IconInfoCircle,
   IconCheck,
@@ -41,8 +42,12 @@ import { CredentialsTab } from "../components/CredentialsTab";
 import { WorkflowDefinition } from "../types/workflow";
 
 function ConfigApp() {
-  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
-  const [saved, setSaved] = useState(false);
+    // Initialize credentials on app startup
+    useEffect(() => {
+        initializeCredentials();
+    }, []);
+
+    const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);  const [saved, setSaved] = useState(false);
   const [editingWorkflow, setEditingWorkflow] =
     useState<WorkflowDefinition | null>(null);
   const [importModalOpened, setImportModalOpened] = useState(false);

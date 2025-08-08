@@ -7,6 +7,8 @@ import { NotificationService } from "./notification";
 import { ActionRegistry } from "./actionRegistry";
 import { TriggerRegistry, initializeTriggers } from "./triggerInitializer";
 import { TriggerExecutionContext } from "../types/triggers";
+import { initializeActions } from "./actionInitializer";
+import { initializeCredentials } from "./credentialInitializer";
 
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
@@ -48,8 +50,11 @@ export class WorkflowExecutor {
   constructor(private workflow: WorkflowDefinition) {
     this.context = new ExecutionContext();
 
-    // Initialize triggers registry
+    // Initialize registries
     initializeTriggers();
+    initializeActions();
+    initializeCredentials();
+    
     this.triggerRegistry = TriggerRegistry.getInstance();
 
     // Set up listener for component triggers

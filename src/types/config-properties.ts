@@ -1,5 +1,4 @@
 import { ReactElement } from 'react';
-import { Credential } from './credentials';
 
 // Base configuration property with common fields
 interface BaseConfigProperty {
@@ -15,6 +14,11 @@ interface BaseConfigProperty {
 }
 
 // Specific property types using discriminated unions
+export interface StringConfigProperty extends BaseConfigProperty {
+  type: 'string';
+  sensitive?: boolean; // For passwords, API keys etc.
+}
+
 export interface TextConfigProperty extends BaseConfigProperty {
   type: 'text';
 }
@@ -53,11 +57,12 @@ export interface CustomConfigProperty extends BaseConfigProperty {
 
 export interface CredentialsConfigProperty extends BaseConfigProperty {
   type: 'credentials';
-  service?: Credential['service'];
+  credentialType?: string; // Updated to use credentialType instead of service
 }
 
 // Union type for all config properties
 export type ConfigProperty =
+  | StringConfigProperty
   | TextConfigProperty
   | TextareaConfigProperty
   | SelectConfigProperty
@@ -79,6 +84,9 @@ export interface ValidationResult {
 }
 
 // Type guards for runtime type checking
+export const isStringProperty = (prop: ConfigProperty): prop is StringConfigProperty =>
+  prop.type === 'string';
+
 export const isTextProperty = (prop: ConfigProperty): prop is TextConfigProperty =>
   prop.type === 'text';
 

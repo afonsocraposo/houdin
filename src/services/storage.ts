@@ -173,12 +173,12 @@ export class StorageManager {
     }
   }
 
-  // Get credentials filtered by service type
-  async getCredentialsByService(
-    service: Credential["service"],
+  // Get credentials filtered by type
+  async getCredentialsByType(
+    type: string,
   ): Promise<Credential[]> {
     const allCredentials = await this.getCredentials();
-    return allCredentials.filter((cred) => cred.service === service);
+    return allCredentials.filter((cred) => cred.type === type);
   }
 
   onCredentialsChanged(callback: (credentials: Credential[]) => void): void {
