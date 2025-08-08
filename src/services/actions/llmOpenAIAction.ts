@@ -87,6 +87,7 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
     nodeId: string,
   ): Promise<void> {
     const { credentialId, model, prompt, maxTokens, temperature } = config;
+    console.log(config);
 
     if (!credentialId) {
       NotificationService.showErrorNotification({

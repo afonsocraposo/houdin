@@ -184,7 +184,7 @@ export function getTypeBasedDefault(property: ConfigProperty): any {
     case "custom":
       return "";
     case "number":
-      return property.min !== undefined ? property.min : 0;
+      return 0;
     case "select":
       return property.options && property.options.length > 0
         ? property.options[0].value
@@ -205,8 +205,12 @@ export function generateDefaultConfig(
   Object.entries(schema.properties).forEach(([key, property]) => {
     if (property.defaultValue !== undefined) {
       defaults[key] = property.defaultValue;
-    } else {
+    } else if (property.required) {
+      // Only apply type-based defaults for required fields
       defaults[key] = getTypeBasedDefault(property);
+    } else {
+      // Optional fields without explicit defaults should be undefined
+      defaults[key] = undefined;
     }
   });
 
@@ -222,9 +226,18 @@ export function applyDefaults(
   const result = { ...classDefaults, ...config };
 
   Object.entries(schema.properties).forEach(([key, property]) => {
-    if (result[key] === undefined) {
+    const value = result[key];
+    
+    // For optional fields, treat empty strings as undefined
+    const shouldApplyDefault = value === undefined || 
+      (!property.required && value === "");
+    
+    if (shouldApplyDefault) {
       if (property.defaultValue !== undefined) {
         result[key] = property.defaultValue;
+      } else if (!property.required) {
+        // For optional fields without explicit defaults, use undefined instead of type defaults
+        result[key] = undefined;
       } else {
         result[key] = getTypeBasedDefault(property);
       }
