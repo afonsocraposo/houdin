@@ -1,11 +1,9 @@
 import { WorkflowExecutionContext, WorkflowNode } from './workflow';
+import { BaseMetadata, BaseConfigurable } from './base';
 import { 
   ConfigProperty, 
   ConfigSchema, 
-  ValidationResult, 
-  validateConfig, 
-  applyDefaults,
-  generateDefaultConfig
+  ValidationResult
 } from './config-properties';
 
 // Re-export for backward compatibility
@@ -13,13 +11,8 @@ export type TriggerConfigProperty = ConfigProperty;
 export type TriggerConfigSchema = ConfigSchema;
 export type TriggerValidationResult = ValidationResult;
 
-// Base trigger metadata
-export interface TriggerMetadata {
-  type: string;
-  label: string;
-  icon: string;
-  description: string;
-}
+// Trigger metadata is the same as base metadata
+export type TriggerMetadata = BaseMetadata;
 
 // Extended execution context that includes trigger info
 export interface TriggerExecutionContext extends WorkflowExecutionContext {
@@ -33,16 +26,8 @@ export interface TriggerSetupResult {
 }
 
 // Abstract base class for all triggers
-export abstract class BaseTrigger<TConfig = Record<string, any>> {
+export abstract class BaseTrigger<TConfig = Record<string, any>> extends BaseConfigurable<TConfig> {
   abstract readonly metadata: TriggerMetadata;
-  
-  // Get the configuration schema for this trigger
-  abstract getConfigSchema(): TriggerConfigSchema;
-  
-  // Get default configuration values (now optional - defaults to schema defaults)
-  getDefaultConfig(): TConfig {
-    return generateDefaultConfig(this.getConfigSchema()) as TConfig;
-  }
   
   // Setup the trigger and return cleanup function
   abstract setup(
@@ -50,15 +35,4 @@ export abstract class BaseTrigger<TConfig = Record<string, any>> {
     context: TriggerExecutionContext,
     onTrigger: () => Promise<void>
   ): Promise<TriggerSetupResult>;
-  
-  // Validate the configuration
-  validate(config: Record<string, any>): TriggerValidationResult {
-    return validateConfig(config, this.getConfigSchema());
-  }
-  
-  // Get configuration with defaults applied
-  getConfigWithDefaults(config: Record<string, any>): TConfig {
-    const defaults = this.getDefaultConfig();
-    return applyDefaults(config, this.getConfigSchema(), defaults as Record<string, any>) as TConfig;
-  }
 }

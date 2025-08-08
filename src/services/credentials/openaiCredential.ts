@@ -1,4 +1,5 @@
 import { BaseCredential, CredentialMetadata } from '../../types/credentials';
+import { ConfigSchema } from '../../types/config-properties';
 
 interface OpenAIConfig {
   apiKey: string;
