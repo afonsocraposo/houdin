@@ -87,41 +87,17 @@ export interface ValidationResult {
 }
 
 // Type guards for runtime type checking
-export const isStringProperty = (
+export const isNumberProperty = (
   prop: ConfigProperty,
-): prop is StringConfigProperty => prop.type === "string";
-
-export const isTextProperty = (
-  prop: ConfigProperty,
-): prop is TextConfigProperty => prop.type === "text";
-
-export const isTextareaProperty = (
-  prop: ConfigProperty,
-): prop is TextareaConfigProperty => prop.type === "textarea";
+): prop is NumberConfigProperty => prop.type === "number";
 
 export const isSelectProperty = (
   prop: ConfigProperty,
 ): prop is SelectConfigProperty => prop.type === "select";
 
-export const isNumberProperty = (
-  prop: ConfigProperty,
-): prop is NumberConfigProperty => prop.type === "number";
-
 export const isColorProperty = (
   prop: ConfigProperty,
 ): prop is ColorConfigProperty => prop.type === "color";
-
-export const isCodeProperty = (
-  prop: ConfigProperty,
-): prop is CodeConfigProperty => prop.type === "code";
-
-export const isCustomProperty = (
-  prop: ConfigProperty,
-): prop is CustomConfigProperty => prop.type === "custom";
-
-export const isCredentialsProperty = (
-  prop: ConfigProperty,
-): prop is CredentialsConfigProperty => prop.type === "credentials";
 
 // Utility function to validate configuration
 export function validateConfig(
@@ -163,6 +139,12 @@ export function validateConfig(
     } else if (isSelectProperty(property)) {
       if (!property.options.some((opt) => opt.value === value)) {
         errors.push(`${property.label} must be one of the available options`);
+      }
+    } else if (isColorProperty(property)) {
+      // Validate hex color format (#RRGGBB or #RGB)
+      const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+      if (!hexColorRegex.test(value)) {
+        errors.push(`${property.label} must be a valid hex color (e.g., #FF0000 or #F00)`);
       }
     }
   });
