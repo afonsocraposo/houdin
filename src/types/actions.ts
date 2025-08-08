@@ -4,7 +4,8 @@ import {
   ConfigSchema, 
   ValidationResult, 
   validateConfig, 
-  applyDefaults 
+  applyDefaults,
+  generateDefaultConfig
 } from './config-properties';
 
 // Re-export for backward compatibility
@@ -33,8 +34,10 @@ export abstract class BaseAction<TConfig = Record<string, any>> {
   // Get the configuration schema for this action
   abstract getConfigSchema(): ActionConfigSchema;
   
-  // Get default configuration values
-  abstract getDefaultConfig(): TConfig;
+  // Get default configuration values (now optional - defaults to schema defaults)
+  getDefaultConfig(): TConfig {
+    return generateDefaultConfig(this.getConfigSchema()) as TConfig;
+  }
   
   // Execute the action
   abstract execute(

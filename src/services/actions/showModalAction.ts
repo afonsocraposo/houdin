@@ -43,13 +43,6 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
     };
   }
 
-  getDefaultConfig(): ShowModalActionConfig {
-    return {
-      modalTitle: "Workflow Result",
-      modalContent: "",
-    };
-  }
-
   async execute(
     config: ShowModalActionConfig,
     context: ActionExecutionContext,

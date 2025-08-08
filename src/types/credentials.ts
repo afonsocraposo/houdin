@@ -3,6 +3,7 @@ import {
   ValidationResult,
   validateConfig,
   applyDefaults,
+  generateDefaultConfig,
 } from "./config-properties";
 
 export interface Credential {
@@ -33,8 +34,10 @@ export abstract class BaseCredential<
   // Get the configuration schema for this credential type
   abstract getConfigSchema(): ConfigSchema;
 
-  // Get default configuration values
-  abstract getDefaultConfig(): TConfig;
+  // Get default configuration values (now optional - defaults to schema defaults)
+  getDefaultConfig(): TConfig {
+    return generateDefaultConfig(this.getConfigSchema()) as TConfig;
+  }
 
   // Get authentication object from configuration
   abstract getAuth(config: TConfig): TAuth;

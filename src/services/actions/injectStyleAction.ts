@@ -35,12 +35,6 @@ export class InjectStyleAction extends BaseAction<InjectStyleActionConfig> {
     };
   }
 
-  getDefaultConfig(): InjectStyleActionConfig {
-    return {
-      customScript: "",
-    };
-  }
-
   async execute(
     config: InjectStyleActionConfig,
     _context: ActionExecutionContext,

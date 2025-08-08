@@ -33,12 +33,6 @@ export class ClickElementAction extends BaseAction<ClickElementActionConfig> {
     };
   }
 
-  getDefaultConfig(): ClickElementActionConfig {
-    return {
-      elementSelector: "button",
-    };
-  }
-
   async execute(
     config: ClickElementActionConfig,
     context: ActionExecutionContext,

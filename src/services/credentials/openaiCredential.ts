@@ -1,5 +1,4 @@
 import { BaseCredential, CredentialMetadata } from '../../types/credentials';
-import { ConfigSchema } from '../../types/config-properties';
 
 interface OpenAIConfig {
   apiKey: string;
@@ -28,27 +27,21 @@ export class OpenAICredential extends BaseCredential<OpenAIConfig, OpenAIAuth> {
           description: 'Your OpenAI API key',
           required: true,
           sensitive: true,
-          placeholder: 'sk-...'
+          placeholder: 'sk-...',
+          defaultValue: ''
         },
         organizationId: {
           type: 'string',
           label: 'Organization ID',
           description: 'Optional OpenAI organization ID',
           required: false,
-          placeholder: 'org-...'
+          placeholder: 'org-...',
+          defaultValue: ''
         }
       }
     };
   }
-
-  getDefaultConfig(): OpenAIConfig {
-    return {
-      apiKey: '',
-      organizationId: ''
-    };
-  }
-
-  getAuth(config: OpenAIConfig): OpenAIAuth {
+getAuth(config: OpenAIConfig): OpenAIAuth {
     const auth: OpenAIAuth = {
       apiKey: config.apiKey
     };

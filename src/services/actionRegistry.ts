@@ -1,4 +1,9 @@
-import { BaseAction, ActionMetadata, ActionExecutionContext } from '../types/actions';
+import {
+  BaseAction,
+  ActionMetadata,
+  ActionExecutionContext,
+} from "../types/actions";
+import { NotificationService } from "./notification";
 
 export class ActionRegistry {
   private static instance: ActionRegistry;
@@ -30,7 +35,7 @@ export class ActionRegistry {
 
   // Get all action metadata for UI
   getAllActionMetadata(): ActionMetadata[] {
-    return this.getAllActions().map(action => action.metadata);
+    return this.getAllActions().map((action) => action.metadata);
   }
 
   // Execute an action
@@ -38,7 +43,7 @@ export class ActionRegistry {
     type: string,
     config: Record<string, any>,
     context: ActionExecutionContext,
-    nodeId: string
+    nodeId: string,
   ): Promise<void> {
     const action = this.getAction(type);
     if (!action) {
@@ -48,7 +53,10 @@ export class ActionRegistry {
     // Validate configuration before execution
     const validation = action.validate(config);
     if (!validation.valid) {
-      throw new Error(`Action configuration invalid: ${validation.errors.join(', ')}`);
+      NotificationService.showErrorNotification({
+        title: `Error executing action ${nodeId}`,
+        message: `Action configuration invalid: ${validation.errors.join(", ")}`,
+      });
     }
 
     // Execute with defaults applied
@@ -57,7 +65,10 @@ export class ActionRegistry {
   }
 
   // Validate action configuration
-  validateConfig(type: string, config: Record<string, any>): { valid: boolean; errors: string[] } {
+  validateConfig(
+    type: string,
+    config: Record<string, any>,
+  ): { valid: boolean; errors: string[] } {
     const action = this.getAction(type);
     if (!action) {
       return { valid: false, errors: [`Action type '${type}' not found`] };
@@ -86,12 +97,12 @@ export class ActionRegistry {
   // Get action categories for UI (compatible with existing NODE_CATEGORIES)
   getActionCategories() {
     return {
-      actions: this.getAllActions().map(action => ({
+      actions: this.getAllActions().map((action) => ({
         type: action.metadata.type,
         label: action.metadata.label,
         icon: action.metadata.icon,
-        description: action.metadata.description
-      }))
+        description: action.metadata.description,
+      })),
     };
   }
 }

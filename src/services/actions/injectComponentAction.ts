@@ -133,21 +133,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       },
     };
   }
-
-  getDefaultConfig(): InjectComponentActionConfig {
-    return {
-      targetSelector: "body",
-      componentType: "button",
-      componentText: "Button",
-      buttonColor: undefined,
-      buttonTextColor: undefined,
-      textColor: undefined,
-      inputPlaceholder: "",
-      customStyle: "",
-    };
-  }
-
-  async execute(
+async execute(
     config: InjectComponentActionConfig,
     context: ActionExecutionContext,
     nodeId: string,

@@ -41,12 +41,6 @@ export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig> {
     };
   }
 
-  getDefaultConfig(): KeyPressTriggerConfig {
-    return {
-      keyCombo: "",
-    };
-  }
-
   async setup(
     config: KeyPressTriggerConfig,
     _context: TriggerExecutionContext,

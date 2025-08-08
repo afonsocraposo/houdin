@@ -4,7 +4,8 @@ import {
   ConfigSchema, 
   ValidationResult, 
   validateConfig, 
-  applyDefaults 
+  applyDefaults,
+  generateDefaultConfig
 } from './config-properties';
 
 // Re-export for backward compatibility
@@ -38,8 +39,10 @@ export abstract class BaseTrigger<TConfig = Record<string, any>> {
   // Get the configuration schema for this trigger
   abstract getConfigSchema(): TriggerConfigSchema;
   
-  // Get default configuration values
-  abstract getDefaultConfig(): TConfig;
+  // Get default configuration values (now optional - defaults to schema defaults)
+  getDefaultConfig(): TConfig {
+    return generateDefaultConfig(this.getConfigSchema()) as TConfig;
+  }
   
   // Setup the trigger and return cleanup function
   abstract setup(

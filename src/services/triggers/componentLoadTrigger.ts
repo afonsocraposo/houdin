@@ -40,13 +40,6 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
     };
   }
 
-  getDefaultConfig(): ComponentLoadTriggerConfig {
-    return {
-      selector: "",
-      timeout: 30,
-    };
-  }
-
   async setup(
     config: ComponentLoadTriggerConfig,
     _context: TriggerExecutionContext,
@@ -67,7 +60,7 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
     // Set up observer to watch for element
     const observer = new MutationObserver(async (mutations) => {
       if (hasTriggered) return;
-      
+
       for (const mutation of mutations) {
         if (mutation.type === "childList") {
           const element = document.querySelector(selector);

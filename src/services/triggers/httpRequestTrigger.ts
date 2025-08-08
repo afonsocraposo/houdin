@@ -8,7 +8,7 @@ import {
 // HTTP Request Trigger Configuration
 export interface HttpRequestTriggerConfig {
   urlPattern: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'ANY';
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY";
 }
 
 export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
@@ -45,13 +45,6 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
           description: "HTTP method to match",
         },
       },
-    };
-  }
-
-  getDefaultConfig(): HttpRequestTriggerConfig {
-    return {
-      urlPattern: "",
-      method: "ANY",
     };
   }
 

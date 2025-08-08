@@ -81,16 +81,6 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
       },
     };
   }
-
-  getDefaultConfig(): LLMOpenAIActionConfig {
-    return {
-      credentialId: "",
-      model: "gpt-4o-mini",
-      prompt: "",
-      // maxTokens and temperature are now optional and won't be included in defaults
-    };
-  }
-
   async execute(
     config: LLMOpenAIActionConfig,
     context: ActionExecutionContext,

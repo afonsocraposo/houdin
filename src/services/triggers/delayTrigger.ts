@@ -27,14 +27,7 @@ export class DelayTrigger extends BaseTrigger<DelayTriggerConfig> {
       }
     };
   }
-
-  getDefaultConfig(): DelayTriggerConfig {
-    return {
-      delay: 1000
-    };
-  }
-
-  async setup(
+async setup(
     config: DelayTriggerConfig,
     _context: TriggerExecutionContext,
     onTrigger: () => Promise<void>

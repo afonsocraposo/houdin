@@ -33,14 +33,7 @@ export class GetElementContentAction extends BaseAction<GetElementContentActionC
       },
     };
   }
-
-  getDefaultConfig(): GetElementContentActionConfig {
-    return {
-      elementSelector: "h1",
-    };
-  }
-
-  async execute(
+async execute(
     config: GetElementContentActionConfig,
     context: ActionExecutionContext,
     nodeId: string,
