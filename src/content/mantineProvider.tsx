@@ -1,6 +1,7 @@
 import { createTheme, MantineProvider } from "@mantine/core";
 import mantineStyles from "@mantine/core/styles.css?inline";
 import mantineNotificationsStyles from "@mantine/notifications/styles.css?inline";
+import mantineCodeHighlightStyles from "@mantine/code-highlight/styles.css?inline";
 
 declare global {
   interface WindowEventMap {
@@ -12,9 +13,11 @@ declare global {
 export default function CustomMantineProvider({
   parent,
   children,
+  coreOnly = false,
 }: {
   parent: HTMLElement;
   children: React.ReactNode;
+  coreOnly?: boolean;
 }) {
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -83,10 +86,51 @@ export default function CustomMantineProvider({
         --mantine-color-default-hover: ${darkTheme.defaultHover};
       }
     }
+
+    /* Code */
+    .mantine-Code-root {
+        background-color: var(--code-bg, var(--mantine-color-secondary-filled));
+        color: var(--mantine-color-text);
+    }
+
+    /* Code Highlight */
+    .mantine-CodeHighlightTabs-root {
+        .mantine-CodeHighlightTabs-file {
+            color: var(--mantine-color-text);
+            border-color: var(--mantine-color-default-border);
+            padding: 7px 12px;
+            font-size: 12px;
+
+            &:where([data-active]) {
+                background-color: var(--mantine-color-default-hover);
+                color: var(--mantine-color-text);
+            }
+        }
+
+        .mantine-CodeHighlightTabs-control {
+            color: var(--mantine-primary-color-contrast);
+        }
+    }
+
+    .mantine-CodeHighlight-root {
+        border-radius: var(--mantine-radius-default);
+
+        .mantine-CodeHighlight-code {
+            background: transparent !important;
+            font-size: var(--mantine-font-size-sm);
+        }
+    }
   `}
       </style>
       <style type="text/css">{mantineStyles}</style>
-      <style type="text/css">{mantineNotificationsStyles}</style>
+      {coreOnly ? (
+        <></>
+      ) : (
+        <>
+          <style type="text/css">{mantineNotificationsStyles}</style>
+          <style type="text/css">{mantineCodeHighlightStyles}</style>
+        </>
+      )}
       <MantineProvider
         defaultColorScheme="auto"
         cssVariablesSelector="#app"

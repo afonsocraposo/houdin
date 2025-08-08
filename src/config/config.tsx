@@ -4,6 +4,7 @@ import { MantineProvider } from "@mantine/core";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+import "@mantine/code-highlight/styles.css";
 import ConfigApp from "./ConfigApp";
 import { initializeActions } from "../services/actionInitializer";
 import NotificationDispatcher from "../components/NotificationDispatcher";

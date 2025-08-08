@@ -1,5 +1,10 @@
-import { BaseAction, ActionConfigSchema, ActionMetadata, ActionExecutionContext } from '../../types/actions';
-import { ModalService } from '../modal';
+import {
+  BaseAction,
+  ActionConfigSchema,
+  ActionMetadata,
+  ActionExecutionContext,
+} from "../../types/actions";
+import { ModalService } from "../modal";
 
 interface ShowModalActionConfig {
   modalTitle: string;
@@ -8,54 +13,60 @@ interface ShowModalActionConfig {
 
 export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
   readonly metadata: ActionMetadata = {
-    type: 'show-modal',
-    label: 'Show Modal',
-    icon: '💬',
-    description: 'Display modal with content'
+    type: "show-modal",
+    label: "Show Modal",
+    icon: "💬",
+    description: "Display modal with content",
   };
 
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
         modalTitle: {
-          type: 'text',
-          label: 'Modal Title',
-          placeholder: 'Information, {{node-id}} Data',
-          description: 'Title of the modal. Use {{node-id}} to reference action outputs',
-          defaultValue: 'Workflow Result'
+          type: "text",
+          label: "Modal Title",
+          placeholder: "Information, {{node-id}} Data",
+          description:
+            "Title of the modal. Use {{node-id}} to reference action outputs",
+          defaultValue: "Workflow Result",
         },
         modalContent: {
-          type: 'textarea',
-          label: 'Modal Content',
-          placeholder: 'The extracted content is: {{get-content-node}}',
-          description: 'Content to display. Use {{node-id}} to reference action outputs',
+          type: "textarea",
+          label: "Modal Content",
+          placeholder: "The extracted content is: {{get-content-node}}",
+          description:
+            "Content to display. Use {{node-id}} to reference action outputs. Supports Markdown.",
           rows: 4,
-          required: true
-        }
-      }
+          required: true,
+        },
+      },
     };
   }
 
   getDefaultConfig(): ShowModalActionConfig {
     return {
-      modalTitle: 'Workflow Result',
-      modalContent: ''
+      modalTitle: "Workflow Result",
+      modalContent: "",
     };
   }
 
   async execute(
     config: ShowModalActionConfig,
     context: ActionExecutionContext,
-    _nodeId: string
+    _nodeId: string,
   ): Promise<void> {
     const { modalTitle, modalContent } = config;
-    
-    const interpolatedTitle = context.interpolateVariables(modalTitle || 'Workflow Result');
-    const interpolatedContent = context.interpolateVariables(modalContent || '');
 
-    ModalService.showModal({ 
-      title: interpolatedTitle, 
-      content: interpolatedContent 
+    const interpolatedTitle = context.interpolateVariables(
+      modalTitle || "Workflow Result",
+    );
+    const interpolatedContent = context.interpolateVariables(
+      modalContent || "",
+    );
+
+    ModalService.showModal({
+      title: interpolatedTitle,
+      content: interpolatedContent,
     });
   }
 }

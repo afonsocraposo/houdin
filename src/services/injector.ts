@@ -83,6 +83,7 @@ export class ContentInjector {
     rootId: string,
     component: JSX.Element,
     target: Element,
+    coreOnly: boolean = false,
   ): void {
     const { root, hostDiv } = this.getParentShadowRoot(target, rootId);
     if (!root || !hostDiv) {
@@ -93,6 +94,7 @@ export class ContentInjector {
       CustomMantineProvider({
         parent: hostDiv,
         children: component,
+        coreOnly,
       }),
     );
   }

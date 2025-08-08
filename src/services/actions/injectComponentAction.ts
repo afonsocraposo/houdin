@@ -210,6 +210,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       `container-${workflowId}-${nodeId}`,
       component,
       targetElement,
+      true, // coreOnly
     );
   }
 }

@@ -29,13 +29,13 @@ export default function ModalDispatcher() {
   }, []);
 
   return (
-    <>
+    <div style={{ zIndex: 1000 }}>
       {modal === "elementSelected" && (
         <ElementSelectedModal data={modalData} key={Math.random()} />
       )}
       {modal === "customModal" && (
         <CustomModal data={modalData} key={Math.random()} />
       )}
-    </>
+    </div>
   );
 }

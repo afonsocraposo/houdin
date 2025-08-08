@@ -1,5 +1,6 @@
-import { Modal, Text } from "@mantine/core";
+import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import MarkdownText from "../MarkdownText";
 
 interface ElementSelectedModalProps {
   data: {
@@ -12,8 +13,14 @@ export default function CustomModal({
 }: ElementSelectedModalProps) {
   const [opened, { close }] = useDisclosure(true);
   return (
-    <Modal opened={opened} onClose={close} title={title} trapFocus={false}>
-      <Text>{content}</Text>
+    <Modal
+      opened={opened}
+      onClose={close}
+      title={title}
+      trapFocus={false}
+      zIndex={1000} // Ensure modal is on top
+    >
+      <MarkdownText>{content}</MarkdownText>
     </Modal>
   );
 }
