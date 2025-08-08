@@ -207,7 +207,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
     );
 
     ContentInjector.injectMantineComponentInTarget(
-      `container-${workflowId}`,
+      `container-${workflowId}-${nodeId}`,
       component,
       targetElement,
     );

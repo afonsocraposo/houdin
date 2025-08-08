@@ -10,12 +10,24 @@ export default function NotificationDispatcher() {
       });
     };
 
+    const handleNotificationCleanup = () => {
+      console.debug("Cleaning up all notifications");
+      notifications.clean();
+    };
+
     window.addEventListener("notificationDispatch", handleNotificationDispatch);
-    return () =>
+    window.addEventListener("notificationCleanup", handleNotificationCleanup);
+
+    return () => {
       window.removeEventListener(
         "notificationDispatch",
         handleNotificationDispatch,
       );
+      window.removeEventListener(
+        "notificationCleanup",
+        handleNotificationCleanup,
+      );
+    };
   }, []);
 
   return (

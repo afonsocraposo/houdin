@@ -1,21 +1,21 @@
 import { ContentInjector } from "../services/injector";
 import { initializeActions } from "../services/actionInitializer";
 
-console.log("Content script loaded");
+console.debug("Content script loaded");
 
 // Initialize actions first
 initializeActions();
 
 // Prevent multiple initializations
 if ((window as any).changemeExtensionInitialized) {
-  console.log("changeme extension already initialized, skipping");
+  console.debug("changeme extension already initialized, skipping");
 } else {
   (window as any).changemeExtensionInitialized = true;
 
   let contentInjector: ContentInjector;
 
   const initContentScript = () => {
-    console.log("changeme extension content script initialized");
+    console.debug("changeme extension content script initialized");
 
     contentInjector = new ContentInjector();
     contentInjector.initialize();

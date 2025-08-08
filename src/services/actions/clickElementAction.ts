@@ -52,7 +52,7 @@ export class ClickElementAction extends BaseAction<ClickElementActionConfig> {
       element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     } else {
       NotificationService.showErrorNotification({
-        message: "Element not found for content extraction",
+        message: "Element not found for clicking",
       });
       context.setOutput(nodeId, "");
     }

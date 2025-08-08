@@ -1,5 +1,5 @@
-import { HttpListenerService } from '../services/httpListener';
-import { StorageManager } from '../services/storage';
+import { HttpListenerService } from "../services/httpListener";
+import { StorageManager } from "../services/storage";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -27,14 +27,16 @@ try {
   // Set up callback to handle HTTP triggers
   httpListener.setTriggerCallback((data, triggerNodeId, workflowId) => {
     // Find the tab that made the request
-    runtime.tabs.sendMessage(data.request.tabId, {
-      type: 'HTTP_REQUEST_TRIGGER',
-      data,
-      triggerNodeId,
-      workflowId
-    }).catch((error: any) => {
-      console.error('Error sending HTTP trigger message:', error);
-    });
+    runtime.tabs
+      .sendMessage(data.request.tabId, {
+        type: "HTTP_REQUEST_TRIGGER",
+        data,
+        triggerNodeId,
+        workflowId,
+      })
+      .catch((error: any) => {
+        console.error("Error sending HTTP trigger message:", error);
+      });
   });
 
   // Pre-register HTTP triggers for active workflows
@@ -49,19 +51,19 @@ async function initializeActiveHttpTriggers(): Promise<void> {
     if (httpListener) {
       httpListener.clearAllTriggers();
     }
-    
+
     const storageManager = StorageManager.getInstance();
     const workflows = await storageManager.getWorkflows();
-    
+
     // Find all enabled workflows with HTTP triggers
     for (const workflow of workflows) {
       if (!workflow.enabled) continue;
-      
-      const httpTriggerNodes = workflow.nodes.filter(node => 
-        node.type === 'trigger' && 
-        node.data?.triggerType === 'http-request'
+
+      const httpTriggerNodes = workflow.nodes.filter(
+        (node) =>
+          node.type === "trigger" && node.data?.triggerType === "http-request",
       );
-      
+
       for (const triggerNode of httpTriggerNodes) {
         const config = triggerNode.data?.config;
         if (config?.urlPattern) {
@@ -69,13 +71,13 @@ async function initializeActiveHttpTriggers(): Promise<void> {
             workflow.id,
             triggerNode.id,
             config.urlPattern,
-            config.method || 'ANY'
+            config.method || "ANY",
           );
         }
       }
     }
   } catch (error) {
-    console.error('Error initializing active HTTP triggers:', error);
+    console.error("Error initializing active HTTP triggers:", error);
   }
 }
 
@@ -94,19 +96,23 @@ runtime.runtime.onMessage.addListener(
           message.workflowId,
           message.triggerNodeId,
           message.urlPattern,
-          message.method
+          message.method,
         );
       } else {
-        console.error("HttpListenerService not available for trigger registration");
+        console.error(
+          "HttpListenerService not available for trigger registration",
+        );
       }
     } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
       if (httpListener) {
         httpListener.unregisterTrigger(
           message.workflowId,
-          message.triggerNodeId
+          message.triggerNodeId,
         );
       } else {
-        console.error("HttpListenerService not available for trigger unregistration");
+        console.error(
+          "HttpListenerService not available for trigger unregistration",
+        );
       }
     } else if (message.type === "SYNC_HTTP_TRIGGERS") {
       // Re-sync HTTP triggers for active workflows
@@ -159,7 +165,7 @@ async function handleHttpRequest(request: HttpRequest): Promise<HttpResponse> {
 }
 
 runtime.runtime.onInstalled.addListener(() => {
-  console.log("Extension installed");
+  console.debug("Extension installed");
 });
 
 // For manifest v2, use browserAction instead of action

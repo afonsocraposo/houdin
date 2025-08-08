@@ -67,12 +67,11 @@ export class WorkflowExecutor {
   }
 
   async execute(): Promise<void> {
-    console.log("Executing workflow:", this.workflow.name);
-
     if (!this.workflow.enabled) {
-      console.log("Workflow is disabled, skipping execution");
+      console.debug("Workflow is disabled, skipping execution");
       return;
     }
+    console.log("Executing workflow:", this.workflow.name);
 
     try {
       // Find trigger nodes and set them up
@@ -97,7 +96,12 @@ export class WorkflowExecutor {
     const triggerConfig = node.data?.config || {};
 
     if (!triggerType) {
-      console.error('No trigger type found for node:', node.id, 'node.data:', node.data);
+      console.error(
+        "No trigger type found for node:",
+        node.id,
+        "node.data:",
+        node.data,
+      );
       return;
     }
 
@@ -169,7 +173,12 @@ export class WorkflowExecutor {
     const actionRegistry = ActionRegistry.getInstance();
 
     if (!actionType) {
-      console.error('No action type found for node:', node.id, 'node.data:', node.data);
+      console.error(
+        "No action type found for node:",
+        node.id,
+        "node.data:",
+        node.data,
+      );
       return;
     }
 
@@ -212,8 +221,14 @@ export class WorkflowExecutor {
   }
 
   destroy(): void {
-    // Clean up all active triggers using the trigger registry
-    this.triggerRegistry.cleanupAllTriggers();
+    // Clean up only triggers for this workflow's nodes
+    const triggerNodes = this.workflow.nodes.filter(
+      (node) => node.type === "trigger",
+    );
+
+    triggerNodes.forEach((node) => {
+      this.triggerRegistry.cleanupTrigger(node.id);
+    });
 
     // Remove event listener
     document.removeEventListener(

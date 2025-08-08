@@ -1,7 +1,6 @@
 export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
     await navigator.clipboard.writeText(text);
-    console.log("Content copied to clipboard");
     return true;
   } catch (error) {
     console.error("Failed to copy to clipboard:", error);

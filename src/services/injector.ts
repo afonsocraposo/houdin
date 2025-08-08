@@ -20,7 +20,7 @@ export class ContentInjector {
   }
 
   async initialize(): Promise<void> {
-    console.log("Content injector initialized");
+    console.debug("Content injector initialized");
     await this.loadWorkflows();
     this.setupStorageListener();
     this.processWorkflows();
@@ -28,17 +28,17 @@ export class ContentInjector {
 
   private async loadWorkflows(): Promise<void> {
     this.workflows = await this.storageManager.getWorkflows();
-    console.log("Loaded workflows:", this.workflows.length);
+    console.debug("Loaded workflows:", this.workflows.length);
   }
 
   private setupStorageListener(): void {
     this.storageManager.onStorageChanged((workflows) => {
-      console.log("Workflows updated, reloading...");
+      console.debug("Workflows updated, reloading...");
       this.workflows = workflows;
-      
+
       // Sync HTTP triggers in background script
-      chrome.runtime.sendMessage({ type: 'SYNC_HTTP_TRIGGERS' });
-      
+      chrome.runtime.sendMessage({ type: "SYNC_HTTP_TRIGGERS" });
+
       this.scheduleProcessing();
     });
   }
@@ -48,6 +48,13 @@ export class ContentInjector {
     rootId: string,
   ): { root: Root | null; hostDiv: HTMLElement | null } {
     try {
+      // Check if container already exists
+      const existingContainer = document.getElementById(rootId);
+      if (existingContainer) {
+        console.debug(`Container ${rootId} already exists, skipping injection`);
+        return { root: null, hostDiv: null };
+      }
+
       const container = document.createElement("span");
       container.id = rootId;
       container.setAttribute("data-workflow-injected", "true");
@@ -91,6 +98,11 @@ export class ContentInjector {
   }
 
   private injectMantineDispatcher(rootId: string): void {
+    // Check if mantine dispatcher already exists
+    if (document.getElementById(rootId)) {
+      return; // Already injected, skip
+    }
+
     const body = document.querySelector("body");
     if (!body) throw new Error("Body element not found.");
     ContentInjector.injectMantineComponentInTarget(
@@ -105,7 +117,7 @@ export class ContentInjector {
       const url = location.href;
       if (url !== this.lastUrl) {
         this.lastUrl = url;
-        console.log("URL changed, processing workflows");
+        console.debug("URL changed, processing workflows");
         this.scheduleProcessing();
       }
     });
@@ -116,7 +128,7 @@ export class ContentInjector {
       const url = location.href;
       if (url !== this.lastUrl) {
         this.lastUrl = url;
-        console.log("URL changed via navigation, processing workflows");
+        console.debug("URL changed via navigation, processing workflows");
         this.scheduleProcessing();
       }
     });
@@ -160,7 +172,7 @@ export class ContentInjector {
     await new Promise((resolve) => setTimeout(resolve, 1));
 
     if (matchingWorkflows.length > 0) {
-      console.log(
+      console.debug(
         `Found ${matchingWorkflows.length} matching workflows for ${currentUrl}`,
       );
 
@@ -185,9 +197,14 @@ export class ContentInjector {
 
   private cleanupInjectedComponents(): void {
     console.debug("Cleaning up injected components");
-    // Remove all components injected by workflows
+
+    // Clean up modals and notifications via events instead of re-injection
+    window.dispatchEvent(new CustomEvent("modalCleanup"));
+    window.dispatchEvent(new CustomEvent("notificationCleanup"));
+
+    // Remove all components injected by workflows, but preserve the mantine dispatcher
     const injectedComponents = document.querySelectorAll(
-      '[data-workflow-injected="true"]',
+      '[data-workflow-injected="true"]:not(#mantine-injector-root)',
     );
     injectedComponents.forEach((component) => {
       if (component.parentNode) {
