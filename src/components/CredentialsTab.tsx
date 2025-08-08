@@ -277,16 +277,6 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
         size="lg"
       >
         <Stack gap="md">
-          <TextInput
-            label="Name"
-            placeholder="Enter credential name..."
-            value={formData.name}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, name: e.target.value }))
-            }
-            required
-          />
-
           <Select
             label="Type"
             placeholder="Select credential type..."
@@ -299,6 +289,16 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
                 config: {}, // Reset config when type changes
               }));
             }}
+            required
+          />
+
+          <TextInput
+            label="Name"
+            placeholder="Enter credential name..."
+            value={formData.name}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, name: e.target.value }))
+            }
             required
           />
 
