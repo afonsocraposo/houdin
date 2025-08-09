@@ -7,6 +7,7 @@ import { CustomScriptAction } from "./actions/customScriptAction";
 import { LLMOpenAIAction } from "./actions/llmOpenAIAction";
 import { InjectStyleAction } from "./actions/injectStyleAction";
 import { ClickElementAction } from "./actions/clickElementAction";
+import { ShowNotificationAction } from "./actions/showNotificationAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -17,6 +18,7 @@ export function initializeActions(): void {
   registry.register(new GetElementContentAction());
   registry.register(new ClickElementAction());
   registry.register(new ShowModalAction());
+  registry.register(new ShowNotificationAction());
   registry.register(new InjectComponentAction());
   registry.register(new InjectStyleAction());
   registry.register(new CustomScriptAction());
