@@ -4,7 +4,7 @@ import webExtension from "vite-plugin-web-extension";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-export default defineConfig(() => ({
+export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     webExtension({
@@ -27,6 +27,31 @@ export default defineConfig(() => ({
         "src/config/index.html",
       ],
     }),
+    // Custom plugin to conditionally inject React Refresh script
+    {
+      name: 'conditional-react-refresh',
+      transformIndexHtml: {
+        order: 'pre',
+        handler(html) {
+          // Only inject React Refresh script in development
+          if (command === 'serve') {
+            const reactRefreshScript = `    <script type="module">
+      import RefreshRuntime from "http://localhost:5173/@react-refresh";
+      RefreshRuntime.injectIntoGlobalHook(window);
+      window.$RefreshReg$ = () => {};
+      window.$RefreshSig$ = () => (type) => type;
+      window.__vite_plugin_react_preamble_installed__ = true;
+    </script>`;
+            
+            // Inject the script before the closing </head> tag
+            return html.replace('</head>', `${reactRefreshScript}\n  </head>`);
+          } else {
+            // In production, return HTML as-is (no script injection)
+            return html;
+          }
+        }
+      }
+    }
   ],
   build: {
     outDir: "dist",
