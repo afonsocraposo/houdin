@@ -17,7 +17,9 @@ import {
   IconDeviceFloppy,
   IconArrowLeft,
   IconDownload,
+  IconHistory,
 } from "@tabler/icons-react";
+import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
 import { ExportModal } from "./ExportModal";
@@ -38,6 +40,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   onSave,
   onCancel,
 }) => {
+  const navigate = useNavigate();
   const [workflowName, setWorkflowName] = useState(workflow?.name || "");
   const [workflowDescription, setWorkflowDescription] = useState(
     workflow?.description || "",
@@ -102,11 +105,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   };
 
   const handleExport = () => {
-    if (!workflowName.trim()) {
-      return;
-    }
-
     setExportModalOpened(true);
+  };
+
+  const handleViewHistory = () => {
+    if (workflow?.id) {
+      navigate(`/executions/${workflow.id}`);
+    }
   };
 
   const getCurrentWorkflowDefinition = (): WorkflowDefinition => {
@@ -138,6 +143,15 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               >
                 Back to Workflows
               </Button>
+              {workflow && (
+                <Button
+                  variant="outline"
+                  leftSection={<IconHistory size={16} />}
+                  onClick={handleViewHistory}
+                >
+                  View History
+                </Button>
+              )}
               <Button
                 variant="outline"
                 leftSection={<IconDownload size={16} />}

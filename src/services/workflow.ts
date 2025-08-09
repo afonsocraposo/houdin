@@ -2,6 +2,7 @@ import {
   WorkflowDefinition,
   WorkflowNode,
   WorkflowExecutionContext,
+  NodeExecutionResult,
 } from "../types/workflow";
 import { NotificationService } from "./notification";
 import { ActionRegistry } from "./actionRegistry";
@@ -9,6 +10,7 @@ import { TriggerRegistry, initializeTriggers } from "./triggerInitializer";
 import { TriggerExecutionContext } from "../types/triggers";
 import { initializeActions } from "./actionInitializer";
 import { initializeCredentials } from "./credentialInitializer";
+import { ExecutionTracker } from "./executionTracker";
 
 class ExecutionContext implements WorkflowExecutionContext {
   outputs: Record<string, any> = {};
@@ -46,9 +48,12 @@ export class WorkflowExecutor {
   private context: ExecutionContext;
   private eventListener: (event: Event) => void;
   private triggerRegistry: TriggerRegistry;
+  private executionTracker: ExecutionTracker;
+  private currentExecutionId?: string;
 
   constructor(private workflow: WorkflowDefinition) {
     this.context = new ExecutionContext();
+    this.executionTracker = ExecutionTracker.getInstance();
 
     // Initialize registries
     initializeTriggers();
@@ -126,6 +131,29 @@ export class WorkflowExecutor {
         triggerConfig,
         triggerContext,
         async () => {
+          // Start execution tracking when trigger fires
+          this.currentExecutionId = this.executionTracker.startExecution(
+            this.workflow.id,
+            triggerType,
+            triggerConfig
+          );
+          
+          console.debug(`Trigger fired, started execution ${this.currentExecutionId} for workflow ${this.workflow.id}`);
+          
+          // Record trigger node result
+          const triggerResult: NodeExecutionResult = {
+            nodeId: node.id,
+            status: "success",
+            output: { triggerType, config: triggerConfig },
+            executedAt: Date.now(),
+            duration: 0,
+          };
+          
+          if (this.currentExecutionId) {
+            console.debug(`Adding trigger node result:`, triggerResult);
+            this.executionTracker.addNodeResult(this.currentExecutionId, triggerResult);
+          }
+          
           await this.executeConnectedActions(node);
         },
       );
@@ -145,13 +173,28 @@ export class WorkflowExecutor {
       (conn) => conn.source === triggerNode.id,
     );
 
-    for (const connection of connections) {
-      const actionNode = this.workflow.nodes.find(
-        (n) => n.id === connection.target,
-      );
-      if (actionNode && actionNode.type === "action") {
-        await this.executeAction(actionNode);
+    try {
+      for (const connection of connections) {
+        const actionNode = this.workflow.nodes.find(
+          (n) => n.id === connection.target,
+        );
+        if (actionNode && actionNode.type === "action") {
+          await this.executeAction(actionNode);
+        }
       }
+      
+      // Mark execution as completed if we have one
+      if (this.currentExecutionId) {
+        this.executionTracker.completeExecution(this.currentExecutionId, "completed");
+        this.currentExecutionId = undefined;
+      }
+    } catch (error) {
+      // Mark execution as failed if we have one
+      if (this.currentExecutionId) {
+        this.executionTracker.completeExecution(this.currentExecutionId, "failed");
+        this.currentExecutionId = undefined;
+      }
+      throw error;
     }
   }
 
@@ -187,6 +230,11 @@ export class WorkflowExecutor {
       return;
     }
 
+    const startTime = Date.now();
+    let nodeResult: NodeExecutionResult;
+
+    console.debug(`Executing action ${actionType} for node ${node.id}, execution: ${this.currentExecutionId}`);
+
     // Try to execute with the new action system first
     if (actionRegistry.hasAction(actionType)) {
       try {
@@ -202,27 +250,59 @@ export class WorkflowExecutor {
           node.id,
         );
 
+        nodeResult = {
+          nodeId: node.id,
+          status: "success",
+          output: extendedContext.getOutput(node.id),
+          executedAt: startTime,
+          duration: Date.now() - startTime,
+        };
+
+        console.debug(`Action completed successfully for node ${node.id}:`, nodeResult);
+
         // Execute connected actions after completion (for actions that need it)
         const action = actionRegistry.getAction(actionType);
         if (action?.metadata.completion) {
           await this.executeConnectedActionsFromNode(node.id);
         }
 
-        return;
       } catch (error) {
+        nodeResult = {
+          nodeId: node.id,
+          status: "error",
+          error: String(error),
+          executedAt: startTime,
+          duration: Date.now() - startTime,
+        };
+
         console.error(`Error executing action ${actionType}:`, error);
         NotificationService.showErrorNotification({
           message: `Error executing ${actionType}: ${error}`,
         });
-        return;
       }
+    } else {
+      nodeResult = {
+        nodeId: node.id,
+        status: "error",
+        error: `Unknown action type: ${actionType}`,
+        executedAt: startTime,
+        duration: Date.now() - startTime,
+      };
+
+      // Fallback: No actions should reach here anymore since we've converted them all
+      console.error(`Unknown action type: ${actionType}`);
+      NotificationService.showErrorNotification({
+        message: `Unknown action type: ${actionType}`,
+      });
     }
 
-    // Fallback: No actions should reach here anymore since we've converted them all
-    console.error(`Unknown action type: ${actionType}`);
-    NotificationService.showErrorNotification({
-      message: `Unknown action type: ${actionType}`,
-    });
+    // Add node result to current execution if we have one
+    if (this.currentExecutionId && nodeResult) {
+      console.debug(`Adding node result for execution ${this.currentExecutionId}:`, nodeResult);
+      this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+    } else {
+      console.warn(`No current execution ID when trying to add node result for ${node.id}`);
+    }
   }
 
   destroy(): void {

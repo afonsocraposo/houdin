@@ -3,7 +3,6 @@ import { IconCheck, IconClock, IconHistory } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { StorageManager } from "../services/storage";
 import { WorkflowDefinition, WorkflowExecution } from "../types/workflow";
-import WorkflowDetailModal from "./WorkflowDetailModal";
 
 interface ActiveWorkflowsProps {
   currentUrl: string;
@@ -13,23 +12,39 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowDefinition | null>(null);
-  const [modalOpened, setModalOpened] = useState(false);
+
+  // Cross-browser API compatibility
+  const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
 
   useEffect(() => {
     loadData();
+    
+    // Set up periodic refresh to get real-time execution updates
+    const interval = setInterval(loadExecutions, 2000);
+    return () => clearInterval(interval);
   }, []);
+
+  const loadExecutions = async () => {
+    try {
+      const response = await new Promise<{ executions: WorkflowExecution[] }>((resolve) => {
+        browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
+      });
+      setExecutions(response.executions || []);
+    } catch (error) {
+      console.error("Failed to load executions:", error);
+      setExecutions([]);
+    }
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
       const storageManager = StorageManager.getInstance();
-      const [allWorkflows, allExecutions] = await Promise.all([
-        storageManager.getWorkflows(),
-        storageManager.getWorkflowExecutions()
-      ]);
+      const allWorkflows = await storageManager.getWorkflows();
       setWorkflows(allWorkflows);
-      setExecutions(allExecutions);
+      
+      // Load executions from background script
+      await loadExecutions();
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -67,10 +82,24 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   };
 
   const getWorkflowStatus = (workflow: WorkflowDefinition) => {
-    // This would ideally come from the background script or content script
-    // For now, we'll show it as "Ready" if it matches the current URL
     const isActive = getActiveWorkflows().includes(workflow);
-    return isActive ? "ready" : "inactive";
+    if (!isActive) return "inactive";
+    
+    // Check if workflow has any running executions
+    const runningExecution = executions.find(exec => 
+      exec.workflowId === workflow.id && exec.status === "running"
+    );
+    
+    return runningExecution ? "running" : "ready";
+  };
+
+  const getLastExecutionTime = (workflow: WorkflowDefinition) => {
+    const workflowExecutions = executions.filter(exec => exec.workflowId === workflow.id);
+    if (workflowExecutions.length === 0) return workflow.lastExecuted;
+    
+    // Get the most recent execution
+    const latestExecution = workflowExecutions.sort((a, b) => b.startedAt - a.startedAt)[0];
+    return latestExecution.startedAt;
   };
 
   const formatLastExecution = (timestamp?: number) => {
@@ -86,8 +115,10 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   };
 
   const handleWorkflowClick = (workflow: WorkflowDefinition) => {
-    setSelectedWorkflow(workflow);
-    setModalOpened(true);
+    // Open workflow designer in new tab
+    const designerUrl = browserAPI.runtime.getURL(`src/config/index.html#/designer/${workflow.id}`);
+    browserAPI.tabs.create({ url: designerUrl });
+    window.close();
   };
 
   const activeWorkflows = getActiveWorkflows();
@@ -134,23 +165,27 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
                         <Badge 
                           size="xs" 
                           variant="light" 
-                          color={getWorkflowStatus(workflow) === "ready" ? "green" : "orange"}
+                          color={getWorkflowStatus(workflow) === "ready" ? "green" : 
+                                 getWorkflowStatus(workflow) === "running" ? "blue" : "orange"}
                           leftSection={
                             getWorkflowStatus(workflow) === "ready" ? 
                               <IconCheck size={10} /> : 
-                              <IconClock size={10} />
+                              getWorkflowStatus(workflow) === "running" ?
+                                <IconClock size={10} /> :
+                                <IconClock size={10} />
                           }
                         >
-                          {getWorkflowStatus(workflow) === "ready" ? "Ready" : "Standby"}
+                          {getWorkflowStatus(workflow) === "ready" ? "Ready" : 
+                           getWorkflowStatus(workflow) === "running" ? "Running" : "Standby"}
                         </Badge>
-                        {workflow.lastExecuted && (
+                        {getLastExecutionTime(workflow) && (
                           <Badge 
                             size="xs" 
                             variant="light" 
                             color="gray"
                             leftSection={<IconHistory size={10} />}
                           >
-                            {formatLastExecution(workflow.lastExecuted)}
+                            {formatLastExecution(getLastExecutionTime(workflow))}
                           </Badge>
                         )}
                       </Group>
@@ -166,13 +201,6 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
           )}
         </ScrollArea>
       </div>
-
-      <WorkflowDetailModal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        workflow={selectedWorkflow}
-        executions={executions}
-      />
     </>
   );
 }

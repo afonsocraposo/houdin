@@ -1,8 +1,17 @@
-import { Container, Title, Text, Button, Stack, Divider } from "@mantine/core";
-import { IconPointer } from "@tabler/icons-react";
+import {
+  Container,
+  Title,
+  Text,
+  Button,
+  Stack,
+  Divider,
+  Tabs,
+} from "@mantine/core";
+import { IconPointer, IconHistory, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { initializeCredentials } from "../services/credentialInitializer";
 import ActiveWorkflows from "./ActiveWorkflows";
+import ExecutionHistory from "./ExecutionHistory";
 import iconSvg from "../assets/icons/icon.svg";
 
 function App() {
@@ -22,7 +31,7 @@ function App() {
       const tabs = await new Promise<any[]>((resolve) => {
         browserAPI.tabs.query({ active: true, currentWindow: true }, resolve);
       });
-      
+
       if (tabs.length > 0) {
         setCurrentUrl(tabs[0].url || "");
       }
@@ -59,14 +68,14 @@ function App() {
   return (
     <>
       <Container size="xs" p="md" style={{ width: "320px", height: "500px" }}>
-        <Stack gap="md">
+        <Stack gap="sm">
           <div style={{ textAlign: "center" }}>
             <img
               src={iconSvg}
               alt="changeme icon"
               style={{ width: 48, height: 48 }}
             />
-            <Title order={2} mt="sm">
+            <Title order={2} mt="xs">
               changeme
             </Title>
             <Text size="sm" c="dimmed">
@@ -74,30 +83,49 @@ function App() {
             </Text>
           </div>
 
-          {/* Active Workflows Section */}
-          <ActiveWorkflows currentUrl={currentUrl} />
+          <Tabs defaultValue="workflows" variant="pills">
+            <Tabs.List grow>
+              <Tabs.Tab value="workflows" leftSection={<IconHome size={16} />}>
+                Workflows
+              </Tabs.Tab>
+              <Tabs.Tab value="history" leftSection={<IconHistory size={16} />}>
+                History
+              </Tabs.Tab>
+            </Tabs.List>
 
-          <Divider />
+            <Tabs.Panel value="workflows" pt="sm">
+              <Stack gap="md">
+                {/* Active Workflows Section */}
+                <ActiveWorkflows currentUrl={currentUrl} />
 
-          <Stack gap="xs">
-            <Button variant="filled" onClick={handleClick} fullWidth>
-              Open Configuration
-            </Button>
+                <Divider />
 
-            <Button
-              variant="outline"
-              onClick={handleSelectElement}
-              fullWidth
-              leftSection={<IconPointer size={16} />}
-            >
-              Element Inspector
-            </Button>
-          </Stack>
+                <Stack gap="xs">
+                  <Button variant="filled" onClick={handleClick} fullWidth>
+                    Open Configuration
+                  </Button>
 
-          {/* Current URL info */}
-          <Text size="xs" c="dimmed" ta="center" truncate>
-            {currentUrl ? new URL(currentUrl).hostname : "No active tab"}
-          </Text>
+                  <Button
+                    variant="outline"
+                    onClick={handleSelectElement}
+                    fullWidth
+                    leftSection={<IconPointer size={16} />}
+                  >
+                    Element Inspector
+                  </Button>
+                </Stack>
+
+                {/* Current URL info */}
+                <Text size="xs" c="dimmed" ta="center" truncate>
+                  {currentUrl ? new URL(currentUrl).hostname : "No active tab"}
+                </Text>
+              </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="history" pt="md">
+              <ExecutionHistory />
+            </Tabs.Panel>
+          </Tabs>
         </Stack>
       </Container>
     </>

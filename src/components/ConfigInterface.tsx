@@ -28,6 +28,7 @@ import {
   IconDownload,
   IconUpload,
   IconKey,
+  IconHistory,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -287,36 +288,43 @@ function ConfigInterface() {
                               size="sm"
                             />
                           </Table.Td>
-                          <Table.Td>
-                            <Group gap="xs">
-                              <ActionIcon
-                                variant="subtle"
-                                onClick={() => handleEditWorkflow(workflow)}
-                                title="Edit workflow"
-                              >
-                                <IconEdit size={16} />
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="subtle"
-                                color="blue"
-                                onClick={() => handleExportWorkflow(workflow)}
-                                title="Export workflow"
-                              >
-                                <IconDownload size={16} />
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="subtle"
-                                color="red"
-                                onClick={() =>
-                                  handleDeleteWorkflow(workflow.id)
-                                }
-                                title="Delete workflow"
-                              >
-                                <IconTrash size={16} />
-                              </ActionIcon>
-                            </Group>
-                          </Table.Td>
-                        </Table.Tr>
+                           <Table.Td>
+                             <Group gap="xs">
+                               <ActionIcon
+                                 variant="subtle"
+                                 onClick={() => handleEditWorkflow(workflow)}
+                                 title="Edit workflow"
+                               >
+                                 <IconEdit size={16} />
+                               </ActionIcon>
+                               <ActionIcon
+                                 variant="subtle"
+                                 color="blue"
+                                 onClick={() => navigate(`/executions/${workflow.id}`)}
+                                 title="View execution history"
+                               >
+                                 <IconHistory size={16} />
+                               </ActionIcon>
+                               <ActionIcon
+                                 variant="subtle"
+                                 color="blue"
+                                 onClick={() => handleExportWorkflow(workflow)}
+                                 title="Export workflow"
+                               >
+                                 <IconDownload size={16} />
+                               </ActionIcon>
+                               <ActionIcon
+                                 variant="subtle"
+                                 color="red"
+                                 onClick={() =>
+                                   handleDeleteWorkflow(workflow.id)
+                                 }
+                                 title="Delete workflow"
+                               >
+                                 <IconTrash size={16} />
+                               </ActionIcon>
+                             </Group>
+                           </Table.Td>                        </Table.Tr>
                       ))}
                   </Table.Tbody>
                 </Table>
