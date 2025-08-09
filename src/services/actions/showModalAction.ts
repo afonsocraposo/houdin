@@ -37,7 +37,6 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
           description:
             "Content to display. Use {{node-id}} to reference action outputs. Supports Markdown.",
           rows: 4,
-          required: true,
         },
       },
     };
