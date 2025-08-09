@@ -74,7 +74,7 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
           description:
             "Controls randomness (optional, uses model default if not set)",
           min: 0,
-          max: 1,
+          max: 2,
           step: 0.1,
           required: false, // Made optional
         },
