@@ -67,10 +67,6 @@ function ConfigInterface() {
       }
     };
 
-    const handleAlertClose = () => {
-      localStorage.setItem("urlAlertDismissed", "true");
-      setShowUrlAlert(false);
-    };
     loadData();
 
     // Set up storage change listener
@@ -152,6 +148,10 @@ function ConfigInterface() {
       console.error("Failed to import workflow:", error);
       alert("Failed to import workflow. Please try again.");
     }
+  };
+  const handleAlertClose = () => {
+    localStorage.setItem("urlAlertDismissed", "true");
+    setShowUrlAlert(false);
   };
 
   return (
