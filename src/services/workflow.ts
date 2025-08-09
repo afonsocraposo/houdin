@@ -59,7 +59,7 @@ export class WorkflowExecutor {
     initializeTriggers();
     initializeActions();
     initializeCredentials();
-    
+
     this.triggerRegistry = TriggerRegistry.getInstance();
 
     // Set up listener for component triggers
@@ -81,7 +81,7 @@ export class WorkflowExecutor {
       console.debug("Workflow is disabled, skipping execution");
       return;
     }
-    console.log("Executing workflow:", this.workflow.name);
+    console.debug("Executing workflow:", this.workflow.name);
 
     try {
       // Find trigger nodes and set them up
@@ -135,11 +135,13 @@ export class WorkflowExecutor {
           this.currentExecutionId = this.executionTracker.startExecution(
             this.workflow.id,
             triggerType,
-            triggerConfig
+            triggerConfig,
           );
-          
-          console.debug(`Trigger fired, started execution ${this.currentExecutionId} for workflow ${this.workflow.id}`);
-          
+
+          console.debug(
+            `Trigger fired, started execution ${this.currentExecutionId} for workflow ${this.workflow.id}`,
+          );
+
           // Record trigger node result
           const triggerResult: NodeExecutionResult = {
             nodeId: node.id,
@@ -148,12 +150,15 @@ export class WorkflowExecutor {
             executedAt: Date.now(),
             duration: 0,
           };
-          
+
           if (this.currentExecutionId) {
             console.debug(`Adding trigger node result:`, triggerResult);
-            this.executionTracker.addNodeResult(this.currentExecutionId, triggerResult);
+            this.executionTracker.addNodeResult(
+              this.currentExecutionId,
+              triggerResult,
+            );
           }
-          
+
           await this.executeConnectedActions(node);
         },
       );
@@ -182,16 +187,22 @@ export class WorkflowExecutor {
           await this.executeAction(actionNode);
         }
       }
-      
+
       // Mark execution as completed if we have one
       if (this.currentExecutionId) {
-        this.executionTracker.completeExecution(this.currentExecutionId, "completed");
+        this.executionTracker.completeExecution(
+          this.currentExecutionId,
+          "completed",
+        );
         this.currentExecutionId = undefined;
       }
     } catch (error) {
       // Mark execution as failed if we have one
       if (this.currentExecutionId) {
-        this.executionTracker.completeExecution(this.currentExecutionId, "failed");
+        this.executionTracker.completeExecution(
+          this.currentExecutionId,
+          "failed",
+        );
         this.currentExecutionId = undefined;
       }
       throw error;
@@ -233,7 +244,9 @@ export class WorkflowExecutor {
     const startTime = Date.now();
     let nodeResult: NodeExecutionResult;
 
-    console.debug(`Executing action ${actionType} for node ${node.id}, execution: ${this.currentExecutionId}`);
+    console.debug(
+      `Executing action ${actionType} for node ${node.id}, execution: ${this.currentExecutionId}`,
+    );
 
     // Try to execute with the new action system first
     if (actionRegistry.hasAction(actionType)) {
@@ -258,14 +271,16 @@ export class WorkflowExecutor {
           duration: Date.now() - startTime,
         };
 
-        console.debug(`Action completed successfully for node ${node.id}:`, nodeResult);
+        console.debug(
+          `Action completed successfully for node ${node.id}:`,
+          nodeResult,
+        );
 
         // Execute connected actions after completion (for actions that need it)
         const action = actionRegistry.getAction(actionType);
         if (action?.metadata.completion) {
           await this.executeConnectedActionsFromNode(node.id);
         }
-
       } catch (error) {
         nodeResult = {
           nodeId: node.id,
@@ -298,10 +313,15 @@ export class WorkflowExecutor {
 
     // Add node result to current execution if we have one
     if (this.currentExecutionId && nodeResult) {
-      console.debug(`Adding node result for execution ${this.currentExecutionId}:`, nodeResult);
+      console.debug(
+        `Adding node result for execution ${this.currentExecutionId}:`,
+        nodeResult,
+      );
       this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
     } else {
-      console.warn(`No current execution ID when trying to add node result for ${node.id}`);
+      console.warn(
+        `No current execution ID when trying to add node result for ${node.id}`,
+      );
     }
   }
 
