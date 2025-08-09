@@ -33,17 +33,19 @@ class ExecutionTracker {
 
   startExecution(workflowId: string, triggerType?: string, triggerData?: any): string {
     const executionId = generateId();
+    const url = this.isContentScript && typeof window !== 'undefined' ? window.location.href : 'unknown';
     const execution: WorkflowExecution = {
       id: executionId,
       workflowId,
       startedAt: Date.now(),
       status: "running",
       nodeResults: [],
-      trigger: triggerType ? { type: triggerType, data: triggerData } : undefined,
+      url,
+      trigger: { type: triggerType || 'unknown', data: triggerData },
     };
 
     this.executions.set(executionId, execution);
-    console.debug(`ExecutionTracker: Started execution ${executionId} for workflow ${workflowId}`);
+    console.debug(`ExecutionTracker: Started execution ${executionId} for workflow ${workflowId} on ${url}`);
     
     // Send message to background script
     this.sendMessage("EXECUTION_STARTED", execution);

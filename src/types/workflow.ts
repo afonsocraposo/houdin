@@ -33,7 +33,8 @@ export interface WorkflowExecution {
   completedAt?: number;
   status: "running" | "completed" | "failed";
   nodeResults: NodeExecutionResult[];
-  trigger?: {
+  url: string;
+  trigger: {
     type: string;
     data?: any;
   };

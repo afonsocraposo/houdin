@@ -187,13 +187,14 @@ function ExecutionHistory() {
                     Started: {new Date(execution.startedAt).toLocaleTimeString()}
                   </Text>
                   <Text size="xs" c="dimmed">
+                    URL: {execution.url}
+                  </Text>
+                  <Text size="xs" c="dimmed">
                     Duration: {formatDuration(execution)}
                   </Text>
-                  {execution.trigger && (
-                    <Text size="xs" c="dimmed">
-                      Trigger: {execution.trigger.type}
-                    </Text>
-                  )}
+                  <Text size="xs" c="dimmed">
+                    Trigger: {execution.trigger.type}
+                  </Text>
                   {execution.nodeResults.length > 0 && (
                     <Stack gap="xs">
                       <Text size="xs" fw={500}>Nodes:</Text>
