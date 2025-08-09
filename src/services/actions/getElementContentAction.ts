@@ -4,10 +4,12 @@ import {
   ActionMetadata,
   ActionExecutionContext,
 } from "../../types/actions";
+import { getElement } from "../../utils/helpers";
 import { NotificationService } from "../notification";
 
 interface GetElementContentActionConfig {
-  elementSelector: string;
+  selector: string;
+  selectorType: "css" | "xpath" | "text";
 }
 
 export class GetElementContentAction extends BaseAction<GetElementContentActionConfig> {
@@ -22,31 +24,44 @@ export class GetElementContentAction extends BaseAction<GetElementContentActionC
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
-        elementSelector: {
+        selectorType: {
+          type: "select",
+          label: "Selector Type",
+          options: [
+            { label: "CSS Selector", value: "css" },
+            { label: "XPath", value: "xpath" },
+            { label: "Text", value: "text" },
+          ],
+          defaultValue: "css",
+          description: "Type of selector to use for element extraction",
+          required: true,
+        },
+        selector: {
           type: "text",
-          label: "Element Selector",
+          label: "Selector",
           placeholder: ".title, #content, h1",
-          description: "CSS selector for the element to extract content from",
+          description: "Selector for the element to extract content from",
           required: true,
           defaultValue: "h1",
         },
       },
     };
   }
-async execute(
+
+  async execute(
     config: GetElementContentActionConfig,
     context: ActionExecutionContext,
     nodeId: string,
   ): Promise<void> {
-    const { elementSelector } = config;
+    const { selector, selectorType } = config;
 
-    const element = document.querySelector(elementSelector);
+    const element = getElement(selector, selectorType);
     if (element) {
       const textContent = element.textContent || "";
       // Store the output in the execution context
       context.setOutput(nodeId, textContent);
     } else {
-      console.error(`Element not found for selector: ${elementSelector}`);
+      console.error(`Element not found for selector: ${selector}`);
       NotificationService.showErrorNotification({
         message: "Element not found for content extraction",
       });

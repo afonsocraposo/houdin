@@ -4,11 +4,12 @@ import {
   ActionMetadata,
   ActionExecutionContext,
 } from "../../types/actions";
-import { copyToClipboard } from "../../utils/helpers";
+import { copyToClipboard, getElement } from "../../utils/helpers";
 import { NotificationService } from "../notification";
 
 interface CopyContentActionConfig {
-  sourceSelector: string;
+  selector: string;
+  selectorType: "css" | "xpath" | "text";
 }
 
 export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
@@ -22,7 +23,19 @@ export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
-        sourceSelector: {
+        selectorType: {
+          type: "select",
+          label: "Selector Type",
+          options: [
+            { label: "CSS Selector", value: "css" },
+            { label: "XPath", value: "xpath" },
+            { label: "Text", value: "text" },
+          ],
+          defaultValue: "css",
+          description: "Type of selector to use for content extraction",
+          required: true,
+        },
+        selector: {
           type: "text",
           label: "Source Selector",
           placeholder: ".content, #description",
@@ -38,9 +51,9 @@ export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
     _context: ActionExecutionContext,
     _nodeId: string,
   ): Promise<void> {
-    const { sourceSelector } = config;
+    const { selector, selectorType } = config;
 
-    const sourceElement = document.querySelector(sourceSelector);
+    const sourceElement = getElement(selector, selectorType);
     if (sourceElement) {
       const textContent = sourceElement.textContent || "";
       await copyToClipboard(textContent);

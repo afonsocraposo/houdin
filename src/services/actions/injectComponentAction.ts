@@ -8,9 +8,11 @@ import { ComponentFactory } from "../../components/ComponentFactory";
 import { ContentInjector } from "../injector";
 import { NotificationService } from "../notification";
 import React from "react";
+import { getElement } from "../../utils/helpers";
 
 interface InjectComponentActionConfig {
   targetSelector: string;
+  selectorType: "css" | "xpath";
   componentType: string;
   componentText: string;
   buttonColor?: string;
@@ -51,6 +53,17 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
               );
             }
           },
+        },
+        selectorType: {
+          type: "select",
+          label: "Selector Type",
+          options: [
+            { label: "CSS Selector", value: "css" },
+            { label: "XPath", value: "xpath" },
+          ],
+          defaultValue: "css",
+          description: "Type of selector to use for component injection",
+          required: true,
         },
         targetSelector: {
           type: "text",
@@ -133,12 +146,13 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       },
     };
   }
-async execute(
+  async execute(
     config: InjectComponentActionConfig,
     context: ActionExecutionContext,
     nodeId: string,
   ): Promise<void> {
     const {
+      selectorType,
       targetSelector,
       componentType,
       componentText,
@@ -149,7 +163,7 @@ async execute(
       customStyle,
     } = config;
 
-    const targetElement = document.querySelector(targetSelector || "body");
+    const targetElement = getElement(targetSelector, selectorType);
     if (!targetElement) {
       NotificationService.showErrorNotification({
         message: "Target element not found for component injection",
