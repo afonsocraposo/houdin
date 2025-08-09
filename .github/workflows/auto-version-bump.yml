@@ -5,10 +5,42 @@ on:
     types: [labeled, unlabeled]
     branches: [ main ]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    outputs:
+      has-version-label: ${{ steps.check.outputs.has-version-label }}
+      bump-type: ${{ steps.check.outputs.bump-type }}
+    
+    steps:
+    - name: Check version labels
+      id: check
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const labels = context.payload.pull_request.labels.map(label => label.name);
+          const versionLabels = labels.filter(label => ['patch', 'minor', 'major'].includes(label));
+          
+          if (versionLabels.length === 0) {
+            core.setOutput('has-version-label', 'false');
+            core.info('❌ No version label found');
+          } else if (versionLabels.length > 1) {
+            core.setOutput('has-version-label', 'false');
+            core.setFailed('❌ Multiple version labels found. Please use only one: patch, minor, or major');
+          } else {
+            core.setOutput('has-version-label', 'true');
+            core.setOutput('bump-type', versionLabels[0]);
+            core.info(`✅ Version label found: ${versionLabels[0]}`);
+          }
+
   version-bump:
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'patch') || contains(github.event.pull_request.labels.*.name, 'minor') || contains(github.event.pull_request.labels.*.name, 'major')
+    needs: version-check
+    if: needs.version-check.outputs.has-version-label == 'true'
     
     steps:
     - name: Checkout PR branch
@@ -16,6 +48,7 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         ref: ${{ github.event.pull_request.head.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
         fetch-depth: 0
 
     - name: Setup Node.js
@@ -26,23 +59,6 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
-
-    - name: Determine version bump type
-      id: bump-type
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const labels = context.payload.pull_request.labels.map(label => label.name);
-          const versionLabels = labels.filter(label => ['patch', 'minor', 'major'].includes(label));
-          
-          if (versionLabels.length === 1) {
-            core.setOutput('type', versionLabels[0]);
-            core.info(`Version bump type: ${versionLabels[0]}`);
-          } else if (versionLabels.length === 0) {
-            core.setFailed('No version label found');
-          } else {
-            core.setFailed('Multiple version labels found');
-          }
 
     - name: Check if version already bumped
       id: check-version
@@ -69,7 +85,7 @@ jobs:
       if: steps.check-version.outputs.version-changed == 'false'
       id: version
       run: |
-        BUMP_TYPE="${{ steps.bump-type.outputs.type }}"
+        BUMP_TYPE="${{ needs.version-check.outputs.bump-type }}"
         echo "Bumping version with: $BUMP_TYPE"
         
         # Bump version
@@ -82,9 +98,9 @@ jobs:
     - name: Commit version bump
       if: steps.check-version.outputs.version-changed == 'false'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add package.json
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add package.json package-lock.json
         git commit -m "chore: bump version to ${{ steps.version.outputs.new-version }}"
         git push
 
@@ -97,5 +113,5 @@ jobs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: `🚀 Version automatically bumped to **${{ steps.version.outputs.new-version }}** based on the \`${{ steps.bump-type.outputs.type }}\` label.`
+            body: `🚀 Version automatically bumped to **${{ steps.version.outputs.new-version }}** based on the \`${{ needs.version-check.outputs.bump-type }}\` label.`
           });
