@@ -2,6 +2,7 @@ import { ReactElement } from "react";
 import ButtonFactory from "./factory/button";
 import TextFactory from "./factory/text";
 import InputFactory from "./factory/input";
+import FloatingActionButtonFactory from "./factory/floatingActionButton";
 
 export class ComponentFactory {
   static create(recipe: any, workflowId: string, nodeId: string): ReactElement {
@@ -18,6 +19,13 @@ export class ComponentFactory {
           recipe,
           onSubmit: (text: string) => {
             this.triggerNextAction(workflowId, nodeId, { text });
+          },
+        });
+      case "floating-action-button":
+        return FloatingActionButtonFactory({
+          recipe,
+          onClick: () => {
+            this.triggerNextAction(workflowId, nodeId);
           },
         });
       default:
