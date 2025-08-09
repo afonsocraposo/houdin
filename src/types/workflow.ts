@@ -15,6 +15,30 @@ export interface WorkflowConnection {
   targetHandle?: string;
 }
 
+// Execution tracking for individual nodes
+export interface NodeExecutionResult {
+  nodeId: string;
+  status: "success" | "error" | "skipped";
+  output?: any;
+  error?: string;
+  executedAt: number;
+  duration?: number;
+}
+
+// Workflow execution record
+export interface WorkflowExecution {
+  id: string;
+  workflowId: string;
+  startedAt: number;
+  completedAt?: number;
+  status: "running" | "completed" | "failed";
+  nodeResults: NodeExecutionResult[];
+  trigger?: {
+    type: string;
+    data?: any;
+  };
+}
+
 export interface WorkflowDefinition {
   id: string;
   name: string;
@@ -24,6 +48,8 @@ export interface WorkflowDefinition {
   connections: WorkflowConnection[];
   enabled: boolean;
   lastUpdated?: number;
+  lastExecuted?: number;
+  executionCount?: number;
 }
 
 // Workflow execution context for storing action outputs

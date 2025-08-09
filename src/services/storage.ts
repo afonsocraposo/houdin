@@ -1,5 +1,6 @@
 import { WorkflowDefinition } from "../types/workflow";
 import { Credential } from "../types/credentials";
+import { WorkflowExecution } from "../types/workflow";
 
 export class StorageManager {
   private static instance: StorageManager;
@@ -190,6 +191,86 @@ export class StorageManager {
           callback(credentials);
         }
       });
+    }
+  }
+
+  // Workflow execution tracking methods
+  async getWorkflowExecutions(): Promise<WorkflowExecution[]> {
+    const storage = this.getStorageAPI();
+    if (!storage) return [];
+
+    try {
+      let result: any;
+      if (storage.isFirefox) {
+        result = await storage.api.sync.get(["workflowExecutions"]);
+      } else {
+        result = await new Promise((resolve, reject) => {
+          storage.api.sync.get(["workflowExecutions"], (result: any) => {
+            if ((chrome as any)?.runtime?.lastError) {
+              reject((chrome as any).runtime.lastError);
+            } else {
+              resolve(result);
+            }
+          });
+        });
+      }
+      return result.workflowExecutions || [];
+    } catch (error) {
+      console.error("Failed to get workflow executions:", error);
+      return [];
+    }
+  }
+
+  async saveWorkflowExecution(execution: WorkflowExecution): Promise<void> {
+    const storage = this.getStorageAPI();
+    if (!storage) return;
+
+    try {
+      const executions = await this.getWorkflowExecutions();
+      
+      // Keep only last 50 executions per workflow to manage storage
+      const filteredExecutions = executions.filter(e => e.workflowId !== execution.workflowId);
+      const workflowExecutions = filteredExecutions.filter(e => e.workflowId === execution.workflowId)
+        .sort((a, b) => b.startedAt - a.startedAt)
+        .slice(0, 49); // Keep 49 + 1 new = 50
+      
+      const updatedExecutions = [
+        ...filteredExecutions.filter(e => e.workflowId !== execution.workflowId),
+        execution,
+        ...workflowExecutions
+      ];
+
+      if (storage.isFirefox) {
+        await storage.api.sync.set({ workflowExecutions: updatedExecutions });
+      } else {
+        await new Promise<void>((resolve, reject) => {
+          storage.api.sync.set({ workflowExecutions: updatedExecutions }, () => {
+            if ((chrome as any)?.runtime?.lastError) {
+              reject((chrome as any).runtime.lastError);
+            } else {
+              resolve();
+            }
+          });
+        });
+      }
+
+      // Update workflow's last execution info
+      const workflows = await this.getWorkflows();
+      const updatedWorkflows = workflows.map(workflow => {
+        if (workflow.id === execution.workflowId) {
+          return {
+            ...workflow,
+            lastExecuted: execution.startedAt,
+            executionCount: (workflow.executionCount || 0) + 1
+          };
+        }
+        return workflow;
+      });
+      
+      await this.saveWorkflows(updatedWorkflows);
+    } catch (error) {
+      console.error("Failed to save workflow execution:", error);
+      throw error;
     }
   }
 }
