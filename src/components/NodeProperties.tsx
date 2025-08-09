@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Stack,
-  Text,
-  Card,
-  Group,
-  ScrollArea,
-} from "@mantine/core";
+import { Stack, Text, Card, Group, ScrollArea } from "@mantine/core";
 import { WorkflowNode } from "../types/workflow";
 import { ActionRegistry } from "../services/actionRegistry";
 import { TriggerRegistry } from "../services/triggerRegistry";
@@ -119,7 +113,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   const renderConditionProperties = (data: any) => {
     const conditionType = data.conditionType;
-    
+
     switch (conditionType) {
       default:
         return null;
@@ -166,17 +160,19 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   };
 
   return (
-    <ScrollArea h="100%">
+    <>
       <Group mb="md">
         <Text fw={500} c={getNodeTypeColor(node.type)}>
           {getNodeTitle(node)}
         </Text>
       </Group>
-      <Stack gap="md">
-        {node.type === "trigger" && renderTriggerProperties(node.data)}
-        {node.type === "action" && renderActionProperties(node.data)}
-        {node.type === "condition" && renderConditionProperties(node.data)}
-      </Stack>
-    </ScrollArea>
+      <ScrollArea h="100%">
+        <Stack gap="md">
+          {node.type === "trigger" && renderTriggerProperties(node.data)}
+          {node.type === "action" && renderActionProperties(node.data)}
+          {node.type === "condition" && renderConditionProperties(node.data)}
+        </Stack>
+      </ScrollArea>
+    </>
   );
 };

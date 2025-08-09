@@ -40,6 +40,10 @@ export interface NumberConfigProperty extends BaseConfigProperty {
   step?: number;
 }
 
+export interface BooleanConfigProperty extends BaseConfigProperty {
+  type: "boolean";
+}
+
 export interface ColorConfigProperty extends BaseConfigProperty {
   type: "color";
 }
@@ -70,6 +74,7 @@ export type ConfigProperty =
   | TextareaConfigProperty
   | SelectConfigProperty
   | NumberConfigProperty
+  | BooleanConfigProperty
   | ColorConfigProperty
   | CodeConfigProperty
   | CustomConfigProperty
@@ -90,6 +95,10 @@ export interface ValidationResult {
 export const isNumberProperty = (
   prop: ConfigProperty,
 ): prop is NumberConfigProperty => prop.type === "number";
+
+export const isBooleanProperty = (
+  prop: ConfigProperty,
+): prop is BooleanConfigProperty => prop.type === "boolean";
 
 export const isSelectProperty = (
   prop: ConfigProperty,
@@ -136,6 +145,10 @@ export function validateConfig(
           errors.push(`${property.label} must be at most ${property.max}`);
         }
       }
+    } else if (isBooleanProperty(property)) {
+      if (typeof value !== "boolean") {
+        errors.push(`${property.label} must be a boolean value`);
+      }
     } else if (isSelectProperty(property)) {
       if (!property.options.some((opt) => opt.value === value)) {
         errors.push(`${property.label} must be one of the available options`);
@@ -144,7 +157,9 @@ export function validateConfig(
       // Validate hex color format (#RRGGBB or #RGB)
       const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
       if (!hexColorRegex.test(value)) {
-        errors.push(`${property.label} must be a valid hex color (e.g., #FF0000 or #F00)`);
+        errors.push(
+          `${property.label} must be a valid hex color (e.g., #FF0000 or #F00)`,
+        );
       }
     }
   });
@@ -167,6 +182,8 @@ export function getTypeBasedDefault(property: ConfigProperty): any {
       return "";
     case "number":
       return 0;
+    case "boolean":
+      return false;
     case "select":
       return property.options && property.options.length > 0
         ? property.options[0].value
@@ -209,11 +226,11 @@ export function applyDefaults(
 
   Object.entries(schema.properties).forEach(([key, property]) => {
     const value = result[key];
-    
+
     // For optional fields, treat empty strings as undefined
-    const shouldApplyDefault = value === undefined || 
-      (!property.required && value === "");
-    
+    const shouldApplyDefault =
+      value === undefined || (!property.required && value === "");
+
     if (shouldApplyDefault) {
       if (property.defaultValue !== undefined) {
         result[key] = property.defaultValue;

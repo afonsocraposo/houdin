@@ -520,14 +520,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       | "condition";
     let defaultConfig = {};
 
-    if (nodeType === "action" && type === "inject-component") {
-      defaultConfig = {
-        componentType: "button",
-        componentText: "Button",
-        targetSelector: "body",
-      };
-    }
-
     // Calculate position for new node (center-right of existing nodes)
     let newPosition = { x: 300, y: 100 }; // Default position for first node
 

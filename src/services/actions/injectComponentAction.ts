@@ -20,6 +20,7 @@ interface InjectComponentActionConfig {
   textColor?: string;
   inputPlaceholder?: string;
   fabIcon?: string;
+  useMarkdown?: boolean;
   customStyle?: string;
 }
 
@@ -140,6 +141,17 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
             value: "text",
           },
         },
+        useMarkdown: {
+          type: "boolean",
+          label: "Enable Markdown",
+          description:
+            "Render text as markdown (supports **bold**, *italic*, links, lists, etc.)",
+          defaultValue: true,
+          // showWhen: {
+          //   field: "componentType",
+          //   value: "text",
+          // },
+        },
 
         // Input-specific properties
         inputPlaceholder: {
@@ -180,6 +192,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       textColor,
       inputPlaceholder,
       fabIcon,
+      useMarkdown,
       customStyle,
     } = config;
 
@@ -216,6 +229,9 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
 
       // Floating Action Button specific properties
       fabIcon,
+
+      // Text-specific properties
+      useMarkdown,
 
       // Custom styles
       customStyle,
