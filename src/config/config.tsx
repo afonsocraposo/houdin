@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { MantineProvider } from "@mantine/core";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter } from "react-router-dom";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/code-highlight/styles.css";
@@ -19,11 +19,7 @@ if (container) {
     <React.StrictMode>
       <MantineProvider>
         <HashRouter>
-          <Routes>
-            <Route path="/" element={<ConfigApp />} />
-            <Route path="/designer" element={<ConfigApp />} />
-            <Route path="/designer/:workflowId" element={<ConfigApp />} />
-          </Routes>
+          <ConfigApp />
         </HashRouter>
         <NotificationDispatcher />
       </MantineProvider>

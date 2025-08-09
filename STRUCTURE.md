@@ -24,12 +24,12 @@ src/
 │       └── recipeHelpers.ts # Recipe form helpers and default recipes
 │
 ├── popup/                   # Extension popup (currently minimal)
-│   ├── popup.html
+│   ├── index.html
 │   ├── popup.tsx
 │   └── App.tsx
 │
 ├── config/                  # Configuration page
-│   ├── config.html
+│   ├── index.html
 │   ├── config.tsx
 │   └── ConfigApp.tsx        # Main config interface
 │
@@ -46,19 +46,23 @@ src/
 ## 🏗️ Architecture Overview
 
 ### **Service Layer**
+
 - **StorageManager**: Handles Chrome storage operations (singleton pattern)
 - **WorkflowExecutor**: Executes different workflow types (copy, modal, navigate, custom)
 - **ContentInjector**: Orchestrates component injection and lifecycle management
 
 ### **Component Layer**
+
 - **ComponentFactory**: Creates DOM elements based on recipe configuration
 - **Modal**: Handles modal creation and user interaction
 
 ### **Utility Layer**
+
 - **helpers.ts**: Pure utility functions for common operations
 - **types/index.ts**: Centralized type definitions
 
 ### **Page Layer**
+
 - **ConfigApp**: Main configuration interface with recipe management
 - **recipeHelpers**: Recipe-specific business logic and default configurations
 

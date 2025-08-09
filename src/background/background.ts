@@ -183,7 +183,7 @@ if (runtime.browserAction) {
 runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
   if (changeInfo.url && changeInfo.url.includes("changeme.config")) {
     // Redirect to the config page
-    const configUrl = runtime.runtime.getURL("src/config/config.html");
+    const configUrl = runtime.runtime.getURL("src/config/index.html");
     runtime.tabs.update(tabId, { url: configUrl });
   }
 });
@@ -192,7 +192,7 @@ runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
 if (runtime.webNavigation) {
   runtime.webNavigation.onBeforeNavigate.addListener((details: any) => {
     if (details.url.includes("changeme.config")) {
-      const configUrl = runtime.runtime.getURL("src/config/config.html");
+      const configUrl = runtime.runtime.getURL("src/config/index.html");
       runtime.tabs.update(details.tabId, { url: configUrl });
     }
   });

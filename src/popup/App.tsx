@@ -43,12 +43,16 @@ function App() {
       <Container size="xs" p="md" style={{ width: "300px", height: "400px" }}>
         <Stack gap="md">
           <div style={{ textAlign: "center" }}>
-            <img src={iconSvg} alt="changeme icon" style={{ width: 48, height: 48 }} />
+            <img
+              src={iconSvg}
+              alt="changeme icon"
+              style={{ width: 48, height: 48 }}
+            />
             <Title order={2} mt="sm">
               changeme
             </Title>
             <Text size="sm" c="dimmed">
-              Browser automation made easy
+              Browser automation made simple
             </Text>
           </div>
 

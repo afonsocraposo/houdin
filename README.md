@@ -13,11 +13,13 @@ A cross-browser extension built with TypeScript, React, Mantine UI, and Vite wit
 ## Development
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Start development server:
+
 ```bash
 npm run dev
 ```
@@ -38,7 +40,7 @@ npm run build
 src/
 ├── manifest.json          # Extension manifest
 ├── popup/                 # Extension popup
-│   ├── popup.html
+│   ├── index.html
 │   ├── popup.tsx
 │   └── App.tsx
 ├── background/            # Background script

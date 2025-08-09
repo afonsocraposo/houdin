@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "changeme",
-  "description": "Browser automation made easy. Inject code, run scripts, and automate tasks with a user-friendly interface.",
+  "description": "Browser automation made simple. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "browser_specific_settings": {
     "gecko": {
       "id": "changeme@example.com"
@@ -16,10 +16,10 @@
     "<all_urls>"
   ],
   "browser_action": {
-    "default_popup": "src/popup/popup.html",
+    "default_popup": "src/popup/index.html",
     "default_title": "changeme"
   },
-  "options_page": "src/config/config.html",
+  "options_page": "src/config/index.html",
   "background": {
     "scripts": [
       "src/background/background.ts"
@@ -37,8 +37,8 @@
     }
   ],
   "web_accessible_resources": [
-    "src/popup/popup.html",
-    "src/config/config.html"
+    "src/popup/index.html",
+    "src/config/index.html"
   ],
   "icons": {
     "16": "icons/icon-16.png",

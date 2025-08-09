@@ -86,40 +86,6 @@ export default function CustomMantineProvider({
         --mantine-color-default-hover: ${darkTheme.defaultHover};
       }
     }
-
-    /* Code */
-    .mantine-Code-root {
-        background-color: var(--code-bg, var(--mantine-color-secondary-filled));
-        color: var(--mantine-color-text);
-    }
-
-    /* Code Highlight */
-    .mantine-CodeHighlightTabs-root {
-        .mantine-CodeHighlightTabs-file {
-            color: var(--mantine-color-text);
-            border-color: var(--mantine-color-default-border);
-            padding: 7px 12px;
-            font-size: 12px;
-
-            &:where([data-active]) {
-                background-color: var(--mantine-color-default-hover);
-                color: var(--mantine-color-text);
-            }
-        }
-
-        .mantine-CodeHighlightTabs-control {
-            color: var(--mantine-primary-color-contrast);
-        }
-    }
-
-    .mantine-CodeHighlight-root {
-        border-radius: var(--mantine-radius-default);
-
-        .mantine-CodeHighlight-code {
-            background: transparent !important;
-            font-size: var(--mantine-font-size-sm);
-        }
-    }
   `}
       </style>
       <style type="text/css">{mantineStyles}</style>
