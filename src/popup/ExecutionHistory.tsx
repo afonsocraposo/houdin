@@ -1,11 +1,24 @@
 import { useState, useEffect } from "react";
-import { Stack, Title, Text, Button, Card, Badge, Group, ScrollArea, Collapse } from "@mantine/core";
-import { IconChevronDown, IconChevronRight, IconClock, IconCheck, IconX, IconPlayerPlay } from "@tabler/icons-react";
+import {
+  Stack,
+  Title,
+  Text,
+  Button,
+  Card,
+  Badge,
+  Group,
+  ScrollArea,
+} from "@mantine/core";
+import {
+  IconCheck,
+  IconX,
+  IconPlayerPlay,
+  IconHistory,
+} from "@tabler/icons-react";
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
 
 function ExecutionHistory() {
-  const [expanded, setExpanded] = useState<string[]>([]);
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
 
@@ -14,9 +27,11 @@ function ExecutionHistory() {
 
   const loadExecutions = async () => {
     try {
-      const response = await new Promise<{ executions: WorkflowExecution[] }>((resolve) => {
-        browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
-      });
+      const response = await new Promise<{ executions: WorkflowExecution[] }>(
+        (resolve) => {
+          browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
+        },
+      );
       setExecutions(response.executions || []);
     } catch (error) {
       console.error("Failed to load executions:", error);
@@ -37,56 +52,40 @@ function ExecutionHistory() {
   useEffect(() => {
     loadExecutions();
     loadWorkflows();
-    
+
     // Set up periodic refresh to get real-time updates
     const interval = setInterval(loadExecutions, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const getNodeType = (workflowId: string, nodeId: string): string => {
-    const workflow = workflows.find(w => w.id === workflowId);
-    if (!workflow) return "unknown";
-    
-    const node = workflow.nodes.find(n => n.id === nodeId);
-    if (!node) return "unknown";
-    
-    if (node.type === "action") {
-      return `action:${node.data?.actionType || "unknown"}`;
-    } else if (node.type === "trigger") {
-      return `trigger:${node.data?.triggerType || "unknown"}`;
-    }
-    
-    return node.type;
-  };
-
-  const toggleExpanded = (executionId: string) => {
-    setExpanded(prev => 
-      prev.includes(executionId) 
-        ? prev.filter(id => id !== executionId)
-        : [...prev, executionId]
-    );
-  };
-
-  const formatDuration = (execution: WorkflowExecution) => {
-    if (!execution.completedAt) return "Running...";
-    return `${execution.completedAt - execution.startedAt}ms`;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "green";
-      case "failed": return "red";
-      case "running": return "blue";
-      default: return "gray";
-    }
+  const getWorkflowName = (workflowId: string): string => {
+    const workflow = workflows.find((w) => w.id === workflowId);
+    return workflow?.name || `Workflow ${workflowId.slice(-6)}`;
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "completed": return <IconCheck size={16} />;
-      case "failed": return <IconX size={16} />;
-      case "running": return <IconPlayerPlay size={16} />;
-      default: return <IconClock size={16} />;
+      case "completed":
+        return <IconCheck size={12} />;
+      case "failed":
+        return <IconX size={12} />;
+      case "running":
+        return <IconPlayerPlay size={12} />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "green";
+      case "failed":
+        return "red";
+      case "running":
+        return "blue";
+      default:
+        return "gray";
     }
   };
 
@@ -94,37 +93,52 @@ function ExecutionHistory() {
     try {
       browserAPI.runtime.sendMessage({ type: "EXECUTIONS_CLEARED" });
       setExecutions([]);
-      setExpanded([]);
     } catch (error) {
       console.error("Failed to clear executions:", error);
     }
   };
 
+  const openFullHistory = () => {
+    // Open config page with executions tab
+    const configUrl =
+      browserAPI.runtime.getURL("src/config/index.html") + "#/executions";
+    browserAPI.tabs.create({ url: configUrl });
+  };
+
+  const getTimeAgo = (timestamp: number): string => {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return `${seconds}s ago`;
+  };
+
   const getStats = () => {
     return {
       total: executions.length,
-      running: executions.filter(e => e.status === "running").length,
-      completed: executions.filter(e => e.status === "completed").length,
-      failed: executions.filter(e => e.status === "failed").length,
+      running: executions.filter((e) => e.status === "running").length,
+      completed: executions.filter((e) => e.status === "completed").length,
+      failed: executions.filter((e) => e.status === "failed").length,
     };
   };
 
-  const stats = getStats();
+  // Get last 5 executions
+  const recentExecutions = executions
+    .sort((a, b) => b.startedAt - a.startedAt)
+    .slice(0, 5);
 
-  if (executions.length === 0) {
-    return (
-      <Card withBorder>
-        <Text size="sm" c="dimmed" ta="center">
-          No workflow executions in this session
-        </Text>
-      </Card>
-    );
-  }
+  const stats = getStats();
 
   return (
     <Stack gap="sm">
       <Group justify="space-between">
-        <Title order={4}>Session Executions</Title>
+        <Title order={4}>Session Activity</Title>
         <Button size="xs" variant="light" onClick={clearHistory}>
           Clear
         </Button>
@@ -132,7 +146,7 @@ function ExecutionHistory() {
 
       <Group gap="xs">
         <Badge color="blue" variant="light" size="sm">
-          {stats.total} total
+          {stats.total} executed
         </Badge>
         {stats.running > 0 && (
           <Badge color="blue" size="sm">
@@ -151,78 +165,54 @@ function ExecutionHistory() {
         )}
       </Group>
 
-      <ScrollArea style={{ maxHeight: "300px" }}>
-        <Stack gap="xs">
-          {executions.map((execution) => (
-            <Card key={execution.id} withBorder p="sm">
-              <Group
-                justify="space-between"
-                style={{ cursor: "pointer" }}
-                onClick={() => toggleExpanded(execution.id)}
-              >
-                <Group gap="xs">
-                  {expanded.includes(execution.id) ? (
-                    <IconChevronDown size={16} />
-                  ) : (
-                    <IconChevronRight size={16} />
-                  )}
-                  <Text size="sm" fw={500} truncate style={{ maxWidth: "150px" }}>
-                    Workflow {execution.workflowId.slice(-6)}
-                  </Text>
-                </Group>
-                <Group gap="xs">
-                  <Badge
-                    color={getStatusColor(execution.status)}
-                    size="sm"
-                    leftSection={getStatusIcon(execution.status)}
-                  >
-                    {execution.status}
-                  </Badge>
-                </Group>
-              </Group>
-
-              <Collapse in={expanded.includes(execution.id)}>
-                <Stack gap="xs" mt="sm" pl="md">
-                  <Text size="xs" c="dimmed">
-                    Started: {new Date(execution.startedAt).toLocaleTimeString()}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    URL: {execution.url}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    Duration: {formatDuration(execution)}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    Trigger: {execution.trigger.type}
-                  </Text>
-                  {execution.nodeResults.length > 0 && (
-                    <Stack gap="xs">
-                      <Text size="xs" fw={500}>Nodes:</Text>
-                      {execution.nodeResults.map((node, i) => (
-                        <Group key={i} gap="xs" pl="sm">
-                          <Badge
-                            size="xs"
-                            color={getStatusColor(node.status)}
-                          >
-                            {node.status}
-                          </Badge>
-                          <Text size="xs" c="dimmed">
-                            {getNodeType(execution.workflowId, node.nodeId)}
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            {node.nodeId.slice(-6)} 
-                            {node.duration && ` (${node.duration}ms)`}
-                          </Text>
-                        </Group>
-                      ))}
+      {recentExecutions.length === 0 ? (
+        <Card withBorder>
+          <Text size="sm" c="dimmed" ta="center">
+            No workflow executions in this session
+          </Text>
+        </Card>
+      ) : (
+        <Card withBorder p="sm">
+          <Stack gap="xs">
+            <Text size="sm" fw={500}>
+              Recent Workflows:
+            </Text>
+            <ScrollArea h={120}>
+              <Stack gap="xs">
+                {recentExecutions.map((execution) => (
+                  <Group key={execution.id} justify="space-between" gap="xs">
+                    <Stack gap={2} style={{ flex: 1 }}>
+                      <Text size="xs" truncate>
+                        {getWorkflowName(execution.workflowId)}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {getTimeAgo(execution.startedAt)}
+                      </Text>
                     </Stack>
-                  )}
-                </Stack>
-              </Collapse>
-            </Card>
-          ))}
-        </Stack>
-      </ScrollArea>
+                    <Badge
+                      size="xs"
+                      color={getStatusColor(execution.status)}
+                      leftSection={getStatusIcon(execution.status)}
+                    >
+                      {execution.status}
+                    </Badge>
+                  </Group>
+                ))}
+              </Stack>
+            </ScrollArea>
+          </Stack>
+        </Card>
+      )}
+
+      <Button
+        size="xs"
+        variant="light"
+        leftSection={<IconHistory size={14} />}
+        onClick={openFullHistory}
+        fullWidth
+      >
+        View Full History
+      </Button>
     </Stack>
   );
 }

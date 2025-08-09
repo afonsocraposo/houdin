@@ -301,7 +301,7 @@ function ConfigInterface() {
                                 variant="subtle"
                                 color="blue"
                                 onClick={() =>
-                                  navigate(`/executions/${workflow.id}`)
+                                  navigate(`/executions?workflow=${workflow.id}`)
                                 }
                                 title="View execution history"
                               >
