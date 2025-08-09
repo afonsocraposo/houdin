@@ -58,6 +58,7 @@ export class ClickElementAction extends BaseAction<ClickElementActionConfig> {
     if (element) {
       // Simulate a click on the element
       element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      context.setOutput(nodeId, element.outerHTML);
     } else {
       NotificationService.showErrorNotification({
         message: "Element not found for clicking",

@@ -48,8 +48,8 @@ export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
 
   async execute(
     config: CopyContentActionConfig,
-    _context: ActionExecutionContext,
-    _nodeId: string,
+    context: ActionExecutionContext,
+    nodeId: string,
   ): Promise<void> {
     const { selector, selectorType } = config;
 
@@ -57,6 +57,7 @@ export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
     if (sourceElement) {
       const textContent = sourceElement.textContent || "";
       await copyToClipboard(textContent);
+      context.setOutput(nodeId, textContent);
       NotificationService.showNotification({
         title: "Content copied to clipboard!",
       });

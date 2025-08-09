@@ -123,6 +123,7 @@ function ExecutionHistoryPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
+      case "success":
         return "green";
       case "failed":
         return "red";

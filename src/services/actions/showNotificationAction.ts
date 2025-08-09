@@ -45,7 +45,7 @@ export class ShowNotificationAction extends BaseAction<ShowNotificationActionCon
   async execute(
     config: ShowNotificationActionConfig,
     context: ActionExecutionContext,
-    _nodeId: string,
+    nodeId: string,
   ): Promise<void> {
     const { notificationTitle, notificationContent } = config;
 
@@ -59,6 +59,11 @@ export class ShowNotificationAction extends BaseAction<ShowNotificationActionCon
     NotificationService.showNotification({
       title: interpolatedTitle,
       message: interpolatedContent,
+    });
+
+    context.setOutput(nodeId, {
+      title: interpolatedTitle,
+      content: interpolatedContent,
     });
   }
 }

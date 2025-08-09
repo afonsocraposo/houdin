@@ -45,7 +45,7 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
   async execute(
     config: ShowModalActionConfig,
     context: ActionExecutionContext,
-    _nodeId: string,
+    nodeId: string,
   ): Promise<void> {
     const { modalTitle, modalContent } = config;
 
@@ -57,6 +57,11 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
     );
 
     ModalService.showModal({
+      title: interpolatedTitle,
+      content: interpolatedContent,
+    });
+
+    context.setOutput(nodeId, {
       title: interpolatedTitle,
       content: interpolatedContent,
     });
