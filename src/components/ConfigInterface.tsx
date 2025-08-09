@@ -326,9 +326,8 @@ function ConfigInterface() {
                                 <IconTrash size={16} />
                               </ActionIcon>
                             </Group>
-                          </Table.Td>{" "}
-                        </Table.Tr>
-                      ))}
+                           </Table.Td>
+                         </Table.Tr>                      ))}
                   </Table.Tbody>
                 </Table>
               )}
