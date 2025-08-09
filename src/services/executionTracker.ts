@@ -56,11 +56,26 @@ class ExecutionTracker {
   completeExecution(executionId: string, status: "completed" | "failed"): void {
     const execution = this.executions.get(executionId);
     if (execution) {
-      execution.status = status;
+      // Auto-determine status based on node results if status is "completed"
+      if (status === "completed") {
+        const hasFailedNodes = execution.nodeResults.some(
+          result => result.status === "error"
+        );
+        execution.status = hasFailedNodes ? "failed" : "completed";
+      } else {
+        execution.status = status;
+      }
+      
       execution.completedAt = Date.now();
       
+      console.debug(`ExecutionTracker: Completed execution ${executionId} with status ${execution.status}`);
+      
       // Send message to background script
-      this.sendMessage("EXECUTION_COMPLETED", { executionId, status, completedAt: execution.completedAt });
+      this.sendMessage("EXECUTION_COMPLETED", { 
+        executionId, 
+        status: execution.status, 
+        completedAt: execution.completedAt 
+      });
     }
   }
 

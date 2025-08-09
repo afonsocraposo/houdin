@@ -166,7 +166,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
           {getNodeTitle(node)}
         </Text>
       </Group>
-      <ScrollArea h="100%">
+      <ScrollArea h="95%" style={{ overflowY: "auto" }}>
         <Stack gap="md">
           {node.type === "trigger" && renderTriggerProperties(node.data)}
           {node.type === "action" && renderActionProperties(node.data)}

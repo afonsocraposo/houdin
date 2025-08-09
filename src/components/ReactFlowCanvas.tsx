@@ -724,6 +724,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       >
         <IconPlus size={32} />
       </ActionIcon>
+      {/* Drawer */}
       <Transition
         mounted={showNodePalette}
         transition="slide-left"

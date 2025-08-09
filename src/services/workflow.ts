@@ -188,7 +188,7 @@ export class WorkflowExecutor {
         }
       }
 
-      // Mark execution as completed if we have one
+      // Mark execution as completed - ExecutionTracker will auto-determine final status
       if (this.currentExecutionId) {
         this.executionTracker.completeExecution(
           this.currentExecutionId,

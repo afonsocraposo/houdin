@@ -226,6 +226,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
             selectedNode={selectedNode}
             onNodeSelect={setSelectedNode}
           />
+          {/* Drawer  */}
           <Transition
             mounted={selectedNode !== null}
             transition="slide-left"

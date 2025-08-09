@@ -90,7 +90,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           defaultValue: "button",
         },
         componentText: {
-          type: "text",
+          type: "textarea",
           label: "Component Text",
           placeholder: "Click me, Enter text, etc.",
           defaultValue: "Hello",

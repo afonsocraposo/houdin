@@ -1,11 +1,19 @@
 import { Text } from "@mantine/core";
 import { CSSProperties } from "react";
+import MarkdownText from "../MarkdownText";
 
 interface TextProps {
   recipe: any;
 }
 
 export default function TextFactory({ recipe }: TextProps) {
+  if (
+    recipe.componentText === undefined ||
+    recipe.componentText === null ||
+    recipe.componentText === ""
+  ) {
+    return null; // Return null if componentText is empty or undefined
+  }
   // Build styles object from recipe properties
   const textStyle: CSSProperties = {};
 
@@ -39,6 +47,12 @@ export default function TextFactory({ recipe }: TextProps) {
     } catch (error) {
       console.warn("Failed to parse custom styles:", recipe.customStyle);
     }
+  }
+
+  if (recipe.useMarkdown) {
+    return (
+      <MarkdownText style={textStyle}>{recipe.componentText}</MarkdownText>
+    );
   }
 
   return (
