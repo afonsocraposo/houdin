@@ -1,0 +1,101 @@
+name: Auto Version Bump
+
+on:
+  pull_request:
+    types: [labeled, unlabeled]
+    branches: [ main ]
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'patch') || contains(github.event.pull_request.labels.*.name, 'minor') || contains(github.event.pull_request.labels.*.name, 'major')
+    
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ github.event.pull_request.head.ref }}
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Determine version bump type
+      id: bump-type
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const labels = context.payload.pull_request.labels.map(label => label.name);
+          const versionLabels = labels.filter(label => ['patch', 'minor', 'major'].includes(label));
+          
+          if (versionLabels.length === 1) {
+            core.setOutput('type', versionLabels[0]);
+            core.info(`Version bump type: ${versionLabels[0]}`);
+          } else if (versionLabels.length === 0) {
+            core.setFailed('No version label found');
+          } else {
+            core.setFailed('Multiple version labels found');
+          }
+
+    - name: Check if version already bumped
+      id: check-version
+      run: |
+        # Get the current version from package.json
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        
+        # Get the version from main branch
+        git fetch origin main
+        MAIN_VERSION=$(git show origin/main:package.json | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf8')).version")
+        
+        echo "Current PR version: $CURRENT_VERSION"
+        echo "Main branch version: $MAIN_VERSION"
+        
+        if [ "$CURRENT_VERSION" != "$MAIN_VERSION" ]; then
+          echo "version-changed=true" >> $GITHUB_OUTPUT
+          echo "Version already changed in this PR"
+        else
+          echo "version-changed=false" >> $GITHUB_OUTPUT
+          echo "Version needs to be bumped"
+        fi
+
+    - name: Bump version
+      if: steps.check-version.outputs.version-changed == 'false'
+      id: version
+      run: |
+        BUMP_TYPE="${{ steps.bump-type.outputs.type }}"
+        echo "Bumping version with: $BUMP_TYPE"
+        
+        # Bump version
+        npm version $BUMP_TYPE --no-git-tag-version
+        NEW_VERSION=$(node -p "require('./package.json').version")
+        echo "New version: $NEW_VERSION"
+        
+        echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Commit version bump
+      if: steps.check-version.outputs.version-changed == 'false'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add package.json
+        git commit -m "chore: bump version to ${{ steps.version.outputs.new-version }}"
+        git push
+
+    - name: Comment on PR
+      if: steps.check-version.outputs.version-changed == 'false'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `🚀 Version automatically bumped to **${{ steps.version.outputs.new-version }}** based on the \`${{ steps.bump-type.outputs.type }}\` label.`
+          });
