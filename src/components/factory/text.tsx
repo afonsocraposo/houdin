@@ -12,7 +12,7 @@ export default function TextFactory({ recipe }: TextProps) {
     recipe.componentText === null ||
     recipe.componentText === ""
   ) {
-    return null; // Return null if componentText is empty or undefined
+    return <span />; // Return null if componentText is empty or undefined
   }
   // Build styles object from recipe properties
   const textStyle: CSSProperties = {};
