@@ -9,6 +9,7 @@ export default defineConfig(() => ({
     react(),
     webExtension({
       browser: process.env.TARGET || "chrome",
+      disableAutoLaunch: true,
       manifest: () => {
         const manifest = JSON.parse(
           readFileSync(resolve(__dirname, "src/manifest.json"), "utf-8"),
