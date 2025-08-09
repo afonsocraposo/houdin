@@ -5,11 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>changeme - Configuration</title>
     <script type="module">
-      import RefreshRuntime from "http://localhost:5173/@react-refresh";
-      RefreshRuntime.injectIntoGlobalHook(window);
-      window.$RefreshReg$ = () => {};
-      window.$RefreshSig$ = () => (type) => type;
-      window.__vite_plugin_react_preamble_installed__ = true;
+      // Only include React refresh in development
+      (async () => {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          try {
+            const RefreshRuntime = await import("http://localhost:5173/@react-refresh");
+            RefreshRuntime.default.injectIntoGlobalHook(window);
+            window.$RefreshReg$ = () => {};
+            window.$RefreshSig$ = () => (type) => type;
+            window.__vite_plugin_react_preamble_installed__ = true;
+          } catch (e) {
+            // Ignore if React refresh is not available
+          }
+        }
+      })();
     </script>
   </head>
   <body>
