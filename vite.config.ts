@@ -4,15 +4,20 @@ import webExtension from "vite-plugin-web-extension";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
     plugins: [
         react(),
         webExtension({
             browser: process.env.TARGET || "chrome",
             manifest: () => {
-                return JSON.parse(
+                const manifest = JSON.parse(
                     readFileSync(resolve(__dirname, "src/manifest.json"), "utf-8"),
                 );
+                const packageJson = JSON.parse(
+                    readFileSync(resolve(__dirname, "package.json"), "utf-8"),
+                );
+                manifest.version = packageJson.version;
+                return manifest;
             },
             watchFilePaths: ["src", "public", "icons", "manifest.json"],
             additionalInputs: [

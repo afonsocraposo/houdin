@@ -1,7 +1,6 @@
 {
   "manifest_version": 2,
   "name": "changeme",
-  "version": "1.0.0",
   "description": "Browser automation made easy. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "browser_specific_settings": {
     "gecko": {

@@ -13,6 +13,8 @@ import {
   ActionIcon,
   Table,
   Tabs,
+  Anchor,
+  Space,
 } from "@mantine/core";
 import logoSvg from "../assets/icons/icon.svg";
 import { initializeCredentials } from "../services/credentialInitializer";
@@ -40,14 +42,17 @@ import { ImportModal } from "../components/ImportModal";
 import { ExportModal } from "../components/ExportModal";
 import { CredentialsTab } from "../components/CredentialsTab";
 import { WorkflowDefinition } from "../types/workflow";
+import { APP_VERSION } from "../utils/version";
 
 function ConfigApp() {
-    // Initialize credentials on app startup
-    useEffect(() => {
-        initializeCredentials();
-    }, []);
+  // Initialize credentials on app startup
+  useEffect(() => {
+    initializeCredentials();
+  }, []);
 
-    const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);  const [saved, setSaved] = useState(false);
+  const [showUrlAlert, setShowUrlAlert] = useState(false);
+  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
+  const [saved, setSaved] = useState(false);
   const [editingWorkflow, setEditingWorkflow] =
     useState<WorkflowDefinition | null>(null);
   const [importModalOpened, setImportModalOpened] = useState(false);
@@ -85,6 +90,12 @@ function ConfigApp() {
     };
 
     storageManager.onStorageChanged(handleStorageChange);
+
+    // Check if URL alert should be shown
+    const urlAlertDismissed = localStorage.getItem("urlAlertDismissed");
+    if (!urlAlertDismissed) {
+      setShowUrlAlert(true);
+    }
   }, []); // Load workflows once on mount
 
   // Separate effect to handle editing workflow based on URL changes
@@ -184,6 +195,11 @@ function ConfigApp() {
     }
   };
 
+  const handleAlertClose = () => {
+    localStorage.setItem("urlAlertDismissed", "true");
+    setShowUrlAlert(false);
+  };
+
   // Show workflow designer if in designer view
   if (currentView === "designer") {
     return (
@@ -227,15 +243,19 @@ function ConfigApp() {
           </Notification>
         )}
 
-        <Alert
-          icon={<IconInfoCircle size={16} />}
-          title="Access this page anytime"
-          color="blue"
-        >
-          You can always access this configuration page by typing{" "}
-          <Badge variant="light">https://changeme.config</Badge> in your browser
-          address bar.
-        </Alert>
+        {showUrlAlert && (
+          <Alert
+            icon={<IconInfoCircle size={16} />}
+            title="Access this page anytime"
+            color="blue"
+            withCloseButton={true}
+            onClose={handleAlertClose}
+          >
+            You can always access this configuration page by typing{" "}
+            <Badge variant="light">https://changeme.config</Badge> in your
+            browser address bar.
+          </Alert>
+        )}
 
         <Tabs value={activeTab} onChange={handleTabChange} mt="md">
           <Tabs.List>
@@ -369,8 +389,15 @@ function ConfigApp() {
           </Tabs.Panel>
         </Tabs>
 
+        <Space h="xl" />
         <Text size="xs" c="dimmed" ta="center">
-          changeme Extension v1.0.0 - Workflow Automation Made Simple
+          changeme Extension v{APP_VERSION} - Browser Automation Made Simple
+        </Text>
+        <Text size="xs" c="dimmed" ta="center">
+          Made with ❤️ by&nbsp;
+          <Anchor target="_blank" href="https://afonsoraposo.com">
+            Afonso Raposo
+          </Anchor>
         </Text>
       </Stack>
 
