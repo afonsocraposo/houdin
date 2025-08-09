@@ -18,7 +18,7 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
 
   useEffect(() => {
     loadData();
-    
+
     // Set up periodic refresh to get real-time execution updates
     const interval = setInterval(loadExecutions, 2000);
     return () => clearInterval(interval);
@@ -26,9 +26,11 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
 
   const loadExecutions = async () => {
     try {
-      const response = await new Promise<{ executions: WorkflowExecution[] }>((resolve) => {
-        browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
-      });
+      const response = await new Promise<{ executions: WorkflowExecution[] }>(
+        (resolve) => {
+          browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
+        },
+      );
       setExecutions(response.executions || []);
     } catch (error) {
       console.error("Failed to load executions:", error);
@@ -42,7 +44,7 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
       const storageManager = StorageManager.getInstance();
       const allWorkflows = await storageManager.getWorkflows();
       setWorkflows(allWorkflows);
-      
+
       // Load executions from background script
       await loadExecutions();
     } catch (error) {
@@ -54,20 +56,20 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
 
   const getActiveWorkflows = () => {
     if (!currentUrl) return [];
-    
-    return workflows.filter(workflow => {
+
+    return workflows.filter((workflow) => {
       if (!workflow.enabled) return false;
       if (!workflow.urlPattern) return false;
-      
+
       try {
         // Simple pattern matching - could be enhanced with regex
         const pattern = workflow.urlPattern.toLowerCase();
         const url = currentUrl.toLowerCase();
-        
+
         // Check if pattern matches URL
-        if (pattern.includes('*')) {
+        if (pattern.includes("*")) {
           // Handle wildcard patterns
-          const regexPattern = pattern.replace(/\*/g, '.*');
+          const regexPattern = pattern.replace(/\*/g, ".*");
           const regex = new RegExp(regexPattern);
           return regex.test(url);
         } else {
@@ -84,30 +86,34 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const getWorkflowStatus = (workflow: WorkflowDefinition) => {
     const isActive = getActiveWorkflows().includes(workflow);
     if (!isActive) return "inactive";
-    
+
     // Check if workflow has any running executions
-    const runningExecution = executions.find(exec => 
-      exec.workflowId === workflow.id && exec.status === "running"
+    const runningExecution = executions.find(
+      (exec) => exec.workflowId === workflow.id && exec.status === "running",
     );
-    
+
     return runningExecution ? "running" : "ready";
   };
 
   const getLastExecutionTime = (workflow: WorkflowDefinition) => {
-    const workflowExecutions = executions.filter(exec => exec.workflowId === workflow.id);
+    const workflowExecutions = executions.filter(
+      (exec) => exec.workflowId === workflow.id,
+    );
     if (workflowExecutions.length === 0) return workflow.lastExecuted;
-    
+
     // Get the most recent execution
-    const latestExecution = workflowExecutions.sort((a, b) => b.startedAt - a.startedAt)[0];
+    const latestExecution = workflowExecutions.sort(
+      (a, b) => b.startedAt - a.startedAt,
+    )[0];
     return latestExecution.startedAt;
   };
 
   const formatLastExecution = (timestamp?: number) => {
     if (!timestamp) return "Never";
-    
+
     const now = Date.now();
     const diff = now - timestamp;
-    
+
     if (diff < 60000) return "Just now";
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
@@ -116,7 +122,9 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
 
   const handleWorkflowClick = (workflow: WorkflowDefinition) => {
     // Open workflow designer in new tab
-    const designerUrl = browserAPI.runtime.getURL(`src/config/index.html#/designer/${workflow.id}`);
+    const designerUrl = browserAPI.runtime.getURL(
+      `src/config/index.html#/designer/${workflow.id}`,
+    );
     browserAPI.tabs.create({ url: designerUrl });
     window.close();
   };
@@ -130,12 +138,16 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
           <Text size="sm" fw={500}>
             Active Workflows
           </Text>
-          <Badge size="sm" variant="light" color={activeWorkflows.length > 0 ? "green" : "gray"}>
+          <Badge
+            size="sm"
+            variant="light"
+            color={activeWorkflows.length > 0 ? "green" : "gray"}
+          >
             {activeWorkflows.length}
           </Badge>
         </Group>
 
-        <ScrollArea h={120} type="auto">
+        <ScrollArea h={180} type="auto">
           {loading ? (
             <Text size="xs" c="dimmed" ta="center" py="md">
               Loading workflows...
@@ -143,9 +155,9 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
           ) : activeWorkflows.length > 0 ? (
             <Stack gap="xs">
               {activeWorkflows.map((workflow) => (
-                <Card 
-                  key={workflow.id} 
-                  padding="xs" 
+                <Card
+                  key={workflow.id}
+                  padding="xs"
                   withBorder
                   style={{ cursor: "pointer" }}
                   onClick={() => handleWorkflowClick(workflow)}
@@ -162,30 +174,42 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
                         <Badge size="xs" variant="light" color="blue">
                           {workflow.nodes.length} nodes
                         </Badge>
-                        <Badge 
-                          size="xs" 
-                          variant="light" 
-                          color={getWorkflowStatus(workflow) === "ready" ? "green" : 
-                                 getWorkflowStatus(workflow) === "running" ? "blue" : "orange"}
+                        <Badge
+                          size="xs"
+                          variant="light"
+                          color={
+                            getWorkflowStatus(workflow) === "ready"
+                              ? "green"
+                              : getWorkflowStatus(workflow) === "running"
+                                ? "blue"
+                                : "orange"
+                          }
                           leftSection={
-                            getWorkflowStatus(workflow) === "ready" ? 
-                              <IconCheck size={10} /> : 
-                              getWorkflowStatus(workflow) === "running" ?
-                                <IconClock size={10} /> :
-                                <IconClock size={10} />
+                            getWorkflowStatus(workflow) === "ready" ? (
+                              <IconCheck size={10} />
+                            ) : getWorkflowStatus(workflow) === "running" ? (
+                              <IconClock size={10} />
+                            ) : (
+                              <IconClock size={10} />
+                            )
                           }
                         >
-                          {getWorkflowStatus(workflow) === "ready" ? "Ready" : 
-                           getWorkflowStatus(workflow) === "running" ? "Running" : "Standby"}
+                          {getWorkflowStatus(workflow) === "ready"
+                            ? "Ready"
+                            : getWorkflowStatus(workflow) === "running"
+                              ? "Running"
+                              : "Standby"}
                         </Badge>
                         {getLastExecutionTime(workflow) && (
-                          <Badge 
-                            size="xs" 
-                            variant="light" 
+                          <Badge
+                            size="xs"
+                            variant="light"
                             color="gray"
                             leftSection={<IconHistory size={10} />}
                           >
-                            {formatLastExecution(getLastExecutionTime(workflow))}
+                            {formatLastExecution(
+                              getLastExecutionTime(workflow),
+                            )}
                           </Badge>
                         )}
                       </Group>

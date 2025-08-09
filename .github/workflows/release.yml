@@ -4,6 +4,10 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -52,8 +56,8 @@ jobs:
     - name: Create and push tag
       if: steps.check-tag.outputs.tag-exists == 'false'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
         git tag ${{ steps.version.outputs.tag }}
         git push origin ${{ steps.version.outputs.tag }}
 

@@ -33,17 +33,19 @@ class ExecutionTracker {
 
   startExecution(workflowId: string, triggerType?: string, triggerData?: any): string {
     const executionId = generateId();
+    const url = this.isContentScript && typeof window !== 'undefined' ? window.location.href : 'unknown';
     const execution: WorkflowExecution = {
       id: executionId,
       workflowId,
       startedAt: Date.now(),
       status: "running",
       nodeResults: [],
-      trigger: triggerType ? { type: triggerType, data: triggerData } : undefined,
+      url,
+      trigger: { type: triggerType || 'unknown', data: triggerData },
     };
 
     this.executions.set(executionId, execution);
-    console.debug(`ExecutionTracker: Started execution ${executionId} for workflow ${workflowId}`);
+    console.debug(`ExecutionTracker: Started execution ${executionId} for workflow ${workflowId} on ${url}`);
     
     // Send message to background script
     this.sendMessage("EXECUTION_STARTED", execution);
@@ -54,11 +56,26 @@ class ExecutionTracker {
   completeExecution(executionId: string, status: "completed" | "failed"): void {
     const execution = this.executions.get(executionId);
     if (execution) {
-      execution.status = status;
+      // Auto-determine status based on node results if status is "completed"
+      if (status === "completed") {
+        const hasFailedNodes = execution.nodeResults.some(
+          result => result.status === "error"
+        );
+        execution.status = hasFailedNodes ? "failed" : "completed";
+      } else {
+        execution.status = status;
+      }
+      
       execution.completedAt = Date.now();
       
+      console.debug(`ExecutionTracker: Completed execution ${executionId} with status ${execution.status}`);
+      
       // Send message to background script
-      this.sendMessage("EXECUTION_COMPLETED", { executionId, status, completedAt: execution.completedAt });
+      this.sendMessage("EXECUTION_COMPLETED", { 
+        executionId, 
+        status: execution.status, 
+        completedAt: execution.completedAt 
+      });
     }
   }
 

@@ -1,5 +1,6 @@
 import { StorageManager } from "./storage";
 import { CredentialRegistry } from "./credentialRegistry";
+import { HttpClientService } from "./httpClient";
 
 export interface OpenAIRequest {
   model: string;
@@ -19,48 +20,9 @@ export interface OpenAIResponse {
   }>;
 }
 
-interface HttpRequest {
-  url: string;
-  method?: string;
-  headers?: Record<string, string>;
-  body?: string;
-}
-
-interface HttpResponse {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  data?: any;
-  error?: string;
-}
-
 export class OpenAIService {
   private static readonly API_BASE_URL = "https://api.openai.com/v1";
-
-  private static async makeBackgroundRequest(
-    request: HttpRequest,
-  ): Promise<HttpResponse> {
-    return new Promise((resolve, reject) => {
-      const runtime = (
-        typeof browser !== "undefined" ? browser : chrome
-      ) as any;
-
-      runtime.runtime.sendMessage(
-        { type: "HTTP_REQUEST", request },
-        (response: {
-          success: boolean;
-          response?: HttpResponse;
-          error?: string;
-        }) => {
-          if (response.success && response.response) {
-            resolve(response.response);
-          } else {
-            reject(new Error(response.error || "Request failed"));
-          }
-        },
-      );
-    });
-  }
+  private static httpClient = HttpClientService.getInstance();
 
   static async callChatCompletion(
     credentialId: string,
@@ -128,23 +90,12 @@ export class OpenAIService {
         headers["OpenAI-Organization"] = auth.organizationId;
       }
 
-      // Make the API call through background script
-      const response = await this.makeBackgroundRequest({
-        url: `${this.API_BASE_URL}/chat/completions`,
-        method: "POST",
-        headers,
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorMessage =
-          response.data?.error?.message ||
-          response.statusText ||
-          "Unknown error";
-        throw new Error(`OpenAI API error: ${errorMessage}`);
-      }
-
-      const data: OpenAIResponse = response.data;
+      // Make the API call through HTTP client service
+      const data = await this.httpClient.postJson<OpenAIResponse>(
+        `${this.API_BASE_URL}/chat/completions`,
+        requestBody,
+        { headers },
+      );
 
       if (!data.choices || data.choices.length === 0) {
         throw new Error("No response from OpenAI API");

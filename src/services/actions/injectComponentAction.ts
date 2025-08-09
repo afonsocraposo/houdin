@@ -8,15 +8,19 @@ import { ComponentFactory } from "../../components/ComponentFactory";
 import { ContentInjector } from "../injector";
 import { NotificationService } from "../notification";
 import React from "react";
+import { getElement } from "../../utils/helpers";
 
 interface InjectComponentActionConfig {
   targetSelector: string;
+  selectorType: "css" | "xpath";
   componentType: string;
   componentText: string;
   buttonColor?: string;
   buttonTextColor?: string;
   textColor?: string;
   inputPlaceholder?: string;
+  fabIcon?: string;
+  useMarkdown?: boolean;
   customStyle?: string;
 }
 
@@ -25,7 +29,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
     type: "inject-component",
     label: "Inject Component",
     icon: "🔧",
-    description: "Add button, input, or text to page",
+    description: "Add button, floating action button, input, or text to page",
   };
 
   getConfigSchema(): ActionConfigSchema {
@@ -52,11 +56,23 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
             }
           },
         },
+        selectorType: {
+          type: "select",
+          label: "Selector Type",
+          options: [
+            { label: "CSS Selector", value: "css" },
+            { label: "XPath", value: "xpath" },
+          ],
+          defaultValue: "css",
+          description: "Type of selector to use for component injection",
+          required: true,
+        },
         targetSelector: {
           type: "text",
           label: "Target Selector",
           placeholder: ".header, #main-content",
-          description: "Where to inject the component",
+          description:
+            "Where to inject the component (not needed for floating action button)",
           defaultValue: "body",
         },
         componentType: {
@@ -64,13 +80,17 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           label: "Component Type",
           options: [
             { value: "button", label: "Button" },
+            {
+              value: "floating-action-button",
+              label: "Floating Action Button",
+            },
             { value: "input", label: "Input Field" },
             { value: "text", label: "Text/Label" },
           ],
           defaultValue: "button",
         },
         componentText: {
-          type: "text",
+          type: "textarea",
           label: "Component Text",
           placeholder: "Click me, Enter text, etc.",
           defaultValue: "Hello",
@@ -84,7 +104,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           defaultValue: "#228be6",
           showWhen: {
             field: "componentType",
-            value: "button",
+            value: ["button", "floating-action-button"],
           },
         },
         buttonTextColor: {
@@ -94,7 +114,19 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           defaultValue: "#ffffff",
           showWhen: {
             field: "componentType",
-            value: "button",
+            value: ["button", "floating-action-button"],
+          },
+        },
+
+        // Floating Action Button specific properties
+        fabIcon: {
+          type: "text",
+          label: "FAB Icon",
+          placeholder: "🚀, ❤️, ✨, 📧, etc.",
+          description: "What to display as the icon",
+          showWhen: {
+            field: "componentType",
+            value: "floating-action-button",
           },
         },
 
@@ -108,6 +140,17 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
             field: "componentType",
             value: "text",
           },
+        },
+        useMarkdown: {
+          type: "boolean",
+          label: "Enable Markdown",
+          description:
+            "Render text as markdown (supports **bold**, *italic*, links, lists, etc.)",
+          defaultValue: true,
+          // showWhen: {
+          //   field: "componentType",
+          //   value: "text",
+          // },
         },
 
         // Input-specific properties
@@ -126,19 +169,21 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           type: "code",
           label: "Custom CSS (Advanced)",
           placeholder: "margin: 10px; border-radius: 4px;",
-          description: "Additional CSS properties",
+          description:
+            "Additional CSS properties. For floating action button, use: bottom: 40; right: 40; (in pixels)",
           language: "text",
           height: 100,
         },
       },
     };
   }
-async execute(
+  async execute(
     config: InjectComponentActionConfig,
     context: ActionExecutionContext,
     nodeId: string,
   ): Promise<void> {
     const {
+      selectorType,
       targetSelector,
       componentType,
       componentText,
@@ -146,10 +191,16 @@ async execute(
       buttonTextColor,
       textColor,
       inputPlaceholder,
+      fabIcon,
+      useMarkdown,
       customStyle,
     } = config;
 
-    const targetElement = document.querySelector(targetSelector || "body");
+    const targetElement =
+      componentType === "floating-action-button"
+        ? document.body
+        : getElement(targetSelector, selectorType);
+
     if (!targetElement) {
       NotificationService.showErrorNotification({
         message: "Target element not found for component injection",
@@ -175,6 +226,12 @@ async execute(
 
       // Input-specific properties
       inputPlaceholder: interpolatedPlaceholder,
+
+      // Floating Action Button specific properties
+      fabIcon,
+
+      // Text-specific properties
+      useMarkdown,
 
       // Custom styles
       customStyle,

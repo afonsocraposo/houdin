@@ -3,34 +3,48 @@ import { Title, Text, List, ThemeIcon, Code, Typography } from "@mantine/core";
 import { IconCircle } from "@tabler/icons-react";
 import rehypeSanitize from "rehype-sanitize";
 import { CodeHighlight } from "@mantine/code-highlight";
+import { CSSProperties } from "react";
 
-export default function MarkdownText({ children }: { children: string }) {
+interface MarkdownTextProps {
+  children: string;
+  style?: CSSProperties;
+  c?: string;
+}
+
+export default function MarkdownText({
+  children,
+  style,
+  c,
+}: MarkdownTextProps) {
   return (
-    <Typography>
+    <Typography style={style}>
       <ReactMarkdown
         disallowedElements={["pre"]}
         unwrapDisallowed
         rehypePlugins={[rehypeSanitize]}
         components={{
-          h1: ({ node, ...props }) => <Title order={2} mb="sm" {...props} />,
-          h2: ({ node, ...props }) => (
-            <Title order={3} mt="md" mb="sm" {...props} />
+          h1: ({ children }) => (
+            <Title order={2} mb="sm" c={c}>{children}</Title>
           ),
-          h3: ({ node, ...props }) => (
-            <Title order={4} mt="md" mb="sm" {...props} />
+          h2: ({ children }) => (
+            <Title order={3} mt="md" mb="sm" c={c}>{children}</Title>
           ),
-          h4: ({ node, ...props }) => (
-            <Title order={5} mt="md" mb="sm" {...props} />
+          h3: ({ children }) => (
+            <Title order={4} mt="md" mb="sm" c={c}>{children}</Title>
           ),
-          h5: ({ node, ...props }) => (
-            <Title order={6} mt="md" mb="sm" {...props} />
+          h4: ({ children }) => (
+            <Title order={5} mt="md" mb="sm" c={c}>{children}</Title>
           ),
-          h6: ({ node, ...props }) => (
-            <Title order={6} mt="md" mb="sm" {...props} />
+          h5: ({ children }) => (
+            <Title order={6} mt="md" mb="sm" c={c}>{children}</Title>
           ),
-          // @ts-ignore
-          p: ({ node, ...props }) => <Text mb="sm" size="sm" {...props} />,
-          ul: ({ node, ...props }) => (
+          h6: ({ children }) => (
+            <Title order={6} mt="md" mb="sm" c={c}>{children}</Title>
+          ),
+          p: ({ children }) => (
+            <Text mb="sm" size="sm" c={c}>{children}</Text>
+          ),
+          ul: ({ children }) => (
             <List
               spacing="xs"
               size="sm"
@@ -40,16 +54,17 @@ export default function MarkdownText({ children }: { children: string }) {
                 </ThemeIcon>
               }
               mb="sm"
-              {...props}
-            />
+            >
+              {children}
+            </List>
           ),
-          li: ({ node, ...props }) => <List.Item {...props} />,
-          code: ({ node, children, className }) => {
-            if (!node?.position || !children) {
+          li: ({ children }) => <List.Item c={c}>{children}</List.Item>,
+          code: ({ children, className }) => {
+            if (!children) {
               return <>{children}</>;
             }
-            if (node.position.start.line === node.position.end.line) {
-              return <Code>{children}</Code>;
+            if (typeof children === 'string' && !children.includes('\n')) {
+              return <Code c={c}>{children}</Code>;
             }
             // NOTE Languages are passed down through the class name with `react-markdown`
             const [, language] = className?.split("-") || [];

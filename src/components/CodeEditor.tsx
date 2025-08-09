@@ -7,6 +7,7 @@ import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github_light_default";
 import "ace-builds/src-noconflict/theme-github_dark";
 import ace from "ace-builds/src-noconflict/ace";
+import { Box } from "@mantine/core";
 
 // Configure ace for extension environment
 ace.config.set("basePath", "");
@@ -54,43 +55,45 @@ export default function CodeEditor({
 }: CodeEditorProps) {
   // const colorscheme = useColorScheme();
   return (
-    <AceEditor
-      mode={language || "text"}
-      theme={"github_light_default"}
-      value={value}
-      onChange={(val) => onChange(val)}
-      wrapEnabled={true}
-      name={`ace-editor-${editorKey}`}
-      width="100%"
-      height={typeof height === "number" ? `${height}px` : height || "200px"}
-      editorProps={{ $blockScrolling: true }}
-      setOptions={{
-        enableBasicAutocompletion: false,
-        enableLiveAutocompletion: false,
-        enableSnippets: false,
-        showLineNumbers: true,
-        tabSize: 2,
-        highlightActiveLine: false,
-        highlightSelectedWord: false,
-        hScrollBarAlwaysVisible: false,
-        useWorker: false,
-        scrollPastEnd: false,
-        animatedScroll: true,
-        highlightGutterLine: false,
-        showPrintMargin: false,
-        foldStyle: "manual",
-        fontSize: 14,
-        fontFamily: "Monaco, Menlo, Ubuntu Mono, monospace",
-      }}
-      highlightActiveLine={false}
-      placeholder={placeholder}
-      style={{
-        border: "1px solid #ced4da",
-        borderRadius: "4px",
-        fontFamily: "Monaco, Menlo, Ubuntu Mono, monospace",
-        fontSize: "14px",
-      }}
-      className="ace-editor-custom"
-    />
+    <Box h={height ?? 200} w="100%">
+      <AceEditor
+        mode={language || "text"}
+        theme={"github_light_default"}
+        value={value}
+        onChange={(val) => onChange(val)}
+        wrapEnabled={true}
+        name={`ace-editor-${editorKey}`}
+        width="100%"
+        height={typeof height === "number" ? `${height}px` : height || "200px"}
+        editorProps={{ $blockScrolling: true }}
+        setOptions={{
+          enableBasicAutocompletion: false,
+          enableLiveAutocompletion: false,
+          enableSnippets: false,
+          showLineNumbers: true,
+          tabSize: 2,
+          highlightActiveLine: false,
+          highlightSelectedWord: false,
+          hScrollBarAlwaysVisible: false,
+          useWorker: false,
+          scrollPastEnd: false,
+          animatedScroll: true,
+          highlightGutterLine: false,
+          showPrintMargin: false,
+          foldStyle: "manual",
+          fontSize: 14,
+          fontFamily: "Monaco, Menlo, Ubuntu Mono, monospace",
+        }}
+        highlightActiveLine={false}
+        placeholder={placeholder}
+        style={{
+          border: "1px solid #ced4da",
+          borderRadius: "4px",
+          fontFamily: "Monaco, Menlo, Ubuntu Mono, monospace",
+          fontSize: "14px",
+        }}
+        className="ace-editor-custom"
+      />
+    </Box>
   );
 }

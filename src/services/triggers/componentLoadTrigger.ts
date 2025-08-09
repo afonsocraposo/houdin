@@ -4,9 +4,11 @@ import {
   TriggerExecutionContext,
   TriggerSetupResult,
 } from "../../types/triggers";
+import { getElement } from "../../utils/helpers";
 import { NotificationService } from "../notification";
 
 interface ComponentLoadTriggerConfig {
+  selectorType: "css" | "xpath" | "text";
   selector: string;
   timeout?: number;
 }
@@ -22,11 +24,23 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
   getConfigSchema(): TriggerConfigSchema {
     return {
       properties: {
+        selectorType: {
+          type: "select",
+          label: "Selector Type",
+          options: [
+            { label: "CSS Selector", value: "css" },
+            { label: "XPath", value: "xpath" },
+            { label: "Text", value: "text" },
+          ],
+          defaultValue: "css",
+          description: "Type of selector to use for element selection",
+          required: true,
+        },
         selector: {
           type: "text",
           label: "CSS Selector",
           placeholder: '.my-element, #my-id, [data-testid="test"]',
-          description: "CSS selector for the element to watch for",
+          description: "Selector for the element to watch for",
           required: true,
         },
         timeout: {
@@ -50,7 +64,7 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
     let hasTriggered = false;
 
     // Check if element already exists
-    const existingElement = document.querySelector(selector);
+    const existingElement = getElement(selector, config.selectorType);
     if (existingElement) {
       hasTriggered = true;
       await onTrigger();
@@ -63,7 +77,7 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
 
       for (const mutation of mutations) {
         if (mutation.type === "childList") {
-          const element = document.querySelector(selector);
+          const element = getElement(selector, config.selectorType);
           if (element) {
             hasTriggered = true;
             observer.disconnect();

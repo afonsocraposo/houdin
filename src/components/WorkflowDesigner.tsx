@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Container,
   Title,
@@ -12,17 +12,22 @@ import {
   Box,
   Transition,
   Paper,
+  Text,
+  Loader,
 } from "@mantine/core";
 import {
   IconDeviceFloppy,
   IconArrowLeft,
   IconDownload,
   IconHistory,
+  IconCheck,
+  IconExclamationMark,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
 import { ExportModal } from "./ExportModal";
+import { formatTimeAgo } from "../utils/time";
 import {
   WorkflowNode,
   WorkflowConnection,
@@ -32,12 +37,14 @@ import {
 interface WorkflowDesignerProps {
   workflow?: WorkflowDefinition;
   onSave: (workflow: WorkflowDefinition) => void;
+  onAutoSave?: (workflow: WorkflowDefinition) => void;
   onCancel: () => void;
 }
 
 export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   workflow,
   onSave,
+  onAutoSave,
   onCancel,
 }) => {
   const navigate = useNavigate();
@@ -46,7 +53,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     workflow?.description || "",
   );
   const [workflowUrlPattern, setWorkflowUrlPattern] = useState(
-    workflow?.urlPattern || "https://*/*",
+    workflow?.urlPattern || "https://*",
   );
   const [workflowEnabled, setWorkflowEnabled] = useState(
     workflow?.enabled ?? true,
@@ -58,6 +65,88 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
   const [exportModalOpened, setExportModalOpened] = useState(false);
 
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
+  const autoSaveTimeoutRef = useRef<number | null>(null);
+  const lastSavedWorkflowRef = useRef<string>("");
+
+  // Track changes to mark as unsaved
+  const markAsChanged = useCallback(() => {
+    setHasUnsavedChanges(true);
+    setAutoSaveStatus("idle");
+  }, []);
+
+  // Auto-save function
+  const performAutoSave = useCallback(async () => {
+    if (!workflowName.trim() || !onAutoSave) return;
+
+    const currentWorkflow = {
+      id: workflow?.id || `workflow-${Date.now()}`,
+      name: workflowName,
+      description: workflowDescription,
+      urlPattern: workflowUrlPattern,
+      nodes,
+      connections,
+      enabled: workflowEnabled,
+      lastUpdated: Date.now(),
+    };
+
+    const currentWorkflowJson = JSON.stringify(currentWorkflow);
+
+    // Only auto-save if there are actual changes
+    if (currentWorkflowJson === lastSavedWorkflowRef.current) {
+      return;
+    }
+
+    try {
+      setAutoSaveStatus("saving");
+      onAutoSave(currentWorkflow);
+      setAutoSaveStatus("saved");
+      setHasUnsavedChanges(false);
+      setLastAutoSaveTime(Date.now());
+      lastSavedWorkflowRef.current = currentWorkflowJson;
+
+      // Reset to idle after 2 seconds
+      setTimeout(() => setAutoSaveStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Auto-save failed:", error);
+      setAutoSaveStatus("error");
+      setTimeout(() => setAutoSaveStatus("idle"), 3000);
+    }
+  }, [
+    workflowName,
+    workflowDescription,
+    workflowUrlPattern,
+    nodes,
+    connections,
+    workflowEnabled,
+    workflow?.id,
+    onAutoSave,
+  ]);
+
+  // Set up auto-save timer
+  useEffect(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    if (hasUnsavedChanges && workflowName.trim()) {
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        performAutoSave();
+      }, 5000); // Auto-save after 5 seconds of inactivity
+    }
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [hasUnsavedChanges, workflowName, performAutoSave]);
+
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
     if (workflow) {
@@ -68,6 +157,11 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       setNodes(workflow.nodes || []);
       setConnections(workflow.connections || []);
       setSelectedNode(null); // Reset selected node when workflow changes
+
+      // Set initial auto-save time for existing workflows
+      if (workflow.lastUpdated) {
+        setLastAutoSaveTime(workflow.lastUpdated);
+      }
     }
   }, [workflow]);
 
@@ -77,6 +171,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     );
     setNodes(updatedNodes);
     setSelectedNode(updatedNode);
+    markAsChanged();
   };
 
   const handleSave = () => {
@@ -102,6 +197,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     };
 
     onSave(workflowDefinition);
+    setHasUnsavedChanges(false);
+    setAutoSaveStatus("idle");
+    setLastAutoSaveTime(Date.now());
   };
 
   const handleExport = () => {
@@ -132,9 +230,41 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       <Stack h="100%">
         <Stack gap="lg" px="md">
           <Group justify="space-between" align="center">
-            <Title order={2}>
-              {workflow ? "Edit Workflow" : "Create New Workflow"}
-            </Title>
+            <Group>
+              <Title order={2}>
+                {workflow ? "Edit Workflow" : "Create New Workflow"}
+              </Title>
+              {/* Auto-save status indicator */}
+              {autoSaveStatus === "saving" && (
+                <Group gap="xs">
+                  <Loader size="xs" />
+                  <Text size="sm" c="dimmed">
+                    Saving...
+                  </Text>
+                </Group>
+              )}
+              {autoSaveStatus === "saved" && (
+                <Group gap="xs">
+                  <IconCheck size={16} color="green" />
+                  <Text size="sm" c="green">
+                    Saved
+                  </Text>
+                </Group>
+              )}
+              {autoSaveStatus === "error" && (
+                <Group gap="xs">
+                  <IconExclamationMark size={16} color="red" />
+                  <Text size="sm" c="red">
+                    Save failed
+                  </Text>
+                </Group>
+              )}
+              {autoSaveStatus === "idle" && lastAutoSaveTime && (
+                <Text size="sm" c="dimmed">
+                  Auto-saved {formatTimeAgo(lastAutoSaveTime)}
+                </Text>
+              )}
+            </Group>
             <Group>
               <Button
                 variant="outline"
@@ -163,7 +293,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 leftSection={<IconDeviceFloppy size={16} />}
                 onClick={handleSave}
               >
-                Save Workflow
+                Save & Apply Workflow
               </Button>
             </Group>
           </Group>
@@ -176,7 +306,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     label="Workflow Name"
                     placeholder="Enter workflow name"
                     value={workflowName}
-                    onChange={(e) => setWorkflowName(e.target.value)}
+                    onChange={(e) => {
+                      setWorkflowName(e.target.value);
+                      markAsChanged();
+                    }}
                   />
                 </Grid.Col>
                 <Grid.Col span={6}>
@@ -185,7 +318,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     placeholder="*://example.com/* or https://github.com/*/pull/*"
                     description="Use * for wildcards. The workflow will only run on matching URLs."
                     value={workflowUrlPattern}
-                    onChange={(e) => setWorkflowUrlPattern(e.target.value)}
+                    onChange={(e) => {
+                      setWorkflowUrlPattern(e.target.value);
+                      markAsChanged();
+                    }}
                   />
                 </Grid.Col>
                 <Grid.Col span={8}>
@@ -193,7 +329,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     label="Description (Optional)"
                     placeholder="Describe what this workflow does"
                     value={workflowDescription}
-                    onChange={(e) => setWorkflowDescription(e.target.value)}
+                    onChange={(e) => {
+                      setWorkflowDescription(e.target.value);
+                      markAsChanged();
+                    }}
                   />
                 </Grid.Col>
                 <Grid.Col span={4}>
@@ -201,7 +340,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     label="Enabled"
                     description="Whether this workflow is active"
                     checked={workflowEnabled}
-                    onChange={(e) => setWorkflowEnabled(e.target.checked)}
+                    onChange={(e) => {
+                      setWorkflowEnabled(e.target.checked);
+                      markAsChanged();
+                    }}
                   />
                 </Grid.Col>
               </Grid>
@@ -221,11 +363,18 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           <ReactFlowCanvas
             nodes={nodes}
             connections={connections}
-            onNodesChange={setNodes}
-            onConnectionsChange={setConnections}
+            onNodesChange={(newNodes) => {
+              setNodes(newNodes);
+              markAsChanged();
+            }}
+            onConnectionsChange={(newConnections) => {
+              setConnections(newConnections);
+              markAsChanged();
+            }}
             selectedNode={selectedNode}
             onNodeSelect={setSelectedNode}
           />
+          {/* Drawer  */}
           <Transition
             mounted={selectedNode !== null}
             transition="slide-left"

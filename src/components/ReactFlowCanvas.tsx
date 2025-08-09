@@ -36,12 +36,10 @@ import {
   Transition,
   Paper,
   Tooltip,
+  ScrollArea,
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconLayoutGrid } from "@tabler/icons-react";
-import {
-  WorkflowNode,
-  WorkflowConnection,
-} from "../types/workflow";
+import { WorkflowNode, WorkflowConnection } from "../types/workflow";
 import { copyToClipboard } from "../utils/helpers";
 import dagre from "@dagrejs/dagre";
 import { NotificationService } from "../services/notification";
@@ -86,12 +84,12 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
     // Initialize registries to ensure they're loaded
     initializeTriggers();
     initializeActions();
-    
+
     const actionRegistry = ActionRegistry.getInstance();
     const triggerRegistry = TriggerRegistry.getInstance();
-    
+
     const nodeType = node.data[node.type + "Type"];
-    
+
     if (node.type === "action") {
       const action = actionRegistry.getAction(nodeType);
       return action?.metadata.icon || "❓";
@@ -99,7 +97,7 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
       const trigger = triggerRegistry.getTrigger(nodeType);
       return trigger?.metadata.icon || "❓";
     }
-    
+
     return "❓";
   };
 
@@ -107,12 +105,12 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
     // Initialize registries to ensure they're loaded
     initializeTriggers();
     initializeActions();
-    
+
     const actionRegistry = ActionRegistry.getInstance();
     const triggerRegistry = TriggerRegistry.getInstance();
-    
+
     const nodeType = node.data[node.type + "Type"];
-    
+
     if (node.type === "action") {
       const action = actionRegistry.getAction(nodeType);
       return action?.metadata.label || "Unknown";
@@ -120,7 +118,7 @@ const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
       const trigger = triggerRegistry.getTrigger(nodeType);
       return trigger?.metadata.label || "Unknown";
     }
-    
+
     return "Unknown";
   };
 
@@ -522,14 +520,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       | "condition";
     let defaultConfig = {};
 
-    if (nodeType === "action" && type === "inject-component") {
-      defaultConfig = {
-        componentType: "button",
-        componentText: "Button",
-        targetSelector: "body",
-      };
-    }
-
     // Calculate position for new node (center-right of existing nodes)
     let newPosition = { x: 300, y: 100 }; // Default position for first node
 
@@ -570,11 +560,14 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     setTimeout(() => {
       const currentZoom = reactFlowInstance.getZoom();
       const viewport = reactFlowInstance.getViewport();
-      
+
       // If zoomed in beyond 100%, reset to 100% first
       if (currentZoom > 1) {
-        reactFlowInstance.setViewport({ x: viewport.x, y: viewport.y, zoom: 1 }, { duration: 300 });
-        
+        reactFlowInstance.setViewport(
+          { x: viewport.x, y: viewport.y, zoom: 1 },
+          { duration: 300 },
+        );
+
         // After zoom reset, pan to show the new node
         setTimeout(() => {
           panToShowNode(newPosition);
@@ -588,56 +581,61 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     function panToShowNode(nodePosition: { x: number; y: number }) {
       const currentViewport = reactFlowInstance.getViewport();
       const currentZoom = reactFlowInstance.getZoom();
-      
+
       // Get the current viewport dimensions
-      const canvasElement = document.querySelector('.react-flow__viewport');
+      const canvasElement = document.querySelector(".react-flow__viewport");
       if (!canvasElement) return;
-      
+
       const canvasRect = canvasElement.getBoundingClientRect();
       const canvasWidth = canvasRect.width;
       const canvasHeight = canvasRect.height;
-      
+
       // Calculate node position in screen coordinates
       const nodeScreenX = (nodePosition.x + currentViewport.x) * currentZoom;
       const nodeScreenY = (nodePosition.y + currentViewport.y) * currentZoom;
-      
+
       // Node dimensions
       const nodeWidth = 200 * currentZoom;
       const nodeHeight = 150 * currentZoom;
-      
+
       // Check if node is visible with some padding
       const padding = 50;
-      const isVisible = 
+      const isVisible =
         nodeScreenX >= padding &&
         nodeScreenY >= padding &&
         nodeScreenX + nodeWidth <= canvasWidth - padding &&
         nodeScreenY + nodeHeight <= canvasHeight - padding;
-      
+
       if (!isVisible) {
         // Calculate how much we need to pan to show the node
         let deltaX = 0;
         let deltaY = 0;
-        
+
         // Horizontal panning
         if (nodeScreenX < padding) {
           deltaX = (padding - nodeScreenX) / currentZoom;
         } else if (nodeScreenX + nodeWidth > canvasWidth - padding) {
-          deltaX = (canvasWidth - padding - nodeWidth - nodeScreenX) / currentZoom;
+          deltaX =
+            (canvasWidth - padding - nodeWidth - nodeScreenX) / currentZoom;
         }
-        
+
         // Vertical panning
         if (nodeScreenY < padding) {
           deltaY = (padding - nodeScreenY) / currentZoom;
         } else if (nodeScreenY + nodeHeight > canvasHeight - padding) {
-          deltaY = (canvasHeight - padding - nodeHeight - nodeScreenY) / currentZoom;
+          deltaY =
+            (canvasHeight - padding - nodeHeight - nodeScreenY) / currentZoom;
         }
-        
+
         // Apply the pan
-        reactFlowInstance.setViewport({
-          x: currentViewport.x + deltaX,
-          y: currentViewport.y + deltaY,
-          zoom: currentZoom
-        }, { duration: 300 });
+        reactFlowInstance.setViewport(
+          {
+            x: currentViewport.x + deltaX,
+            y: currentViewport.y + deltaY,
+            zoom: currentZoom,
+          },
+          { duration: 300 },
+        );
       }
     }
   };
@@ -647,27 +645,27 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     // Initialize registries to ensure they're loaded
     initializeTriggers();
     initializeActions();
-    
+
     const actionRegistry = ActionRegistry.getInstance();
     const triggerRegistry = TriggerRegistry.getInstance();
-    
+
     const categories = {
-      triggers: triggerRegistry.getAllTriggerMetadata().map(metadata => ({
+      triggers: triggerRegistry.getAllTriggerMetadata().map((metadata) => ({
         type: metadata.type,
         label: metadata.label,
         icon: metadata.icon,
-        description: metadata.description
+        description: metadata.description,
       })),
-      actions: actionRegistry.getAllActionMetadata().map(metadata => ({
+      actions: actionRegistry.getAllActionMetadata().map((metadata) => ({
         type: metadata.type,
         label: metadata.label,
         icon: metadata.icon,
-        description: metadata.description
+        description: metadata.description,
       })),
       // TODO: Add conditions when we have a condition registry
-      conditions: []
+      conditions: [],
     };
-    
+
     return categories;
   };
 
@@ -726,6 +724,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       >
         <IconPlus size={32} />
       </ActionIcon>
+      {/* Drawer */}
       <Transition
         mounted={showNodePalette}
         transition="slide-left"
@@ -749,31 +748,43 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             <Text fw={500} mb="md">
               Add Node
             </Text>
-            {Object.entries(getNodeCategories()).map(([category, items]) => (
-              <div key={category}>
-                <Text size="sm" fw={500} c="dimmed" tt="capitalize" mb="xs">
-                  {category}
-                </Text>
-                {items.map((item) => (
-                  <Button
-                    key={item.type}
-                    variant="subtle"
-                    fullWidth
-                    justify="start"
-                    leftSection={<Text size="lg">{item.icon}</Text>}
-                    mb="xs"
-                    onClick={() => createNode(item.type, category as any)}
-                  >
-                    <Stack align="flex-start" gap={0}>
-                      <Text size="sm">{item.label}</Text>
-                      <Text size="xs" c="dimmed">
-                        {item.description}
+            <ScrollArea h="100%">
+              <Stack>
+                {Object.entries(getNodeCategories()).map(
+                  ([category, items]) => (
+                    <div key={category}>
+                      <Text
+                        size="sm"
+                        fw={500}
+                        c="dimmed"
+                        tt="capitalize"
+                        mb="xs"
+                      >
+                        {category}
                       </Text>
-                    </Stack>
-                  </Button>
-                ))}
-              </div>
-            ))}
+                      {items.map((item) => (
+                        <Button
+                          key={item.type}
+                          variant="subtle"
+                          fullWidth
+                          justify="start"
+                          leftSection={<Text size="lg">{item.icon}</Text>}
+                          mb="xs"
+                          onClick={() => createNode(item.type, category as any)}
+                        >
+                          <Stack align="flex-start" gap={0}>
+                            <Text size="sm">{item.label}</Text>
+                            <Text size="xs" c="dimmed">
+                              {item.description}
+                            </Text>
+                          </Stack>
+                        </Button>
+                      ))}
+                    </div>
+                  ),
+                )}
+              </Stack>
+            </ScrollArea>
           </Paper>
         )}
       </Transition>

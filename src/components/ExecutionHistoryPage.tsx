@@ -28,11 +28,13 @@ import {
 } from "@tabler/icons-react";
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { formatTimeAgo } from "../utils/time";
 
 function ExecutionHistoryPage() {
-  const { workflowId } = useParams<{ workflowId?: string }>();
   const navigate = useNavigate();
+  const { workflowId: urlWorkflowId } = useParams<{ workflowId?: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
@@ -41,6 +43,9 @@ function ExecutionHistoryPage() {
   >([]);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchFilter, setSearchFilter] = useState<string>("");
+
+  // Get workflowId from URL params or query params
+  const workflowId = urlWorkflowId || searchParams.get("workflow") || "";
 
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
@@ -119,6 +124,7 @@ function ExecutionHistoryPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
+      case "success":
         return "green";
       case "failed":
         return "red";
@@ -183,45 +189,22 @@ function ExecutionHistoryPage() {
     return node.type;
   };
 
-  const getCurrentWorkflow = () => {
-    if (workflowId) {
-      return workflows.find((w) => w.id === workflowId);
-    }
-    return null;
-  };
-
   const stats = getStats();
-  const currentWorkflow = getCurrentWorkflow();
 
   return (
     <Container size="xl" p="md">
       <Stack gap="lg">
         <Group justify="space-between">
-          <Stack gap="xs">
-            {currentWorkflow ? (
-              <>
-                <Group>
-                  <ActionIcon
-                    variant="subtle"
-                    onClick={() => navigate("/")}
-                    title="Back to workflows"
-                  >
-                    <IconArrowLeft size={16} />
-                  </ActionIcon>
-                  <Title order={2}>
-                    Execution History: {currentWorkflow.name}
-                  </Title>
-                </Group>
-                <Text c="dimmed" size="sm">
-                  Viewing executions for workflow:{" "}
-                  {currentWorkflow.description || "No description"}
-                </Text>
-              </>
-            ) : (
-              <Title order={2}>All Workflow Executions</Title>
-            )}
-          </Stack>
+          <Title order={2}>Execution history</Title>
           <Group>
+            <Button
+              variant="outline"
+              leftSection={<IconArrowLeft size={16} />}
+              onClick={() => navigate("/")}
+            >
+              Back to Workflows
+            </Button>
+
             <Button
               leftSection={<IconRefresh size={16} />}
               variant="light"
@@ -291,32 +274,38 @@ function ExecutionHistoryPage() {
               onChange={(value) => setStatusFilter(value || "")}
               style={{ minWidth: 150 }}
             />
-            {!workflowId && (
-              <Select
-                placeholder="Filter by workflow"
-                data={[
-                  { value: "", label: "All workflows" },
-                  ...workflows.map((w) => ({ value: w.id, label: w.name })),
-                ]}
-                value=""
-                onChange={(value) => value && navigate(`/executions/${value}`)}
-                style={{ minWidth: 200 }}
-              />
-            )}
+            <Select
+              placeholder="Filter by workflow"
+              data={[
+                { value: "", label: "All workflows" },
+                ...workflows.map((w) => ({ value: w.id, label: w.name })),
+              ]}
+              value={workflowId}
+              onChange={(value) => {
+                const newSearchParams = new URLSearchParams(searchParams);
+                if (value) {
+                  newSearchParams.set("workflow", value);
+                } else {
+                  newSearchParams.delete("workflow");
+                }
+                setSearchParams(newSearchParams);
+              }}
+              style={{ minWidth: 200 }}
+            />
           </Group>
         </Card>
 
-        {/* Execution List */}
-        {filteredExecutions.length === 0 ? (
-          <Card withBorder>
-            <Text size="sm" c="dimmed" ta="center" p="xl">
-              {executions.length === 0
-                ? "No workflow executions in this session"
-                : "No executions match your filters"}
-            </Text>
-          </Card>
-        ) : (
-          <ScrollArea>
+        <ScrollArea>
+          {/* Execution List */}
+          {filteredExecutions.length === 0 ? (
+            <Card withBorder>
+              <Text size="sm" c="dimmed" ta="center" p="xl">
+                {executions.length === 0
+                  ? "No workflow executions in this session"
+                  : "No executions match your filters"}
+              </Text>
+            </Card>
+          ) : (
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
@@ -327,6 +316,7 @@ function ExecutionHistoryPage() {
                   <Table.Th>Trigger</Table.Th>
                   <Table.Th>Started</Table.Th>
                   <Table.Th>Duration</Table.Th>
+                  <Table.Th>URL</Table.Th>
                   <Table.Th>Nodes</Table.Th>
                 </Table.Tr>
               </Table.Thead>
@@ -372,12 +362,27 @@ function ExecutionHistoryPage() {
                         </Text>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm">
-                          {new Date(execution.startedAt).toLocaleString()}
-                        </Text>
+                        <Stack gap={2}>
+                          <Text size="sm">
+                            {formatTimeAgo(execution.startedAt)}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {new Date(execution.startedAt).toLocaleDateString()}
+                          </Text>
+                        </Stack>
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm">{formatDuration(execution)}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text
+                          size="sm"
+                          style={{ maxWidth: 200 }}
+                          truncate
+                          title={execution.url}
+                        >
+                          {execution.url}
+                        </Text>
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm">{execution.nodeResults.length}</Text>
@@ -385,7 +390,7 @@ function ExecutionHistoryPage() {
                     </Table.Tr>
                     {expanded.includes(execution.id) && (
                       <Table.Tr>
-                        <Table.Td colSpan={8}>
+                        <Table.Td colSpan={9}>
                           <Card withBorder p="md" m="sm">
                             <Stack gap="sm">
                               <Title order={6}>Node Execution Results:</Title>
@@ -397,11 +402,9 @@ function ExecutionHistoryPage() {
                                   <Text size="xs" c="dimmed">
                                     Debug info: Execution ID: {execution.id},
                                     Status: {execution.status}, Started:{" "}
-                                    {new Date(
-                                      execution.startedAt,
-                                    ).toLocaleString()}
+                                    {formatTimeAgo(execution.startedAt)}
                                     {execution.completedAt &&
-                                      `, Completed: ${new Date(execution.completedAt).toLocaleString()}`}
+                                      `, Completed: ${formatTimeAgo(execution.completedAt)}`}
                                   </Text>
                                 </Stack>
                               ) : (
@@ -516,8 +519,8 @@ function ExecutionHistoryPage() {
                 ))}
               </Table.Tbody>
             </Table>
-          </ScrollArea>
-        )}
+          )}
+        </ScrollArea>
       </Stack>
     </Container>
   );
