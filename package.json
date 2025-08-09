@@ -1,13 +1,14 @@
 {
   "name": "changeme",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Browser automation made simple. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "npm run type-check"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.268",
