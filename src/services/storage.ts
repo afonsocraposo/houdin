@@ -60,9 +60,18 @@ export class StorageManager {
   }
 
   async saveWorkflows(workflows: WorkflowDefinition[]): Promise<void> {
+    return this.saveWorkflowsInternal(workflows, false);
+  }
+
+  async saveWorkflowsSilent(workflows: WorkflowDefinition[]): Promise<void> {
+    return this.saveWorkflowsInternal(workflows, true);
+  }
+
+  private async saveWorkflowsInternal(workflows: WorkflowDefinition[], silent: boolean = false): Promise<void> {
     const storage = this.getStorageAPI();
     console.debug("Saving workflows, storage API available:", !!storage);
     console.debug("Workflows to save:", workflows);
+    console.debug("Silent save:", silent);
 
     if (!storage) {
       console.debug("Storage API not available, not saving");
@@ -70,13 +79,17 @@ export class StorageManager {
     }
 
     try {
+      const data = silent 
+        ? { workflows, _silentSave: Date.now() } 
+        : { workflows };
+
       if (storage.isFirefox) {
         // Firefox supports promises
-        await storage.api.sync.set({ workflows });
+        await storage.api.sync.set(data);
       } else {
         // Chrome uses callbacks, wrap in promise
         await new Promise<void>((resolve, reject) => {
-          storage.api.sync.set({ workflows }, () => {
+          storage.api.sync.set(data, () => {
             if ((chrome as any)?.runtime?.lastError) {
               reject((chrome as any).runtime.lastError);
             } else {
@@ -98,6 +111,12 @@ export class StorageManager {
     if (storage) {
       storage.api.onChanged.addListener((changes: any, namespace: string) => {
         if (namespace === "sync" && changes.workflows) {
+          // Don't trigger change listener for silent saves
+          if (changes._silentSave) {
+            console.debug("Silent save detected, skipping change callback");
+            return;
+          }
+          
           const workflows = changes.workflows?.newValue || [];
           callback(workflows);
         }

@@ -15,7 +15,7 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
   readonly metadata: ActionMetadata = {
     type: "custom-script",
     label: "Custom Script",
-    icon: "🔧",
+    icon: "⚡",
     description: "Execute custom JavaScript code",
     completion: true,
   };

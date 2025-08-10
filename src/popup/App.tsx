@@ -6,6 +6,7 @@ import {
   Stack,
   Divider,
   Tabs,
+  Group,
 } from "@mantine/core";
 import { IconPointer, IconHistory, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
@@ -18,12 +19,42 @@ function App() {
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
   const [currentUrl, setCurrentUrl] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("workflows");
 
   // Initialize credentials on app startup
   useEffect(() => {
     initializeCredentials();
     loadCurrentUrl();
+    loadSavedTab();
   }, []);
+
+  const loadSavedTab = async () => {
+    try {
+      const result = await new Promise<any>((resolve) => {
+        browserAPI.storage.local.get(["popup-active-tab"], resolve);
+      });
+      if (result["popup-active-tab"]) {
+        console.log("Loading saved tab:", result["popup-active-tab"]);
+        setActiveTab(result["popup-active-tab"]);
+      }
+    } catch (error) {
+      console.error("Error loading saved tab:", error);
+    }
+  };
+
+  // Save active tab to browser storage when it changes
+  const handleTabChange = (value: string | null) => {
+    console.log("Tab changed to:", value);
+    if (value) {
+      setActiveTab(value);
+      try {
+        browserAPI.storage.local.set({ "popup-active-tab": value });
+        console.log("Saved tab to browser storage:", value);
+      } catch (error) {
+        console.error("Error saving to browser storage:", error);
+      }
+    }
+  };
 
   const loadCurrentUrl = async () => {
     try {
@@ -69,21 +100,21 @@ function App() {
     <>
       <Container size="xs" p="md" style={{ width: "320px", height: "500px" }}>
         <Stack gap="sm">
-          <div style={{ textAlign: "center" }}>
+          <Group align="center">
             <img
               src={iconSvg}
               alt="changeme icon"
               style={{ width: 48, height: 48 }}
             />
-            <Title order={2} mt="xs">
-              changeme
-            </Title>
-            <Text size="sm" c="dimmed">
-              Browser automation made simple
-            </Text>
-          </div>
+            <Stack gap={0}>
+              <Title order={2}>changeme</Title>
+              <Text size="sm" c="dimmed">
+                Browser automation made simple
+              </Text>
+            </Stack>
+          </Group>
 
-          <Tabs defaultValue="workflows" variant="pills">
+          <Tabs value={activeTab} onChange={handleTabChange} variant="pills" flex={1}>
             <Tabs.List grow>
               <Tabs.Tab value="workflows" leftSection={<IconHome size={16} />}>
                 Workflows

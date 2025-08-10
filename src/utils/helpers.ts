@@ -26,3 +26,33 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
 export const generateId = (): string => {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 };
+
+export const getElement = (
+  selector: string,
+  selectorType: "css" | "xpath" | "text",
+): Element | null => {
+  if (selectorType === "css") {
+    return document.querySelector(selector);
+  } else if (selectorType === "xpath") {
+    const result = document.evaluate(
+      selector,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null,
+    );
+    return result.singleNodeValue as Element | null;
+  } else if (selectorType === "text") {
+    // For text, we can use an xpath selector that matches text content
+    const xpathSelector = `//*[contains(text(), '${selector}')]`;
+    const result = document.evaluate(
+      xpathSelector,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null,
+    );
+    return result.singleNodeValue as Element | null;
+  }
+  return null;
+};

@@ -8,6 +8,7 @@ import {
   ColorInput,
   InputLabel,
   Text,
+  Switch,
 } from "@mantine/core";
 import { ConfigSchema, ConfigProperty } from "../types/config-properties";
 import { CredentialsSelect } from "./CredentialsSelect";
@@ -168,6 +169,18 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
               editorKey={key}
             />
           </div>
+        );
+
+      case "boolean":
+        return (
+          <Switch
+            key={key}
+            label={property.label}
+            description={property.description}
+            // labelPosition="left"
+            checked={Boolean(value)}
+            onChange={(e) => onChange(key, e.currentTarget.checked)}
+          />
         );
 
       case "credentials":

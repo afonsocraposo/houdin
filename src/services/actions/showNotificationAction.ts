@@ -4,35 +4,35 @@ import {
   ActionMetadata,
   ActionExecutionContext,
 } from "../../types/actions";
-import { ModalService } from "../modal";
+import { NotificationService } from "../notification";
 
-interface ShowModalActionConfig {
-  modalTitle: string;
-  modalContent: string;
+interface ShowNotificationActionConfig {
+  notificationTitle: string;
+  notificationContent: string;
 }
 
-export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
+export class ShowNotificationAction extends BaseAction<ShowNotificationActionConfig> {
   readonly metadata: ActionMetadata = {
-    type: "show-modal",
-    label: "Show Modal",
-    icon: "💬",
-    description: "Display modal with content",
+    type: "show-notification",
+    label: "Show Notification",
+    icon: "🔔",
+    description: "Display notification",
   };
 
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
-        modalTitle: {
+        notificationTitle: {
           type: "text",
-          label: "Modal Title",
+          label: "Notification Title",
           placeholder: "Information, {{node-id}} Data",
           description:
-            "Title of the modal. Use {{node-id}} to reference action outputs",
+            "Title of the notification. Use {{node-id}} to reference action outputs",
           defaultValue: "Workflow Result",
         },
-        modalContent: {
+        notificationContent: {
           type: "textarea",
-          label: "Modal Content",
+          label: "Notification Content",
           placeholder: "The extracted content is: {{get-content-node}}",
           description:
             "Content to display. Use {{node-id}} to reference action outputs. Supports Markdown.",
@@ -43,22 +43,22 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
   }
 
   async execute(
-    config: ShowModalActionConfig,
+    config: ShowNotificationActionConfig,
     context: ActionExecutionContext,
     nodeId: string,
   ): Promise<void> {
-    const { modalTitle, modalContent } = config;
+    const { notificationTitle, notificationContent } = config;
 
     const interpolatedTitle = context.interpolateVariables(
-      modalTitle || "Workflow Result",
+      notificationTitle || "Workflow Result",
     );
     const interpolatedContent = context.interpolateVariables(
-      modalContent || "",
+      notificationContent || "",
     );
 
-    ModalService.showModal({
+    NotificationService.showNotification({
       title: interpolatedTitle,
-      content: interpolatedContent,
+      message: interpolatedContent,
     });
 
     context.setOutput(nodeId, {

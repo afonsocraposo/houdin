@@ -96,4 +96,3 @@ jobs:
     - name: Skip release (tag exists)
       if: steps.check-tag.outputs.tag-exists == 'true'
       run: |
-        echo "⚠️ Tag ${{ steps.version.outputs.tag }} already exists. Skipping release creation."
