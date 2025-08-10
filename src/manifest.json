@@ -22,7 +22,10 @@
   },
   "options_page": "src/config/index.html",
   "background": {
-    "service_worker": "src/background/background.ts"
+    "scripts": [
+      "src/background/background.ts"
+    ],
+    "type": "module"
   },
   "content_scripts": [
     {

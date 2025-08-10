@@ -1,6 +1,5 @@
-import { HttpListenerService } from "../services/httpListener";
-import { StorageManager } from "../services/storage";
 import { WorkflowExecution, NodeExecutionResult } from "../types/workflow";
+import { StorageManager } from "../services/storage";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -42,41 +41,97 @@ class BackgroundExecutionTracker {
   }
 }
 
-const backgroundTracker = new BackgroundExecutionTracker();
+// HTTP Trigger Management for Manifest V3
+// Uses content script fetch interception instead of webRequest API
+class HttpTriggerManager {
+  private triggers = new Map<string, {
+    workflowId: string;
+    triggerNodeId: string;
+    urlPattern: string;
+    method: string;
+  }>();
 
-// Initialize HTTP listener service
-let httpListener: HttpListenerService;
+  registerTrigger(workflowId: string, triggerNodeId: string, urlPattern: string, method: string): void {
+    const triggerKey = `${workflowId}-${triggerNodeId}`;
+    this.triggers.set(triggerKey, {
+      workflowId,
+      triggerNodeId,
+      urlPattern,
+      method
+    });
+    
+    console.debug("HTTP Trigger registered:", { workflowId, triggerNodeId, urlPattern, method });
+    
+    // Notify all content scripts about the new trigger
+    this.broadcastTriggersToContentScripts();
+  }
 
-try {
-  httpListener = HttpListenerService.getInstance(runtime);
+  unregisterTrigger(workflowId: string, triggerNodeId: string): void {
+    const triggerKey = `${workflowId}-${triggerNodeId}`;
+    this.triggers.delete(triggerKey);
+    
+    console.debug("HTTP Trigger unregistered:", { workflowId, triggerNodeId });
+    
+    // Notify all content scripts about the change
+    this.broadcastTriggersToContentScripts();
+  }
 
-  // Set up callback to handle HTTP triggers
-  httpListener.setTriggerCallback((data, triggerNodeId, workflowId) => {
-    // Find the tab that made the request
-    runtime.tabs
-      .sendMessage(data.request.tabId, {
-        type: "HTTP_REQUEST_TRIGGER",
-        data,
-        triggerNodeId,
-        workflowId,
-      })
-      .catch((error: any) => {
-        console.error("Error sending HTTP trigger message:", error);
-      });
-  });
+  clearAllTriggers(): void {
+    this.triggers.clear();
+    this.broadcastTriggersToContentScripts();
+  }
 
-  // Pre-register HTTP triggers for active workflows
-  initializeActiveHttpTriggers();
-} catch (error) {
-  console.error("Failed to initialize HttpListenerService:", error);
+  getAllTriggers(): Array<{workflowId: string, triggerNodeId: string, urlPattern: string, method: string}> {
+    return Array.from(this.triggers.values());
+  }
+
+  private async broadcastTriggersToContentScripts(): Promise<void> {
+    try {
+      const tabs = await runtime.tabs.query({});
+      const triggers = this.getAllTriggers();
+      
+      console.debug("Broadcasting triggers to content scripts:", triggers.length);
+      
+      for (const tab of tabs) {
+        if (tab.id) {
+          runtime.tabs.sendMessage(tab.id, {
+            type: "UPDATE_HTTP_TRIGGERS",
+            triggers
+          }).catch(() => {
+            // Ignore errors for tabs without content scripts
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error broadcasting triggers to content scripts:", error);
+    }
+  }
+
+  handleHttpTriggerMatch(data: any, triggerNodeId: string, workflowId: string, tabId: number): void {
+    console.debug("HTTP Trigger matched:", { workflowId, triggerNodeId, tabId });
+    
+    // Send trigger event back to the tab that made the request
+    runtime.tabs.sendMessage(tabId, {
+      type: "HTTP_REQUEST_TRIGGER",
+      data,
+      triggerNodeId,
+      workflowId,
+    }).catch((error: any) => {
+      console.error("Error sending HTTP trigger message:", error);
+    });
+  }
 }
 
+const backgroundTracker = new BackgroundExecutionTracker();
+const httpTriggerManager = new HttpTriggerManager();
+
+// Initialize HTTP triggers from storage
 async function initializeActiveHttpTriggers(): Promise<void> {
   try {
+    console.debug("Initializing active HTTP triggers...");
+    
     // Clear existing triggers first
-    if (httpListener) {
-      httpListener.clearAllTriggers();
-    }
+    httpTriggerManager.clearAllTriggers();
 
     const storageManager = StorageManager.getInstance();
     const workflows = await storageManager.getWorkflows();
@@ -93,7 +148,7 @@ async function initializeActiveHttpTriggers(): Promise<void> {
       for (const triggerNode of httpTriggerNodes) {
         const config = triggerNode.data?.config;
         if (config?.urlPattern) {
-          httpListener.registerTrigger(
+          httpTriggerManager.registerTrigger(
             workflow.id,
             triggerNode.id,
             config.urlPattern,
@@ -102,40 +157,42 @@ async function initializeActiveHttpTriggers(): Promise<void> {
         }
       }
     }
+    
+    console.debug("HTTP triggers initialized:", httpTriggerManager.getAllTriggers().length);
   } catch (error) {
     console.error("Error initializing active HTTP triggers:", error);
   }
 }
 
 runtime.runtime.onMessage.addListener(
-  (message: any, _sender: any, sendResponse: (response: any) => void) => {
+  (message: any, sender: any, sendResponse: (response: any) => void) => {
     if (message.type === "REGISTER_HTTP_TRIGGER") {
-      if (httpListener) {
-        httpListener.registerTrigger(
-          message.workflowId,
-          message.triggerNodeId,
-          message.urlPattern,
-          message.method,
-        );
-      } else {
-        console.error(
-          "HttpListenerService not available for trigger registration",
-        );
-      }
+      httpTriggerManager.registerTrigger(
+        message.workflowId,
+        message.triggerNodeId,
+        message.urlPattern,
+        message.method,
+      );
     } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
-      if (httpListener) {
-        httpListener.unregisterTrigger(
-          message.workflowId,
-          message.triggerNodeId,
-        );
-      } else {
-        console.error(
-          "HttpListenerService not available for trigger unregistration",
-        );
-      }
+      httpTriggerManager.unregisterTrigger(
+        message.workflowId,
+        message.triggerNodeId,
+      );
     } else if (message.type === "SYNC_HTTP_TRIGGERS") {
       // Re-sync HTTP triggers for active workflows
       initializeActiveHttpTriggers();
+    } else if (message.type === "GET_HTTP_TRIGGERS") {
+      // Send current triggers to content script
+      const triggers = httpTriggerManager.getAllTriggers();
+      sendResponse({ triggers });
+    } else if (message.type === "HTTP_TRIGGER_MATCHED") {
+      // Handle HTTP trigger match from content script
+      httpTriggerManager.handleHttpTriggerMatch(
+        message.data,
+        message.triggerNodeId,
+        message.workflowId,
+        sender.tab?.id || 0
+      );
     } else if (message.type === "EXECUTION_STARTED") {
       // Track workflow execution
       console.debug("Background: Execution started", message.data);
@@ -168,8 +225,13 @@ runtime.runtime.onMessage.addListener(
   },
 );
 
+// Initialize triggers on startup
+initializeActiveHttpTriggers();
+
 runtime.runtime.onInstalled.addListener(() => {
   console.debug("Extension installed");
+  // Re-initialize triggers on install
+  initializeActiveHttpTriggers();
 });
 
 // For manifest v3, use action instead of browserAction
@@ -189,7 +251,6 @@ runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
 });
 
 // Note: webNavigation API requires additional permission in manifest v3
-// If you need this functionality, add "webNavigation" to permissions
 if (runtime.webNavigation) {
   runtime.webNavigation.onBeforeNavigate.addListener((details: any) => {
     if (details.url.includes("changeme.config")) {

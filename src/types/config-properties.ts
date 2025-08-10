@@ -117,7 +117,6 @@ export function validateConfig(
 
   Object.entries(schema.properties).forEach(([key, property]) => {
     const value = config[key];
-    console.log("Validating property:", key, value, property);
 
     // Check required properties
     if (
