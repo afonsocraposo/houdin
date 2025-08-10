@@ -157,11 +157,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       setNodes(workflow.nodes || []);
       setConnections(workflow.connections || []);
       setSelectedNode(null); // Reset selected node when workflow changes
-
-      // Set initial auto-save time for existing workflows
-      if (workflow.lastUpdated) {
-        setLastAutoSaveTime(workflow.lastUpdated);
-      }
     }
   }, [workflow]);
 
