@@ -8,6 +8,7 @@ import {
   Badge,
   Group,
   ScrollArea,
+  Box,
 } from "@mantine/core";
 import {
   IconCheck,
