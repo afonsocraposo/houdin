@@ -6,6 +6,7 @@ interface HttpTrigger {
   triggerNodeId: string;
   urlPattern: string;
   method: string;
+  onTrigger: (data: any) => Promise<void>; // Direct callback for workflow execution
 }
 
 interface RequestData {
@@ -45,9 +46,37 @@ export class HttpListenerServiceV3 {
     return HttpListenerServiceV3.instance;
   }
 
-  // Called from background script to update triggers
-  updateTriggers(triggers: HttpTrigger[]): void {
-    this.triggers = triggers;
+  // Register a trigger with direct callback execution
+  registerTrigger(workflowId: string, triggerNodeId: string, urlPattern: string, method: string, onTrigger: (data: any) => Promise<void>): void {
+    // Remove existing trigger with same ID if it exists
+    this.triggers = this.triggers.filter(t => !(t.workflowId === workflowId && t.triggerNodeId === triggerNodeId));
+    
+    // Add new trigger
+    this.triggers.push({
+      workflowId,
+      triggerNodeId,
+      urlPattern,
+      method,
+      onTrigger
+    });
+
+    console.debug("HttpListenerV3: Trigger registered directly", { workflowId, triggerNodeId, urlPattern, method });
+    
+    // Inject interceptor if not already done
+    this.injectFetchInterceptor();
+  }
+
+  // Unregister a trigger
+  unregisterTrigger(workflowId: string, triggerNodeId: string): void {
+    this.triggers = this.triggers.filter(t => !(t.workflowId === workflowId && t.triggerNodeId === triggerNodeId));
+    console.debug("HttpListenerV3: Trigger unregistered", { workflowId, triggerNodeId });
+  }
+
+  // Legacy method for background script compatibility - now converts to direct registration
+  updateTriggers(_triggerConfigs: Array<{workflowId: string, triggerNodeId: string, urlPattern: string, method: string}>): void {
+    // This method is now deprecated - triggers should be registered directly via registerTrigger
+    console.warn("HttpListenerV3: updateTriggers is deprecated, use registerTrigger instead");
+    // For now, just inject the interceptor to maintain compatibility
     this.injectFetchInterceptor();
   }
 
@@ -166,7 +195,7 @@ export class HttpListenerServiceV3 {
       };
       
       this.pendingRequests.set(requestData.requestId, requestData);
-      // Only check triggers on request, not response to avoid duplicate firing
+      // Execute triggers directly, no need to route through background script
       this.checkTriggers(requestData);
     } else if (event.data.type === 'HTTP_RESPONSE_INTERCEPTED') {
       const responseData: ResponseData = event.data.data;
@@ -180,22 +209,21 @@ export class HttpListenerServiceV3 {
     }
   };
 
-  private checkTriggers(requestData: RequestData): void {
+  private async checkTriggers(requestData: RequestData): Promise<void> {
     for (const trigger of this.triggers) {
       if (this.matchesPattern(requestData.url, trigger.urlPattern) && 
           this.matchesMethod(requestData.method, trigger.method)) {
         
-        console.debug("HttpListenerV3: Trigger matched", trigger);
+        console.debug("HttpListenerV3: Trigger matched, executing directly", trigger);
         
-        // Send to background script
-        this.runtime.runtime.sendMessage({
-          type: "HTTP_TRIGGER_MATCHED",
-          data: {
+        try {
+          // Execute workflow directly via callback
+          await trigger.onTrigger({
             request: requestData
-          },
-          triggerNodeId: trigger.triggerNodeId,
-          workflowId: trigger.workflowId
-        });
+          });
+        } catch (error) {
+          console.error("HttpListenerV3: Error executing trigger callback", error);
+        }
       }
     }
   }

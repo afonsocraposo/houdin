@@ -20,27 +20,9 @@ if ((window as any).changemeExtensionInitialized) {
     contentInjector = new ContentInjector();
     contentInjector.initialize();
 
-    // Initialize HTTP listener for triggers
+    // Initialize HTTP listener for triggers (now handles direct execution)
     httpListener = HttpListenerServiceV3.getInstance(runtime);
-    
-    // Request current triggers from background
-    runtime.runtime.sendMessage({ type: "GET_HTTP_TRIGGERS" }, (response: any) => {
-      if (response && response.triggers) {
-        console.debug("Content: Received HTTP triggers", response.triggers.length);
-        httpListener.updateTriggers(response.triggers);
-      }
-    });
   };
-
-  // Listen for trigger updates from background script
-  runtime.runtime.onMessage.addListener((message: any) => {
-    if (message.type === "UPDATE_HTTP_TRIGGERS") {
-      console.debug("Content: Updating HTTP triggers", message.triggers.length);
-      if (httpListener) {
-        httpListener.updateTriggers(message.triggers);
-      }
-    }
-  });
 
   // Initialize when DOM is ready
   if (document.readyState === "loading") {

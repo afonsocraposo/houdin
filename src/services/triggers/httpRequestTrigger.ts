@@ -4,6 +4,7 @@ import {
   TriggerExecutionContext,
   TriggerSetupResult,
 } from "../../types/triggers";
+import { HttpListenerServiceV3 } from "../httpListenerV3";
 
 // HTTP Request Trigger Configuration
 export interface HttpRequestTriggerConfig {
@@ -59,42 +60,45 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
       throw new Error("URL pattern is required for HTTP request trigger");
     }
 
-    // Register this trigger with the background script
-    chrome.runtime.sendMessage({
-      type: "REGISTER_HTTP_TRIGGER",
+    // Get runtime for HTTP listener
+    const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
+    
+    // Register directly with HTTP listener in content script
+    const httpListener = HttpListenerServiceV3.getInstance(runtime);
+    
+    // Create callback that sets context and triggers workflow
+    const triggerCallback = async (data: any) => {
+      // Set the request/response data in context
+      context.setOutput(context.triggerNode.id, data);
+      
+      // Trigger the workflow
+      await onTrigger();
+    };
+    
+    // Register trigger with direct callback
+    httpListener.registerTrigger(
+      context.workflowId || '',
+      context.triggerNode.id,
+      urlPattern,
+      method,
+      triggerCallback
+    );
+
+    console.debug("HTTP Request Trigger registered directly with listener", {
       workflowId: context.workflowId,
       triggerNodeId: context.triggerNode.id,
       urlPattern,
-      method,
+      method
     });
-
-    // Listen for HTTP trigger messages from background script
-    const messageListener = (message: any) => {
-      if (
-        message.type === "HTTP_REQUEST_TRIGGER" &&
-        message.triggerNodeId === context.triggerNode.id &&
-        message.workflowId === context.workflowId
-      ) {
-        // Set the request/response data in context
-        context.setOutput(context.triggerNode.id, message.data);
-
-        // Trigger the workflow
-        onTrigger();
-      }
-    };
-
-    chrome.runtime.onMessage.addListener(messageListener);
 
     return {
       cleanup: () => {
-        // Unregister this trigger
-        chrome.runtime.sendMessage({
-          type: "UNREGISTER_HTTP_TRIGGER",
+        // Unregister this trigger from HTTP listener
+        httpListener.unregisterTrigger(context.workflowId || '', context.triggerNode.id);
+        console.debug("HTTP Request Trigger unregistered", {
           workflowId: context.workflowId,
-          triggerNodeId: context.triggerNode.id,
+          triggerNodeId: context.triggerNode.id
         });
-
-        chrome.runtime.onMessage.removeListener(messageListener);
       },
     };
   }
