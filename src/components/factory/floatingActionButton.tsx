@@ -72,7 +72,6 @@ export default function FloatingActionButtonFactory({
 
   // Check if an emoji icon is provided, otherwise use the Plus icon
   const emojiIcon = recipe.fabIcon.substring(0, 2); // Use the first character as the emoji icon
-  console.log("Emoji Icon:", emojiIcon);
   const hasEmojiIcon = emojiIcon && emojiIcon.trim().length > 0;
 
   return (

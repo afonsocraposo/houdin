@@ -8,6 +8,7 @@ import { LLMOpenAIAction } from "./actions/llmOpenAIAction";
 import { InjectStyleAction } from "./actions/injectStyleAction";
 import { ClickElementAction } from "./actions/clickElementAction";
 import { ShowNotificationAction } from "./actions/showNotificationAction";
+import { HttpRequestAction } from "./actions/httpRequestAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -23,6 +24,7 @@ export function initializeActions(): void {
   registry.register(new InjectStyleAction());
   registry.register(new CustomScriptAction());
   registry.register(new LLMOpenAIAction());
+  registry.register(new HttpRequestAction());
 }
 
 // Export registry instance for convenience
