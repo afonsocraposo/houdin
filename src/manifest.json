@@ -1,5 +1,5 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "changeme",
   "description": "Browser automation made simple. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "browser_specific_settings": {
@@ -11,19 +11,19 @@
     "activeTab",
     "storage",
     "tabs",
-    "webRequest",
-    "webRequestBlocking",
-    "<all_urls>"
+    "webNavigation"
   ],
-  "browser_action": {
+  "host_permissions": [
+    "<all_urls>",
+    "https://api.openai.com/*"
+  ],
+  "action": {
     "default_popup": "src/popup/index.html",
     "default_title": "changeme"
   },
   "options_page": "src/config/index.html",
   "background": {
-    "scripts": [
-      "src/background/background.ts"
-    ]
+    "service_worker": "src/background/background.js"
   },
   "content_scripts": [
     {
@@ -31,14 +31,21 @@
         "<all_urls>"
       ],
       "js": [
-        "src/content/content.ts",
-        "src/content/elementSelector.ts"
+        "src/content/content.js",
+        "src/content/elementSelector.js"
       ]
     }
   ],
   "web_accessible_resources": [
-    "src/popup/index.html",
-    "src/config/index.html"
+    {
+      "resources": [
+        "src/popup/index.html",
+        "src/config/index.html"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
   ],
   "icons": {
     "16": "icons/icon-16.png",

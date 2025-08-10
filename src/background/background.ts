@@ -187,6 +187,8 @@ runtime.runtime.onMessage.addListener(
 
 async function handleHttpRequest(request: HttpRequest): Promise<HttpResponse> {
   try {
+    console.debug("Background: Making HTTP request to", request.url);
+    
     const fetchOptions: RequestInit = {
       method: request.method || "GET",
       headers: request.headers || {},
@@ -201,7 +203,16 @@ async function handleHttpRequest(request: HttpRequest): Promise<HttpResponse> {
       fetchOptions.body = request.body;
     }
 
+    console.debug("Background: Fetch options", fetchOptions);
+
     const response = await fetch(request.url, fetchOptions);
+    
+    console.debug("Background: Response received", {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
+    });
 
     let data: any;
     const contentType = response.headers.get("content-type");
@@ -219,6 +230,12 @@ async function handleHttpRequest(request: HttpRequest): Promise<HttpResponse> {
       data,
     };
   } catch (error) {
+    console.error("Background: HTTP request failed", {
+      url: request.url,
+      method: request.method,
+      error: error
+    });
+    
     return {
       ok: false,
       status: 0,
@@ -232,12 +249,8 @@ runtime.runtime.onInstalled.addListener(() => {
   console.debug("Extension installed");
 });
 
-// For manifest v2, use browserAction instead of action
-if (runtime.browserAction) {
-  runtime.browserAction.onClicked.addListener((_tab: any) => {
-    // Extension icon clicked
-  });
-} else if (runtime.action) {
+// For manifest v3, use action instead of browserAction
+if (runtime.action) {
   runtime.action.onClicked.addListener((_tab: any) => {
     // Extension icon clicked
   });
@@ -252,7 +265,8 @@ runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
   }
 });
 
-// Alternative: Listen for navigation attempts
+// Note: webNavigation API requires additional permission in manifest v3
+// If you need this functionality, add "webNavigation" to permissions
 if (runtime.webNavigation) {
   runtime.webNavigation.onBeforeNavigate.addListener((details: any) => {
     if (details.url.includes("changeme.config")) {
