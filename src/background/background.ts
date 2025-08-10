@@ -4,21 +4,6 @@ import { WorkflowExecution, NodeExecutionResult } from "../types/workflow";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
-interface HttpRequest {
-  url: string;
-  method?: string;
-  headers?: Record<string, string>;
-  body?: string;
-}
-
-interface HttpResponse {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  data?: any;
-  error?: string;
-}
-
 // Session-based execution tracking in background script
 class BackgroundExecutionTracker {
   private executions: Map<string, WorkflowExecution> = new Map();
@@ -27,7 +12,11 @@ class BackgroundExecutionTracker {
     this.executions.set(execution.id, execution);
   }
 
-  completeExecution(executionId: string, status: "completed" | "failed", completedAt: number): void {
+  completeExecution(
+    executionId: string,
+    status: "completed" | "failed",
+    completedAt: number,
+  ): void {
     const execution = this.executions.get(executionId);
     if (execution) {
       execution.status = status;
@@ -43,8 +32,9 @@ class BackgroundExecutionTracker {
   }
 
   getAllExecutions(): WorkflowExecution[] {
-    return Array.from(this.executions.values())
-      .sort((a, b) => b.startedAt - a.startedAt);
+    return Array.from(this.executions.values()).sort(
+      (a, b) => b.startedAt - a.startedAt,
+    );
   }
 
   clearExecutions(): void {
@@ -119,14 +109,7 @@ async function initializeActiveHttpTriggers(): Promise<void> {
 
 runtime.runtime.onMessage.addListener(
   (message: any, _sender: any, sendResponse: (response: any) => void) => {
-    if (message.type === "HTTP_REQUEST") {
-      handleHttpRequest(message.request as HttpRequest)
-        .then((response) => sendResponse({ success: true, response }))
-        .catch((error) =>
-          sendResponse({ success: false, error: error.message }),
-        );
-      return true; // Will respond asynchronously
-    } else if (message.type === "REGISTER_HTTP_TRIGGER") {
+    if (message.type === "REGISTER_HTTP_TRIGGER") {
       if (httpListener) {
         httpListener.registerTrigger(
           message.workflowId,
@@ -163,14 +146,14 @@ runtime.runtime.onMessage.addListener(
       backgroundTracker.completeExecution(
         message.data.executionId,
         message.data.status,
-        message.data.completedAt
+        message.data.completedAt,
       );
     } else if (message.type === "NODE_RESULT_ADDED") {
       // Add node result to execution
       console.debug("Background: Node result added", message.data);
       backgroundTracker.addNodeResult(
         message.data.executionId,
-        message.data.nodeResult
+        message.data.nodeResult,
       );
     } else if (message.type === "GET_EXECUTIONS") {
       // Return all executions to popup
@@ -184,66 +167,6 @@ runtime.runtime.onMessage.addListener(
     }
   },
 );
-
-async function handleHttpRequest(request: HttpRequest): Promise<HttpResponse> {
-  try {
-    console.debug("Background: Making HTTP request to", request.url);
-    
-    const fetchOptions: RequestInit = {
-      method: request.method || "GET",
-      headers: request.headers || {},
-    };
-
-    if (
-      request.body &&
-      (request.method === "POST" ||
-        request.method === "PUT" ||
-        request.method === "PATCH")
-    ) {
-      fetchOptions.body = request.body;
-    }
-
-    console.debug("Background: Fetch options", fetchOptions);
-
-    const response = await fetch(request.url, fetchOptions);
-    
-    console.debug("Background: Response received", {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries())
-    });
-
-    let data: any;
-    const contentType = response.headers.get("content-type");
-
-    if (contentType?.includes("application/json")) {
-      data = await response.json();
-    } else {
-      data = await response.text();
-    }
-
-    return {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      data,
-    };
-  } catch (error) {
-    console.error("Background: HTTP request failed", {
-      url: request.url,
-      method: request.method,
-      error: error
-    });
-    
-    return {
-      ok: false,
-      status: 0,
-      statusText: "Network Error",
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
 
 runtime.runtime.onInstalled.addListener(() => {
   console.debug("Extension installed");

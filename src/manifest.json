@@ -14,8 +14,7 @@
     "webNavigation"
   ],
   "host_permissions": [
-    "<all_urls>",
-    "https://api.openai.com/*"
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "src/popup/index.html",
