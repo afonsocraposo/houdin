@@ -117,11 +117,13 @@ export function validateConfig(
 
   Object.entries(schema.properties).forEach(([key, property]) => {
     const value = config[key];
+    console.log("Validating property:", key, value, property);
 
     // Check required properties
     if (
       property.required &&
-      (value === undefined || value === null || value === "")
+      (value === undefined || value === null || value === "") &&
+      !property.defaultValue
     ) {
       errors.push(`${property.label} is required`);
       return;
