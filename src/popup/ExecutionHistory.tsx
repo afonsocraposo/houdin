@@ -18,7 +18,7 @@ import {
 } from "@tabler/icons-react";
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
-import { formatTimeAgo } from "../utils/time";
+import { TimeAgoText } from "../components/TimeAgoText";
 
 function ExecutionHistory() {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
@@ -154,9 +154,12 @@ function ExecutionHistory() {
       </Group>
 
       {lastRefresh && (
-        <Text size="xs" c="dimmed">
-          Last updated {formatTimeAgo(lastRefresh)}
-        </Text>
+        <TimeAgoText 
+          timestamp={lastRefresh} 
+          prefix="Last updated"
+          size="xs" 
+          c="dimmed" 
+        />
       )}
 
       <Group gap="xs">
@@ -200,9 +203,11 @@ function ExecutionHistory() {
                       <Text size="xs" truncate>
                         {getWorkflowName(execution.workflowId)}
                       </Text>
-                      <Text size="xs" c="dimmed">
-                        {formatTimeAgo(execution.startedAt)}
-                      </Text>
+                      <TimeAgoText 
+                        timestamp={execution.startedAt}
+                        size="xs" 
+                        c="dimmed" 
+                      />
                     </Stack>
                     <Badge
                       size="xs"

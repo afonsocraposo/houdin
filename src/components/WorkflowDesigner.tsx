@@ -27,7 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
 import { ExportModal } from "./ExportModal";
-import { formatTimeAgo } from "../utils/time";
+import { TimeAgoText } from "./TimeAgoText";
 import {
   WorkflowNode,
   WorkflowConnection,
@@ -255,9 +255,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 </Group>
               )}
               {autoSaveStatus === "idle" && lastAutoSaveTime && (
-                <Text size="sm" c="dimmed">
-                  Auto-saved {formatTimeAgo(lastAutoSaveTime)}
-                </Text>
+                <TimeAgoText 
+                  timestamp={lastAutoSaveTime} 
+                  prefix="Auto-saved"
+                  size="sm" 
+                  c="dimmed" 
+                />
               )}
             </Group>
             <Group>

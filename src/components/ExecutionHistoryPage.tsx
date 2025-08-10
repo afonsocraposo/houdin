@@ -29,6 +29,7 @@ import {
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { TimeAgoText } from "./TimeAgoText";
 import { formatTimeAgo } from "../utils/time";
 
 function ExecutionHistoryPage() {
@@ -363,9 +364,10 @@ function ExecutionHistoryPage() {
                       </Table.Td>
                       <Table.Td>
                         <Stack gap={2}>
-                          <Text size="sm">
-                            {formatTimeAgo(execution.startedAt)}
-                          </Text>
+                          <TimeAgoText 
+                            timestamp={execution.startedAt}
+                            size="sm" 
+                          />
                           <Text size="xs" c="dimmed">
                             {new Date(execution.startedAt).toLocaleDateString()}
                           </Text>
