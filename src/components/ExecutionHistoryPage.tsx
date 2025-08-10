@@ -29,6 +29,7 @@ import {
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { formatTimeAgo } from "../utils/time";
 
 function ExecutionHistoryPage() {
   const navigate = useNavigate();
@@ -294,17 +295,17 @@ function ExecutionHistoryPage() {
           </Group>
         </Card>
 
-        {/* Execution List */}
-        {filteredExecutions.length === 0 ? (
-          <Card withBorder>
-            <Text size="sm" c="dimmed" ta="center" p="xl">
-              {executions.length === 0
-                ? "No workflow executions in this session"
-                : "No executions match your filters"}
-            </Text>
-          </Card>
-        ) : (
-          <ScrollArea>
+        <ScrollArea>
+          {/* Execution List */}
+          {filteredExecutions.length === 0 ? (
+            <Card withBorder>
+              <Text size="sm" c="dimmed" ta="center" p="xl">
+                {executions.length === 0
+                  ? "No workflow executions in this session"
+                  : "No executions match your filters"}
+              </Text>
+            </Card>
+          ) : (
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
@@ -361,9 +362,14 @@ function ExecutionHistoryPage() {
                         </Text>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm">
-                          {new Date(execution.startedAt).toLocaleString()}
-                        </Text>
+                        <Stack gap={2}>
+                          <Text size="sm">
+                            {formatTimeAgo(execution.startedAt)}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {new Date(execution.startedAt).toLocaleDateString()}
+                          </Text>
+                        </Stack>
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm">{formatDuration(execution)}</Text>
@@ -396,11 +402,9 @@ function ExecutionHistoryPage() {
                                   <Text size="xs" c="dimmed">
                                     Debug info: Execution ID: {execution.id},
                                     Status: {execution.status}, Started:{" "}
-                                    {new Date(
-                                      execution.startedAt,
-                                    ).toLocaleString()}
+                                    {formatTimeAgo(execution.startedAt)}
                                     {execution.completedAt &&
-                                      `, Completed: ${new Date(execution.completedAt).toLocaleString()}`}
+                                      `, Completed: ${formatTimeAgo(execution.completedAt)}`}
                                   </Text>
                                 </Stack>
                               ) : (
@@ -515,8 +519,8 @@ function ExecutionHistoryPage() {
                 ))}
               </Table.Tbody>
             </Table>
-          </ScrollArea>
-        )}
+          )}
+        </ScrollArea>
       </Stack>
     </Container>
   );

@@ -8,24 +8,30 @@ import {
   Badge,
   Group,
   ScrollArea,
+  Box,
 } from "@mantine/core";
 import {
   IconCheck,
   IconX,
   IconPlayerPlay,
   IconHistory,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
+import { formatTimeAgo } from "../utils/time";
 
 function ExecutionHistory() {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
+  const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
 
   const loadExecutions = async () => {
+    setIsRefreshing(true);
     try {
       const response = await new Promise<{ executions: WorkflowExecution[] }>(
         (resolve) => {
@@ -33,9 +39,12 @@ function ExecutionHistory() {
         },
       );
       setExecutions(response.executions || []);
+      setLastRefresh(Date.now());
     } catch (error) {
       console.error("Failed to load executions:", error);
       setExecutions([]);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -54,7 +63,7 @@ function ExecutionHistory() {
     loadWorkflows();
 
     // Set up periodic refresh to get real-time updates
-    const interval = setInterval(loadExecutions, 1000);
+    const interval = setInterval(loadExecutions, 5000); // Reduced frequency to 5 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -105,18 +114,8 @@ function ExecutionHistory() {
     browserAPI.tabs.create({ url: configUrl });
   };
 
-  const getTimeAgo = (timestamp: number): string => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return `${seconds}s ago`;
+  const manualRefresh = () => {
+    loadExecutions();
   };
 
   const getStats = () => {
@@ -139,10 +138,27 @@ function ExecutionHistory() {
     <Stack gap="sm">
       <Group justify="space-between">
         <Title order={4}>Session Activity</Title>
-        <Button size="xs" variant="light" onClick={clearHistory}>
-          Clear
-        </Button>
+        <Group gap="xs">
+          <Button
+            size="xs"
+            variant="light"
+            leftSection={<IconRefresh size={12} />}
+            onClick={manualRefresh}
+            loading={isRefreshing}
+          >
+            Refresh
+          </Button>
+          <Button size="xs" variant="light" onClick={clearHistory}>
+            Clear
+          </Button>
+        </Group>
       </Group>
+
+      {lastRefresh && (
+        <Text size="xs" c="dimmed">
+          Last updated {formatTimeAgo(lastRefresh)}
+        </Text>
+      )}
 
       <Group gap="xs">
         <Badge color="blue" variant="light" size="sm">
@@ -166,7 +182,7 @@ function ExecutionHistory() {
       </Group>
 
       {recentExecutions.length === 0 ? (
-        <Card withBorder>
+        <Card mih={172} withBorder>
           <Text size="sm" c="dimmed" ta="center">
             No workflow executions in this session
           </Text>
@@ -177,7 +193,7 @@ function ExecutionHistory() {
             <Text size="sm" fw={500}>
               Recent Workflows:
             </Text>
-            <ScrollArea h={120}>
+            <ScrollArea h={116}>
               <Stack gap="xs">
                 {recentExecutions.map((execution) => (
                   <Group key={execution.id} justify="space-between" gap="xs">
@@ -186,7 +202,7 @@ function ExecutionHistory() {
                         {getWorkflowName(execution.workflowId)}
                       </Text>
                       <Text size="xs" c="dimmed">
-                        {getTimeAgo(execution.startedAt)}
+                        {formatTimeAgo(execution.startedAt)}
                       </Text>
                     </Stack>
                     <Badge
