@@ -22,12 +22,6 @@ export interface HttpResponse {
 
 export class HttpClientService {
   private static instance: HttpClientService;
-  private isContentScript: boolean;
-
-  private constructor() {
-    // Detect if we're running in a content script context
-    this.isContentScript = typeof window !== "undefined" && !!window.location;
-  }
 
   static getInstance(): HttpClientService {
     if (!HttpClientService.instance) {
