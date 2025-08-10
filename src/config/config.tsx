@@ -6,11 +6,7 @@ import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/code-highlight/styles.css";
 import ConfigApp from "./ConfigApp";
-import { initializeActions } from "../services/actionInitializer";
 import NotificationDispatcher from "../components/NotificationDispatcher";
-
-// Initialize actions for the config/designer interface
-initializeActions();
 
 const container = document.getElementById("root");
 if (container) {
