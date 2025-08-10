@@ -14,7 +14,11 @@ interface HttpRequestActionConfig {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   headers?: string;
   body?: string;
-  contentType: "application/json" | "application/x-www-form-urlencoded" | "text/plain" | "custom";
+  contentType:
+    | "application/json"
+    | "application/x-www-form-urlencoded"
+    | "text/plain"
+    | "custom";
   customContentType?: string;
   credentialId?: string;
   timeout?: number;
@@ -61,7 +65,8 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
           type: "text",
           label: "URL",
           placeholder: "https://api.example.com/data",
-          description: "Target URL for the HTTP request. Variables like {{node-id}} can be used",
+          description:
+            "Target URL for the HTTP request. Variables like {{node-id}} can be used",
           required: true,
         },
         contentType: {
@@ -69,7 +74,10 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
           label: "Content Type",
           options: [
             { label: "JSON (application/json)", value: "application/json" },
-            { label: "Form Data (application/x-www-form-urlencoded)", value: "application/x-www-form-urlencoded" },
+            {
+              label: "Form Data (application/x-www-form-urlencoded)",
+              value: "application/x-www-form-urlencoded",
+            },
             { label: "Plain Text (text/plain)", value: "text/plain" },
             { label: "Custom", value: "custom" },
           ],
@@ -93,16 +101,20 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
         headers: {
           type: "code",
           label: "Headers (JSON)",
-          placeholder: '{\n  "Authorization": "Bearer {{auth-token}}",\n  "X-Custom-Header": "value"\n}',
-          description: "Additional HTTP headers as JSON object. Variables like {{node-id}} can be used",
+          placeholder:
+            '{\n  "Authorization": "Bearer {{auth-token}}",\n  "X-Custom-Header": "value"\n}',
+          description:
+            "Additional HTTP headers as JSON object. Variables like {{node-id}} can be used",
           language: "json",
           height: 150,
         },
         body: {
           type: "code",
           label: "Request Body",
-          placeholder: '{\n  "name": "{{user-input}}",\n  "email": "user@example.com"\n}',
-          description: "Request body content. Variables like {{node-id}} can be used",
+          placeholder:
+            '{\n  "name": "{{user-input}}",\n  "email": "user@example.com"\n}',
+          description:
+            "Request body content. Variables like {{node-id}} can be used",
           language: "json",
           height: 200,
           showWhen: {
@@ -139,28 +151,30 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
 
   private parseHeaders(headersJson: string): Record<string, string> {
     if (!headersJson?.trim()) return {};
-    
+
     try {
       const parsed = JSON.parse(headersJson);
-      if (typeof parsed === 'object' && parsed !== null) {
+      if (typeof parsed === "object" && parsed !== null) {
         return parsed;
       }
-      throw new Error('Headers must be a JSON object');
+      throw new Error("Headers must be a JSON object");
     } catch (error) {
       throw new Error(`Invalid headers JSON: ${error}`);
     }
   }
 
-  private async getCredentialHeaders(credentialId: string): Promise<Record<string, string>> {
+  private async getCredentialHeaders(
+    credentialId: string,
+  ): Promise<Record<string, string>> {
     if (!credentialId) return {};
-    
+
     try {
       // Get the credential from storage
       const storageManager = StorageManager.getInstance();
       const credentialRegistry = CredentialRegistry.getInstance();
       const credentials = await storageManager.getCredentials();
       const credential = credentials.find((c) => c.id === credentialId);
-      
+
       if (!credential) {
         throw new Error(`Credential ${credentialId} not found`);
       }
@@ -180,7 +194,7 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
 
       return auth?.headers || {};
     } catch (error) {
-      console.warn('Failed to load credential headers:', error);
+      console.warn("Failed to load credential headers:", error);
       return {};
     }
   }
@@ -209,13 +223,17 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
     try {
       // Interpolate variables in URL
       const interpolatedUrl = context.interpolateVariables(url);
-      
+
       // Parse and interpolate headers
-      const customHeaders = headersJson ? this.parseHeaders(context.interpolateVariables(headersJson)) : {};
-      
+      const customHeaders = headersJson
+        ? this.parseHeaders(context.interpolateVariables(headersJson))
+        : {};
+
       // Get credential headers
-      const credentialHeaders = await this.getCredentialHeaders(credentialId || "");
-      
+      const credentialHeaders = await this.getCredentialHeaders(
+        credentialId || "",
+      );
+
       // Combine headers
       const allHeaders: Record<string, string> = {
         ...credentialHeaders,
@@ -224,7 +242,8 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
 
       // Set content type for requests with body
       if (["POST", "PUT", "PATCH"].includes(method)) {
-        const finalContentType = contentType === "custom" ? customContentType : contentType;
+        const finalContentType =
+          contentType === "custom" ? customContentType : contentType;
         if (finalContentType) {
           allHeaders["Content-Type"] = finalContentType;
         }
@@ -234,7 +253,7 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
       let requestBody: string | undefined;
       if (body && ["POST", "PUT", "PATCH"].includes(method)) {
         requestBody = context.interpolateVariables(body);
-        
+
         // Auto-format for form data
         if (contentType === "application/x-www-form-urlencoded") {
           try {
@@ -274,22 +293,20 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
       // Store the response
       context.setOutput(nodeId, httpResponse);
 
-      // Show success notification
-      NotificationService.showNotification({
-        title: `HTTP ${method} completed`,
-        message: `Status: ${response.status} ${response.statusText}`,
-        timeout: 3000,
-      });
-
       console.debug(`HTTP ${method} request completed:`, {
         url: interpolatedUrl,
         status: response.status,
         headers: response.headers,
       });
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      NotificationService.showErrorNotification({
+        title: "HTTP Request Failed",
+        timeout: 3000,
+        message: `HTTP request failed: ${errorMessage}`,
+      });
+
       // Handle specific error types
       if (errorMessage.includes("Network error")) {
         throw new Error(`Network error: Unable to reach ${url}`);

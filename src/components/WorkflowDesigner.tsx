@@ -46,7 +46,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     workflow?.description || "",
   );
   const [workflowUrlPattern, setWorkflowUrlPattern] = useState(
-    workflow?.urlPattern || "https://*/*",
+    workflow?.urlPattern || "https://*",
   );
   const [workflowEnabled, setWorkflowEnabled] = useState(
     workflow?.enabled ?? true,

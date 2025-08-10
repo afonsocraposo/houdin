@@ -36,10 +36,10 @@ class ExecutionContext implements WorkflowExecutionContext {
       if (output === undefined) return match; // Keep original if not found
 
       if (property && typeof output === "object" && output !== null) {
-        return String(output[property] || match);
+        return JSON.stringify(output[property] || match);
       }
 
-      return String(output);
+      return JSON.stringify(output);
     });
   }
 }
