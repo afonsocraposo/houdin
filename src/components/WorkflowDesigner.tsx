@@ -15,6 +15,7 @@ import {
   Text,
   Loader,
 } from "@mantine/core";
+import { useDebouncedCallback } from "@mantine/hooks";
 import {
   IconDeviceFloppy,
   IconArrowLeft,
@@ -48,6 +49,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   onCancel,
 }) => {
   const navigate = useNavigate();
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(
+    null,
+  );
+  const [isDraft, setIsDraft] = useState(!workflow); // Track if this is a new workflow draft
   const [workflowName, setWorkflowName] = useState(workflow?.name || "");
   const [workflowDescription, setWorkflowDescription] = useState(
     workflow?.description || "",
@@ -71,8 +76,71 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   >("idle");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
-  const autoSaveTimeoutRef = useRef<number | null>(null);
   const lastSavedWorkflowRef = useRef<string>("");
+
+  // Draft storage key
+  const DRAFT_STORAGE_KEY = "workflow-draft";
+
+  // Load draft from session storage if no workflow is provided
+  useEffect(() => {
+    if (!workflow) {
+      const storedDraft = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+      if (storedDraft) {
+        try {
+          const draft = JSON.parse(storedDraft);
+          setWorkflowName(draft.name || "");
+          setWorkflowDescription(draft.description || "");
+          setWorkflowUrlPattern(draft.urlPattern || "https://*");
+          setWorkflowEnabled(draft.enabled ?? true);
+          setNodes(draft.nodes || []);
+          setConnections(draft.connections || []);
+          console.debug("Loaded workflow draft from session storage");
+        } catch (error) {
+          console.warn(
+            "Failed to load workflow draft from session storage:",
+            error,
+          );
+          sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+        }
+      }
+    }
+  }, [workflow]);
+
+  // Save draft to session storage
+  const saveDraft = useCallback(() => {
+    if (!isDraft) return; // Only save drafts for new workflows
+
+    const draftWorkflow = {
+      name: workflowName,
+      description: workflowDescription,
+      urlPattern: workflowUrlPattern,
+      nodes,
+      connections,
+      enabled: workflowEnabled,
+      lastUpdated: Date.now(),
+    };
+
+    try {
+      sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftWorkflow));
+      console.debug("Saved workflow draft to session storage");
+    } catch (error) {
+      console.warn("Failed to save workflow draft to session storage:", error);
+    }
+  }, [
+    isDraft,
+    workflowName,
+    workflowDescription,
+    workflowUrlPattern,
+    nodes,
+    connections,
+    workflowEnabled,
+  ]);
+
+  // Clear draft from session storage
+  const clearDraft = useCallback(() => {
+    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+    console.debug("Cleared workflow draft from session storage");
+  }, []);
 
   // Track changes to mark as unsaved
   const markAsChanged = useCallback(() => {
@@ -82,7 +150,22 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
-    if (!workflowName.trim() || !onAutoSave) return;
+    if (!workflowName.trim()) return;
+
+    // For new workflows (drafts), save to session storage instead of creating new workflow
+    if (isDraft) {
+      saveDraft();
+      setAutoSaveStatus("saved");
+      setHasUnsavedChanges(false);
+      setLastAutoSaveTime(Date.now());
+
+      // Reset to idle after 2 seconds
+      setTimeout(() => setAutoSaveStatus("idle"), 2000);
+      return;
+    }
+
+    // For existing workflows, use the normal auto-save callback
+    if (!onAutoSave) return;
 
     const currentWorkflow = {
       id: workflow?.id || `workflow-${Date.now()}`,
@@ -126,39 +209,51 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     workflowEnabled,
     workflow?.id,
     onAutoSave,
+    isDraft,
+    saveDraft,
   ]);
 
-  // Set up auto-save timer
+  // Debounced auto-save function
+  const debouncedAutoSave = useDebouncedCallback(() => {
+    if (!hasUnsavedChanges || (!workflowName.trim() && !isDraft)) {
+      return;
+    }
+    performAutoSave();
+  }, 3000);
+
+  // Trigger auto-save when changes occur
   useEffect(() => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    if (hasUnsavedChanges && workflowName.trim()) {
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        performAutoSave();
-      }, 5000); // Auto-save after 5 seconds of inactivity
-    }
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [hasUnsavedChanges, workflowName, performAutoSave]);
+    debouncedAutoSave();
+  }, [hasUnsavedChanges, workflowName, debouncedAutoSave]);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
     if (workflow) {
+      const isNewWorkflow = currentWorkflowId !== workflow.id;
+
+      setCurrentWorkflowId(workflow.id || null);
+      setIsDraft(false); // If we have a workflow prop, it's not a draft
       setWorkflowName(workflow.name || "");
       setWorkflowDescription(workflow.description || "");
       setWorkflowUrlPattern(workflow.urlPattern || "*://*/*");
       setWorkflowEnabled(workflow.enabled ?? true);
       setNodes(workflow.nodes || []);
       setConnections(workflow.connections || []);
-      setSelectedNode(null); // Reset selected node when workflow changes
+
+      // Only reset selected node when loading a different workflow
+      if (isNewWorkflow) {
+        setSelectedNode(null);
+      } else if (selectedNode) {
+        // If same workflow, try to maintain selected node by finding updated version
+        const updatedSelectedNode = (workflow.nodes || []).find(
+          (n) => n.id === selectedNode.id,
+        );
+        if (updatedSelectedNode) {
+          setSelectedNode(updatedSelectedNode);
+        }
+      }
     }
-  }, [workflow]);
+  }, [workflow, currentWorkflowId, selectedNode]);
 
   const handleNodeUpdate = (updatedNode: WorkflowNode) => {
     const updatedNodes = nodes.map((n) =>
@@ -195,6 +290,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     setHasUnsavedChanges(false);
     setAutoSaveStatus("idle");
     setLastAutoSaveTime(Date.now());
+
+    // If this was a draft, clear it and mark as no longer a draft
+    if (isDraft) {
+      clearDraft();
+      setIsDraft(false);
+      setCurrentWorkflowId(workflowDefinition.id);
+    }
   };
 
   const handleExport = () => {
@@ -234,7 +336,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 <Group gap="xs">
                   <Loader size="xs" />
                   <Text size="sm" c="dimmed">
-                    Saving...
+                    {isDraft ? "Saving draft..." : "Saving..."}
                   </Text>
                 </Group>
               )}
@@ -242,7 +344,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 <Group gap="xs">
                   <IconCheck size={16} color="green" />
                   <Text size="sm" c="green">
-                    Saved
+                    {isDraft ? "Draft saved" : "Saved"}
                   </Text>
                 </Group>
               )}
@@ -250,16 +352,16 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 <Group gap="xs">
                   <IconExclamationMark size={16} color="red" />
                   <Text size="sm" c="red">
-                    Save failed
+                    {isDraft ? "Draft save failed" : "Save failed"}
                   </Text>
                 </Group>
               )}
               {autoSaveStatus === "idle" && lastAutoSaveTime && (
-                <TimeAgoText 
-                  timestamp={lastAutoSaveTime} 
-                  prefix="Auto-saved"
-                  size="sm" 
-                  c="dimmed" 
+                <TimeAgoText
+                  timestamp={lastAutoSaveTime}
+                  prefix={isDraft ? "Draft saved" : "Auto-saved"}
+                  size="sm"
+                  c="dimmed"
                 />
               )}
             </Group>
