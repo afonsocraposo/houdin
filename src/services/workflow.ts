@@ -302,9 +302,6 @@ export class WorkflowExecutor {
             nodeResult,
           );
         }
-
-        // Execute connected actions after completion
-        await this.executeConnectedActionsFromNode(node.id);
       } catch (error) {
         nodeResult = {
           nodeId: node.id,
@@ -314,7 +311,7 @@ export class WorkflowExecutor {
           duration: Date.now() - startTime,
         };
 
-        console.error(`Error executing action ${actionType}:`, error);
+        console.error(`Error executing action ${actionType} for node ${node.id}:`, error);
 
         // Add failed node result to execution tracker
         if (this.currentExecutionId) {
@@ -325,14 +322,25 @@ export class WorkflowExecutor {
         }
 
         NotificationService.showErrorNotification({
-          message: `Error executing ${actionType}: ${error instanceof Error ? error.message : error}`,
+          message: `Error executing action ${actionType} (node: ${node.id}): ${error instanceof Error ? error.message : error}`,
         });
 
         // Throw error to stop workflow execution
         throw error;
       }
+
+      // Execute connected actions after the current action completes successfully
+      // Handle errors from connected actions separately so they don't get attributed to this action
+      try {
+        await this.executeConnectedActionsFromNode(node.id);
+      } catch (error) {
+        // Connected action failed - don't report this as an error from the current action
+        // The error will already be reported by the failing connected action
+        console.debug(`Connected action failed after ${node.id} completed successfully`);
+        throw error; // Re-throw to stop workflow execution
+      }
     } else {
-      const errorMsg = `Unknown action type: ${actionType}`;
+      const errorMsg = `Unknown action type: ${actionType} for node: ${node.id}`;
       nodeResult = {
         nodeId: node.id,
         status: "error",
@@ -341,7 +349,7 @@ export class WorkflowExecutor {
         duration: Date.now() - startTime,
       };
 
-      console.error(errorMsg);
+      console.error(`Unknown action type: ${actionType} for node: ${node.id}`);
 
       // Add failed node result to execution tracker
       if (this.currentExecutionId) {
@@ -352,7 +360,7 @@ export class WorkflowExecutor {
       }
 
       NotificationService.showErrorNotification({
-        message: errorMsg,
+        message: `Error: No action type found for node ${node.id}`,
       });
 
       // Throw error to stop workflow execution
