@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Container,
   Title,
@@ -38,14 +38,12 @@ import {
 interface WorkflowDesignerProps {
   workflow?: WorkflowDefinition;
   onSave: (workflow: WorkflowDefinition) => void;
-  onAutoSave?: (workflow: WorkflowDefinition) => void;
   onCancel: () => void;
 }
 
 export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   workflow,
   onSave,
-  onAutoSave,
   onCancel,
 }) => {
   const navigate = useNavigate();
@@ -76,7 +74,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   >("idle");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
-  const lastSavedWorkflowRef = useRef<string>("");
 
   // Draft storage key
   const DRAFT_STORAGE_KEY = "workflow-draft";
@@ -150,81 +147,36 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
-    if (!workflowName.trim()) return;
-
-    // For new workflows (drafts), save to session storage instead of creating new workflow
-    if (isDraft) {
-      saveDraft();
-      setAutoSaveStatus("saved");
-      setHasUnsavedChanges(false);
-      setLastAutoSaveTime(Date.now());
-
-      // Reset to idle after 2 seconds
-      setTimeout(() => setAutoSaveStatus("idle"), 2000);
+    // Only auto-save for new workflows (drafts), not existing workflows
+    if (!isDraft) {
       return;
     }
 
-    // For existing workflows, use the normal auto-save callback
-    if (!onAutoSave) return;
+    // For new workflows (drafts), save to session storage
+    saveDraft();
+    setAutoSaveStatus("saved");
+    setHasUnsavedChanges(false);
+    setLastAutoSaveTime(Date.now());
 
-    const currentWorkflow = {
-      id: workflow?.id || `workflow-${Date.now()}`,
-      name: workflowName,
-      description: workflowDescription,
-      urlPattern: workflowUrlPattern,
-      nodes,
-      connections,
-      enabled: workflowEnabled,
-      lastUpdated: Date.now(),
-    };
-
-    const currentWorkflowJson = JSON.stringify(currentWorkflow);
-
-    // Only auto-save if there are actual changes
-    if (currentWorkflowJson === lastSavedWorkflowRef.current) {
-      return;
-    }
-
-    try {
-      setAutoSaveStatus("saving");
-      onAutoSave(currentWorkflow);
-      setAutoSaveStatus("saved");
-      setHasUnsavedChanges(false);
-      setLastAutoSaveTime(Date.now());
-      lastSavedWorkflowRef.current = currentWorkflowJson;
-
-      // Reset to idle after 2 seconds
-      setTimeout(() => setAutoSaveStatus("idle"), 2000);
-    } catch (error) {
-      console.error("Auto-save failed:", error);
-      setAutoSaveStatus("error");
-      setTimeout(() => setAutoSaveStatus("idle"), 3000);
-    }
-  }, [
-    workflowName,
-    workflowDescription,
-    workflowUrlPattern,
-    nodes,
-    connections,
-    workflowEnabled,
-    workflow?.id,
-    onAutoSave,
-    isDraft,
-    saveDraft,
-  ]);
+    // Reset to idle after 2 seconds
+    setTimeout(() => setAutoSaveStatus("idle"), 2000);
+  }, [isDraft, saveDraft]);
 
   // Debounced auto-save function
   const debouncedAutoSave = useDebouncedCallback(() => {
-    if (!hasUnsavedChanges || (!workflowName.trim() && !isDraft)) {
+    // Only auto-save for new workflows (drafts)
+    if (!hasUnsavedChanges || !isDraft) {
       return;
     }
     performAutoSave();
   }, 3000);
 
-  // Trigger auto-save when changes occur
+  // Trigger auto-save when changes occur (only for new workflows)
   useEffect(() => {
-    debouncedAutoSave();
-  }, [hasUnsavedChanges, workflowName, debouncedAutoSave]);
+    if (isDraft) {
+      debouncedAutoSave();
+    }
+  }, [hasUnsavedChanges, workflowName, debouncedAutoSave, isDraft]);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {

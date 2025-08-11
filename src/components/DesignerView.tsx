@@ -39,26 +39,6 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     }
   }, [workflowId, workflows]);
 
-  const handleWorkflowAutoSave = async (workflow: WorkflowDefinition) => {
-    try {
-      const updatedWorkflows = editingWorkflow
-        ? workflows.map((w) => (w.id === workflow.id ? workflow : w))
-        : [...workflows, workflow];
-
-      // Use silent save to avoid triggering workflow restart
-      await storageManager.saveWorkflowsSilent(updatedWorkflows);
-      setWorkflows(updatedWorkflows);
-      
-      // Update editing workflow if it's a new workflow
-      if (!editingWorkflow) {
-        setEditingWorkflow(workflow);
-      }
-    } catch (error) {
-      console.error("Failed to auto-save workflow:", error);
-      throw error; // Re-throw to let WorkflowDesigner handle the error
-    }
-  };
-
   const handleWorkflowSave = async (workflow: WorkflowDefinition) => {
     try {
       const updatedWorkflows = editingWorkflow
@@ -90,7 +70,6 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     <WorkflowDesigner
       workflow={editingWorkflow || undefined}
       onSave={handleWorkflowSave}
-      onAutoSave={handleWorkflowAutoSave}
       onCancel={handleCancel}
     />
   );
