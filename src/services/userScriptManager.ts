@@ -35,10 +35,30 @@ export class UserScriptManager {
         request.contextData,
       );
 
-      // Execute the script using Chrome's userScripts API
+      // Check if userScripts.execute is available (Chrome/Chromium-based browsers)
+      if (chrome.userScripts && typeof chrome.userScripts.execute === 'function') {
+        return await this.executeWithUserScripts(wrappedScript, request.tabId);
+      } else {
+        // Fallback for Firefox and other browsers
+        return await this.executeWithFallback(wrappedScript, request.tabId, request.nodeId);
+      }
+    } catch (error) {
+      console.error("Failed to execute userScript:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  private async executeWithUserScripts(
+    wrappedScript: string,
+    tabId: number,
+  ): Promise<UserScriptExecuteResponse> {
+    try {
       const results = await chrome.userScripts.execute({
         target: {
-          tabId: request.tabId,
+          tabId: tabId,
           allFrames: false, // Execute only in main frame
         },
         js: [
@@ -73,12 +93,81 @@ export class UserScriptManager {
         };
       }
     } catch (error) {
-      console.error("Failed to execute userScript:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      console.error("UserScripts.execute failed:", error);
+      throw error;
     }
+  }
+
+  private async executeWithFallback(
+    wrappedScript: string,
+    tabId: number,
+    nodeId: string,
+  ): Promise<UserScriptExecuteResponse> {
+    return new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        resolve({
+          success: false,
+          error: "Script execution timeout",
+        });
+      }, 5000); // 5 second timeout
+
+      const messageListener = (message: any, sender: chrome.runtime.MessageSender) => {
+        if (
+          message.type === "workflow-script-response" &&
+          message.nodeId === nodeId &&
+          sender.tab?.id === tabId
+        ) {
+          cleanup();
+          if (message.error) {
+            resolve({
+              success: false,
+              error: message.error,
+            });
+          } else {
+            resolve({
+              success: true,
+              result: message.result,
+            });
+          }
+        }
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        chrome.runtime.onMessage.removeListener(messageListener);
+      };
+
+      chrome.runtime.onMessage.addListener(messageListener);
+
+      // Create script that communicates via chrome.runtime.sendMessage
+      const fallbackScript = this.createFallbackScript(wrappedScript, nodeId);
+
+      // Execute script using chrome.scripting.executeScript (Manifest V3)
+      if (chrome.scripting && chrome.scripting.executeScript) {
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          world: "MAIN",
+          args: [fallbackScript],
+          func: (script: string) => {
+            eval(script);
+          },
+        }).catch((error) => {
+          cleanup();
+          resolve({
+            success: false,
+            error: `Script injection failed: ${error.message}`,
+          });
+        });
+      } else {
+        // If chrome.scripting is not available, fall back to code injection
+        cleanup();
+        resolve({
+          success: false,
+          error: "Script injection API not available in this browser",
+        });
+      }
+    });
   }
 
   private createWrappedScript(
@@ -148,6 +237,31 @@ export class UserScriptManager {
           }));
         }
       })();
+    `;
+  }
+
+  private createFallbackScript(wrappedScript: string, nodeId: string): string {
+    return `
+      ${wrappedScript}
+      
+      // Override the Return function to use chrome.runtime.sendMessage
+      window.Return = function(data) {
+        chrome.runtime.sendMessage({
+          type: 'workflow-script-response',
+          nodeId: '${nodeId}',
+          result: data
+        });
+      };
+      
+      // Override the error handling to use chrome.runtime.sendMessage
+      window.addEventListener('workflow-script-response', function(event) {
+        chrome.runtime.sendMessage({
+          type: 'workflow-script-response',
+          nodeId: event.detail.nodeId,
+          result: event.detail.result,
+          error: event.detail.error
+        });
+      });
     `;
   }
 }

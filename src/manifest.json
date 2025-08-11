@@ -13,7 +13,8 @@
     "tabs",
     "webNavigation",
     "webRequest",
-    "userScripts"
+    "userScripts",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
