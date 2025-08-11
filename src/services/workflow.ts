@@ -37,7 +37,7 @@ class ExecutionContext implements WorkflowExecutionContext {
 
       let result = output;
       if (property && typeof output === "object" && output !== null) {
-        return (result = output[property]);
+        result = output[property];
       }
 
       if (result && typeof result === "object") {
