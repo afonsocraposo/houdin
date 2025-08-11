@@ -1,6 +1,6 @@
 {
   "name": "changeme",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Browser automation made simple. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
