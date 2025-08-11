@@ -1,4 +1,5 @@
 import { WorkflowExecution, NodeExecutionResult } from "../types/workflow";
+import { HttpListenerWebRequest } from "../services/httpListenerWebRequest";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -42,8 +43,25 @@ class BackgroundExecutionTracker {
 
 const backgroundTracker = new BackgroundExecutionTracker();
 
+let httpListener: HttpListenerWebRequest | null = null;
+if (runtime?.webRequest?.onBeforeRequest) {
+  try {
+    httpListener = HttpListenerWebRequest.getInstance();
+    console.debug(
+      "Background: HttpListenerWebRequest initialized successfully with direct chrome API",
+    );
+  } catch (error) {
+    console.error(
+      "Background: Failed to initialize HttpListenerWebRequest:",
+      error,
+    );
+  }
+} else {
+  console.error("Background: chrome.webRequest.onBeforeRequest not available");
+}
+
 runtime.runtime.onMessage.addListener(
-  (message: any, _sender: any, sendResponse: (response: any) => void) => {
+  (message: any, sender: any, sendResponse: (response: any) => void) => {
     if (message.type === "EXECUTION_STARTED") {
       // Track workflow execution
       console.debug("Background: Execution started", message.data);
@@ -72,6 +90,45 @@ runtime.runtime.onMessage.addListener(
       // Clear all executions
       console.debug("Background: Clearing executions");
       backgroundTracker.clearExecutions();
+    } else if (message.type === "REGISTER_HTTP_TRIGGER") {
+      // Register HTTP trigger with webRequest API
+      console.debug("Background: Registering HTTP trigger", message);
+
+      if (!httpListener) {
+        console.error(
+          "Background: Cannot register HTTP trigger - httpListener not available",
+        );
+        return;
+      }
+
+      const triggerCallback = async (data: any) => {
+        // Send trigger event back to content script
+        if (sender.tab?.id) {
+          runtime.tabs.sendMessage(sender.tab.id, {
+            type: "HTTP_TRIGGER_FIRED",
+            workflowId: message.workflowId,
+            triggerNodeId: message.triggerNodeId,
+            data,
+          });
+        }
+      };
+
+      httpListener.registerTrigger(
+        message.workflowId,
+        message.triggerNodeId,
+        message.urlPattern,
+        message.method,
+        triggerCallback,
+      );
+    } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
+      // Unregister HTTP trigger
+      console.debug("Background: Unregistering HTTP trigger", message);
+      if (httpListener) {
+        httpListener.unregisterTrigger(
+          message.workflowId,
+          message.triggerNodeId,
+        );
+      }
     }
   },
 );

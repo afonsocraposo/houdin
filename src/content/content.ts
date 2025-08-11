@@ -1,5 +1,4 @@
 import { ContentInjector } from "../services/injector";
-import { HttpListenerServiceV3 } from "../services/httpListenerV3";
 
 console.debug("Content script loaded");
 
@@ -10,8 +9,6 @@ if ((window as any).changemeExtensionInitialized) {
   (window as any).changemeExtensionInitialized = true;
 
   let contentInjector: ContentInjector;
-  let httpListener: HttpListenerServiceV3;
-  const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
   const initContentScript = () => {
     console.debug("changeme extension content script initialized");
@@ -19,9 +16,6 @@ if ((window as any).changemeExtensionInitialized) {
     // Initialize content injector
     contentInjector = new ContentInjector();
     contentInjector.initialize();
-
-    // Initialize HTTP listener for triggers (now handles direct execution)
-    httpListener = HttpListenerServiceV3.getInstance(runtime);
   };
 
   // Initialize when DOM is ready
@@ -35,9 +29,6 @@ if ((window as any).changemeExtensionInitialized) {
   window.addEventListener("beforeunload", () => {
     if (contentInjector) {
       contentInjector.destroy();
-    }
-    if (httpListener) {
-      httpListener.destroy();
     }
     (window as any).changemeExtensionInitialized = false;
   });

@@ -2,8 +2,8 @@
 
 ## Build Commands
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production (runs TypeScript compilation + Vite build). You should never run this code unless you are asked to do so.
+- `npm run dev` - Start development server. You should never run this command unless you are asked to do so.
+- `npm run build` - Build for production (runs TypeScript compilation + Vite build). You should never run this command unless you are asked to do so.
 - `npm run type-check` - Run TypeScript type checking without emitting files
 - `npm run preview` - Preview production build locally
 
