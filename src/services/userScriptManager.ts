@@ -36,11 +36,18 @@ export class UserScriptManager {
       );
 
       // Check if userScripts.execute is available (Chrome/Chromium-based browsers)
-      if (chrome.userScripts && typeof chrome.userScripts.execute === 'function') {
+      if (
+        chrome.userScripts &&
+        typeof chrome.userScripts.execute === "function"
+      ) {
         return await this.executeWithUserScripts(wrappedScript, request.tabId);
       } else {
         // Fallback for Firefox and other browsers
-        return await this.executeWithFallback(wrappedScript, request.tabId, request.nodeId);
+        return await this.executeWithFallback(
+          wrappedScript,
+          request.tabId,
+          request.nodeId,
+        );
       }
     } catch (error) {
       console.error("Failed to execute userScript:", error);
@@ -112,7 +119,10 @@ export class UserScriptManager {
         });
       }, 5000); // 5 second timeout
 
-      const messageListener = (message: any, sender: chrome.runtime.MessageSender) => {
+      const messageListener = (
+        message: any,
+        sender: chrome.runtime.MessageSender,
+      ) => {
         if (
           message.type === "workflow-script-response" &&
           message.nodeId === nodeId &&
@@ -120,7 +130,84 @@ export class UserScriptManager {
         ) {
           clearTimeout(timeoutId);
           chrome.runtime.onMessage.removeListener(messageListener);
-          
+
+          // Check if the error indicates a CSP violation
+          if (message.error && message.error.includes("CSP_VIOLATION:")) {
+            // Show CSP notification by injecting it into the page
+            chrome.scripting
+              .executeScript({
+                target: { tabId: tabId },
+                world: "ISOLATED",
+                func: () => {
+                  const notificationEvent = new CustomEvent(
+                    "notificationDispatch",
+                    {
+                      detail: {
+                        title: "CSP Restriction",
+                        message:
+                          "Script execution blocked by Content Security Policy. Running in restricted mode with limited page access.",
+                        color: "orange",
+                        autoClose: 3000,
+                      },
+                    },
+                  );
+                  window.dispatchEvent(notificationEvent);
+                },
+              })
+              .catch(() => {}); // Ignore notification errors
+
+            // Create isolated world script and execute it
+            const isolatedScript = this.createIsolatedWorldScript(
+              wrappedScript,
+              nodeId,
+            );
+
+            // Set up new message listener for isolated world execution
+            const isolatedMessageListener = (
+              isolatedMessage: any,
+              isolatedSender: chrome.runtime.MessageSender,
+            ) => {
+              if (
+                isolatedMessage.type === "workflow-script-response" &&
+                isolatedMessage.nodeId === nodeId &&
+                isolatedSender.tab?.id === tabId
+              ) {
+                chrome.runtime.onMessage.removeListener(
+                  isolatedMessageListener,
+                );
+                resolve({
+                  success: true,
+                  result: isolatedMessage.result,
+                });
+              }
+            };
+            chrome.runtime.onMessage.addListener(isolatedMessageListener);
+
+            console.log(
+              "Executing script in ISOLATED world due to CSP violation",
+            );
+            // Execute in ISOLATED world
+            chrome.scripting
+              .executeScript({
+                target: { tabId: tabId },
+                world: "ISOLATED",
+                args: [isolatedScript],
+                func: (script: string) => {
+                  eval(script);
+                },
+              })
+              .catch((isolatedError) => {
+                chrome.runtime.onMessage.removeListener(
+                  isolatedMessageListener,
+                );
+                resolve({
+                  success: false,
+                  error: `Script injection failed in ISOLATED world: ${isolatedError.message}`,
+                });
+              });
+            return;
+          }
+
           if (message.error) {
             resolve({
               success: false,
@@ -137,26 +224,93 @@ export class UserScriptManager {
 
       chrome.runtime.onMessage.addListener(messageListener);
 
-      // Create script that communicates via window.postMessage to content script
-      const fallbackScript = this.createFallbackScript(wrappedScript, nodeId);
-
       // Execute script using chrome.scripting.executeScript (Manifest V3)
-      if (chrome.scripting && chrome.scripting.executeScript) {
-        chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          world: "MAIN",
-          args: [fallbackScript],
-          func: (script: string) => {
-            eval(script);
-          },
-        }).catch((error) => {
-          clearTimeout(timeoutId);
-          chrome.runtime.onMessage.removeListener(messageListener);
-          resolve({
-            success: false,
-            error: `Script injection failed: ${error.message}`,
+      if (
+        chrome.scripting &&
+        typeof chrome.scripting.executeScript === "function"
+      ) {
+        // Create and execute script directly
+        const fallbackScript = this.createFallbackScript(wrappedScript, nodeId);
+
+        chrome.scripting
+          .executeScript({
+            target: { tabId: tabId },
+            world: "MAIN",
+            args: [fallbackScript, nodeId],
+            func: (script: string, nodeId: string) => {
+              try {
+                // Add a small delay to ensure content script is ready
+                setTimeout(() => {
+                  try {
+                    eval(script);
+                  } catch (evalError) {
+                    console.error("Script eval error:", evalError);
+                    // Check if this is a CSP error
+                    const errorMessage = String(
+                      evalError &&
+                        typeof evalError === "object" &&
+                        "message" in evalError
+                        ? evalError.message
+                        : evalError?.toString() || "Unknown eval error",
+                    );
+                    if (
+                      errorMessage.includes("Content-Security-Policy") ||
+                      errorMessage.includes("unsafe-eval") ||
+                      errorMessage.includes("script-src") ||
+                      errorMessage.includes("CSP")
+                    ) {
+                      // This is a CSP violation - send special error via postMessage
+                      window.postMessage(
+                        {
+                          type: "workflow-script-response",
+                          nodeId: nodeId,
+                          result: null,
+                          error: "CSP_VIOLATION: " + errorMessage,
+                        },
+                        "*",
+                      );
+                    } else {
+                      // Regular error
+                      window.postMessage(
+                        {
+                          type: "workflow-script-response",
+                          nodeId: nodeId,
+                          result: null,
+                          error: errorMessage || "Unknown eval error",
+                        },
+                        "*",
+                      );
+                    }
+                  }
+                }, 10);
+              } catch (outerError) {
+                console.error("Outer script error:", outerError);
+                const errorMsg =
+                  outerError &&
+                  typeof outerError === "object" &&
+                  "message" in outerError
+                    ? outerError.message
+                    : outerError?.toString() || "Unknown error";
+                window.postMessage(
+                  {
+                    type: "workflow-script-response",
+                    nodeId: nodeId,
+                    result: null,
+                    error: "Script injection error: " + errorMsg,
+                  },
+                  "*",
+                );
+              }
+            },
+          })
+          .catch((error) => {
+            clearTimeout(timeoutId);
+            chrome.runtime.onMessage.removeListener(messageListener);
+            resolve({
+              success: false,
+              error: `Script injection failed: ${error.message}`,
+            });
           });
-        });
       } else {
         // If chrome.scripting is not available, fall back to code injection
         clearTimeout(timeoutId);
@@ -167,6 +321,90 @@ export class UserScriptManager {
         });
       }
     });
+  }
+
+  private createIsolatedWorldScript(
+    wrappedScript: string,
+    nodeId: string,
+  ): string {
+    // Extract user script and context from wrapped script
+    const contextData = this.getContextDataFromScript(wrappedScript);
+    const userScript = this.extractUserScriptFromWrapped(wrappedScript);
+
+    return `
+      (function() {
+        try {
+          // Note: In ISOLATED world, we have limited access to page DOM and variables
+          // but we have access to chrome extension APIs
+
+          // Simulate workflow context (limited in ISOLATED world)
+          const WorkflowContext = ${JSON.stringify(contextData)};
+
+          // Helper function to get output from another node (limited functionality)
+          const Get = function(nodeId) {
+            return WorkflowContext.outputs[nodeId];
+          };
+
+          // Helper function to interpolate variables (limited functionality)
+          const interpolate = function(text) {
+            if (!text) return text;
+            return text.replace(/\\{\\{([^}]+)\\}\\}/g, function(match, expression) {
+              const parts = expression.trim().split('.');
+              const nodeId = parts[0];
+              const property = parts[1];
+
+              const output = WorkflowContext.outputs[nodeId];
+              if (output === undefined) return match;
+
+              if (property && typeof output === 'object' && output !== null) {
+                return String(output[property] || match);
+              }
+
+              return String(output);
+            });
+          };
+
+          let resultReturned = false;
+
+          // Helper function for scripts to send data back using chrome.runtime.sendMessage
+          const Return = function(data) {
+            if (!resultReturned) {
+              resultReturned = true;
+              chrome.runtime.sendMessage({
+                type: 'workflow-script-response',
+                nodeId: '${nodeId}',
+                result: data
+              });
+            }
+          };
+
+          // Set up a timeout to auto-return undefined if Return() is not called
+          setTimeout(() => {
+            if (!resultReturned) {
+              resultReturned = true;
+              chrome.runtime.sendMessage({
+                type: 'workflow-script-response',
+                nodeId: '${nodeId}',
+                result: undefined
+              });
+            }
+          }, 100);
+
+          // Execute the user script with limited context
+          // Note: Some page-specific functionality may not work in ISOLATED world
+          ${userScript}
+
+        } catch (error) {
+          console.error('Custom script execution error (ISOLATED world):', error);
+          chrome.runtime.sendMessage({
+            type: 'workflow-script-response',
+            nodeId: '${nodeId}',
+            result: null,
+            error: error.message + ' (Limited functionality in CSP-restricted mode)'
+          });
+        }
+      })();
+    `;
   }
 
   private createWrappedScript(
@@ -297,7 +535,27 @@ export class UserScriptManager {
           }, 100);
 
           // Execute the user script
-          ${this.extractUserScriptFromWrapped(wrappedScript)}
+          try {
+            ${this.extractUserScriptFromWrapped(wrappedScript)}
+          } catch (evalError) {
+            // Check if this is a CSP error
+            const errorMessage = evalError?.message || evalError?.toString() || '';
+            if (errorMessage.includes('Content-Security-Policy') ||
+                errorMessage.includes('unsafe-eval') ||
+                errorMessage.includes('script-src') ||
+                errorMessage.includes('CSP')) {
+              // This is a CSP violation - send special error
+              window.postMessage({
+                type: 'workflow-script-response',
+                nodeId: '${nodeId}',
+                result: null,
+                error: 'CSP_VIOLATION: ' + errorMessage
+              }, '*');
+              return; // Stop execution here
+            }
+            // Regular error - re-throw to be caught by outer catch
+            throw evalError;
+          }
 
         } catch (error) {
           console.error('Custom script execution error:', error);
@@ -319,31 +577,31 @@ export class UserScriptManager {
       try {
         return JSON.parse(match[1]);
       } catch (e) {
-        return { outputs: {}, workflowId: '' };
+        return { outputs: {}, workflowId: "" };
       }
     }
-    return { outputs: {}, workflowId: '' };
+    return { outputs: {}, workflowId: "" };
   }
 
   private extractUserScriptFromWrapped(wrappedScript: string): string {
     // Extract the user script from the wrapped script
-    const lines = wrappedScript.split('\n');
+    const lines = wrappedScript.split("\n");
     let extracting = false;
-    let userScript = '';
-    
+    let userScript = "";
+
     for (const line of lines) {
-      if (line.trim().includes('// Execute the user script')) {
+      if (line.trim().includes("// Execute the user script")) {
         extracting = true;
         continue;
       }
-      if (extracting && line.trim().includes('} catch (error)')) {
+      if (extracting && line.trim().includes("} catch (error)")) {
         break;
       }
       if (extracting) {
-        userScript += line + '\n';
+        userScript += line + "\n";
       }
     }
-    
+
     return userScript.trim();
   }
 }
