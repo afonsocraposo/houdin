@@ -66,6 +66,11 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     workflow?.connections || [],
   );
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
+  
+  // Wrapper function to handle node selection
+  const handleNodeSelect = useCallback((node: WorkflowNode | null) => {
+    setSelectedNode(node);
+  }, []);
   const [exportModalOpened, setExportModalOpened] = useState(false);
 
   // Auto-save state
@@ -183,29 +188,37 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     if (workflow) {
       const isNewWorkflow = currentWorkflowId !== workflow.id;
 
-      setCurrentWorkflowId(workflow.id || null);
-      setIsDraft(false); // If we have a workflow prop, it's not a draft
-      setWorkflowName(workflow.name || "");
-      setWorkflowDescription(workflow.description || "");
-      setWorkflowUrlPattern(workflow.urlPattern || "*://*/*");
-      setWorkflowEnabled(workflow.enabled ?? true);
-      setNodes(workflow.nodes || []);
-      setConnections(workflow.connections || []);
-
-      // Only reset selected node when loading a different workflow
+      // Only update nodes if this is actually a new/different workflow
+      // Don't reset nodes when just re-rendering the same workflow
       if (isNewWorkflow) {
+        setCurrentWorkflowId(workflow.id || null);
+        setIsDraft(false); // If we have a workflow prop, it's not a draft
+        setWorkflowName(workflow.name || "");
+        setWorkflowDescription(workflow.description || "");
+        setWorkflowUrlPattern(workflow.urlPattern || "*://*/*");
+        setWorkflowEnabled(workflow.enabled ?? true);
+        setNodes(workflow.nodes || []);
+        setConnections(workflow.connections || []);
         setSelectedNode(null);
-      } else if (selectedNode) {
-        // If same workflow, try to maintain selected node by finding updated version
-        const updatedSelectedNode = (workflow.nodes || []).find(
-          (n) => n.id === selectedNode.id,
-        );
-        if (updatedSelectedNode) {
-          setSelectedNode(updatedSelectedNode);
+      } else {
+        // Same workflow - only update metadata, don't reset nodes/connections
+        setWorkflowName(workflow.name || "");
+        setWorkflowDescription(workflow.description || "");
+        setWorkflowUrlPattern(workflow.urlPattern || "*://*/*");
+        setWorkflowEnabled(workflow.enabled ?? true);
+        
+        // Try to maintain selected node by finding updated version
+        if (selectedNode) {
+          const updatedSelectedNode = (workflow.nodes || []).find(
+            (n) => n.id === selectedNode.id,
+          );
+          if (updatedSelectedNode) {
+            setSelectedNode(updatedSelectedNode);
+          }
         }
       }
     }
-  }, [workflow, currentWorkflowId, selectedNode]);
+  }, [workflow, currentWorkflowId]); // Removed selectedNode and nodes from dependencies
 
   const handleNodeUpdate = (updatedNode: WorkflowNode) => {
     const updatedNodes = nodes.map((n) =>
@@ -424,7 +437,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               markAsChanged();
             }}
             selectedNode={selectedNode}
-            onNodeSelect={setSelectedNode}
+            onNodeSelect={handleNodeSelect}
           />
           {/* Drawer  */}
           <Transition

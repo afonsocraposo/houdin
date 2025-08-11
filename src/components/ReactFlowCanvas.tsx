@@ -328,18 +328,28 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   React.useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [workflowNodes, setNodes, selectedNode]); // Update when nodes or selection changes
+  }, [workflowNodes, setNodes]); // Removed selectedNode from dependencies to prevent re-render cycles
+
+  // Handle selection changes separately to avoid re-render cycles
+  React.useEffect(() => {
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: selectedNode?.id === node.id,
+      }))
+    );
+  }, [selectedNode, setNodes]);
 
   React.useEffect(() => {
     setEdges(reactFlowEdges);
   }, [workflowConnections, setEdges]); // Update when connections change
 
-  // Handle node position changes
+  // Handle React Flow nodes change
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
       onNodesChangeFlow(changes);
 
-      // Extract position changes and update workflow nodes
+      // Only handle position changes, ignore other React Flow internal changes
       const positionChanges = changes.filter(
         (
           change,
@@ -354,6 +364,8 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           !change.dragging,
       );
 
+      // Only process position changes - don't let React Flow's internal state management
+      // interfere with our workflow node array
       if (positionChanges.length > 0) {
         const updatedNodes = workflowNodes.map((node) => {
           const positionChange = positionChanges.find(
@@ -555,6 +567,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     const updatedNodes = [...workflowNodes, newNode];
     onNodesChange(updatedNodes);
     setShowNodePalette(false);
+    
+    // Select the new node immediately after creation
+    onNodeSelect(newNode);
 
     // Pan to include the new node in view while preserving zoom level
     setTimeout(() => {
