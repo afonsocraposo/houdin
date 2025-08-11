@@ -39,7 +39,6 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
     label: "HTTP Request",
     icon: "🌐",
     description: "Make HTTP request to any URL with custom headers and body",
-    completion: true,
   };
 
   private httpClient = HttpClientService.getInstance();

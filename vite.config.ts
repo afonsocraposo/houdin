@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 
 export default defineConfig(({ command }) => {
-  const isDev = command === 'serve';
+  const isDev = command === "serve";
   const port = 5173;
   const isFirefox = process.env.TARGET === "firefox";
 
@@ -23,39 +23,37 @@ export default defineConfig(({ command }) => {
             readFileSync(resolve(__dirname, "package.json"), "utf-8"),
           );
           manifest.version = packageJson.version;
-          
+
           // Firefox uses background.scripts instead of service_worker in MV3
           if (isFirefox) {
             manifest.background = {
               scripts: ["src/background/background.ts"],
-              type: "module"
+              type: "module",
             };
           }
-          
+
           // Add CSP for development to allow Vite HMR (Chrome only)
           if (isDev && !isFirefox) {
             manifest.content_security_policy = {
               extension_pages: `script-src 'self' http://localhost:${port}; object-src 'self'`
             };
           }
-          
+
           return manifest;
         },
         watchFilePaths: ["src", "public", "icons", "manifest.json"],
         additionalInputs: [
-          "src/content/content.ts",
-          "src/content/elementSelector.ts",
           "src/config/index.html",
         ],
       }),
       // Custom plugin to conditionally inject React Refresh script
       {
-        name: 'conditional-react-refresh',
+        name: "conditional-react-refresh",
         transformIndexHtml: {
-          order: 'pre',
+          order: "pre",
           handler(html) {
             // Only inject React Refresh script in development
-            if (command === 'serve') {
+            if (command === "serve") {
               const reactRefreshScript = `    <script type="module">
       import RefreshRuntime from "http://localhost:5173/@react-refresh";
       RefreshRuntime.injectIntoGlobalHook(window);
@@ -63,16 +61,19 @@ export default defineConfig(({ command }) => {
       window.$RefreshSig$ = () => (type) => type;
       window.__vite_plugin_react_preamble_installed__ = true;
     </script>`;
-              
+
               // Inject the script before the closing </head> tag
-              return html.replace('</head>', `${reactRefreshScript}\n  </head>`);
+              return html.replace(
+                "</head>",
+                `${reactRefreshScript}\n  </head>`,
+              );
             } else {
               // In production, return HTML as-is (no script injection)
               return html;
             }
-          }
-        }
-      }
+          },
+        },
+      },
     ],
     build: {
       outDir: "dist",

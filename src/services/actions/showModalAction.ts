@@ -56,6 +56,7 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
       modalContent || "",
     );
 
+    // Show the modal
     ModalService.showModal({
       title: interpolatedTitle,
       content: interpolatedContent,
@@ -64,6 +65,19 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
     context.setOutput(nodeId, {
       title: interpolatedTitle,
       content: interpolatedContent,
+    });
+
+    // Wait for modal to be dismissed before continuing workflow
+    return new Promise<void>((resolve) => {
+      const handleModalDismiss = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        if (customEvent.detail?.type === "modalDismissed") {
+          window.removeEventListener("modalDispatch", handleModalDismiss);
+          resolve();
+        }
+      };
+      
+      window.addEventListener("modalDispatch", handleModalDismiss);
     });
   }
 }

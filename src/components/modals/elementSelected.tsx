@@ -53,7 +53,7 @@ function InfoRow({
     return (
       <Textarea
         label={label}
-        value={value || ""}
+        defaultValue={value || ""}
         rightSection={<CopyToClipboardButton value={value || ""} />}
         autosize
         minRows={2}
@@ -64,7 +64,7 @@ function InfoRow({
   return (
     <TextInput
       label={label}
-      value={value || ""}
+      defaultValue={value || ""}
       rightSection={<CopyToClipboardButton value={value || ""} />}
     />
   );

@@ -17,7 +17,6 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
     label: "Custom Script",
     icon: "⚡",
     description: "Execute custom JavaScript code",
-    completion: true,
   };
 
   getConfigSchema(): ActionConfigSchema {
