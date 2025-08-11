@@ -28,7 +28,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
   readonly metadata: ActionMetadata = {
     type: "inject-component",
     label: "Inject Component",
-    icon: "🔧",
+    icon: "💉",
     description: "Add button, floating action button, input, or text to page",
   };
 
@@ -265,14 +265,22 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
 
     // For interactive components (button, FAB), wait for user interaction
     // For non-interactive components (text), continue immediately
-    if (componentType === "button" || componentType === "floating-action-button") {
+    if (
+      componentType === "button" ||
+      componentType === "floating-action-button"
+    ) {
       // Wait for user interaction before continuing workflow
       return new Promise<void>((resolve) => {
         const handleComponentTrigger = (event: Event) => {
           const customEvent = event as CustomEvent;
-          if (customEvent.detail?.workflowId === workflowId && 
-              customEvent.detail?.nodeId === nodeId) {
-            document.removeEventListener("workflow-component-trigger", handleComponentTrigger);
+          if (
+            customEvent.detail?.workflowId === workflowId &&
+            customEvent.detail?.nodeId === nodeId
+          ) {
+            document.removeEventListener(
+              "workflow-component-trigger",
+              handleComponentTrigger,
+            );
             // Update output with interaction data
             context.setOutput(nodeId, {
               componentType,
@@ -283,11 +291,14 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
             resolve();
           }
         };
-        
-        document.addEventListener("workflow-component-trigger", handleComponentTrigger);
+
+        document.addEventListener(
+          "workflow-component-trigger",
+          handleComponentTrigger,
+        );
       });
     }
-    
+
     // For text and input components, continue immediately
     // (Input components handle their own workflow triggering via ComponentFactory)
   }
