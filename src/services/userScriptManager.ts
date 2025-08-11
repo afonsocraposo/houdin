@@ -255,90 +255,6 @@ export class UserScriptManager {
     });
   }
 
-  private createIsolatedWorldScript(
-    wrappedScript: string,
-    nodeId: string,
-  ): string {
-    // Extract user script and context from wrapped script
-    const contextData = this.getContextDataFromScript(wrappedScript);
-    const userScript = this.extractUserScriptFromWrapped(wrappedScript);
-
-    return `
-      (function() {
-        try {
-          // Note: In ISOLATED world, we have limited access to page DOM and variables
-          // but we have access to chrome extension APIs
-
-          // Simulate workflow context (limited in ISOLATED world)
-          const WorkflowContext = ${JSON.stringify(contextData)};
-
-          // Helper function to get output from another node (limited functionality)
-          const Get = function(nodeId) {
-            return WorkflowContext.outputs[nodeId];
-          };
-
-          // Helper function to interpolate variables (limited functionality)
-          const interpolate = function(text) {
-            if (!text) return text;
-            return text.replace(/\\{\\{([^}]+)\\}\\}/g, function(match, expression) {
-              const parts = expression.trim().split('.');
-              const nodeId = parts[0];
-              const property = parts[1];
-
-              const output = WorkflowContext.outputs[nodeId];
-              if (output === undefined) return match;
-
-              if (property && typeof output === 'object' && output !== null) {
-                return String(output[property] || match);
-              }
-
-              return String(output);
-            });
-          };
-
-          let resultReturned = false;
-
-          // Helper function for scripts to send data back using chrome.runtime.sendMessage
-          const Return = function(data) {
-            if (!resultReturned) {
-              resultReturned = true;
-              chrome.runtime.sendMessage({
-                type: 'workflow-script-response',
-                nodeId: '${nodeId}',
-                result: data
-              });
-            }
-          };
-
-          // Set up a timeout to auto-return undefined if Return() is not called
-          setTimeout(() => {
-            if (!resultReturned) {
-              resultReturned = true;
-              chrome.runtime.sendMessage({
-                type: 'workflow-script-response',
-                nodeId: '${nodeId}',
-                result: undefined
-              });
-            }
-          }, 100);
-
-          // Execute the user script with limited context
-          // Note: Some page-specific functionality may not work in ISOLATED world
-          ${userScript}
-
-        } catch (error) {
-          console.error('Custom script execution error (ISOLATED world):', error);
-          chrome.runtime.sendMessage({
-            type: 'workflow-script-response',
-            nodeId: '${nodeId}',
-            result: null,
-            error: error.message + ' (Limited functionality in CSP-restricted mode)'
-          });
-        }
-      })();
-    `;
-  }
-
   private createWrappedScript(
     userScript: string,
     nodeId: string,
@@ -446,11 +362,17 @@ export class UserScriptManager {
           window.Return = function(data) {
             if (!resultReturned) {
               resultReturned = true;
+              // Send postMessage for content script bridge
               window.postMessage({
                 type: 'workflow-script-response',
                 nodeId: '${nodeId}',
                 result: data
               }, '*');
+              
+              // Also dispatch CustomEvent for direct listeners (like CustomScriptAction)
+              window.dispatchEvent(new CustomEvent('workflow-script-response', {
+                detail: { nodeId: '${nodeId}', result: data }
+              }));
             }
           };
 
@@ -458,11 +380,17 @@ export class UserScriptManager {
           setTimeout(() => {
             if (!resultReturned) {
               resultReturned = true;
+              // Send postMessage for content script bridge
               window.postMessage({
                 type: 'workflow-script-response',
                 nodeId: '${nodeId}',
                 result: undefined
               }, '*');
+              
+              // Also dispatch CustomEvent for direct listeners
+              window.dispatchEvent(new CustomEvent('workflow-script-response', {
+                detail: { nodeId: '${nodeId}', result: undefined }
+              }));
             }
           }, 100);
 
@@ -483,6 +411,11 @@ export class UserScriptManager {
                 result: null,
                 error: 'CSP_VIOLATION: ' + errorMessage
               }, '*');
+              
+              // Also dispatch CustomEvent for direct listeners
+              window.dispatchEvent(new CustomEvent('workflow-script-response', {
+                detail: { nodeId: '${nodeId}', result: null, error: 'CSP_VIOLATION: ' + errorMessage }
+              }));
               return; // Stop execution here
             }
             // Regular error - re-throw to be caught by outer catch
@@ -491,12 +424,18 @@ export class UserScriptManager {
 
         } catch (error) {
           console.error('Custom script execution error:', error);
+          // Send postMessage for content script bridge
           window.postMessage({
             type: 'workflow-script-response',
             nodeId: '${nodeId}',
             result: null,
             error: error.message
           }, '*');
+          
+          // Also dispatch CustomEvent for direct listeners
+          window.dispatchEvent(new CustomEvent('workflow-script-response', {
+            detail: { nodeId: '${nodeId}', result: null, error: error.message }
+          }));
         }
       })();
     `;
