@@ -1,23 +1,7 @@
-import { HttpListenerService } from "../services/httpListener";
-import { StorageManager } from "../services/storage";
 import { WorkflowExecution, NodeExecutionResult } from "../types/workflow";
+import { HttpListenerWebRequest } from "../services/httpListenerWebRequest";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
-
-interface HttpRequest {
-  url: string;
-  method?: string;
-  headers?: Record<string, string>;
-  body?: string;
-}
-
-interface HttpResponse {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  data?: any;
-  error?: string;
-}
 
 // Session-based execution tracking in background script
 class BackgroundExecutionTracker {
@@ -27,7 +11,11 @@ class BackgroundExecutionTracker {
     this.executions.set(execution.id, execution);
   }
 
-  completeExecution(executionId: string, status: "completed" | "failed", completedAt: number): void {
+  completeExecution(
+    executionId: string,
+    status: "completed" | "failed",
+    completedAt: number,
+  ): void {
     const execution = this.executions.get(executionId);
     if (execution) {
       execution.status = status;
@@ -43,8 +31,9 @@ class BackgroundExecutionTracker {
   }
 
   getAllExecutions(): WorkflowExecution[] {
-    return Array.from(this.executions.values())
-      .sort((a, b) => b.startedAt - a.startedAt);
+    return Array.from(this.executions.values()).sort(
+      (a, b) => b.startedAt - a.startedAt,
+    );
   }
 
   clearExecutions(): void {
@@ -54,106 +43,26 @@ class BackgroundExecutionTracker {
 
 const backgroundTracker = new BackgroundExecutionTracker();
 
-// Initialize HTTP listener service
-let httpListener: HttpListenerService;
-
-try {
-  httpListener = HttpListenerService.getInstance(runtime);
-
-  // Set up callback to handle HTTP triggers
-  httpListener.setTriggerCallback((data, triggerNodeId, workflowId) => {
-    // Find the tab that made the request
-    runtime.tabs
-      .sendMessage(data.request.tabId, {
-        type: "HTTP_REQUEST_TRIGGER",
-        data,
-        triggerNodeId,
-        workflowId,
-      })
-      .catch((error: any) => {
-        console.error("Error sending HTTP trigger message:", error);
-      });
-  });
-
-  // Pre-register HTTP triggers for active workflows
-  initializeActiveHttpTriggers();
-} catch (error) {
-  console.error("Failed to initialize HttpListenerService:", error);
-}
-
-async function initializeActiveHttpTriggers(): Promise<void> {
+let httpListener: HttpListenerWebRequest | null = null;
+if (runtime?.webRequest?.onBeforeRequest) {
   try {
-    // Clear existing triggers first
-    if (httpListener) {
-      httpListener.clearAllTriggers();
-    }
-
-    const storageManager = StorageManager.getInstance();
-    const workflows = await storageManager.getWorkflows();
-
-    // Find all enabled workflows with HTTP triggers
-    for (const workflow of workflows) {
-      if (!workflow.enabled) continue;
-
-      const httpTriggerNodes = workflow.nodes.filter(
-        (node) =>
-          node.type === "trigger" && node.data?.triggerType === "http-request",
-      );
-
-      for (const triggerNode of httpTriggerNodes) {
-        const config = triggerNode.data?.config;
-        if (config?.urlPattern) {
-          httpListener.registerTrigger(
-            workflow.id,
-            triggerNode.id,
-            config.urlPattern,
-            config.method || "ANY",
-          );
-        }
-      }
-    }
+    httpListener = HttpListenerWebRequest.getInstance();
+    console.debug(
+      "Background: HttpListenerWebRequest initialized successfully with direct chrome API",
+    );
   } catch (error) {
-    console.error("Error initializing active HTTP triggers:", error);
+    console.error(
+      "Background: Failed to initialize HttpListenerWebRequest:",
+      error,
+    );
   }
+} else {
+  console.error("Background: chrome.webRequest.onBeforeRequest not available");
 }
 
 runtime.runtime.onMessage.addListener(
-  (message: any, _sender: any, sendResponse: (response: any) => void) => {
-    if (message.type === "HTTP_REQUEST") {
-      handleHttpRequest(message.request as HttpRequest)
-        .then((response) => sendResponse({ success: true, response }))
-        .catch((error) =>
-          sendResponse({ success: false, error: error.message }),
-        );
-      return true; // Will respond asynchronously
-    } else if (message.type === "REGISTER_HTTP_TRIGGER") {
-      if (httpListener) {
-        httpListener.registerTrigger(
-          message.workflowId,
-          message.triggerNodeId,
-          message.urlPattern,
-          message.method,
-        );
-      } else {
-        console.error(
-          "HttpListenerService not available for trigger registration",
-        );
-      }
-    } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
-      if (httpListener) {
-        httpListener.unregisterTrigger(
-          message.workflowId,
-          message.triggerNodeId,
-        );
-      } else {
-        console.error(
-          "HttpListenerService not available for trigger unregistration",
-        );
-      }
-    } else if (message.type === "SYNC_HTTP_TRIGGERS") {
-      // Re-sync HTTP triggers for active workflows
-      initializeActiveHttpTriggers();
-    } else if (message.type === "EXECUTION_STARTED") {
+  (message: any, sender: any, sendResponse: (response: any) => void) => {
+    if (message.type === "EXECUTION_STARTED") {
       // Track workflow execution
       console.debug("Background: Execution started", message.data);
       backgroundTracker.startExecution(message.data);
@@ -163,14 +72,14 @@ runtime.runtime.onMessage.addListener(
       backgroundTracker.completeExecution(
         message.data.executionId,
         message.data.status,
-        message.data.completedAt
+        message.data.completedAt,
       );
     } else if (message.type === "NODE_RESULT_ADDED") {
       // Add node result to execution
       console.debug("Background: Node result added", message.data);
       backgroundTracker.addNodeResult(
         message.data.executionId,
-        message.data.nodeResult
+        message.data.nodeResult,
       );
     } else if (message.type === "GET_EXECUTIONS") {
       // Return all executions to popup
@@ -181,63 +90,55 @@ runtime.runtime.onMessage.addListener(
       // Clear all executions
       console.debug("Background: Clearing executions");
       backgroundTracker.clearExecutions();
+    } else if (message.type === "REGISTER_HTTP_TRIGGER") {
+      // Register HTTP trigger with webRequest API
+      console.debug("Background: Registering HTTP trigger", message);
+
+      if (!httpListener) {
+        console.error(
+          "Background: Cannot register HTTP trigger - httpListener not available",
+        );
+        return;
+      }
+
+      const triggerCallback = async (data: any) => {
+        // Send trigger event back to content script
+        if (sender.tab?.id) {
+          runtime.tabs.sendMessage(sender.tab.id, {
+            type: "HTTP_TRIGGER_FIRED",
+            workflowId: message.workflowId,
+            triggerNodeId: message.triggerNodeId,
+            data,
+          });
+        }
+      };
+
+      httpListener.registerTrigger(
+        message.workflowId,
+        message.triggerNodeId,
+        message.urlPattern,
+        message.method,
+        triggerCallback,
+      );
+    } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
+      // Unregister HTTP trigger
+      console.debug("Background: Unregistering HTTP trigger", message);
+      if (httpListener) {
+        httpListener.unregisterTrigger(
+          message.workflowId,
+          message.triggerNodeId,
+        );
+      }
     }
   },
 );
-
-async function handleHttpRequest(request: HttpRequest): Promise<HttpResponse> {
-  try {
-    const fetchOptions: RequestInit = {
-      method: request.method || "GET",
-      headers: request.headers || {},
-    };
-
-    if (
-      request.body &&
-      (request.method === "POST" ||
-        request.method === "PUT" ||
-        request.method === "PATCH")
-    ) {
-      fetchOptions.body = request.body;
-    }
-
-    const response = await fetch(request.url, fetchOptions);
-
-    let data: any;
-    const contentType = response.headers.get("content-type");
-
-    if (contentType?.includes("application/json")) {
-      data = await response.json();
-    } else {
-      data = await response.text();
-    }
-
-    return {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      data,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      status: 0,
-      statusText: "Network Error",
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
 
 runtime.runtime.onInstalled.addListener(() => {
   console.debug("Extension installed");
 });
 
-// For manifest v2, use browserAction instead of action
-if (runtime.browserAction) {
-  runtime.browserAction.onClicked.addListener((_tab: any) => {
-    // Extension icon clicked
-  });
-} else if (runtime.action) {
+// For manifest v3, use action instead of browserAction
+if (runtime.action) {
   runtime.action.onClicked.addListener((_tab: any) => {
     // Extension icon clicked
   });
@@ -252,7 +153,7 @@ runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
   }
 });
 
-// Alternative: Listen for navigation attempts
+// Note: webNavigation API requires additional permission in manifest v3
 if (runtime.webNavigation) {
   runtime.webNavigation.onBeforeNavigate.addListener((details: any) => {
     if (details.url.includes("changeme.config")) {

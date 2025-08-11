@@ -121,7 +121,8 @@ export function validateConfig(
     // Check required properties
     if (
       property.required &&
-      (value === undefined || value === null || value === "")
+      (value === undefined || value === null || value === "") &&
+      !property.defaultValue
     ) {
       errors.push(`${property.label} is required`);
       return;

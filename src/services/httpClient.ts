@@ -20,28 +20,8 @@ export interface HttpResponse {
   url: string;
 }
 
-export interface BackgroundHttpRequest {
-  url: string;
-  method?: string;
-  headers?: Record<string, string>;
-  body?: string;
-}
-
-export interface BackgroundHttpResponse {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  data?: any;
-  error?: string;
-}
-
 export class HttpClientService {
   private static instance: HttpClientService;
-  private runtime: any;
-
-  private constructor() {
-    this.runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
-  }
 
   static getInstance(): HttpClientService {
     if (!HttpClientService.instance) {
@@ -50,44 +30,9 @@ export class HttpClientService {
     return HttpClientService.instance;
   }
 
-  private async makeBackgroundRequest(
-    request: BackgroundHttpRequest,
-  ): Promise<BackgroundHttpResponse> {
-    return new Promise((resolve, reject) => {
-      this.runtime.runtime.sendMessage(
-        { type: "HTTP_REQUEST", request },
-        (response: {
-          success: boolean;
-          response?: BackgroundHttpResponse;
-          error?: string;
-        }) => {
-          if (this.runtime.runtime.lastError) {
-            reject(new Error(this.runtime.runtime.lastError.message));
-            return;
-          }
-
-          if (response.success && response.response) {
-            resolve(response.response);
-          } else {
-            reject(new Error(response.error || "Request failed"));
-          }
-        },
-      );
-    });
-  }
-
-  private createTimeoutController(timeoutMs: number): AbortController {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    controller.signal.addEventListener("abort", () => {
-      clearTimeout(timeoutId);
-    });
-
-    return controller;
-  }
-
-  async request(options: HttpRequestOptions): Promise<HttpResponse> {
+  private async makeDirectRequest(
+    options: HttpRequestOptions,
+  ): Promise<HttpResponse> {
     const {
       url,
       method = "GET",
@@ -101,50 +46,68 @@ export class HttpClientService {
     }
 
     try {
-      // Create timeout controller for the request
-      const controller = this.createTimeoutController(timeout);
+      console.debug("HttpClient: Making direct request to", url);
 
-      // Prepare the background request
-      const backgroundRequest: BackgroundHttpRequest = {
-        url: url.trim(),
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const fetchOptions: RequestInit = {
         method,
-        headers: { ...headers },
+        headers,
         body,
+        signal: controller.signal,
       };
 
-      // Make the request through background script
-      const backgroundResponse = await Promise.race([
-        this.makeBackgroundRequest(backgroundRequest),
-        new Promise<never>((_, reject) => {
-          controller.signal.addEventListener("abort", () => {
-            reject(new Error(`Request timeout after ${timeout}ms`));
-          });
-        }),
-      ]);
+      console.debug("HttpClient: Fetch options", fetchOptions);
 
-      // Convert background response to our HttpResponse format
-      const response: HttpResponse = {
-        ok: backgroundResponse.ok,
-        status: backgroundResponse.status,
-        statusText: backgroundResponse.statusText,
-        headers: {}, // Background script doesn't return headers yet
-        data: backgroundResponse.data,
-        url: backgroundResponse.ok ? url : "",
-      };
+      const response = await fetch(url.trim(), fetchOptions);
+      clearTimeout(timeoutId);
 
-      // Handle error cases
-      if (!response.ok) {
-        const errorMessage =
-          backgroundResponse.error ||
-          `HTTP ${response.status}: ${response.statusText}`;
-        throw new Error(errorMessage);
+      console.debug("HttpClient: Response received", {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+      });
+
+      // Extract response headers
+      const responseHeaders: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+
+      let data: any;
+      const contentType = response.headers.get("content-type");
+
+      if (contentType?.includes("application/json")) {
+        data = await response.json();
+      } else {
+        data = await response.text();
       }
 
-      return response;
+      const httpResponse: HttpResponse = {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+        data,
+        url: response.url,
+      };
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return httpResponse;
     } catch (error) {
-      // Handle specific error types
+      console.error("HttpClient: Direct request failed", {
+        url,
+        method,
+        error: error,
+      });
+
       if (error instanceof Error) {
-        if (error.message.includes("timeout")) {
+        if (error.name === "AbortError") {
           throw new Error(`Request timeout after ${timeout}ms`);
         } else if (error.message.includes("fetch")) {
           throw new Error(`Network error: Unable to reach ${url}`);
@@ -154,6 +117,16 @@ export class HttpClientService {
 
       throw new Error(`HTTP request failed: ${String(error)}`);
     }
+  }
+
+  async request(options: HttpRequestOptions): Promise<HttpResponse> {
+    const { url } = options;
+
+    if (!url?.trim()) {
+      throw new Error("URL is required");
+    }
+
+    return this.makeDirectRequest(options);
   }
 
   async get(

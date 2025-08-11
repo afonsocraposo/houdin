@@ -1,6 +1,6 @@
 {
   "name": "changeme",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "Browser automation made simple. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
@@ -42,6 +42,7 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.7.1",
     "rehype-sanitize": "^6.0.0",
+    "rollbar": "^2.3.8",
     "webextension-polyfill": "^0.12.0"
   }
 }

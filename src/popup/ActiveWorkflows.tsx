@@ -18,10 +18,6 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
 
   useEffect(() => {
     loadData();
-
-    // Set up periodic refresh to get real-time execution updates
-    const interval = setInterval(loadExecutions, 2000);
-    return () => clearInterval(interval);
   }, []);
 
   const loadExecutions = async () => {
@@ -41,12 +37,17 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const storageManager = StorageManager.getInstance();
-      const allWorkflows = await storageManager.getWorkflows();
-      setWorkflows(allWorkflows);
-
-      // Load executions from background script
-      await loadExecutions();
+      
+      // Load workflows and executions in parallel to avoid blocking
+      const [workflows] = await Promise.all([
+        (async () => {
+          const storageManager = StorageManager.getInstance();
+          return await storageManager.getWorkflows();
+        })(),
+        loadExecutions()
+      ]);
+      
+      setWorkflows(workflows);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {

@@ -276,11 +276,8 @@ export class WorkflowExecutor {
           nodeResult,
         );
 
-        // Execute connected actions after completion (for actions that need it)
-        const action = actionRegistry.getAction(actionType);
-        if (action?.metadata.completion) {
-          await this.executeConnectedActionsFromNode(node.id);
-        }
+        // Execute connected actions after completion
+        await this.executeConnectedActionsFromNode(node.id);
       } catch (error) {
         nodeResult = {
           nodeId: node.id,
