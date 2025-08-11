@@ -128,6 +128,7 @@ function ExecutionHistoryPage() {
       case "success":
         return "green";
       case "failed":
+      case "error":
         return "red";
       case "running":
         return "blue";
@@ -364,9 +365,9 @@ function ExecutionHistoryPage() {
                       </Table.Td>
                       <Table.Td>
                         <Stack gap={2}>
-                          <TimeAgoText 
+                          <TimeAgoText
                             timestamp={execution.startedAt}
-                            size="sm" 
+                            size="sm"
                           />
                           <Text size="xs" c="dimmed">
                             {new Date(execution.startedAt).toLocaleDateString()}

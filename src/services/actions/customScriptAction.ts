@@ -4,7 +4,6 @@ import {
   ActionMetadata,
   ActionExecutionContext,
 } from "../../types/actions";
-import { NotificationService } from "../notification";
 
 // Custom Script Action Configuration
 export interface CustomScriptActionConfig {
@@ -45,10 +44,8 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
     const { customScript } = config;
 
     if (!customScript) {
-      NotificationService.showErrorNotification({
-        message: "No script provided",
-      });
-      return;
+      const error = new Error("No script provided");
+      throw error;
     }
 
     try {
@@ -62,12 +59,9 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
       // Store the output in the execution context
       context.setOutput(nodeId, result);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      NotificationService.showErrorNotification({
-        message: `Custom script error: ${errorMessage}`,
-      });
       context.setOutput(nodeId, ""); // Store empty on error
+      // Re-throw the error to stop workflow execution
+      throw error;
     }
   }
 

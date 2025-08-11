@@ -215,11 +215,13 @@ export class WorkflowExecutor {
       (conn) => conn.source === nodeId,
     );
 
+    // Execute actions sequentially to ensure proper error propagation
     for (const connection of connections) {
       const actionNode = this.workflow.nodes.find(
         (n) => n.id === connection.target,
       );
       if (actionNode && actionNode.type === "action") {
+        // This will throw an error if the action fails, stopping the workflow
         await this.executeAction(actionNode);
       }
     }
@@ -232,13 +234,22 @@ export class WorkflowExecutor {
     const actionRegistry = ActionRegistry.getInstance();
 
     if (!actionType) {
-      console.error(
-        "No action type found for node:",
-        node.id,
-        "node.data:",
-        node.data,
-      );
-      return;
+      const errorMsg = `No action type found for node: ${node.id}`;
+      console.error(errorMsg, "node.data:", node.data);
+      
+      const nodeResult: NodeExecutionResult = {
+        nodeId: node.id,
+        status: "error",
+        error: errorMsg,
+        executedAt: Date.now(),
+        duration: 0,
+      };
+      
+      if (this.currentExecutionId) {
+        this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+      }
+      
+      throw new Error(errorMsg);
     }
 
     const startTime = Date.now();
@@ -276,49 +287,59 @@ export class WorkflowExecutor {
           nodeResult,
         );
 
+        // Add successful node result to execution tracker
+        if (this.currentExecutionId) {
+          this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+        }
+
         // Execute connected actions after completion
         await this.executeConnectedActionsFromNode(node.id);
       } catch (error) {
         nodeResult = {
           nodeId: node.id,
           status: "error",
-          error: String(error),
+          error: error instanceof Error ? error.message : String(error),
           executedAt: startTime,
           duration: Date.now() - startTime,
         };
 
         console.error(`Error executing action ${actionType}:`, error);
+        
+        // Add failed node result to execution tracker
+        if (this.currentExecutionId) {
+          this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+        }
+        
         NotificationService.showErrorNotification({
-          message: `Error executing ${actionType}: ${error}`,
+          message: `Error executing ${actionType}: ${error instanceof Error ? error.message : error}`,
         });
+        
+        // Throw error to stop workflow execution
+        throw error;
       }
     } else {
+      const errorMsg = `Unknown action type: ${actionType}`;
       nodeResult = {
         nodeId: node.id,
         status: "error",
-        error: `Unknown action type: ${actionType}`,
+        error: errorMsg,
         executedAt: startTime,
         duration: Date.now() - startTime,
       };
 
-      // Fallback: No actions should reach here anymore since we've converted them all
-      console.error(`Unknown action type: ${actionType}`);
+      console.error(errorMsg);
+      
+      // Add failed node result to execution tracker
+      if (this.currentExecutionId) {
+        this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+      }
+      
       NotificationService.showErrorNotification({
-        message: `Unknown action type: ${actionType}`,
+        message: errorMsg,
       });
-    }
-
-    // Add node result to current execution if we have one
-    if (this.currentExecutionId && nodeResult) {
-      console.debug(
-        `Adding node result for execution ${this.currentExecutionId}:`,
-        nodeResult,
-      );
-      this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
-    } else {
-      console.warn(
-        `No current execution ID when trying to add node result for ${node.id}`,
-      );
+      
+      // Throw error to stop workflow execution
+      throw new Error(errorMsg);
     }
   }
 
