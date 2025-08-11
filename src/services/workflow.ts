@@ -39,7 +39,7 @@ class ExecutionContext implements WorkflowExecutionContext {
         return JSON.stringify(output[property] || match);
       }
 
-      return JSON.stringify(output);
+      return output;
     });
   }
 }

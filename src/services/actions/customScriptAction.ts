@@ -145,6 +145,7 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
                         }));
                     }
                 } catch (error) {
+                    console.error('Custom script execution error:', error);
                     window.dispatchEvent(new CustomEvent('workflow-script-response', {
                         detail: { nodeId: '${nodeId}', result: null, error: error.message }
                     }));
@@ -159,26 +160,55 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
             }
         `;
 
-      this.injectInlineScript(wrappedScript);
+      try {
+        this.injectInlineScript(wrappedScript);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        window.removeEventListener(
+          "workflow-script-response",
+          responseHandler as EventListener,
+        );
+        reject(error);
+      }
     });
   }
 
   private injectInlineScript(code: string) {
-    // Use blob URL to avoid CSP violations with inline scripts
-    const blob = new Blob([code], { type: "application/javascript" });
-    const url = URL.createObjectURL(blob);
+    try {
+      // Try multiple injection methods for better compatibility
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.textContent = code;
 
-    const script = document.createElement("script");
-    script.src = url;
-    script.onload = () => {
-      URL.revokeObjectURL(url); // Clean up blob URL
-      script.remove(); // Clean up script element
-    };
-    script.onerror = () => {
-      URL.revokeObjectURL(url); // Clean up blob URL on error
-      script.remove(); // Clean up script element
-    };
+      // Try to append to document.head first
+      if (document.head) {
+        document.head.appendChild(script);
+      } else if (document.documentElement) {
+        // Fallback to documentElement if head is not available
+        document.documentElement.appendChild(script);
+      } else if (document.body) {
+        // Last resort: append to body
+        document.body.appendChild(script);
+      } else {
+        throw new Error("No valid DOM container found for script injection");
+      }
 
-    document.head.appendChild(script);
+      // Clean up script element after execution
+      setTimeout(() => {
+        script.remove();
+      }, 100);
+
+      console.debug("Custom script injected successfully");
+    } catch (error) {
+      console.error("Failed to inject script:", error);
+      // Fallback: try using eval as last resort
+      try {
+        eval(code);
+        console.debug("Script executed via eval fallback");
+      } catch (evalError) {
+        console.error("Script execution failed completely:", evalError);
+        throw new Error("Script injection and execution failed");
+      }
+    }
   }
 }
