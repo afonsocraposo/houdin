@@ -10,7 +10,6 @@ import {
 } from "@mantine/core";
 import { IconPointer, IconHistory, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import { initializeCredentials } from "../services/credentialInitializer";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import iconSvg from "../assets/icons/icon.svg";
@@ -21,9 +20,8 @@ function App() {
   const [currentUrl, setCurrentUrl] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("workflows");
 
-  // Initialize credentials on app startup
+  // Load current URL and saved tab on startup
   useEffect(() => {
-    initializeCredentials();
     loadCurrentUrl();
     loadSavedTab();
   }, []);
@@ -114,7 +112,12 @@ function App() {
             </Stack>
           </Group>
 
-          <Tabs value={activeTab} onChange={handleTabChange} variant="pills" flex={1}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            variant="pills"
+            flex={1}
+          >
             <Tabs.List grow>
               <Tabs.Tab value="workflows" leftSection={<IconHome size={16} />}>
                 Workflows
@@ -125,36 +128,40 @@ function App() {
             </Tabs.List>
 
             <Tabs.Panel value="workflows" pt="sm">
-              <Stack gap="md">
-                {/* Active Workflows Section */}
-                <ActiveWorkflows currentUrl={currentUrl} />
+              {activeTab === "workflows" && (
+                <Stack gap="md">
+                  {/* Active Workflows Section */}
+                  <ActiveWorkflows currentUrl={currentUrl} />
 
-                <Divider />
+                  <Divider />
 
-                <Stack gap="xs">
-                  <Button variant="filled" onClick={handleClick} fullWidth>
-                    Open Configuration
-                  </Button>
+                  <Stack gap="xs">
+                    <Button variant="filled" onClick={handleClick} fullWidth>
+                      Open Configuration
+                    </Button>
 
-                  <Button
-                    variant="outline"
-                    onClick={handleSelectElement}
-                    fullWidth
-                    leftSection={<IconPointer size={16} />}
-                  >
-                    Element Inspector
-                  </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleSelectElement}
+                      fullWidth
+                      leftSection={<IconPointer size={16} />}
+                    >
+                      Element Inspector
+                    </Button>
+                  </Stack>
+
+                  {/* Current URL info */}
+                  <Text size="xs" c="dimmed" ta="center" truncate>
+                    {currentUrl
+                      ? new URL(currentUrl).hostname
+                      : "No active tab"}
+                  </Text>
                 </Stack>
-
-                {/* Current URL info */}
-                <Text size="xs" c="dimmed" ta="center" truncate>
-                  {currentUrl ? new URL(currentUrl).hostname : "No active tab"}
-                </Text>
-              </Stack>
+              )}
             </Tabs.Panel>
 
             <Tabs.Panel value="history" pt="md">
-              <ExecutionHistory />
+              {activeTab === "history" && <ExecutionHistory />}
             </Tabs.Panel>
           </Tabs>
         </Stack>

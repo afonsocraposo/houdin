@@ -160,8 +160,6 @@ export class HttpListenerWebRequest {
       type: details.type,
       frameId: details.frameId,
     };
-    console.log("requestData", requestData);
-
     // Store request for later correlation with response
     this.pendingRequests.set(details.requestId, requestData);
 
