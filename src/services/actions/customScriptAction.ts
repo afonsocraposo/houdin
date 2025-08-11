@@ -65,7 +65,7 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
     }
   }
 
-  private executeScriptWithOutput(
+  private async executeScriptWithOutput(
     scriptCode: string,
     nodeId: string,
     context: ActionExecutionContext,
@@ -75,7 +75,7 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
         reject(new Error("Script execution timeout"));
       }, 10000); // 10 second timeout
 
-      // Listen for response from injected script
+      // Listen for response from userscript
       const responseHandler = (event: CustomEvent) => {
         if (event.detail?.nodeId === nodeId) {
           clearTimeout(timeoutId);
@@ -104,112 +104,46 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
         workflowId: context.workflowId,
       };
 
-      // Inject script that includes response mechanism and context
-      const wrappedScript = `
-            (function() {
-                try {
-                    // Inject workflow context into global scope
-                    window.WorkflowContext = ${JSON.stringify(contextData)};
+      // Send message to background script to register userScript
+      chrome.runtime.sendMessage(
+        {
+          type: "EXECUTE_USERSCRIPT",
+          data: {
+            scriptCode,
+            nodeId,
+            contextData,
+          },
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            clearTimeout(timeoutId);
+            window.removeEventListener(
+              "workflow-script-response",
+              responseHandler as EventListener,
+            );
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
 
-                    // Helper function to get output from another node
-                    window.Get = function(nodeId) {
-                        return window.WorkflowContext.outputs[nodeId];
-                    };
+          if (!response?.success) {
+            clearTimeout(timeoutId);
+            window.removeEventListener(
+              "workflow-script-response",
+              responseHandler as EventListener,
+            );
+            reject(
+              new Error(response?.error || "Failed to register userScript"),
+            );
+            return;
+          }
 
-                    // Helper function to interpolate variables like {{nodeId}}
-                    window.interpolate = function(text) {
-                        if (!text) return text;
-                        return text.replace(/\\{\\{([^}]+)\\}\\}/g, function(match, expression) {
-                            const parts = expression.trim().split('.');
-                            const nodeId = parts[0];
-                            const property = parts[1];
+          console.debug(
+            "UserScript executed successfully via background script",
+          );
 
-                            const output = window.WorkflowContext.outputs[nodeId];
-                            if (output === undefined) return match;
-
-                            if (property && typeof output === 'object' && output !== null) {
-                                return String(output[property] || match);
-                            }
-
-                            return String(output);
-                        });
-                    };
-
-                    // Your custom script code here
-                    ${scriptCode}
-
-                    // If script doesn't manually send response, send undefined
-                    // Scripts can override this by calling Return() themselves
-                    if (typeof Return !== 'function') {
-                        window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                            detail: { nodeId: '${nodeId}', result: undefined }
-                        }));
-                    }
-                } catch (error) {
-                    console.error('Custom script execution error:', error);
-                    window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                        detail: { nodeId: '${nodeId}', result: null, error: error.message }
-                    }));
-                }
-            })();
-
-            // Helper function for scripts to send data back
-            function Return(data) {
-                window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                    detail: { nodeId: '${nodeId}', result: data }
-                }));
-            }
-        `;
-
-      try {
-        this.injectInlineScript(wrappedScript);
-      } catch (error) {
-        clearTimeout(timeoutId);
-        window.removeEventListener(
-          "workflow-script-response",
-          responseHandler as EventListener,
-        );
-        reject(error);
-      }
+          // No cleanup needed for execute API - it's one-time execution
+        },
+      );
     });
-  }
-
-  private injectInlineScript(code: string) {
-    try {
-      // Try multiple injection methods for better compatibility
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.textContent = code;
-
-      // Try to append to document.head first
-      if (document.head) {
-        document.head.appendChild(script);
-      } else if (document.documentElement) {
-        // Fallback to documentElement if head is not available
-        document.documentElement.appendChild(script);
-      } else if (document.body) {
-        // Last resort: append to body
-        document.body.appendChild(script);
-      } else {
-        throw new Error("No valid DOM container found for script injection");
-      }
-
-      // Clean up script element after execution
-      setTimeout(() => {
-        script.remove();
-      }, 100);
-
-      console.debug("Custom script injected successfully");
-    } catch (error) {
-      console.error("Failed to inject script:", error);
-      // Fallback: try using eval as last resort
-      try {
-        eval(code);
-        console.debug("Script executed via eval fallback");
-      } catch (evalError) {
-        console.error("Script execution failed completely:", evalError);
-        throw new Error("Script injection and execution failed");
-      }
-    }
   }
 }

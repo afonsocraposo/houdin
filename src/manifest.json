@@ -12,7 +12,8 @@
     "storage",
     "tabs",
     "webNavigation",
-    "webRequest"
+    "webRequest",
+    "userScripts"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -35,11 +35,16 @@ class ExecutionContext implements WorkflowExecutionContext {
       const output = this.getOutput(nodeId);
       if (output === undefined) return match; // Keep original if not found
 
+      let result = output;
       if (property && typeof output === "object" && output !== null) {
-        return JSON.stringify(output[property] || match);
+        return (result = output[property]);
       }
 
-      return output;
+      if (result && typeof result === "object") {
+        // If result is an object, convert to JSON string for display
+        return JSON.stringify(result);
+      }
+      return String(result);
     });
   }
 }
@@ -236,7 +241,7 @@ export class WorkflowExecutor {
     if (!actionType) {
       const errorMsg = `No action type found for node: ${node.id}`;
       console.error(errorMsg, "node.data:", node.data);
-      
+
       const nodeResult: NodeExecutionResult = {
         nodeId: node.id,
         status: "error",
@@ -244,11 +249,14 @@ export class WorkflowExecutor {
         executedAt: Date.now(),
         duration: 0,
       };
-      
+
       if (this.currentExecutionId) {
-        this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+        this.executionTracker.addNodeResult(
+          this.currentExecutionId,
+          nodeResult,
+        );
       }
-      
+
       throw new Error(errorMsg);
     }
 
@@ -289,7 +297,10 @@ export class WorkflowExecutor {
 
         // Add successful node result to execution tracker
         if (this.currentExecutionId) {
-          this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+          this.executionTracker.addNodeResult(
+            this.currentExecutionId,
+            nodeResult,
+          );
         }
 
         // Execute connected actions after completion
@@ -304,16 +315,19 @@ export class WorkflowExecutor {
         };
 
         console.error(`Error executing action ${actionType}:`, error);
-        
+
         // Add failed node result to execution tracker
         if (this.currentExecutionId) {
-          this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+          this.executionTracker.addNodeResult(
+            this.currentExecutionId,
+            nodeResult,
+          );
         }
-        
+
         NotificationService.showErrorNotification({
           message: `Error executing ${actionType}: ${error instanceof Error ? error.message : error}`,
         });
-        
+
         // Throw error to stop workflow execution
         throw error;
       }
@@ -328,16 +342,19 @@ export class WorkflowExecutor {
       };
 
       console.error(errorMsg);
-      
+
       // Add failed node result to execution tracker
       if (this.currentExecutionId) {
-        this.executionTracker.addNodeResult(this.currentExecutionId, nodeResult);
+        this.executionTracker.addNodeResult(
+          this.currentExecutionId,
+          nodeResult,
+        );
       }
-      
+
       NotificationService.showErrorNotification({
         message: errorMsg,
       });
-      
+
       // Throw error to stop workflow execution
       throw new Error(errorMsg);
     }
