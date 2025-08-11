@@ -62,9 +62,10 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
       // Store the output in the execution context
       context.setOutput(nodeId, result);
     } catch (error) {
-      console.error("Error executing custom script:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       NotificationService.showErrorNotification({
-        message: "Error executing custom script",
+        message: `Custom script error: ${errorMessage}`,
       });
       context.setOutput(nodeId, ""); // Store empty on error
     }
@@ -88,7 +89,13 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
             "workflow-script-response",
             responseHandler as EventListener,
           );
-          resolve(event.detail.result);
+
+          // Check if the script execution resulted in an error
+          if (event.detail.error) {
+            reject(new Error(event.detail.error));
+          } else {
+            resolve(event.detail.result);
+          }
         }
       };
 

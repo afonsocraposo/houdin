@@ -32,7 +32,6 @@ function App() {
         browserAPI.storage.local.get(["popup-active-tab"], resolve);
       });
       if (result["popup-active-tab"]) {
-        console.log("Loading saved tab:", result["popup-active-tab"]);
         setActiveTab(result["popup-active-tab"]);
       }
     } catch (error) {
@@ -42,12 +41,10 @@ function App() {
 
   // Save active tab to browser storage when it changes
   const handleTabChange = (value: string | null) => {
-    console.log("Tab changed to:", value);
     if (value) {
       setActiveTab(value);
       try {
         browserAPI.storage.local.set({ "popup-active-tab": value });
-        console.log("Saved tab to browser storage:", value);
       } catch (error) {
         console.error("Error saving to browser storage:", error);
       }
