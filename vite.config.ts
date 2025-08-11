@@ -30,21 +30,27 @@ export default defineConfig(({ command }) => {
               scripts: ["src/background/background.ts"],
               type: "module",
             };
+            // remove userScripts from permissions in Firefox
+            manifest.permissions = manifest.permissions.filter(
+              (perm: string) => perm !== "userScripts",
+            );
+            manifest.optional_permissions = [
+              ...(manifest.optional_permissions || []),
+              "userScripts",
+            ];
           }
 
           // Add CSP for development to allow Vite HMR (Chrome only)
           if (isDev && !isFirefox) {
             manifest.content_security_policy = {
-              extension_pages: `script-src 'self' http://localhost:${port}; object-src 'self'`
+              extension_pages: `script-src 'self' http://localhost:${port}; object-src 'self'`,
             };
           }
 
           return manifest;
         },
         watchFilePaths: ["src", "public", "icons", "manifest.json"],
-        additionalInputs: [
-          "src/config/index.html",
-        ],
+        additionalInputs: ["src/config/index.html"],
       }),
       // Custom plugin to conditionally inject React Refresh script
       {

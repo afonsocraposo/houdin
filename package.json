@@ -4,7 +4,8 @@
   "description": "Browser automation made simple. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
-    "dev": "TARGET=firefox vite build --watch",
+    "dev": "vite",
+    "dev-firefox": "TARGET=firefox vite build --watch",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",

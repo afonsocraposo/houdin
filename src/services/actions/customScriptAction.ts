@@ -1,9 +1,12 @@
+import React from "react";
 import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
   ActionExecutionContext,
 } from "../../types/actions";
+import { UserScriptPermissionChecker } from "../userScriptPermissionChecker";
+import { PermissionButton } from "../../components/PermissionButton";
 
 // Custom Script Action Configuration
 export interface CustomScriptActionConfig {
@@ -21,6 +24,13 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
+        permissionCheck: {
+          type: "custom",
+          label: "UserScript Permission",
+          render: () => {
+            return React.createElement(PermissionButton);
+          },
+        },
         customScript: {
           type: "code",
           label: "Custom JavaScript",
@@ -49,11 +59,30 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
     }
 
     try {
+      // Check userScript permission status first
+      const permissionStatus = await this.checkUserScriptPermission();
+      console.log("UserScript permission status:", permissionStatus);
+
+      if (!permissionStatus.enabled && !permissionStatus.fallbackAvailable) {
+        throw new Error(
+          "UserScripts permission not available and no fallback method",
+        );
+      }
+
+      if (!permissionStatus.enabled && permissionStatus.requiresToggle) {
+        console.warn(
+          "Permission instructions:",
+          permissionStatus.toggleInstructions,
+        );
+      }
+      console.log("permissionStatus", permissionStatus);
+
       // Create a promise that resolves when the script sends back data
       const result = await this.executeScriptWithOutput(
         customScript,
         nodeId,
         context,
+        permissionStatus,
       );
 
       // Store the output in the execution context
@@ -65,10 +94,16 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
     }
   }
 
+  private async checkUserScriptPermission() {
+    const permissionChecker = UserScriptPermissionChecker.getInstance();
+    return await permissionChecker.requestPermissionStatusFromBackground();
+  }
+
   private async executeScriptWithOutput(
     scriptCode: string,
     nodeId: string,
     context: ActionExecutionContext,
+    permissionStatus: any,
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
@@ -101,49 +136,59 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
       // Prepare context data for the script
       const contextData = {
         outputs: context.outputs,
-        workflowId: context.workflowId,
+        workflowId: context.workflowId || "",
       };
 
-      // Send message to background script to register userScript
-      chrome.runtime.sendMessage(
-        {
-          type: "EXECUTE_USERSCRIPT",
-          data: {
-            scriptCode,
-            nodeId,
-            contextData,
+      // Determine execution method based on permission status
+      if (permissionStatus.enabled) {
+        // Use userScripts API via background script
+        chrome.runtime.sendMessage(
+          {
+            type: "REGISTER_USERSCRIPT",
+            data: {
+              scriptCode,
+              nodeId,
+              contextData,
+            },
           },
-        },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            clearTimeout(timeoutId);
-            window.removeEventListener(
-              "workflow-script-response",
-              responseHandler as EventListener,
-            );
-            reject(new Error(chrome.runtime.lastError.message));
-            return;
-          }
+          (response) => {
+            if (chrome.runtime.lastError) {
+              clearTimeout(timeoutId);
+              window.removeEventListener(
+                "workflow-script-response",
+                responseHandler as EventListener,
+              );
+              reject(
+                new Error(chrome.runtime.lastError.message || "Runtime error"),
+              );
+              return;
+            }
 
-          if (!response?.success) {
-            clearTimeout(timeoutId);
-            window.removeEventListener(
-              "workflow-script-response",
-              responseHandler as EventListener,
-            );
-            reject(
-              new Error(response?.error || "Failed to register userScript"),
-            );
-            return;
-          }
+            if (!response?.success) {
+              clearTimeout(timeoutId);
+              window.removeEventListener(
+                "workflow-script-response",
+                responseHandler as EventListener,
+              );
+              reject(
+                new Error(response?.error || "Failed to execute userScript"),
+              );
+              return;
+            }
 
-          console.debug(
-            "UserScript executed successfully via background script",
-          );
-
-          // No cleanup needed for execute API - it's one-time execution
-        },
-      );
+            console.debug(
+              "UserScript executed successfully via background script",
+            );
+          },
+        );
+      } else {
+        clearTimeout(timeoutId);
+        window.removeEventListener(
+          "workflow-script-response",
+          responseHandler as EventListener,
+        );
+        reject(new Error("No script execution method available"));
+      }
     });
   }
 }
