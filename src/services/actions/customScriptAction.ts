@@ -144,7 +144,7 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
         // Use userScripts API via background script
         chrome.runtime.sendMessage(
           {
-            type: "REGISTER_USERSCRIPT",
+            type: "EXECUTE_USERSCRIPT",
             data: {
               scriptCode,
               nodeId,
