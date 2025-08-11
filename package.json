@@ -1,10 +1,10 @@
 {
   "name": "changeme",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Browser automation made simple. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "TARGET=firefox vite build --watch",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
@@ -32,7 +32,7 @@
     "@mantine/core": "^8.2.4",
     "@mantine/hooks": "^8.2.4",
     "@mantine/notifications": "^8.2.4",
-    "@tabler/icons-react": "^3.9.0",
+    "@tabler/icons-react": "^3.34.1",
     "@xyflow/react": "^12.8.2",
     "ace-builds": "^1.43.2",
     "javascript-time-ago": "^2.5.11",
