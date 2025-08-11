@@ -105,7 +105,7 @@ export class UserScriptManager {
   ): Promise<UserScriptExecuteResponse> {
     return new Promise((resolve) => {
       const timeoutId = setTimeout(() => {
-        cleanup();
+        chrome.runtime.onMessage.removeListener(messageListener);
         resolve({
           success: false,
           error: "Script execution timeout",
@@ -118,7 +118,9 @@ export class UserScriptManager {
           message.nodeId === nodeId &&
           sender.tab?.id === tabId
         ) {
-          cleanup();
+          clearTimeout(timeoutId);
+          chrome.runtime.onMessage.removeListener(messageListener);
+          
           if (message.error) {
             resolve({
               success: false,
@@ -133,14 +135,9 @@ export class UserScriptManager {
         }
       };
 
-      const cleanup = () => {
-        clearTimeout(timeoutId);
-        chrome.runtime.onMessage.removeListener(messageListener);
-      };
-
       chrome.runtime.onMessage.addListener(messageListener);
 
-      // Create script that communicates via chrome.runtime.sendMessage
+      // Create script that communicates via window.postMessage to content script
       const fallbackScript = this.createFallbackScript(wrappedScript, nodeId);
 
       // Execute script using chrome.scripting.executeScript (Manifest V3)
@@ -153,7 +150,8 @@ export class UserScriptManager {
             eval(script);
           },
         }).catch((error) => {
-          cleanup();
+          clearTimeout(timeoutId);
+          chrome.runtime.onMessage.removeListener(messageListener);
           resolve({
             success: false,
             error: `Script injection failed: ${error.message}`,
@@ -161,7 +159,8 @@ export class UserScriptManager {
         });
       } else {
         // If chrome.scripting is not available, fall back to code injection
-        cleanup();
+        clearTimeout(timeoutId);
+        chrome.runtime.onMessage.removeListener(messageListener);
         resolve({
           success: false,
           error: "Script injection API not available in this browser",
@@ -242,26 +241,109 @@ export class UserScriptManager {
 
   private createFallbackScript(wrappedScript: string, nodeId: string): string {
     return `
-      ${wrappedScript}
-      
-      // Override the Return function to use chrome.runtime.sendMessage
-      window.Return = function(data) {
-        chrome.runtime.sendMessage({
-          type: 'workflow-script-response',
-          nodeId: '${nodeId}',
-          result: data
-        });
-      };
-      
-      // Override the error handling to use chrome.runtime.sendMessage
-      window.addEventListener('workflow-script-response', function(event) {
-        chrome.runtime.sendMessage({
-          type: 'workflow-script-response',
-          nodeId: event.detail.nodeId,
-          result: event.detail.result,
-          error: event.detail.error
-        });
-      });
+      (function() {
+        try {
+          // Inject workflow context into global scope
+          window.WorkflowContext = ${JSON.stringify(this.getContextDataFromScript(wrappedScript))};
+
+          // Helper function to get output from another node
+          window.Get = function(nodeId) {
+            return window.WorkflowContext.outputs[nodeId];
+          };
+
+          // Helper function to interpolate variables like {{nodeId}}
+          window.interpolate = function(text) {
+            if (!text) return text;
+            return text.replace(/\\{\\{([^}]+)\\}\\}/g, function(match, expression) {
+              const parts = expression.trim().split('.');
+              const nodeId = parts[0];
+              const property = parts[1];
+
+              const output = window.WorkflowContext.outputs[nodeId];
+              if (output === undefined) return match;
+
+              if (property && typeof output === 'object' && output !== null) {
+                return String(output[property] || match);
+              }
+
+              return String(output);
+            });
+          };
+
+          let resultReturned = false;
+
+          // Helper function for scripts to send data back using window.postMessage
+          window.Return = function(data) {
+            if (!resultReturned) {
+              resultReturned = true;
+              window.postMessage({
+                type: 'workflow-script-response',
+                nodeId: '${nodeId}',
+                result: data
+              }, '*');
+            }
+          };
+
+          // Set up a timeout to auto-return undefined if Return() is not called
+          setTimeout(() => {
+            if (!resultReturned) {
+              resultReturned = true;
+              window.postMessage({
+                type: 'workflow-script-response',
+                nodeId: '${nodeId}',
+                result: undefined
+              }, '*');
+            }
+          }, 100);
+
+          // Execute the user script
+          ${this.extractUserScriptFromWrapped(wrappedScript)}
+
+        } catch (error) {
+          console.error('Custom script execution error:', error);
+          window.postMessage({
+            type: 'workflow-script-response',
+            nodeId: '${nodeId}',
+            result: null,
+            error: error.message
+          }, '*');
+        }
+      })();
     `;
+  }
+
+  private getContextDataFromScript(wrappedScript: string): any {
+    // Extract context data from the wrapped script
+    const match = wrappedScript.match(/window\.WorkflowContext = ({.*?});/);
+    if (match) {
+      try {
+        return JSON.parse(match[1]);
+      } catch (e) {
+        return { outputs: {}, workflowId: '' };
+      }
+    }
+    return { outputs: {}, workflowId: '' };
+  }
+
+  private extractUserScriptFromWrapped(wrappedScript: string): string {
+    // Extract the user script from the wrapped script
+    const lines = wrappedScript.split('\n');
+    let extracting = false;
+    let userScript = '';
+    
+    for (const line of lines) {
+      if (line.trim().includes('// Execute the user script')) {
+        extracting = true;
+        continue;
+      }
+      if (extracting && line.trim().includes('} catch (error)')) {
+        break;
+      }
+      if (extracting) {
+        userScript += line + '\n';
+      }
+    }
+    
+    return userScript.trim();
   }
 }
