@@ -133,78 +133,10 @@ export class UserScriptManager {
 
           // Check if the error indicates a CSP violation
           if (message.error && message.error.includes("CSP_VIOLATION:")) {
-            // Show CSP notification by injecting it into the page
-            chrome.scripting
-              .executeScript({
-                target: { tabId: tabId },
-                world: "ISOLATED",
-                func: () => {
-                  const notificationEvent = new CustomEvent(
-                    "notificationDispatch",
-                    {
-                      detail: {
-                        title: "CSP Restriction",
-                        message:
-                          "Script execution blocked by Content Security Policy. Running in restricted mode with limited page access.",
-                        color: "orange",
-                        autoClose: 3000,
-                      },
-                    },
-                  );
-                  window.dispatchEvent(notificationEvent);
-                },
-              })
-              .catch(() => {}); // Ignore notification errors
-
-            // Create isolated world script and execute it
-            const isolatedScript = this.createIsolatedWorldScript(
-              wrappedScript,
-              nodeId,
-            );
-
-            // Set up new message listener for isolated world execution
-            const isolatedMessageListener = (
-              isolatedMessage: any,
-              isolatedSender: chrome.runtime.MessageSender,
-            ) => {
-              if (
-                isolatedMessage.type === "workflow-script-response" &&
-                isolatedMessage.nodeId === nodeId &&
-                isolatedSender.tab?.id === tabId
-              ) {
-                chrome.runtime.onMessage.removeListener(
-                  isolatedMessageListener,
-                );
-                resolve({
-                  success: true,
-                  result: isolatedMessage.result,
-                });
-              }
-            };
-            chrome.runtime.onMessage.addListener(isolatedMessageListener);
-
-            console.log(
-              "Executing script in ISOLATED world due to CSP violation",
-            );
-            // Execute in ISOLATED world
-            chrome.scripting
-              .executeScript({
-                target: { tabId: tabId },
-                world: "ISOLATED",
-                args: [isolatedScript],
-                func: (script: string) => {
-                  eval(script);
-                },
-              })
-              .catch((isolatedError) => {
-                chrome.runtime.onMessage.removeListener(
-                  isolatedMessageListener,
-                );
-                resolve({
-                  success: false,
-                  error: `Script injection failed in ISOLATED world: ${isolatedError.message}`,
-                });
-              });
+            resolve({
+              success: false,
+              error: message.error,
+            });
             return;
           }
 
