@@ -4,6 +4,8 @@ import {
   ActionMetadata,
   ActionExecutionContext,
 } from "../../types/actions";
+import { UserScriptPermissionChecker } from "../userScriptPermissionChecker";
+import PermissionButton from "../../components/PermissionButton";
 
 // Custom Script Action Configuration
 export interface CustomScriptActionConfig {
@@ -21,13 +23,18 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
+        permissionCheck: {
+          type: "custom",
+          label: "UserScript Permission",
+          render: () => PermissionButton(),
+        },
         customScript: {
           type: "code",
           label: "Custom JavaScript",
           placeholder:
             "// Access workflow context variables:\n// const prevResult = Get('nodeId'); // Get output from another node\n// const text = interpolate('Hello {{nodeId}}!'); // Interpolate variables\n\nalert('Hello World!');\nconsole.log('Custom script executed');\n\n// Use Return(data) to send data to next actions\n// Return({ message: 'Success' });",
           description:
-            "JavaScript code to execute. Use Get(nodeId) to access variables from other nodes. Use Return(data) to send data to next actions.",
+            "JavaScript code to execute. Use Get('nodeId') to access variables from other nodes. Use Return(data) to send data to next actions.",
           language: "javascript",
           height: 200,
           required: true,
@@ -49,11 +56,29 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
     }
 
     try {
+      // Check userScript permission status first
+      const permissionStatus = await this.checkUserScriptPermission();
+      console.debug("UserScript permission status:", permissionStatus);
+
+      if (!permissionStatus.enabled && !permissionStatus.fallbackAvailable) {
+        throw new Error(
+          "UserScripts permission not available and no fallback method",
+        );
+      }
+
+      if (!permissionStatus.enabled && permissionStatus.requiresToggle) {
+        console.warn(
+          "Permission instructions:",
+          permissionStatus.toggleInstructions,
+        );
+      }
+
       // Create a promise that resolves when the script sends back data
       const result = await this.executeScriptWithOutput(
         customScript,
         nodeId,
         context,
+        permissionStatus,
       );
 
       // Store the output in the execution context
@@ -65,17 +90,23 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
     }
   }
 
-  private executeScriptWithOutput(
+  private async checkUserScriptPermission() {
+    const permissionChecker = UserScriptPermissionChecker.getInstance();
+    return await permissionChecker.requestPermissionStatusFromBackground();
+  }
+
+  private async executeScriptWithOutput(
     scriptCode: string,
     nodeId: string,
     context: ActionExecutionContext,
+    permissionStatus: any,
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error("Script execution timeout"));
       }, 10000); // 10 second timeout
 
-      // Listen for response from injected script
+      // Listen for response from userscript
       const responseHandler = (event: CustomEvent) => {
         if (event.detail?.nodeId === nodeId) {
           clearTimeout(timeoutId);
@@ -101,115 +132,59 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
       // Prepare context data for the script
       const contextData = {
         outputs: context.outputs,
-        workflowId: context.workflowId,
+        workflowId: context.workflowId || "",
       };
 
-      // Inject script that includes response mechanism and context
-      const wrappedScript = `
-            (function() {
-                try {
-                    // Inject workflow context into global scope
-                    window.WorkflowContext = ${JSON.stringify(contextData)};
-
-                    // Helper function to get output from another node
-                    window.Get = function(nodeId) {
-                        return window.WorkflowContext.outputs[nodeId];
-                    };
-
-                    // Helper function to interpolate variables like {{nodeId}}
-                    window.interpolate = function(text) {
-                        if (!text) return text;
-                        return text.replace(/\\{\\{([^}]+)\\}\\}/g, function(match, expression) {
-                            const parts = expression.trim().split('.');
-                            const nodeId = parts[0];
-                            const property = parts[1];
-
-                            const output = window.WorkflowContext.outputs[nodeId];
-                            if (output === undefined) return match;
-
-                            if (property && typeof output === 'object' && output !== null) {
-                                return String(output[property] || match);
-                            }
-
-                            return String(output);
-                        });
-                    };
-
-                    // Your custom script code here
-                    ${scriptCode}
-
-                    // If script doesn't manually send response, send undefined
-                    // Scripts can override this by calling Return() themselves
-                    if (typeof Return !== 'function') {
-                        window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                            detail: { nodeId: '${nodeId}', result: undefined }
-                        }));
-                    }
-                } catch (error) {
-                    console.error('Custom script execution error:', error);
-                    window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                        detail: { nodeId: '${nodeId}', result: null, error: error.message }
-                    }));
-                }
-            })();
-
-            // Helper function for scripts to send data back
-            function Return(data) {
-                window.dispatchEvent(new CustomEvent('workflow-script-response', {
-                    detail: { nodeId: '${nodeId}', result: data }
-                }));
+      // Determine execution method based on permission status
+      if (permissionStatus.enabled) {
+        // Use userScripts API via background script
+        chrome.runtime.sendMessage(
+          {
+            type: "EXECUTE_USERSCRIPT",
+            data: {
+              scriptCode,
+              nodeId,
+              contextData,
+            },
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              clearTimeout(timeoutId);
+              window.removeEventListener(
+                "workflow-script-response",
+                responseHandler as EventListener,
+              );
+              reject(
+                new Error(chrome.runtime.lastError.message || "Runtime error"),
+              );
+              return;
             }
-        `;
 
-      try {
-        this.injectInlineScript(wrappedScript);
-      } catch (error) {
+            if (!response?.success) {
+              clearTimeout(timeoutId);
+              window.removeEventListener(
+                "workflow-script-response",
+                responseHandler as EventListener,
+              );
+              reject(
+                new Error(response?.error || "Failed to execute userScript"),
+              );
+              return;
+            }
+
+            console.debug(
+              "UserScript executed successfully via background script",
+            );
+          },
+        );
+      } else {
         clearTimeout(timeoutId);
         window.removeEventListener(
           "workflow-script-response",
           responseHandler as EventListener,
         );
-        reject(error);
+        reject(new Error("No script execution method available"));
       }
     });
-  }
-
-  private injectInlineScript(code: string) {
-    try {
-      // Try multiple injection methods for better compatibility
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.textContent = code;
-
-      // Try to append to document.head first
-      if (document.head) {
-        document.head.appendChild(script);
-      } else if (document.documentElement) {
-        // Fallback to documentElement if head is not available
-        document.documentElement.appendChild(script);
-      } else if (document.body) {
-        // Last resort: append to body
-        document.body.appendChild(script);
-      } else {
-        throw new Error("No valid DOM container found for script injection");
-      }
-
-      // Clean up script element after execution
-      setTimeout(() => {
-        script.remove();
-      }, 100);
-
-      console.debug("Custom script injected successfully");
-    } catch (error) {
-      console.error("Failed to inject script:", error);
-      // Fallback: try using eval as last resort
-      try {
-        eval(code);
-        console.debug("Script executed via eval fallback");
-      } catch (evalError) {
-        console.error("Script execution failed completely:", evalError);
-        throw new Error("Script injection and execution failed");
-      }
-    }
   }
 }

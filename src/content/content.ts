@@ -16,6 +16,26 @@ if ((window as any).changemeExtensionInitialized) {
     // Initialize content injector
     contentInjector = new ContentInjector();
     contentInjector.initialize();
+
+    // Set up bridge for workflow script responses
+    setupWorkflowScriptBridge();
+  };
+
+  const setupWorkflowScriptBridge = () => {
+    // Listen for workflow script responses from the main world
+    window.addEventListener('message', (event) => {
+      if (event.source === window && event.data.type === 'workflow-script-response') {
+        // Forward the message to the extension
+        chrome.runtime.sendMessage({
+          type: 'workflow-script-response',
+          nodeId: event.data.nodeId,
+          result: event.data.result,
+          error: event.data.error
+        }).catch((error) => {
+          console.error('Failed to send workflow script response:', error);
+        });
+      }
+    });
   };
 
   // Initialize when DOM is ready

@@ -12,7 +12,9 @@
     "storage",
     "tabs",
     "webNavigation",
-    "webRequest"
+    "webRequest",
+    "userScripts",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
