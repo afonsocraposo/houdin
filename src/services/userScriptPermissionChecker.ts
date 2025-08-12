@@ -54,11 +54,11 @@ export class UserScriptPermissionChecker {
     // Check if userScripts permission is granted using chrome.permissions API
     try {
       const hasPermission = await chrome.permissions.contains({
-        permissions: ["userScripts"]
+        permissions: ["userScripts"],
       });
 
       if (hasPermission) {
-        console.log("UserScripts permission is granted");
+        console.debug("UserScripts permission is granted");
         return {
           available: true,
           enabled: true,
@@ -67,7 +67,7 @@ export class UserScriptPermissionChecker {
           fallbackAvailable: true,
         };
       } else {
-        console.log("UserScripts permission is not granted");
+        console.debug("UserScripts permission is not granted");
         return {
           available: true,
           enabled: false,
@@ -78,7 +78,7 @@ export class UserScriptPermissionChecker {
         };
       }
     } catch (error) {
-      console.log("Error checking userScripts permission:", error);
+      console.debug("Error checking userScripts permission:", error);
       // If permissions API fails, assume permission is not available
       return {
         available: true,
@@ -141,7 +141,7 @@ export class UserScriptPermissionChecker {
   async requestUserScriptsPermission(): Promise<boolean> {
     try {
       const granted = await chrome.permissions.request({
-        permissions: ["userScripts"]
+        permissions: ["userScripts"],
       });
       return granted;
     } catch (error) {

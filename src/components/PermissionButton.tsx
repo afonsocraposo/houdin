@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button, Alert, Text, Group } from "@mantine/core";
-import { UserScriptPermissionChecker, UserScriptPermissionStatus } from "../services/userScriptPermissionChecker";
+import {
+  UserScriptPermissionChecker,
+  UserScriptPermissionStatus,
+} from "../services/userScriptPermissionChecker";
 
-export const PermissionButton: React.FC = () => {
-  const [permissionStatus, setPermissionStatus] = useState<UserScriptPermissionStatus | null>(null);
+export default function PermissionButton() {
+  const [permissionStatus, setPermissionStatus] =
+    useState<UserScriptPermissionStatus | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
 
@@ -44,7 +48,11 @@ export const PermissionButton: React.FC = () => {
   }
 
   if (!permissionStatus) {
-    return <Text size="sm" c="red">Unable to check permission status</Text>;
+    return (
+      <Text size="sm" c="red">
+        Unable to check permission status
+      </Text>
+    );
   }
 
   return (
@@ -72,11 +80,7 @@ export const PermissionButton: React.FC = () => {
             >
               Request Permission
             </Button>
-            <Button
-              size="sm"
-              variant="subtle"
-              onClick={checkPermission}
-            >
+            <Button size="sm" variant="subtle" onClick={checkPermission}>
               Refresh Status
             </Button>
           </Group>
@@ -84,4 +88,4 @@ export const PermissionButton: React.FC = () => {
       )}
     </div>
   );
-};
+}

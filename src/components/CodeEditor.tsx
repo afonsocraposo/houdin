@@ -67,9 +67,6 @@ export default function CodeEditor({
         height={typeof height === "number" ? `${height}px` : height || "200px"}
         editorProps={{ $blockScrolling: true }}
         setOptions={{
-          enableBasicAutocompletion: false,
-          enableLiveAutocompletion: false,
-          enableSnippets: false,
           showLineNumbers: true,
           tabSize: 2,
           highlightActiveLine: false,
