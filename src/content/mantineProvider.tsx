@@ -41,11 +41,20 @@ export default function CustomMantineProvider({
 
   const currentTheme = prefersDark ? darkTheme : lightTheme;
 
+  const remInPx = parseFloat(
+    getComputedStyle(document.documentElement).fontSize,
+  );
+  const mantineScale = 16 / remInPx;
+
   return (
     <>
       <style type="text/css">
         {`
-    :host, #app {
+    :host, #app, * {
+        --mantine-scale: ${mantineScale} !important;
+      }
+
+    #app {
       --mantine-color-scheme: ${currentTheme.colorScheme};
       --mantine-color-text: ${currentTheme.text};
       --mantine-color-body: ${currentTheme.body};
@@ -53,14 +62,15 @@ export default function CustomMantineProvider({
       --mantine-color-default: ${currentTheme.default};
       --mantine-color-default-hover: ${currentTheme.defaultHover};
       --mantine-font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
-      --mantine-font-size-md: 0.875rem;
+     /* Reset Mantine's font size variables */
+    --mantine-font-size-xs: 0.75rem;
+    --mantine-font-size-sm: 0.875rem;
+    --mantine-font-size-md: 1rem;
+    --mantine-font-size-lg: 1.125rem;
+    --mantine-font-size-xl: 1.25rem;
       --mantine-line-height: 1.55;
-    }
-
-    #app {
       color: var(--mantine-color-text) !important;
       font-family: var(--mantine-font-family) !important;
-      font-size: var(--mantine-font-size-md) !important;
       line-height: var(--mantine-line-height) !important;
     }
 
