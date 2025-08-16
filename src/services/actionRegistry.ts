@@ -21,7 +21,6 @@ export class ActionRegistry {
       const action = new actionClass();
       this.actions.set(action.metadata.type, action);
     } catch (error) {
-      console.log("here");
       console.error("Error registering action:", error);
     }
   }
@@ -66,8 +65,19 @@ export class ActionRegistry {
 
     // Execute with defaults applied
     const configWithDefaults = action.getConfigWithDefaults(config);
-    action.execute(configWithDefaults, context, nodeId, onSuccess, onError);
-    setTimeout(() => onError(new Error(`Action ${type} timed out`)), 10000);
+    try {
+      await action.execute(
+        configWithDefaults,
+        context,
+        nodeId,
+        onSuccess,
+        onError,
+      );
+    } catch (error: any) {
+      onError(error);
+    } finally {
+      onSuccess();
+    }
   }
 
   // Validate action configuration

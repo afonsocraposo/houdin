@@ -244,13 +244,13 @@ export class WorkflowExecutor {
           nodeType: "action",
           nodeName: actionType,
           nodeConfig: actionConfig,
-          data: result.error,
+          data: result?.error,
           status: "error",
           executedAt: start,
           duration,
         });
         throw new Error(
-          `Failed to execute action ${actionType}: ${result.error}`,
+          `Failed to execute action ${actionType}: ${result?.error}`,
         );
       }
       // Track the execution result
@@ -266,17 +266,21 @@ export class WorkflowExecutor {
       });
       this.onActionExecuted(node.id, result.data);
     } catch (error) {
+      console.error("Error executing action:", error);
       this.destroy(false);
-      console.error("Error sending execute action message:", error);
     }
   }
   private async executeActionInBackground(
     message: ActionCommand,
   ): Promise<any> {
-    return new Promise((resolve, _reject) => {
+    return new Promise(async (resolve, reject) => {
       const executeActionCommand = message as ActionCommand;
       const actionRegistry = ActionRegistry.getInstance();
       const context = new ExecutionContext(executeActionCommand.context);
+      console.log(
+        "Executing action in background:",
+        executeActionCommand.nodeType,
+      );
       try {
         actionRegistry.execute(
           executeActionCommand.nodeType,
@@ -290,10 +294,13 @@ export class WorkflowExecutor {
             }),
           (error: Error) => resolve({ success: false, error: error.message }),
         );
+        // Set a timeout for the action execution
+        setTimeout(() => {
+          reject(new Error("Action execution timed out"));
+        }, 10000); // 10 seconds timeout
       } catch (error: any) {
         resolve({ success: false, error: error.message });
       }
-      return;
     });
   }
 

@@ -78,61 +78,59 @@ if ((window as any).changemeExtensionInitialized) {
     initializeTriggers();
     initializeActions();
     // Listen for messages from the background workflow engine
-    chrome.runtime.onMessage.addListener(
-      async (message, _sender, sendResponse) => {
-        let context: ExecutionContext;
-        switch (message.type) {
-          case WorkflowCommandType.INIT_TRIGGER:
-            const initTriggerCommand = message as TriggerCommand;
-            const triggerRegistry = TriggerRegistry.getInstance();
-            try {
-              console.log("Initializing trigger:", initTriggerCommand.nodeType);
-              triggerRegistry.setupTrigger(
-                initTriggerCommand.nodeType,
-                initTriggerCommand.nodeConfig,
-                initTriggerCommand.context as TriggerExecutionContext,
-                async (data?: any) => {
-                  console.log(
-                    "Trigger fired with data:",
-                    data,
-                    initTriggerCommand.nodeConfig,
-                  );
-                  sendResponse({
-                    success: true,
-                    data: data || initTriggerCommand.nodeConfig,
-                  });
-                },
-              );
-            } catch (error: any) {
-              sendResponse({ success: false, error: error.message });
-            }
-
-            return;
-          case WorkflowCommandType.EXECUTE_ACTION:
-            const executeActionCommand = message as ActionCommand;
-            const actionRegistry = ActionRegistry.getInstance();
-            context = new ExecutionContext(executeActionCommand.context);
-            try {
-              actionRegistry.execute(
-                executeActionCommand.nodeType,
-                executeActionCommand.nodeConfig,
-                context,
-                executeActionCommand.nodeId,
-                (data: any) =>
-                  sendResponse({
-                    success: true,
-                    data,
-                  }),
-                (error: Error) =>
-                  sendResponse({ success: false, error: error.message }),
-              );
-            } catch (error: any) {
-              sendResponse({ success: false, error: error.message });
-            }
-            return;
-        }
-      },
-    );
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+      let context: ExecutionContext;
+      switch (message.type) {
+        case WorkflowCommandType.INIT_TRIGGER:
+          const initTriggerCommand = message as TriggerCommand;
+          const triggerRegistry = TriggerRegistry.getInstance();
+          try {
+            console.log("Initializing trigger:", initTriggerCommand.nodeType);
+            triggerRegistry.setupTrigger(
+              initTriggerCommand.nodeType,
+              initTriggerCommand.nodeConfig,
+              initTriggerCommand.context as TriggerExecutionContext,
+              async (data?: any) => {
+                console.log(
+                  "Trigger fired with data:",
+                  data,
+                  initTriggerCommand.nodeConfig,
+                );
+                sendResponse({
+                  success: true,
+                  data: data || initTriggerCommand.nodeConfig,
+                });
+              },
+            );
+          } catch (error: any) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+        case WorkflowCommandType.EXECUTE_ACTION:
+          const executeActionCommand = message as ActionCommand;
+          const actionRegistry = ActionRegistry.getInstance();
+          context = new ExecutionContext(executeActionCommand.context);
+          new Promise<any>((resolve, reject) => {
+            actionRegistry.execute(
+              executeActionCommand.nodeType,
+              executeActionCommand.nodeConfig,
+              context,
+              executeActionCommand.nodeId,
+              (data: any) => resolve(data),
+              (error: Error) => reject(error),
+            );
+            setTimeout(() => {
+              reject(new Error("Action execution timed out"));
+            }, 10000); // 10 seconds timeout
+          })
+            .then((data) => sendResponse({ success: true, data }))
+            .catch((error) =>
+              sendResponse({ success: false, error: error.message }),
+            );
+          break;
+      }
+      return true;
+    });
   };
 
   // Initialize when DOM is ready

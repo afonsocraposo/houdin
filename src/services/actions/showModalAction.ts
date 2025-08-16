@@ -47,7 +47,6 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
     context: ActionExecutionContext,
     _nodeId: string,
     onSuccess: (data?: any) => void,
-    onError: (error: Error) => void,
   ): Promise<void> {
     const { modalTitle, modalContent } = config;
 
@@ -58,19 +57,15 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
       modalContent || "",
     );
 
-    try {
-      // Show the modal
-      ModalService.showModal({
-        title: interpolatedTitle,
-        content: interpolatedContent,
-      });
+    // Show the modal
+    ModalService.showModal({
+      title: interpolatedTitle,
+      content: interpolatedContent,
+    });
 
-      onSuccess({
-        title: interpolatedTitle,
-        content: interpolatedContent,
-      });
-    } catch (error: any) {
-      onError(new Error(`Failed to show modal: ${error.message}`));
-    }
+    onSuccess({
+      title: interpolatedTitle,
+      content: interpolatedContent,
+    });
   }
 }

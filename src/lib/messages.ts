@@ -14,11 +14,5 @@ export const sendMessageToContentScript = async (
   message: any,
 ): Promise<any> => {
   console.log(`Sending message to content script in tab ${tabId}:`, message);
-  try {
-    const response = await browserAPI.tabs.sendMessage(tabId, message);
-    return response;
-  } catch (error) {
-    console.error(`Error sending message to content script: ${error}`);
-    return null;
-  }
+  return await browserAPI.tabs.sendMessage(tabId, message);
 };
