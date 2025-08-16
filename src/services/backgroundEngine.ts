@@ -74,13 +74,14 @@ export class BackgroundWorkflowEngine {
     });
     console.log("active executors", this.activeExecutors);
   }
-  private removeActiveExecutor(executorId: string): void {
+
+  private removeActiveExecutor = (executorId: string): void => {
     console.log(
       `Removing active executor: ${executorId}`,
       this.activeExecutors,
     );
     this.activeExecutors?.delete(executorId);
-  }
+  };
 
   private getWorkflowTriggers(workflow: WorkflowDefinition): WorkflowNode[] {
     return workflow.nodes.filter((node) => node.type === "trigger");
