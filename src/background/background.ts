@@ -2,6 +2,7 @@ import { WorkflowExecution, NodeExecutionResult } from "../types/workflow";
 import { HttpListenerWebRequest } from "../services/httpListenerWebRequest";
 import { UserScriptManager } from "../services/userScriptManager";
 import { UserScriptPermissionChecker } from "../services/userScriptPermissionChecker";
+import { BackgroundWorkflowEngine } from "../services/backgroundEngine";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -121,24 +122,27 @@ runtime.runtime.onMessage.addListener(
     } else if (message.type === "CHECK_USERSCRIPT_PERMISSION") {
       // Check userScript permission status
       console.debug("Background: Checking userScript permission");
-      
+
       // Handle async operation properly
       (async () => {
         try {
           const status = await permissionChecker.checkPermissionStatus();
           sendResponse(status);
         } catch (error) {
-          console.error("Background: Failed to check userScript permission:", error);
+          console.error(
+            "Background: Failed to check userScript permission:",
+            error,
+          );
           sendResponse({
             available: false,
             enabled: false,
-            browser: 'chrome',
+            browser: "chrome",
             requiresToggle: true,
-            fallbackAvailable: true
+            fallbackAvailable: true,
           });
         }
       })();
-      
+
       return true; // Keep message channel open for async response
     } else if (message.type === "REGISTER_HTTP_TRIGGER") {
       // Register HTTP trigger with webRequest API
@@ -187,7 +191,6 @@ runtime.runtime.onInstalled.addListener(() => {
   console.debug("Extension installed");
 });
 
-// For manifest v3, use action instead of browserAction
 if (runtime.action) {
   runtime.action.onClicked.addListener((_tab: any) => {
     // Extension icon clicked
@@ -212,3 +215,20 @@ if (runtime.webNavigation) {
     }
   });
 }
+
+const workflowEngine = new BackgroundWorkflowEngine();
+workflowEngine.initialize().then(() => {
+  runtime.webNavigation.onCompleted.addListener(
+    (details: {
+      url: string;
+      tabId: number;
+      frameId: number;
+      frameType: string;
+    }) => {
+      if (details.frameId === 0) {
+        workflowEngine.onNewUrl(details.tabId, details.url);
+      }
+    },
+    { url: [{ schemes: ["http", "https"] }] },
+  );
+});

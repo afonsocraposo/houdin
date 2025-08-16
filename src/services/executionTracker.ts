@@ -1,139 +1,67 @@
-import { WorkflowExecution, NodeExecutionResult } from "../types/workflow";
-import { generateId } from "../utils/helpers";
+import {
+  NodeExecutionResult,
+  WorkflowExecution,
+  WorkflowExecutionStatus,
+} from "../types/workflow";
+import { StorageManager } from "./storage";
 
-class ExecutionTracker {
-  private static instance: ExecutionTracker;
-  private executions: Map<string, WorkflowExecution> = new Map();
-  private isContentScript: boolean;
+export class ExecutionTracker {
+  public status: WorkflowExecutionStatus = WorkflowExecutionStatus.WAITING;
+  public success: boolean | undefined;
+  public startedAt: number = Date.now();
+  public completedAt?: number;
+  public readonly nodeResults: NodeExecutionResult[] = [];
 
-  constructor() {
-    this.isContentScript = typeof window !== 'undefined' && window.location !== undefined;
+  constructor(
+    public readonly workflowId: string,
+    public readonly executionId: string,
+    public readonly url: string,
+    public readonly trigger: string = "unknown",
+  ) {}
+
+  startExecution(): void {
+    this.status = WorkflowExecutionStatus.IN_PROGRESS;
   }
 
-  static getInstance(): ExecutionTracker {
-    if (!ExecutionTracker.instance) {
-      ExecutionTracker.instance = new ExecutionTracker();
-    }
-    return ExecutionTracker.instance;
-  }
-
-  private sendMessage(type: string, data: any): void {
-    if (this.isContentScript && typeof chrome !== 'undefined' && chrome.runtime) {
-      try {
-        console.debug(`ExecutionTracker: Sending message ${type}:`, data);
-        chrome.runtime.sendMessage({
-          type,
-          data
-        });
-      } catch (error) {
-        console.debug("Failed to send execution tracking message:", error);
-      }
-    }
-  }
-
-  startExecution(workflowId: string, triggerType?: string, triggerData?: any): string {
-    const executionId = generateId();
-    const url = this.isContentScript && typeof window !== 'undefined' ? window.location.href : 'unknown';
-    const execution: WorkflowExecution = {
-      id: executionId,
-      workflowId,
-      startedAt: Date.now(),
-      status: "running",
-      nodeResults: [],
-      url,
-      trigger: { type: triggerType || 'unknown', data: triggerData },
-    };
-
-    this.executions.set(executionId, execution);
-    console.debug(`ExecutionTracker: Started execution ${executionId} for workflow ${workflowId} on ${url}`);
-    
-    // Send message to background script
-    this.sendMessage("EXECUTION_STARTED", execution);
-    
-    return executionId;
-  }
-
-  completeExecution(executionId: string, status: "completed" | "failed"): void {
-    const execution = this.executions.get(executionId);
-    if (execution) {
-      // Auto-determine status based on node results if status is "completed"
-      if (status === "completed") {
-        const hasFailedNodes = execution.nodeResults.some(
-          result => result.status === "error"
-        );
-        execution.status = hasFailedNodes ? "failed" : "completed";
-      } else {
-        execution.status = status;
-      }
-      
-      execution.completedAt = Date.now();
-      
-      console.debug(`ExecutionTracker: Completed execution ${executionId} with status ${execution.status}`);
-      
-      // Send message to background script
-      this.sendMessage("EXECUTION_COMPLETED", { 
-        executionId, 
-        status: execution.status, 
-        completedAt: execution.completedAt 
-      });
-    }
-  }
-
-  addNodeResult(executionId: string, nodeResult: NodeExecutionResult): void {
-    const execution = this.executions.get(executionId);
-    if (execution) {
-      execution.nodeResults.push(nodeResult);
-      console.debug(`ExecutionTracker: Added node result for execution ${executionId}:`, nodeResult);
-      
-      // Send message to background script
-      this.sendMessage("NODE_RESULT_ADDED", { executionId, nodeResult });
+  completeExecution(success: boolean): void {
+    if (success) {
+      this.status = WorkflowExecutionStatus.COMPLETED;
     } else {
-      console.warn(`ExecutionTracker: Could not find execution ${executionId} to add node result`);
+      this.status = WorkflowExecutionStatus.FAILED;
     }
+    this.success = success;
+    console.log(this.nodeResults);
+    this.saveExecution();
   }
 
-  getExecution(executionId: string): WorkflowExecution | undefined {
-    return this.executions.get(executionId);
+  addNodeResult(nodeResult: NodeExecutionResult): void {
+    this.nodeResults.push(nodeResult);
+    this.updateActiveExecution();
   }
 
-  getExecutionsForWorkflow(workflowId: string): WorkflowExecution[] {
-    return Array.from(this.executions.values())
-      .filter(exec => exec.workflowId === workflowId)
-      .sort((a, b) => b.startedAt - a.startedAt);
+  private async updateActiveExecution(): Promise<void> {
+    const storageManager = StorageManager.getInstance();
+    await storageManager.saveActiveWorkflowExecution(
+      this.getWorkflowExecution(),
+    );
   }
 
-  getAllExecutions(): WorkflowExecution[] {
-    return Array.from(this.executions.values())
-      .sort((a, b) => b.startedAt - a.startedAt);
+  private async saveExecution(): Promise<void> {
+    const storageManager = StorageManager.getInstance();
+    await storageManager.saveWorkflowExecution(this.getWorkflowExecution());
+    await storageManager.clearActiveWorkflowExecution(this.executionId);
   }
 
-  // Method to sync executions from background script (for popup)
-  syncExecutions(executions: WorkflowExecution[]): void {
-    this.executions.clear();
-    executions.forEach(exec => {
-      this.executions.set(exec.id, exec);
-    });
-  }
-
-  clearExecutions(): void {
-    this.executions.clear();
-    this.sendMessage("EXECUTIONS_CLEARED", {});
-  }
-
-  getExecutionStats(): {
-    total: number;
-    running: number;
-    completed: number;
-    failed: number;
-  } {
-    const executions = Array.from(this.executions.values());
-    return {
-      total: executions.length,
-      running: executions.filter(e => e.status === "running").length,
-      completed: executions.filter(e => e.status === "completed").length,
-      failed: executions.filter(e => e.status === "failed").length,
+  private getWorkflowExecution(): WorkflowExecution {
+    const workflowExecution: WorkflowExecution = {
+      id: this.executionId,
+      workflowId: this.workflowId,
+      startedAt: this.startedAt,
+      completedAt: this.completedAt,
+      status: this.status,
+      nodeResults: this.nodeResults,
+      url: this.url,
     };
+    return workflowExecution;
   }
 }
-
-export { ExecutionTracker };

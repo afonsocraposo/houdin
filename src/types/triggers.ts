@@ -1,10 +1,10 @@
-import { WorkflowExecutionContext, WorkflowNode } from './workflow';
-import { BaseMetadata, BaseConfigurable } from './base';
-import { 
-  ConfigProperty, 
-  ConfigSchema, 
-  ValidationResult
-} from './config-properties';
+import { WorkflowExecutionContext, WorkflowNode } from "./workflow";
+import { BaseMetadata, BaseConfigurable } from "./base";
+import {
+  ConfigProperty,
+  ConfigSchema,
+  ValidationResult,
+} from "./config-properties";
 
 // Re-export for backward compatibility
 export type TriggerConfigProperty = ConfigProperty;
@@ -26,13 +26,15 @@ export interface TriggerSetupResult {
 }
 
 // Abstract base class for all triggers
-export abstract class BaseTrigger<TConfig = Record<string, any>> extends BaseConfigurable<TConfig> {
+export abstract class BaseTrigger<
+  TConfig = Record<string, any>,
+> extends BaseConfigurable<TConfig> {
   abstract readonly metadata: TriggerMetadata;
-  
+
   // Setup the trigger and return cleanup function
   abstract setup(
-    config: TConfig, 
+    config: TConfig,
     context: TriggerExecutionContext,
-    onTrigger: () => Promise<void>
+    onTrigger: (data?: any) => Promise<void>,
   ): Promise<TriggerSetupResult>;
 }

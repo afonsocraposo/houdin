@@ -10,18 +10,12 @@ export const sendMessageToBackground = async (message: any): Promise<any> => {
 };
 
 export const sendMessageToContentScript = async (
+  tabId: number,
   message: any,
 ): Promise<any> => {
+  console.log(`Sending message to content script in tab ${tabId}:`, message);
   try {
-    const tabs = await browserAPI.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-    if (!tabs[0]?.id) {
-      console.error("No active tab found.");
-      return null;
-    }
-    const response = await browserAPI.tabs.sendMessage(tabs[0].id, message);
+    const response = await browserAPI.tabs.sendMessage(tabId, message);
     return response;
   } catch (error) {
     console.error(`Error sending message to content script: ${error}`);

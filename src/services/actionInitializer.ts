@@ -9,22 +9,34 @@ import { InjectStyleAction } from "./actions/injectStyleAction";
 import { ClickElementAction } from "./actions/clickElementAction";
 import { ShowNotificationAction } from "./actions/showNotificationAction";
 import { HttpRequestAction } from "./actions/httpRequestAction";
+import { WaitAction } from "./actions/waitAction";
+import { WaitPageChangeAction } from "./actions/waitPageChange";
 
 // Initialize and register all actions
 export function initializeActions(): void {
   const registry = ActionRegistry.getInstance();
 
-  // Register all action implementations
-  registry.register(new CopyContentAction());
-  registry.register(new GetElementContentAction());
-  registry.register(new ClickElementAction());
-  registry.register(new ShowModalAction());
-  registry.register(new ShowNotificationAction());
-  registry.register(new InjectComponentAction());
-  registry.register(new InjectStyleAction());
-  registry.register(new CustomScriptAction());
-  registry.register(new LLMOpenAIAction());
-  registry.register(new HttpRequestAction());
+  // Actions to run in the content
+  registry.register(CopyContentAction);
+  registry.register(GetElementContentAction);
+  registry.register(ClickElementAction);
+  registry.register(ShowModalAction);
+  registry.register(ShowNotificationAction);
+  registry.register(InjectComponentAction);
+  registry.register(InjectStyleAction);
+  registry.register(CustomScriptAction);
+  registry.register(LLMOpenAIAction);
+  registry.register(HttpRequestAction);
+  registry.register(WaitAction);
+  registry.register(WaitPageChangeAction);
+}
+
+export function initializeBackgroundActions(): void {
+  const registry = ActionRegistry.getInstance();
+
+  // Actions to run in background
+  registry.register(WaitAction);
+  registry.register(WaitPageChangeAction);
 }
 
 // Export registry instance for convenience

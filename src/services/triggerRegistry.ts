@@ -1,4 +1,9 @@
-import { BaseTrigger, TriggerMetadata, TriggerExecutionContext, TriggerSetupResult } from '../types/triggers';
+import {
+  BaseTrigger,
+  TriggerMetadata,
+  TriggerExecutionContext,
+  TriggerSetupResult,
+} from "../types/triggers";
 
 export class TriggerRegistry {
   private static instance: TriggerRegistry;
@@ -31,7 +36,7 @@ export class TriggerRegistry {
 
   // Get all trigger metadata for UI
   getAllTriggerMetadata(): TriggerMetadata[] {
-    return this.getAllTriggers().map(trigger => trigger.metadata);
+    return this.getAllTriggers().map((trigger) => trigger.metadata);
   }
 
   // Setup a trigger
@@ -39,8 +44,9 @@ export class TriggerRegistry {
     type: string,
     config: Record<string, any>,
     context: TriggerExecutionContext,
-    onTrigger: () => Promise<void>
+    onTrigger: (data?: any) => Promise<void>,
   ): Promise<void> {
+    console.log("setup trigger", type, config, context);
     const trigger = this.getTrigger(type);
     if (!trigger) {
       throw new Error(`Trigger type '${type}' not found in registry`);
@@ -49,16 +55,23 @@ export class TriggerRegistry {
     // Validate configuration before setup
     const validation = trigger.validate(config);
     if (!validation.valid) {
-      throw new Error(`Trigger configuration invalid: ${validation.errors.join(', ')}`);
+      throw new Error(
+        `Trigger configuration invalid: ${validation.errors.join(", ")}`,
+      );
     }
 
     // Clean up existing trigger with same node ID if it exists
-    this.cleanupTrigger(context.triggerNode.id);
+    // this.cleanupTrigger(context.triggerNode.id);
 
     // Setup with defaults applied
     const configWithDefaults = trigger.getConfigWithDefaults(config);
-    const setupResult = await trigger.setup(configWithDefaults, context, onTrigger);
-    
+    console.log(`Setting up trigger: ${type} with config`, configWithDefaults);
+    const setupResult = await trigger.setup(
+      configWithDefaults,
+      context,
+      onTrigger,
+    );
+
     // Store the setup result for cleanup
     if (setupResult.cleanup) {
       this.activeTriggers.set(context.triggerNode.id, setupResult);
@@ -85,7 +98,10 @@ export class TriggerRegistry {
   }
 
   // Validate trigger configuration
-  validateConfig(type: string, config: Record<string, any>): { valid: boolean; errors: string[] } {
+  validateConfig(
+    type: string,
+    config: Record<string, any>,
+  ): { valid: boolean; errors: string[] } {
     const trigger = this.getTrigger(type);
     if (!trigger) {
       return { valid: false, errors: [`Trigger type '${type}' not found`] };
@@ -114,12 +130,12 @@ export class TriggerRegistry {
   // Get trigger categories for UI (compatible with existing NODE_CATEGORIES)
   getTriggerCategories() {
     return {
-      triggers: this.getAllTriggers().map(trigger => ({
+      triggers: this.getAllTriggers().map((trigger) => ({
         type: trigger.metadata.type,
         label: trigger.metadata.label,
         icon: trigger.metadata.icon,
-        description: trigger.metadata.description
-      }))
+        description: trigger.metadata.description,
+      })),
     };
   }
 }

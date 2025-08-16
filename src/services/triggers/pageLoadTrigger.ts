@@ -26,10 +26,11 @@ export class PageLoadTrigger extends BaseTrigger<PageLoadTriggerConfig> {
   async setup(
     _config: PageLoadTriggerConfig,
     _context: TriggerExecutionContext,
-    onTrigger: () => Promise<void>,
+    onTrigger: (data?: any) => Promise<void>,
   ): Promise<TriggerSetupResult> {
+    console.log("Setting up Page Load Trigger");
     // Page is already loaded when this is called, so trigger immediately
-    await onTrigger();
+    await onTrigger({ url: window.location.href });
 
     // No cleanup needed for page load trigger
     return {};

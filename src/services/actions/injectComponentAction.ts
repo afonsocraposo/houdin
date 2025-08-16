@@ -2,13 +2,13 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { ComponentFactory } from "../../components/ComponentFactory";
 import { ContentInjector } from "../injector";
 import { NotificationService } from "../notification";
 import React from "react";
 import { getElement } from "../../utils/helpers";
+import { WorkflowExecutionContext } from "../../types/workflow";
 
 interface InjectComponentActionConfig {
   targetSelector: string;
@@ -179,7 +179,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
   }
   async execute(
     config: InjectComponentActionConfig,
-    context: ActionExecutionContext,
+    context: WorkflowExecutionContext,
     nodeId: string,
   ): Promise<void> {
     const {

@@ -1,8 +1,5 @@
-import {
-  BaseAction,
-  ActionMetadata,
-  ActionExecutionContext,
-} from "../types/actions";
+import { BaseAction, ActionMetadata } from "../types/actions";
+import { WorkflowExecutionContext } from "../types/workflow";
 import { NotificationService } from "./notification";
 
 export class ActionRegistry {
@@ -19,8 +16,14 @@ export class ActionRegistry {
   }
 
   // Register a new action
-  register(action: BaseAction): void {
-    this.actions.set(action.metadata.type, action);
+  register(actionClass: any): void {
+    try {
+      const action = new actionClass();
+      this.actions.set(action.metadata.type, action);
+    } catch (error) {
+      console.log("here");
+      console.error("Error registering action:", error);
+    }
   }
 
   // Get action by type
@@ -42,8 +45,10 @@ export class ActionRegistry {
   async execute(
     type: string,
     config: Record<string, any>,
-    context: ActionExecutionContext,
+    context: WorkflowExecutionContext,
     nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const action = this.getAction(type);
     if (!action) {
@@ -61,7 +66,14 @@ export class ActionRegistry {
 
     // Execute with defaults applied
     const configWithDefaults = action.getConfigWithDefaults(config);
-    await action.execute(configWithDefaults, context, nodeId);
+    setTimeout(() => onError(new Error(`Action ${type} timed out`)), 10000);
+    await action.execute(
+      configWithDefaults,
+      context,
+      nodeId,
+      onSuccess,
+      onError,
+    );
   }
 
   // Validate action configuration

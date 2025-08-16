@@ -58,10 +58,10 @@ export default function CustomMantineProvider({
     }
 
     #app {
-      color: var(--mantine-color-text);
-      font-family: var(--mantine-font-family);
-      font-size: var(--mantine-font-size-md);
-      line-height: var(--mantine-line-height);
+      color: var(--mantine-color-text) !important;
+      font-family: var(--mantine-font-family) !important;
+      font-size: var(--mantine-font-size-md) !important;
+      line-height: var(--mantine-line-height) !important;
     }
 
     /* Responsive to system theme changes */
