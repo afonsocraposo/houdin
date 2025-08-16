@@ -66,14 +66,8 @@ export class ActionRegistry {
 
     // Execute with defaults applied
     const configWithDefaults = action.getConfigWithDefaults(config);
+    action.execute(configWithDefaults, context, nodeId, onSuccess, onError);
     setTimeout(() => onError(new Error(`Action ${type} timed out`)), 10000);
-    await action.execute(
-      configWithDefaults,
-      context,
-      nodeId,
-      onSuccess,
-      onError,
-    );
   }
 
   // Validate action configuration

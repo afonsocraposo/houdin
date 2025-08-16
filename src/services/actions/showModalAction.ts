@@ -45,7 +45,9 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
   async execute(
     config: ShowModalActionConfig,
     context: ActionExecutionContext,
-    nodeId: string,
+    _nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { modalTitle, modalContent } = config;
 
@@ -56,28 +58,19 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
       modalContent || "",
     );
 
-    // Show the modal
-    ModalService.showModal({
-      title: interpolatedTitle,
-      content: interpolatedContent,
-    });
+    try {
+      // Show the modal
+      ModalService.showModal({
+        title: interpolatedTitle,
+        content: interpolatedContent,
+      });
 
-    context.setOutput(nodeId, {
-      title: interpolatedTitle,
-      content: interpolatedContent,
-    });
-
-    // Wait for modal to be dismissed before continuing workflow
-    return new Promise<void>((resolve) => {
-      const handleModalDismiss = (event: Event) => {
-        const customEvent = event as CustomEvent;
-        if (customEvent.detail?.type === "modalDismissed") {
-          window.removeEventListener("modalDispatch", handleModalDismiss);
-          resolve();
-        }
-      };
-      
-      window.addEventListener("modalDispatch", handleModalDismiss);
-    });
+      onSuccess({
+        title: interpolatedTitle,
+        content: interpolatedContent,
+      });
+    } catch (error: any) {
+      onError(new Error(`Failed to show modal: ${error.message}`));
+    }
   }
 }
