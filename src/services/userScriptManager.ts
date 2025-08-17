@@ -40,7 +40,7 @@ export class UserScriptManager {
         );
       }
     } catch (error) {
-      console.error("Failed to execute userScript:", error);
+      console.debug("Failed to execute userScript:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -102,14 +102,6 @@ export class UserScriptManager {
     nodeId: string,
   ): Promise<UserScriptExecuteResponse> {
     return new Promise((resolve) => {
-      const timeoutId = setTimeout(() => {
-        chrome.runtime.onMessage.removeListener(messageListener);
-        resolve({
-          success: false,
-          error: "Script execution timeout",
-        });
-      }, 5000); // 5 second timeout
-
       const messageListener = (
         message: any,
         sender: chrome.runtime.MessageSender,
@@ -119,7 +111,6 @@ export class UserScriptManager {
           message.nodeId === nodeId &&
           sender.tab?.id === tabId
         ) {
-          clearTimeout(timeoutId);
           chrome.runtime.onMessage.removeListener(messageListener);
 
           // Check if the error indicates a CSP violation
@@ -227,7 +218,6 @@ export class UserScriptManager {
             },
           })
           .catch((error) => {
-            clearTimeout(timeoutId);
             chrome.runtime.onMessage.removeListener(messageListener);
             resolve({
               success: false,
@@ -236,7 +226,6 @@ export class UserScriptManager {
           });
       } else {
         // If chrome.scripting is not available, fall back to code injection
-        clearTimeout(timeoutId);
         chrome.runtime.onMessage.removeListener(messageListener);
         resolve({
           success: false,
@@ -271,6 +260,7 @@ export class UserScriptManager {
             if (error instanceof ResultError) {
                 return { success: true, data: error.data };
             }
+            console.error('Custom script execution error:', error);
             return { success: false, error: error.message || error.toString() };
         }
       })();
@@ -284,7 +274,7 @@ export class UserScriptManager {
           let resultReturned = false;
 
           // Helper function for scripts to send data back using window.postMessage
-          window.Return = function(data) {
+          Return = function(data) {
             if (!resultReturned) {
               resultReturned = true;
               // Send postMessage for content script bridge
@@ -299,6 +289,7 @@ export class UserScriptManager {
           // Execute the user script
           try {
             ${userScript}
+            Return();
           } catch (evalError) {
             // Check if this is a CSP error
             const errorMessage = evalError?.message || evalError?.toString() || '';

@@ -224,7 +224,6 @@ export class WorkflowExecutor {
 
     const action = actionRegistry.getAction(actionType);
     const runBackground = action !== undefined;
-    console.log("run in background", runBackground);
 
     // Send command to content script to set up the trigger
     const message: ActionCommand = {
@@ -242,7 +241,6 @@ export class WorkflowExecutor {
       const result = runBackground
         ? await this.executeActionInBackground(message)
         : await sendMessageToContentScript(this.tabId, message);
-      console.log("action response:", result);
 
       const duration = Date.now() - start;
       if (!result || !result.success) {
@@ -256,9 +254,7 @@ export class WorkflowExecutor {
           executedAt: start,
           duration,
         });
-        throw new Error(
-          `Failed to execute action ${actionType}: ${result?.error}`,
-        );
+        throw new Error(`Action ${actionType}: ${result?.error}`);
       }
       // Track the execution result
       this.executionTracker.addNodeResult({
@@ -278,7 +274,7 @@ export class WorkflowExecutor {
     }
   }
   private executeActionInBackground(message: ActionCommand): Promise<any> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve) => {
       const executeActionCommand = message as ActionCommand;
       const actionRegistry = ActionRegistry.getInstance();
       actionRegistry
@@ -290,7 +286,7 @@ export class WorkflowExecutor {
           this.tabId,
         )
         .then((result) => resolve({ success: true, data: result }))
-        .catch((error) => reject({ success: false, error: error.message }));
+        .catch((error) => resolve({ success: false, error: error.message }));
     });
   }
 
