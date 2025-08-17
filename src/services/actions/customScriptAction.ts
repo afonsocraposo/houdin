@@ -38,9 +38,9 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
           type: "code",
           label: "Custom JavaScript",
           placeholder:
-            "// Access workflow context variables:\n// const prevResult = Get('nodeId'); // Get output from another node\n// const text = interpolate('Hello {{nodeId}}!'); // Interpolate variables\n\nalert('Hello World!');\nconsole.log('Custom script executed');\n\n// Use Return(data) to send data to next actions\n// Return({ message: 'Success' });",
+            "// Access workflow context variables:\n// const prevResult = {{nodeId}}; // Get output from another node\n\nalert('Hello World!');\nconsole.log('Custom script executed');\n\n// Use Return(data) to send data to next actions\n// Return({ message: 'Success' });",
           description:
-            "JavaScript code to execute. Use Get('nodeId') to access variables from other nodes. Use Return(data) to send data to next actions.",
+            "JavaScript code to execute. Use {{nodeId}} to access variables from other nodes. Use Return(data) to send data to next actions.",
           language: "javascript",
           height: 200,
           required: true,

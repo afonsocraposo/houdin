@@ -1,4 +1,3 @@
-import { WorkflowExecutionContext, WorkflowNode } from "./workflow";
 import { BaseMetadata, BaseConfigurable } from "./base";
 import {
   ConfigProperty,
@@ -13,12 +12,6 @@ export type TriggerValidationResult = ValidationResult;
 
 // Trigger metadata is the same as base metadata
 export type TriggerMetadata = BaseMetadata;
-
-// Extended execution context that includes trigger info
-export interface TriggerExecutionContext extends WorkflowExecutionContext {
-  workflowId?: string;
-  triggerNode: WorkflowNode;
-}
 
 // Trigger setup result interface
 export interface TriggerSetupResult {

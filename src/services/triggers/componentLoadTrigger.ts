@@ -1,11 +1,5 @@
-import {
-  BaseTrigger,
-  TriggerConfigSchema,
-  TriggerExecutionContext,
-  TriggerSetupResult,
-} from "../../types/triggers";
+import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
 import { getElement } from "../../utils/helpers";
-import { NotificationService } from "../notification";
 
 interface ComponentLoadTriggerConfig {
   selectorType: "css" | "xpath" | "text";

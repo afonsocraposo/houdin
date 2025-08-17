@@ -38,6 +38,7 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
     label: "HTTP Request",
     icon: "🌐",
     description: "Make HTTP request to any URL with custom headers and body",
+    disableTimeout: true,
   };
 
   private httpClient = HttpClientService.getInstance();
@@ -221,7 +222,6 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
     }
 
     try {
-      // Parse and interpolate headers
       const customHeaders = headersJson ? this.parseHeaders(headersJson) : {};
 
       // Get credential headers

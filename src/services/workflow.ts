@@ -32,14 +32,24 @@ export class ExecutionContext implements WorkflowExecutionContext {
     return text.replace(/\{\{([^}]+)\}\}/g, (match, expression) => {
       const parts = expression.trim().split(".");
       const nodeId = parts[0];
-      const property = parts[1];
+      const properties = parts.slice(1);
 
       const output = this.getOutput(nodeId);
       if (output === undefined) return match; // Keep original if not found
 
       let result = output;
-      if (property && typeof output === "object" && output !== null) {
-        result = output[property];
+      let i = 0;
+      while (
+        i < properties.length &&
+        typeof output === "object" &&
+        output !== null
+      ) {
+        const property = properties[i];
+        if (!(property in result)) {
+          break;
+        }
+        result = result[property];
+        i++;
       }
 
       if (result && typeof result === "object") {
