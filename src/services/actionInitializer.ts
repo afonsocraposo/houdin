@@ -37,6 +37,7 @@ export function initializeBackgroundActions(): void {
   // Actions to run in background
   registry.register(WaitAction);
   registry.register(WaitPageChangeAction);
+  registry.register(CustomScriptAction);
 }
 
 // Export registry instance for convenience

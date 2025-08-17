@@ -28,7 +28,7 @@ if ((window as any).changemeExtensionInitialized) {
     contentInjector.initialize();
 
     // Set up bridge for workflow script responses
-    // setupWorkflowScriptBridge();
+    setupWorkflowScriptBridge();
 
     // Set up notification message listener
     setupNotificationBridge();
@@ -36,27 +36,29 @@ if ((window as any).changemeExtensionInitialized) {
     setupBackgroundEngineBridge();
   };
 
-  // const setupWorkflowScriptBridge = () => {
-  //   // Listen for workflow script responses from the main world
-  //   window.addEventListener("message", (event) => {
-  //     if (
-  //       event.source === window &&
-  //       event.data.type === "workflow-script-response"
-  //     ) {
-  //       // Forward the message to the extension
-  //       chrome.runtime
-  //         .sendMessage({
-  //           type: "workflow-script-response",
-  //           nodeId: event.data.nodeId,
-  //           result: event.data.result,
-  //           error: event.data.error,
-  //         })
-  //         .catch((error) => {
-  //           console.error("Failed to send workflow script response:", error);
-  //         });
-  //     }
-  //   });
-  // };
+  const setupWorkflowScriptBridge = () => {
+    // Listen for workflow script responses from the main world
+    window.addEventListener("message", (event) => {
+      if (
+        event.source === window &&
+        event.data.type === "workflow-script-response"
+      ) {
+        console.log("Content: Received workflow script response:", event.data);
+        // Forward the message to the extension
+        chrome.runtime
+          .sendMessage({
+            type: "workflow-script-response",
+            // TODO: add executionId
+            nodeId: event.data.nodeId,
+            result: event.data.result,
+            error: event.data.error,
+          })
+          .catch((error) => {
+            console.error("Failed to send workflow script response:", error);
+          });
+      }
+    });
+  };
 
   const setupNotificationBridge = () => {
     // Listen for notification messages from background script

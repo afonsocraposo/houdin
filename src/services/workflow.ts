@@ -287,6 +287,7 @@ export class WorkflowExecutor {
           executeActionCommand.nodeConfig,
           executeActionCommand.workflowId,
           executeActionCommand.nodeId,
+          this.tabId,
         )
         .then((result) => resolve({ success: true, data: result }))
         .catch((error) => reject({ success: false, error: error.message }));

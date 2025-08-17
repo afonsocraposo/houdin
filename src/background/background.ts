@@ -1,52 +1,7 @@
-import { WorkflowExecution, NodeExecutionResult } from "../types/workflow";
 import { HttpListenerWebRequest } from "../services/httpListenerWebRequest";
-import { UserScriptManager } from "../services/userScriptManager";
-import { UserScriptPermissionChecker } from "../services/userScriptPermissionChecker";
 import { BackgroundWorkflowEngine } from "../services/backgroundEngine";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
-
-// Session-based execution tracking in background script
-class BackgroundExecutionTracker {
-  private executions: Map<string, WorkflowExecution> = new Map();
-
-  startExecution(execution: WorkflowExecution): void {
-    this.executions.set(execution.id, execution);
-  }
-
-  completeExecution(
-    executionId: string,
-    status: "completed" | "failed",
-    completedAt: number,
-  ): void {
-    const execution = this.executions.get(executionId);
-    if (execution) {
-      execution.status = status;
-      execution.completedAt = completedAt;
-    }
-  }
-
-  addNodeResult(executionId: string, nodeResult: NodeExecutionResult): void {
-    const execution = this.executions.get(executionId);
-    if (execution) {
-      execution.nodeResults.push(nodeResult);
-    }
-  }
-
-  getAllExecutions(): WorkflowExecution[] {
-    return Array.from(this.executions.values()).sort(
-      (a, b) => b.startedAt - a.startedAt,
-    );
-  }
-
-  clearExecutions(): void {
-    this.executions.clear();
-  }
-}
-
-const backgroundTracker = new BackgroundExecutionTracker();
-const userScriptManager = UserScriptManager.getInstance();
-const permissionChecker = UserScriptPermissionChecker.getInstance();
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (runtime?.webRequest?.onBeforeRequest) {
@@ -67,84 +22,7 @@ if (runtime?.webRequest?.onBeforeRequest) {
 
 runtime.runtime.onMessage.addListener(
   (message: any, sender: any, sendResponse: (response: any) => void) => {
-    if (message.type === "EXECUTION_STARTED") {
-      // Track workflow execution
-      console.debug("Background: Execution started", message.data);
-      backgroundTracker.startExecution(message.data);
-    } else if (message.type === "EXECUTION_COMPLETED") {
-      // Complete workflow execution
-      console.debug("Background: Execution completed", message.data);
-      backgroundTracker.completeExecution(
-        message.data.executionId,
-        message.data.status,
-        message.data.completedAt,
-      );
-    } else if (message.type === "NODE_RESULT_ADDED") {
-      // Add node result to execution
-      console.debug("Background: Node result added", message.data);
-      backgroundTracker.addNodeResult(
-        message.data.executionId,
-        message.data.nodeResult,
-      );
-    } else if (message.type === "GET_EXECUTIONS") {
-      // Return all executions to popup
-      const executions = backgroundTracker.getAllExecutions();
-      console.debug("Background: Returning executions", executions.length);
-      sendResponse({ executions });
-    } else if (message.type === "EXECUTIONS_CLEARED") {
-      // Clear all executions
-      console.debug("Background: Clearing executions");
-      backgroundTracker.clearExecutions();
-    } else if (message.type === "EXECUTE_USERSCRIPT") {
-      // Execute userScript
-      console.debug("Background: Executing userScript", message.data);
-
-      // Handle async operation properly
-      (async () => {
-        try {
-          const response = await userScriptManager.executeUserScript({
-            scriptCode: message.data.scriptCode,
-            nodeId: message.data.nodeId,
-            tabId: sender.tab?.id || 0,
-            contextData: message.data.contextData,
-          });
-          sendResponse(response);
-        } catch (error) {
-          console.error("Background: Failed to execute userScript:", error);
-          sendResponse({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
-          });
-        }
-      })();
-
-      return true; // Keep message channel open for async response
-    } else if (message.type === "CHECK_USERSCRIPT_PERMISSION") {
-      // Check userScript permission status
-      console.debug("Background: Checking userScript permission");
-
-      // Handle async operation properly
-      (async () => {
-        try {
-          const status = await permissionChecker.checkPermissionStatus();
-          sendResponse(status);
-        } catch (error) {
-          console.error(
-            "Background: Failed to check userScript permission:",
-            error,
-          );
-          sendResponse({
-            available: false,
-            enabled: false,
-            browser: "chrome",
-            requiresToggle: true,
-            fallbackAvailable: true,
-          });
-        }
-      })();
-
-      return true; // Keep message channel open for async response
-    } else if (message.type === "REGISTER_HTTP_TRIGGER") {
+    if (message.type === "REGISTER_HTTP_TRIGGER") {
       // Register HTTP trigger with webRequest API
       console.debug("Background: Registering HTTP trigger", message);
 

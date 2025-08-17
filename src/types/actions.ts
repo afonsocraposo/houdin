@@ -28,5 +28,6 @@ export abstract class BaseAction<
     nodeId: string,
     onSuccess: (data?: any) => void,
     onError: (error: Error) => void,
+    tabId?: number,
   ): Promise<void>;
 }

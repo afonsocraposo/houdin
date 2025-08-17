@@ -45,6 +45,7 @@ export class ActionRegistry {
     config: Record<string, any>,
     workflowId: string,
     nodeId: string,
+    tabId?: number,
   ): Promise<any> {
     const action = this.getAction(type);
     if (!action) {
@@ -64,7 +65,7 @@ export class ActionRegistry {
     const configWithDefaults = action.getConfigWithDefaults(config);
     return new Promise<any>((resolve, reject) => {
       action
-        .execute(configWithDefaults, workflowId, nodeId, resolve, reject)
+        .execute(configWithDefaults, workflowId, nodeId, resolve, reject, tabId)
         .catch((error) => reject(error))
         .finally(() => resolve(null));
       if (!action.metadata?.disableTimeout) {
