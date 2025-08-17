@@ -2,7 +2,6 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { ModalService } from "../modal";
 
@@ -44,28 +43,22 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
 
   async execute(
     config: ShowModalActionConfig,
-    context: ActionExecutionContext,
+    _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: any) => void,
+    _onError: (error: Error) => void,
   ): Promise<void> {
     const { modalTitle, modalContent } = config;
 
-    const interpolatedTitle = context.interpolateVariables(
-      modalTitle || "Workflow Result",
-    );
-    const interpolatedContent = context.interpolateVariables(
-      modalContent || "",
-    );
-
     // Show the modal
     ModalService.showModal({
-      title: interpolatedTitle,
-      content: interpolatedContent,
+      title: modalTitle,
+      content: modalContent,
     });
 
     onSuccess({
-      title: interpolatedTitle,
-      content: interpolatedContent,
+      title: modalTitle,
+      content: modalContent,
     });
   }
 }

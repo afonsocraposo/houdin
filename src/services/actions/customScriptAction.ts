@@ -2,7 +2,6 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { UserScriptPermissionChecker } from "../userScriptPermissionChecker";
 import PermissionButton from "../../components/PermissionButton";
@@ -45,14 +44,17 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
 
   async execute(
     config: CustomScriptActionConfig,
-    context: ActionExecutionContext,
+    _workflowId: string,
     nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { customScript } = config;
 
     if (!customScript) {
       const error = new Error("No script provided");
-      throw error;
+      onError(error);
+      return;
     }
 
     try {
@@ -77,16 +79,13 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
       const result = await this.executeScriptWithOutput(
         customScript,
         nodeId,
-        context,
         permissionStatus,
       );
 
       // Store the output in the execution context
-      context.setOutput(nodeId, result);
-    } catch (error) {
-      context.setOutput(nodeId, ""); // Store empty on error
-      // Re-throw the error to stop workflow execution
-      throw error;
+      onSuccess(result);
+    } catch (error: any) {
+      onError(error); // Store empty on error
     }
   }
 
@@ -98,7 +97,6 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
   private async executeScriptWithOutput(
     scriptCode: string,
     nodeId: string,
-    context: ActionExecutionContext,
     permissionStatus: any,
   ): Promise<any> {
     return new Promise((resolve, reject) => {

@@ -1,9 +1,4 @@
-import {
-  BaseTrigger,
-  TriggerConfigSchema,
-  TriggerExecutionContext,
-  TriggerSetupResult,
-} from "../../types/triggers";
+import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
 
 interface PageLoadTriggerConfig {
   // Empty config for page load trigger
@@ -25,14 +20,11 @@ export class PageLoadTrigger extends BaseTrigger<PageLoadTriggerConfig> {
 
   async setup(
     _config: PageLoadTriggerConfig,
-    _context: TriggerExecutionContext,
+    _workflowId: string,
+    _nodeId: string,
     onTrigger: (data?: any) => Promise<void>,
-  ): Promise<TriggerSetupResult> {
-    console.log("Setting up Page Load Trigger");
+  ): Promise<void> {
     // Page is already loaded when this is called, so trigger immediately
     await onTrigger({ url: window.location.href });
-
-    // No cleanup needed for page load trigger
-    return {};
   }
 }

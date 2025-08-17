@@ -8,7 +8,6 @@ import { ContentInjector } from "../injector";
 import { NotificationService } from "../notification";
 import React from "react";
 import { getElement } from "../../utils/helpers";
-import { WorkflowExecutionContext } from "../../types/workflow";
 
 interface InjectComponentActionConfig {
   targetSelector: string;
@@ -30,6 +29,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
     label: "Inject Component",
     icon: "💉",
     description: "Add button, floating action button, input, or text to page",
+    disableTimeout: true,
   };
 
   getConfigSchema(): ActionConfigSchema {
@@ -179,8 +179,10 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
   }
   async execute(
     config: InjectComponentActionConfig,
-    context: WorkflowExecutionContext,
+    workflowId: string,
     nodeId: string,
+    onSuccess: (data: any) => void,
+    _onError: (error: Error) => void,
   ): Promise<void> {
     const {
       selectorType,
@@ -208,16 +210,10 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       return;
     }
 
-    // Interpolate variables in component text
-    const interpolatedText = context.interpolateVariables(componentText || "");
-    const interpolatedPlaceholder = inputPlaceholder
-      ? context.interpolateVariables(inputPlaceholder)
-      : "";
-
     // Build component configuration object that factory components can use
     const componentConfig = {
       componentType,
-      componentText: interpolatedText,
+      componentText,
 
       // Color properties (will be handled by individual factories)
       buttonColor,
@@ -225,7 +221,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       textColor,
 
       // Input-specific properties
-      inputPlaceholder: interpolatedPlaceholder,
+      inputPlaceholder,
 
       // Floating Action Button specific properties
       fabIcon,
@@ -240,9 +236,6 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       targetSelector,
     };
 
-    // Get workflow ID from context
-    const workflowId = context.workflowId || "default-workflow";
-
     const component = ComponentFactory.create(
       componentConfig,
       workflowId,
@@ -255,13 +248,6 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       targetElement,
       true, // coreOnly
     );
-
-    // Set output immediately
-    context.setOutput(nodeId, {
-      componentType,
-      injected: true,
-      text: interpolatedText,
-    });
 
     // For interactive components (button, FAB), wait for user interaction
     // For non-interactive components (text), continue immediately
@@ -282,10 +268,10 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
               handleComponentTrigger,
             );
             // Update output with interaction data
-            context.setOutput(nodeId, {
+            onSuccess({
               componentType,
               injected: true,
-              text: interpolatedText,
+              text: componentText,
               interactionData: customEvent.detail?.data,
             });
             resolve();
@@ -297,9 +283,12 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           handleComponentTrigger,
         );
       });
+    } else {
+      onSuccess({
+        componentType,
+        injected: true,
+        text: componentText,
+      });
     }
-
-    // For text and input components, continue immediately
-    // (Input components handle their own workflow triggering via ComponentFactory)
   }
 }

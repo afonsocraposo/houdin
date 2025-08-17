@@ -34,7 +34,8 @@ export abstract class BaseTrigger<
   // Setup the trigger and return cleanup function
   abstract setup(
     config: TConfig,
-    context: TriggerExecutionContext,
+    workflowId: string,
+    nodeId: string,
     onTrigger: (data?: any) => Promise<void>,
-  ): Promise<TriggerSetupResult>;
+  ): Promise<void>;
 }

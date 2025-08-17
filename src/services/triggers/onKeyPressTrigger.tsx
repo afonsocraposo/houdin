@@ -1,10 +1,5 @@
 import { KeybindingSetter } from "../../components/KeybindingSetter";
-import {
-  BaseTrigger,
-  TriggerConfigSchema,
-  TriggerExecutionContext,
-  TriggerSetupResult,
-} from "../../types/triggers";
+import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
 
 interface KeyPressTriggerConfig {
   keyCombo: string;
@@ -43,14 +38,15 @@ export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig> {
 
   async setup(
     config: KeyPressTriggerConfig,
-    _context: TriggerExecutionContext,
-    onTrigger: () => Promise<void>,
-  ): Promise<TriggerSetupResult> {
+    _workflowId: string,
+    _nodeId: string,
+    onTrigger: (data?: any) => Promise<void>,
+  ): Promise<void> {
     const { keyCombo } = config;
 
     if (!keyCombo) {
       console.warn("No key combination configured for key press trigger");
-      return {};
+      return;
     }
 
     const handleKeyPress = async (event: KeyboardEvent) => {
@@ -58,18 +54,13 @@ export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig> {
 
       if (pressedCombo === keyCombo) {
         event.preventDefault();
-        await onTrigger();
+        await onTrigger({ keyCombo: pressedCombo, timestamp: Date.now() });
+        window.removeEventListener("keyup", handleKeyPress);
       }
     };
 
     // Add global key listener
     window.addEventListener("keyup", handleKeyPress);
-
-    return {
-      cleanup: () => {
-        window.removeEventListener("keyup", handleKeyPress);
-      },
-    };
   }
 
   private formatKeyCombo(event: KeyboardEvent): string {

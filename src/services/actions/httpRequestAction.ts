@@ -2,7 +2,6 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { NotificationService } from "../notification";
 import { StorageManager } from "../storage";
@@ -200,8 +199,10 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
 
   async execute(
     config: HttpRequestActionConfig,
-    context: ActionExecutionContext,
-    nodeId: string,
+    _workflowId: string,
+    _nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const {
       url,
@@ -220,13 +221,8 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
     }
 
     try {
-      // Interpolate variables in URL
-      const interpolatedUrl = context.interpolateVariables(url);
-
       // Parse and interpolate headers
-      const customHeaders = headersJson
-        ? this.parseHeaders(context.interpolateVariables(headersJson))
-        : {};
+      const customHeaders = headersJson ? this.parseHeaders(headersJson) : {};
 
       // Get credential headers
       const credentialHeaders = await this.getCredentialHeaders(
@@ -251,12 +247,10 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
       // Prepare request body
       let requestBody: string | undefined;
       if (body && ["POST", "PUT", "PATCH"].includes(method)) {
-        requestBody = context.interpolateVariables(body);
-
         // Auto-format for form data
         if (contentType === "application/x-www-form-urlencoded") {
           try {
-            const bodyObj = JSON.parse(requestBody);
+            const bodyObj = JSON.parse(body);
             requestBody = new URLSearchParams(bodyObj).toString();
           } catch {
             // If it's not valid JSON, assume it's already form-encoded
@@ -272,7 +266,7 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
 
       // Make the HTTP request using the HTTP client service
       const response = await this.httpClient.request({
-        url: interpolatedUrl,
+        url,
         method,
         headers: allHeaders,
         body: requestBody,
@@ -290,10 +284,10 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
       };
 
       // Store the response
-      context.setOutput(nodeId, httpResponse);
+      onSuccess(httpResponse);
 
       console.debug(`HTTP ${method} request completed:`, {
-        url: interpolatedUrl,
+        url,
         status: response.status,
         headers: response.headers,
       });
@@ -308,11 +302,11 @@ export class HttpRequestAction extends BaseAction<HttpRequestActionConfig> {
 
       // Handle specific error types
       if (errorMessage.includes("Network error")) {
-        throw new Error(`Network error: Unable to reach ${url}`);
+        onError(new Error(`Network error: Unable to reach ${url}`));
       } else if (errorMessage.includes("timeout")) {
-        throw new Error(`Request timeout after ${timeout} seconds`);
+        onError(new Error(`Request timeout after ${timeout} seconds`));
       } else {
-        throw new Error(`HTTP request failed: ${errorMessage}`);
+        onError(new Error(`HTTP request failed: ${errorMessage}`));
       }
     }
   }

@@ -44,30 +44,22 @@ export class ShowNotificationAction extends BaseAction<ShowNotificationActionCon
 
   async execute(
     config: ShowNotificationActionConfig,
-    context: ExecutionContext,
+    _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: any) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
     const { notificationTitle, notificationContent } = config;
 
-    console.log("context", context);
-    const interpolatedTitle = context.interpolateVariables(
-      notificationTitle || "Workflow Result",
-    );
-    const interpolatedContent = context.interpolateVariables(
-      notificationContent || "",
-    );
-
     try {
       NotificationService.showNotification({
-        title: interpolatedTitle,
-        message: interpolatedContent,
+        title: notificationTitle,
+        message: notificationContent,
       });
 
       onSuccess({
-        title: interpolatedTitle,
-        content: interpolatedContent,
+        title: notificationTitle,
+        content: notificationContent,
       });
     } catch (error) {
       onError(new Error(`Failed to show notification: ${error}`));

@@ -47,7 +47,7 @@ export class ClickElementAction extends BaseAction<ClickElementActionConfig> {
 
   async execute(
     config: ClickElementActionConfig,
-    _context: any,
+    _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: any) => void,
     onError: (error: Error) => void,

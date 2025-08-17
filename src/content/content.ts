@@ -4,14 +4,11 @@ import { ContentInjector } from "../services/injector";
 import { NotificationService } from "../services/notification";
 import { initializeTriggers } from "../services/triggerInitializer";
 import { TriggerRegistry } from "../services/triggerRegistry";
-import { ExecutionContext } from "../services/workflow";
 import {
   ActionCommand,
   TriggerCommand,
-  WorkflowCommand,
   WorkflowCommandType,
 } from "../types/background-workflow";
-import { TriggerExecutionContext } from "../types/triggers";
 
 console.debug("Content script loaded");
 
@@ -39,27 +36,27 @@ if ((window as any).changemeExtensionInitialized) {
     setupBackgroundEngineBridge();
   };
 
-  const setupWorkflowScriptBridge = () => {
-    // Listen for workflow script responses from the main world
-    window.addEventListener("message", (event) => {
-      if (
-        event.source === window &&
-        event.data.type === "workflow-script-response"
-      ) {
-        // Forward the message to the extension
-        chrome.runtime
-          .sendMessage({
-            type: "workflow-script-response",
-            nodeId: event.data.nodeId,
-            result: event.data.result,
-            error: event.data.error,
-          })
-          .catch((error) => {
-            console.error("Failed to send workflow script response:", error);
-          });
-      }
-    });
-  };
+  // const setupWorkflowScriptBridge = () => {
+  //   // Listen for workflow script responses from the main world
+  //   window.addEventListener("message", (event) => {
+  //     if (
+  //       event.source === window &&
+  //       event.data.type === "workflow-script-response"
+  //     ) {
+  //       // Forward the message to the extension
+  //       chrome.runtime
+  //         .sendMessage({
+  //           type: "workflow-script-response",
+  //           nodeId: event.data.nodeId,
+  //           result: event.data.result,
+  //           error: event.data.error,
+  //         })
+  //         .catch((error) => {
+  //           console.error("Failed to send workflow script response:", error);
+  //         });
+  //     }
+  //   });
+  // };
 
   const setupNotificationBridge = () => {
     // Listen for notification messages from background script
@@ -79,52 +76,38 @@ if ((window as any).changemeExtensionInitialized) {
     initializeActions();
     // Listen for messages from the background workflow engine
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-      let context: ExecutionContext;
       switch (message.type) {
         case WorkflowCommandType.INIT_TRIGGER:
           const initTriggerCommand = message as TriggerCommand;
           const triggerRegistry = TriggerRegistry.getInstance();
-          try {
-            console.log("Initializing trigger:", initTriggerCommand.nodeType);
-            triggerRegistry.setupTrigger(
+          triggerRegistry
+            .setupTrigger(
               initTriggerCommand.nodeType,
               initTriggerCommand.nodeConfig,
-              initTriggerCommand.context as TriggerExecutionContext,
-              async (data?: any) => {
-                console.log(
-                  "Trigger fired with data:",
-                  data,
-                  initTriggerCommand.nodeConfig,
-                );
+              initTriggerCommand.workflowId,
+              initTriggerCommand.nodeId,
+              async (data?: any) =>
                 sendResponse({
                   success: true,
                   data: data || initTriggerCommand.nodeConfig,
-                });
-              },
+                }),
+            )
+            .catch((error: any) =>
+              sendResponse({ success: false, error: error.message }),
             );
-          } catch (error: any) {
-            sendResponse({ success: false, error: error.message });
-          }
           break;
         case WorkflowCommandType.EXECUTE_ACTION:
           const executeActionCommand = message as ActionCommand;
           const actionRegistry = ActionRegistry.getInstance();
-          context = new ExecutionContext(executeActionCommand.context);
-          new Promise<any>((resolve, reject) => {
-            actionRegistry.execute(
+          actionRegistry
+            .execute(
               executeActionCommand.nodeType,
               executeActionCommand.nodeConfig,
-              context,
+              executeActionCommand.workflowId,
               executeActionCommand.nodeId,
-              (data: any) => resolve(data),
-              (error: Error) => reject(error),
-            );
-            setTimeout(() => {
-              reject(new Error("Action execution timed out"));
-            }, 10000); // 10 seconds timeout
-          })
-            .then((data) => sendResponse({ success: true, data }))
-            .catch((error) =>
+            )
+            .then((result) => sendResponse({ success: true, data: result }))
+            .catch((error: any) =>
               sendResponse({ success: false, error: error.message }),
             );
           break;
@@ -142,9 +125,9 @@ if ((window as any).changemeExtensionInitialized) {
 
   // Cleanup on page unload
   window.addEventListener("beforeunload", () => {
-    // if (contentInjector) {
-    //   contentInjector.destroy();
-    // }
+    if (contentInjector) {
+      contentInjector.destroy();
+    }
     (window as any).changemeExtensionInitialized = false;
   });
 }

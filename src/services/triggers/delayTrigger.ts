@@ -1,4 +1,4 @@
-import { BaseTrigger, TriggerConfigSchema, TriggerExecutionContext, TriggerSetupResult } from '../../types/triggers';
+import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
 
 interface DelayTriggerConfig {
   delay: number;
@@ -6,42 +6,38 @@ interface DelayTriggerConfig {
 
 export class DelayTrigger extends BaseTrigger<DelayTriggerConfig> {
   readonly metadata = {
-    type: 'delay',
-    label: 'Delay',
-    icon: '⏱️',
-    description: 'Triggers after a specified delay'
+    type: "delay",
+    label: "Delay",
+    icon: "⏱️",
+    description: "Triggers after a specified delay",
   };
 
   getConfigSchema(): TriggerConfigSchema {
     return {
       properties: {
         delay: {
-          type: 'number',
-          label: 'Delay (milliseconds)',
-          placeholder: '1000',
-          description: 'Time to wait before triggering in milliseconds',
+          type: "number",
+          label: "Delay (seconds)",
+          placeholder: "1",
+          description: "Time to wait before triggering in seconds",
           required: true,
           min: 0,
-          defaultValue: 1000
-        }
-      }
+          defaultValue: 1,
+        },
+      },
     };
   }
-async setup(
+  async setup(
     config: DelayTriggerConfig,
-    _context: TriggerExecutionContext,
-    onTrigger: () => Promise<void>
-  ): Promise<TriggerSetupResult> {
+    _workflowId: string,
+    _nodeId: string,
+    onTrigger: (data?: any) => Promise<void>,
+  ): Promise<void> {
     const delay = config.delay;
-    
-    const timeoutId = window.setTimeout(async () => {
-      await onTrigger();
-    }, delay);
 
-    return {
-      cleanup: () => {
-        clearTimeout(timeoutId);
-      }
-    };
+    const timeoutId = window.setTimeout(async () => {
+      await onTrigger({ delay, timestamp: Date.now() });
+      clearTimeout(timeoutId);
+    }, delay * 1000);
   }
 }

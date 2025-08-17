@@ -56,19 +56,19 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
 
   async setup(
     config: ComponentLoadTriggerConfig,
-    _context: TriggerExecutionContext,
-    onTrigger: () => Promise<void>,
-  ): Promise<TriggerSetupResult> {
+    _workflowId: string,
+    _nodeId: string,
+    onTrigger: (data?: any) => Promise<void>,
+  ): Promise<void> {
     const selector = config.selector;
-    const timeoutSeconds = config.timeout || 30;
     let hasTriggered = false;
 
     // Check if element already exists
     const existingElement = getElement(selector, config.selectorType);
     if (existingElement) {
       hasTriggered = true;
-      await onTrigger();
-      return {};
+      await onTrigger({ element: existingElement.outerHTML });
+      return;
     }
 
     // Set up observer to watch for element
@@ -81,7 +81,8 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
           if (element) {
             hasTriggered = true;
             observer.disconnect();
-            await onTrigger();
+            onTrigger({ element: element.outerHTML });
+            observer.disconnect();
             return;
           }
         }
@@ -92,26 +93,5 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
       childList: true,
       subtree: true,
     });
-
-    // Show error notification if component doesn't load within timeout
-    const timeoutId = window.setTimeout(() => {
-      if (!hasTriggered) {
-        observer.disconnect();
-        console.debug(
-          `Component load trigger timed out for selector: ${selector}`,
-        );
-        NotificationService.showErrorNotification({
-          title: "Component Load Timeout",
-          message: `Element "${selector}" did not load within ${timeoutSeconds} seconds`,
-        });
-      }
-    }, timeoutSeconds * 1000);
-
-    return {
-      cleanup: () => {
-        observer.disconnect();
-        clearTimeout(timeoutId);
-      },
-    };
   }
 }

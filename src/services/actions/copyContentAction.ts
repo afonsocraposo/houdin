@@ -2,7 +2,6 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { copyToClipboard, getElement } from "../../utils/helpers";
 import { NotificationService } from "../notification";
@@ -48,8 +47,10 @@ export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
 
   async execute(
     config: CopyContentActionConfig,
-    context: ActionExecutionContext,
-    nodeId: string,
+    _workflowId: string,
+    _nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { selector, selectorType } = config;
 
@@ -57,11 +58,12 @@ export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
     if (sourceElement) {
       const textContent = sourceElement.textContent || "";
       await copyToClipboard(textContent);
-      context.setOutput(nodeId, textContent);
+      onSuccess(textContent);
       NotificationService.showNotification({
         title: "Content copied to clipboard!",
       });
     } else {
+      onError(new Error("Source element not found"));
       NotificationService.showErrorNotification({
         message: "Source element not found",
       });

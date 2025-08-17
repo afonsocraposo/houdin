@@ -14,6 +14,7 @@ export class WaitAction extends BaseAction<WaitActionConfig> {
     label: "Wait",
     icon: "⏳",
     description: "Wait for a specified duration before proceeding",
+    disableTimeout: true,
   };
 
   getConfigSchema(): ActionConfigSchema {
@@ -21,10 +22,11 @@ export class WaitAction extends BaseAction<WaitActionConfig> {
       properties: {
         duration: {
           type: "number",
-          label: "Duration (ms)",
-          defaultValue: "1000",
-          description: "Duration to wait in milliseconds",
+          label: "Duration (s)",
+          description: "Duration to wait in seconds",
           required: true,
+          min: 0,
+          defaultValue: 3,
         },
       },
     };
@@ -32,13 +34,16 @@ export class WaitAction extends BaseAction<WaitActionConfig> {
 
   async execute(
     config: WaitActionConfig,
-    _context: any,
+    _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: any) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
-    setTimeout(() => {
-      onSuccess({ message: `Waited for ${config.duration} ms` });
-    }, config.duration);
+    await new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, config.duration * 1000);
+    });
+    onSuccess({ duration: config.duration, timestamp: Date.now() });
   }
 }

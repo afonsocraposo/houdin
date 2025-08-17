@@ -2,7 +2,6 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { NotificationService } from "../notification";
 
@@ -37,19 +36,24 @@ export class InjectStyleAction extends BaseAction<InjectStyleActionConfig> {
 
   async execute(
     config: InjectStyleActionConfig,
-    _context: ActionExecutionContext,
+    _workflowId: string,
     _nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { customScript } = config;
 
     try {
       this.injectInlineStyle(customScript);
-    } catch (error) {
-      console.error("Error injecting custom style:", error);
+    } catch (error: any) {
+      onError(error as Error);
       NotificationService.showErrorNotification({
         message: "Error injecting custom style",
       });
     }
+    onSuccess({
+      message: "Custom style injected successfully",
+    });
   }
 
   private injectInlineStyle(code: string) {

@@ -1,5 +1,3 @@
-import { WorkflowExecutionContext } from "./workflow";
-
 // Background workflow exceution engine
 export interface BackgroundWorkflowEngine {
   executeWorkflow(workflowId: string): Promise<void>;
@@ -30,7 +28,6 @@ export interface WorkflowCommand {
   nodeType: string;
   nodeConfig: any;
   nodeId: string;
-  context: WorkflowExecutionContext;
 }
 
 export interface ActionCommand extends WorkflowCommand {

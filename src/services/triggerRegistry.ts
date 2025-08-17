@@ -1,14 +1,8 @@
-import {
-  BaseTrigger,
-  TriggerMetadata,
-  TriggerExecutionContext,
-  TriggerSetupResult,
-} from "../types/triggers";
+import { BaseTrigger, TriggerMetadata } from "../types/triggers";
 
 export class TriggerRegistry {
   private static instance: TriggerRegistry;
   private triggers = new Map<string, BaseTrigger>();
-  private activeTriggers = new Map<string, TriggerSetupResult>(); // Track active triggers for cleanup
 
   private constructor() {}
 
@@ -43,10 +37,10 @@ export class TriggerRegistry {
   async setupTrigger(
     type: string,
     config: Record<string, any>,
-    context: TriggerExecutionContext,
+    workflowId: string,
+    nodeId: string,
     onTrigger: (data?: any) => Promise<void>,
   ): Promise<void> {
-    console.log("setup trigger", type, config, context);
     const trigger = this.getTrigger(type);
     if (!trigger) {
       throw new Error(`Trigger type '${type}' not found in registry`);
@@ -60,41 +54,9 @@ export class TriggerRegistry {
       );
     }
 
-    // Clean up existing trigger with same node ID if it exists
-    // this.cleanupTrigger(context.triggerNode.id);
-
     // Setup with defaults applied
     const configWithDefaults = trigger.getConfigWithDefaults(config);
-    console.log(`Setting up trigger: ${type} with config`, configWithDefaults);
-    const setupResult = await trigger.setup(
-      configWithDefaults,
-      context,
-      onTrigger,
-    );
-
-    // Store the setup result for cleanup
-    if (setupResult.cleanup) {
-      this.activeTriggers.set(context.triggerNode.id, setupResult);
-    }
-  }
-
-  // Cleanup a specific trigger
-  cleanupTrigger(nodeId: string): void {
-    const triggerSetup = this.activeTriggers.get(nodeId);
-    if (triggerSetup?.cleanup) {
-      triggerSetup.cleanup();
-      this.activeTriggers.delete(nodeId);
-    }
-  }
-
-  // Cleanup all active triggers
-  cleanupAllTriggers(): void {
-    this.activeTriggers.forEach((triggerSetup) => {
-      if (triggerSetup.cleanup) {
-        triggerSetup.cleanup();
-      }
-    });
-    this.activeTriggers.clear();
+    await trigger.setup(configWithDefaults, workflowId, nodeId, onTrigger);
   }
 
   // Validate trigger configuration

@@ -1,5 +1,4 @@
 import { BaseAction, ActionMetadata } from "../types/actions";
-import { WorkflowExecutionContext } from "../types/workflow";
 import { NotificationService } from "./notification";
 
 export class ActionRegistry {
@@ -44,11 +43,9 @@ export class ActionRegistry {
   async execute(
     type: string,
     config: Record<string, any>,
-    context: WorkflowExecutionContext,
+    workflowId: string,
     nodeId: string,
-    onSuccess: (data?: any) => void,
-    onError: (error: Error) => void,
-  ): Promise<void> {
+  ): Promise<any> {
     const action = this.getAction(type);
     if (!action) {
       throw new Error(`Action type '${type}' not found in registry`);
@@ -65,19 +62,18 @@ export class ActionRegistry {
 
     // Execute with defaults applied
     const configWithDefaults = action.getConfigWithDefaults(config);
-    try {
-      await action.execute(
-        configWithDefaults,
-        context,
-        nodeId,
-        onSuccess,
-        onError,
-      );
-    } catch (error: any) {
-      onError(error);
-    } finally {
-      onSuccess();
-    }
+    return new Promise<any>((resolve, reject) => {
+      action
+        .execute(configWithDefaults, workflowId, nodeId, resolve, reject)
+        .catch((error) => reject(error))
+        .finally(() => resolve(null));
+      if (!action.metadata?.disableTimeout) {
+        setTimeout(
+          () => reject(new Error(`Action ${type} execution timed out`)),
+          10000,
+        );
+      }
+    });
   }
 
   // Validate action configuration

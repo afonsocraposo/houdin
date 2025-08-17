@@ -6,17 +6,13 @@ import {
 import { NotificationService } from "./notification";
 import { ExecutionTracker } from "./executionTracker";
 import { generateId } from "../utils/helpers";
-import {
-  sendMessageToBackground,
-  sendMessageToContentScript,
-} from "../lib/messages";
+import { sendMessageToContentScript } from "../lib/messages";
 import {
   ActionCommand,
   TriggerCommand,
   WorkflowCommandType,
 } from "../types/background-workflow";
 import { ActionRegistry } from "./actionRegistry";
-import { Action } from "webextension-polyfill";
 
 export class ExecutionContext implements WorkflowExecutionContext {
   constructor(public outputs: Record<string, any> = {}) {}
@@ -123,7 +119,6 @@ export class WorkflowExecutor {
       nodeType: triggerType,
       nodeConfig: triggerConfig,
       nodeId: node.id,
-      context: this.context,
     };
     try {
       const response = await sendMessageToContentScript(this.tabId, message);
@@ -213,7 +208,19 @@ export class WorkflowExecutor {
     const actionRegistry = ActionRegistry.getInstance();
     // Access trigger type correctly - it's stored as triggerType, not type
     const actionType = node.data?.actionType;
-    const actionConfig = node.data?.config || {};
+    const actionConfig: Object = node.data?.config || {};
+
+    // iterate object properties and interpolate variables
+    for (const key in actionConfig) {
+      if (actionConfig.hasOwnProperty(key)) {
+        //@ts-ignore
+        const value = actionConfig[key];
+        if (typeof value === "string") {
+          //@ts-ignore
+          actionConfig[key] = this.context.interpolateVariables(value);
+        }
+      }
+    }
 
     const action = actionRegistry.getAction(actionType);
     const runBackground = action !== undefined;
@@ -228,7 +235,6 @@ export class WorkflowExecutor {
       nodeType: actionType,
       nodeConfig: actionConfig,
       nodeId: node.id,
-      context: this.context,
     };
     try {
       const start = Date.now();
@@ -236,6 +242,7 @@ export class WorkflowExecutor {
       const result = runBackground
         ? await this.executeActionInBackground(message)
         : await sendMessageToContentScript(this.tabId, message);
+      console.log("action response:", result);
 
       const duration = Date.now() - start;
       if (!result || !result.success) {
@@ -270,37 +277,19 @@ export class WorkflowExecutor {
       this.destroy(false);
     }
   }
-  private async executeActionInBackground(
-    message: ActionCommand,
-  ): Promise<any> {
+  private executeActionInBackground(message: ActionCommand): Promise<any> {
     return new Promise(async (resolve, reject) => {
       const executeActionCommand = message as ActionCommand;
       const actionRegistry = ActionRegistry.getInstance();
-      const context = new ExecutionContext(executeActionCommand.context);
-      console.log(
-        "Executing action in background:",
-        executeActionCommand.nodeType,
-      );
-      try {
-        actionRegistry.execute(
+      actionRegistry
+        .execute(
           executeActionCommand.nodeType,
           executeActionCommand.nodeConfig,
-          context,
+          executeActionCommand.workflowId,
           executeActionCommand.nodeId,
-          (data: any) =>
-            resolve({
-              success: true,
-              data,
-            }),
-          (error: Error) => resolve({ success: false, error: error.message }),
-        );
-        // Set a timeout for the action execution
-        setTimeout(() => {
-          reject(new Error("Action execution timed out"));
-        }, 10000); // 10 seconds timeout
-      } catch (error: any) {
-        resolve({ success: false, error: error.message });
-      }
+        )
+        .then((result) => resolve({ success: true, data: result }))
+        .catch((error) => reject({ success: false, error: error.message }));
     });
   }
 

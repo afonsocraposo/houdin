@@ -2,7 +2,6 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { getElement } from "../../utils/helpers";
 import { NotificationService } from "../notification";
@@ -49,8 +48,10 @@ export class GetElementContentAction extends BaseAction<GetElementContentActionC
 
   async execute(
     config: GetElementContentActionConfig,
-    context: ActionExecutionContext,
-    nodeId: string,
+    _workflowId: string,
+    _nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { selector, selectorType } = config;
 
@@ -58,13 +59,12 @@ export class GetElementContentAction extends BaseAction<GetElementContentActionC
     if (element) {
       const textContent = element.textContent || "";
       // Store the output in the execution context
-      context.setOutput(nodeId, textContent);
+      onSuccess(textContent);
     } else {
-      console.error(`Element not found for selector: ${selector}`);
       NotificationService.showErrorNotification({
         message: "Element not found for content extraction",
       });
-      context.setOutput(nodeId, "");
+      onError(new Error(`Element not found for selector: ${selector}`));
     }
   }
 }
