@@ -11,6 +11,7 @@ import { ShowNotificationAction } from "./actions/showNotificationAction";
 import { HttpRequestAction } from "./actions/httpRequestAction";
 import { WaitAction } from "./actions/waitAction";
 import { WaitPageChangeAction } from "./actions/waitPageChange";
+import { NavigateUrlAction } from "./actions/navigateUrlAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -29,6 +30,7 @@ export function initializeActions(): void {
   registry.register(HttpRequestAction);
   registry.register(WaitAction);
   registry.register(WaitPageChangeAction);
+  registry.register(NavigateUrlAction);
 }
 
 export function initializeBackgroundActions(): void {
@@ -38,6 +40,7 @@ export function initializeBackgroundActions(): void {
   registry.register(WaitAction);
   registry.register(WaitPageChangeAction);
   registry.register(CustomScriptAction);
+  registry.register(NavigateUrlAction);
 }
 
 // Export registry instance for convenience

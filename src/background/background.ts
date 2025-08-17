@@ -21,7 +21,7 @@ if (runtime?.webRequest?.onBeforeRequest) {
 }
 
 runtime.runtime.onMessage.addListener(
-  (message: any, sender: any, sendResponse: (response: any) => void) => {
+  (message: any, sender: any, _sundResponse: (response: any) => void) => {
     if (message.type === "REGISTER_HTTP_TRIGGER") {
       // Register HTTP trigger with webRequest API
       console.debug("Background: Registering HTTP trigger", message);
@@ -97,12 +97,7 @@ if (runtime.webNavigation) {
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
   runtime.webNavigation.onCompleted.addListener(
-    (details: {
-      url: string;
-      tabId: number;
-      frameId: number;
-      frameType: string;
-    }) => {
+    (details: { url: string; tabId: number; frameId: number }) => {
       if (details.frameId === 0) {
         workflowEngine.onNewUrl(details.tabId, details.url);
       }

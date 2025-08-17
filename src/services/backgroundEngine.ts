@@ -72,7 +72,6 @@ export class BackgroundWorkflowEngine {
         });
       });
     });
-    console.log("active executors", this.activeExecutors);
   }
 
   private removeActiveExecutor = (executorId: string): void => {
@@ -80,7 +79,10 @@ export class BackgroundWorkflowEngine {
       `Removing active executor: ${executorId}`,
       this.activeExecutors,
     );
-    this.activeExecutors?.delete(executorId);
+    // wait some time to prevent the workflow from being triggered again immediately
+    setTimeout(() => {
+      this.activeExecutors?.delete(executorId);
+    }, 1000);
   };
 
   private getWorkflowTriggers(workflow: WorkflowDefinition): WorkflowNode[] {
