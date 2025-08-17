@@ -133,8 +133,10 @@ if ((window as any).changemeExtensionInitialized) {
               sendResponse({ success: false, error: error.message }),
             );
           break;
+        default:
+          return false; // Ignore other messages
       }
-      return true;
+      return true; // Indicate that we will respond asynchronously
     });
   };
 

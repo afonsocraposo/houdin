@@ -77,12 +77,16 @@ workflowEngine.initialize().then(() => {
         const triggerCallback = async (data: any) => {
           // Send trigger event back to content script
           if (sender.tab?.id) {
-            runtime.tabs.sendMessage(sender.tab.id, {
-              type: "HTTP_TRIGGER_FIRED",
-              workflowId: message.workflowId,
-              triggerNodeId: message.triggerNodeId,
-              data,
-            });
+            runtime.tabs
+              .sendMessage(sender.tab.id, {
+                type: "HTTP_TRIGGER_FIRED",
+                workflowId: message.workflowId,
+                triggerNodeId: message.triggerNodeId,
+                data,
+              })
+              .catch(() => {
+                // send and forget
+              });
           }
         };
 
