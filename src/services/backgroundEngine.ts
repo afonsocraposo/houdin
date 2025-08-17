@@ -1,4 +1,9 @@
+import { sendMessageToContentScript } from "../lib/messages";
 import { StorageManager } from "../services/storage";
+import {
+  TriggerCommand,
+  WorkflowCommandType,
+} from "../types/background-workflow";
 import { WorkflowDefinition, WorkflowNode } from "../types/workflow";
 import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow";
@@ -28,8 +33,6 @@ export class BackgroundWorkflowEngine {
 
       // Sync HTTP triggers in background script
       // chrome.runtime.sendMessage({ type: "SYNC_HTTP_TRIGGERS" });
-
-      // this.scheduleProcessing();
     });
   }
 
@@ -39,17 +42,17 @@ export class BackgroundWorkflowEngine {
   }
 
   async onNewUrl(tabId: number, url: string): Promise<void> {
-    const activeWorkflowIds = Array.from(this.activeExecutors.values()).map(
-      (executor) => executor.workflowId,
-    );
+    // Get the active workflow IDs for this tab
+    const activeWorkflowIds = Array.from(this.activeExecutors.values())
+      .filter((executor) => executor.tabId === tabId)
+      .map((executor) => executor.workflowId);
     // Find workflows that match the URL pattern
     const matchingWorkflows = this.workflows
       .filter(
         (workflow) =>
           workflow.enabled && this.matchesUrlPattern(workflow.urlPattern, url),
       )
-      // check if the workflow is not already active
-      .filter((workflow) => activeWorkflowIds.indexOf(workflow.id) === -1);
+      .filter((workflow) => !activeWorkflowIds.includes(workflow.id));
 
     if (matchingWorkflows.length === 0) {
       console.debug("No matching workflows for URL:", url);
@@ -58,19 +61,77 @@ export class BackgroundWorkflowEngine {
 
     matchingWorkflows.forEach((workflow) => {
       this.getWorkflowTriggers(workflow).forEach((triggerNode) => {
-        const executor = new WorkflowExecutor(
-          tabId,
-          workflow,
-          triggerNode,
-          url,
-          this.removeActiveExecutor,
-        );
-        this.activeExecutors.set(executor.id, executor);
-
-        executor.execute().catch((error) => {
-          console.error(`Error executing workflow ${workflow.name}:`, error);
-        });
+        this.setupTrigger(tabId, workflow, triggerNode);
       });
+    });
+  }
+
+  private async setupTrigger(
+    tabId: number,
+    workflow: WorkflowDefinition,
+    node: WorkflowNode,
+  ): Promise<void> {
+    // Access trigger type correctly - it's stored as triggerType, not type
+    const triggerType = node.data?.triggerType;
+    const triggerConfig = node.data?.config || {};
+
+    if (!triggerType) {
+      console.error(
+        "No trigger type found for node:",
+        node.id,
+        "node.data:",
+        node.data,
+      );
+      return;
+    }
+
+    // Send command to content script to set up the trigger
+    const message: TriggerCommand = {
+      type: WorkflowCommandType.INIT_TRIGGER,
+      workflowId: workflow.id,
+      tabId: tabId,
+      nodeType: triggerType,
+      nodeConfig: triggerConfig,
+      nodeId: node.id,
+    };
+    try {
+      await sendMessageToContentScript(tabId, message);
+    } catch (error) {
+      console.error("Error sending trigger setup message:", error);
+    }
+  }
+
+  public dispatchExecutor(
+    url: string,
+    tabId: number,
+    workflowId: string,
+    triggerNodeId: string,
+    triggerData: any,
+    duration: number,
+  ) {
+    const workflow = this.workflows.find((wf) => wf.id === workflowId);
+    if (!workflow) {
+      console.error(`Workflow not found: ${workflowId}`);
+      return;
+    }
+    const triggerNode = workflow.nodes.find(
+      (node) => node.id === triggerNodeId,
+    );
+    if (!triggerNode) {
+      console.error(`Trigger node not found: ${triggerNodeId}`);
+      return;
+    }
+    const executor = new WorkflowExecutor(
+      tabId,
+      workflow,
+      triggerNode,
+      url,
+      this.removeActiveExecutor,
+    );
+    this.activeExecutors.set(executor.id, executor);
+
+    executor.start(triggerData, duration).catch((error) => {
+      console.error(`Error executing workflow ${workflow.name}:`, error);
     });
   }
 

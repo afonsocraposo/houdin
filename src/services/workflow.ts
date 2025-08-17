@@ -3,13 +3,11 @@ import {
   WorkflowNode,
   WorkflowExecutionContext,
 } from "../types/workflow";
-import { NotificationService } from "./notification";
 import { ExecutionTracker } from "./executionTracker";
 import { generateId } from "../utils/helpers";
 import { sendMessageToContentScript } from "../lib/messages";
 import {
   ActionCommand,
-  TriggerCommand,
   WorkflowCommandType,
 } from "../types/background-workflow";
 import { ActionRegistry } from "./actionRegistry";
@@ -64,7 +62,7 @@ export class ExecutionContext implements WorkflowExecutionContext {
 export class WorkflowExecutor {
   public readonly id: string;
   public readonly workflowId: string;
-  private readonly tabId: number;
+  public readonly tabId: number;
   private context: ExecutionContext;
   private executionTracker: ExecutionTracker;
 
@@ -87,92 +85,25 @@ export class WorkflowExecutor {
     );
   }
 
-  async execute(): Promise<void> {
-    if (!this.workflow.enabled) {
-      console.debug("Workflow is disabled, skipping execution");
-      return;
-    }
-    console.debug("Executing workflow:", this.workflow.name);
-
-    try {
-      // Find trigger nodes and set them up
-      this.setupTrigger(this.triggerNode);
-    } catch (error) {
-      console.error("Error executing workflow:", error);
-      NotificationService.showErrorNotification({
-        message: `Error executing ${this.workflow.name}`,
-      });
-    }
-  }
-
-  private async setupTrigger(node: WorkflowNode): Promise<void> {
-    // Access trigger type correctly - it's stored as triggerType, not type
-    const triggerType = node.data?.triggerType;
-    const triggerConfig = node.data?.config || {};
-
-    if (!triggerType) {
-      console.error(
-        "No trigger type found for node:",
-        node.id,
-        "node.data:",
-        node.data,
-      );
-      return;
-    }
-
-    // Send command to content script to set up the trigger
-    const message: TriggerCommand = {
-      type: WorkflowCommandType.INIT_TRIGGER,
-      executionId: this.id,
-      workflowId: this.workflow.id,
-      tabId: this.tabId,
-      nodeType: triggerType,
-      nodeConfig: triggerConfig,
-      nodeId: node.id,
-    };
-    try {
-      const response = await sendMessageToContentScript(this.tabId, message);
-      console.log("trigger response:", response);
-      // Track the execution
-      this.executionTracker.startExecution();
-      this.executionTracker.addNodeResult({
-        nodeId: this.triggerNode.id,
-        nodeType: "trigger",
-        nodeName: triggerType,
-        nodeConfig: triggerConfig,
-        data: response.data,
-        status: "success",
-        executedAt: Date.now(),
-      });
-      if (!response.success) {
-        this.executionTracker.addNodeResult({
-          nodeId: this.triggerNode.id,
-          nodeType: "trigger",
-          nodeName: triggerType,
-          nodeConfig: triggerConfig,
-          data: response.error,
-          status: "error",
-          executedAt: Date.now(),
-        });
-        throw new Error(
-          `Failed to set up trigger ${triggerType}: ${response.error}`,
-        );
-      }
-
-      this.onTriggerFired(response.data);
-    } catch (error) {
-      console.error("Error sending trigger setup message:", error);
-    }
-  }
-
-  public onTriggerFired(result: any): void {
+  async start(triggerData: any, duration: number): Promise<void> {
     console.debug(
       "Trigger fired for workflow:",
       this.workflow.name,
       this.triggerNode.type,
-      result,
+      triggerData,
     );
-    this.context.setOutput(this.triggerNode.id, result);
+    this.context.setOutput(this.triggerNode.id, triggerData);
+    this.executionTracker.startExecution();
+    this.executionTracker.addNodeResult({
+      nodeId: this.triggerNode.id,
+      nodeType: "trigger",
+      nodeName: this.triggerNode.data?.triggerType || "unknown",
+      nodeConfig: this.triggerNode.data?.config || {},
+      data: triggerData,
+      status: "success",
+      executedAt: Date.now(),
+      duration, // Duration will be updated later
+    });
     // Find all actions connected to this trigger
     const connections = this.workflow.connections.filter(
       (conn) => conn.source === this.triggerNode.id,

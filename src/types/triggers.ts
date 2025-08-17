@@ -11,7 +11,7 @@ export type TriggerConfigSchema = ConfigSchema;
 export type TriggerValidationResult = ValidationResult;
 
 // Trigger metadata is the same as base metadata
-export type TriggerMetadata = BaseMetadata;
+export type TriggerMetadata = BaseMetadata & {};
 
 // Trigger setup result interface
 export interface TriggerSetupResult {

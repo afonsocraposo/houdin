@@ -75,15 +75,8 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
         // context.setOutput(context.triggerNode.id, message.data);
         // Trigger the workflow
         onTrigger({ message: "HTTP request matched" });
-
-        chrome.runtime.sendMessage({
-          type: "UNREGISTER_HTTP_TRIGGER",
-          workflowId: workflowId,
-          triggerNodeId: nodeId,
-        });
-
-        chrome.runtime.onMessage.removeListener(messageListener);
       }
+      return false;
     };
 
     chrome.runtime.onMessage.addListener(messageListener);

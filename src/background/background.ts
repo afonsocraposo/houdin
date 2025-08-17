@@ -1,5 +1,6 @@
 import { HttpListenerWebRequest } from "../services/httpListenerWebRequest";
 import { BackgroundWorkflowEngine } from "../services/backgroundEngine";
+import { WorkflowCommandType } from "../types/background-workflow";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -19,51 +20,6 @@ if (runtime?.webRequest?.onBeforeRequest) {
 } else {
   console.error("Background: chrome.webRequest.onBeforeRequest not available");
 }
-
-runtime.runtime.onMessage.addListener(
-  (message: any, sender: any, _sundResponse: (response: any) => void) => {
-    if (message.type === "REGISTER_HTTP_TRIGGER") {
-      // Register HTTP trigger with webRequest API
-      console.debug("Background: Registering HTTP trigger", message);
-
-      if (!httpListener) {
-        console.error(
-          "Background: Cannot register HTTP trigger - httpListener not available",
-        );
-        return;
-      }
-
-      const triggerCallback = async (data: any) => {
-        // Send trigger event back to content script
-        if (sender.tab?.id) {
-          runtime.tabs.sendMessage(sender.tab.id, {
-            type: "HTTP_TRIGGER_FIRED",
-            workflowId: message.workflowId,
-            triggerNodeId: message.triggerNodeId,
-            data,
-          });
-        }
-      };
-
-      httpListener.registerTrigger(
-        message.workflowId,
-        message.triggerNodeId,
-        message.urlPattern,
-        message.method,
-        triggerCallback,
-      );
-    } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
-      // Unregister HTTP trigger
-      console.debug("Background: Unregistering HTTP trigger", message);
-      if (httpListener) {
-        httpListener.unregisterTrigger(
-          message.workflowId,
-          message.triggerNodeId,
-        );
-      }
-    }
-  },
-);
 
 runtime.runtime.onInstalled.addListener(() => {
   console.debug("Extension installed");
@@ -103,5 +59,68 @@ workflowEngine.initialize().then(() => {
       }
     },
     { url: [{ schemes: ["http", "https"] }] },
+  );
+
+  runtime.runtime.onMessage.addListener(
+    (message: any, sender: any, _sundResponse: (response: any) => void) => {
+      if (message.type === "REGISTER_HTTP_TRIGGER") {
+        // Register HTTP trigger with webRequest API
+        console.debug("Background: Registering HTTP trigger", message);
+
+        if (!httpListener) {
+          console.error(
+            "Background: Cannot register HTTP trigger - httpListener not available",
+          );
+          return;
+        }
+
+        const triggerCallback = async (data: any) => {
+          // Send trigger event back to content script
+          if (sender.tab?.id) {
+            runtime.tabs.sendMessage(sender.tab.id, {
+              type: "HTTP_TRIGGER_FIRED",
+              workflowId: message.workflowId,
+              triggerNodeId: message.triggerNodeId,
+              data,
+            });
+          }
+        };
+
+        httpListener.registerTrigger(
+          message.workflowId,
+          message.triggerNodeId,
+          message.urlPattern,
+          message.method,
+          triggerCallback,
+        );
+        return false;
+      } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
+        // Unregister HTTP trigger
+        console.debug("Background: Unregistering HTTP trigger", message);
+        if (httpListener) {
+          httpListener.unregisterTrigger(
+            message.workflowId,
+            message.triggerNodeId,
+          );
+        }
+        return false;
+      } else if (message.type === WorkflowCommandType.TRIGGER_FIRED) {
+        const tabId = sender.tab.id;
+        const url = message.url;
+        const workflowId = message.workflowId;
+        const triggerNodeId = message.triggerNodeId;
+        const data = message.data || {};
+        const duration = message.duration || undefined;
+        workflowEngine.dispatchExecutor(
+          url,
+          tabId,
+          workflowId,
+          triggerNodeId,
+          data,
+          duration,
+        );
+        return false;
+      }
+    },
   );
 });

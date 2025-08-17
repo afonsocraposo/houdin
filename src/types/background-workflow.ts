@@ -17,12 +17,13 @@ export interface ActiveWorkflow {
 export enum WorkflowCommandType {
   EXECUTE_ACTION = "EXECUTE_ACTION",
   INIT_TRIGGER = "INIT_TRIGGER",
+  TRIGGER_FIRED = "TRIGGER_FIRED",
 }
 
 // Command system for content scripts
 export interface WorkflowCommand {
   type: WorkflowCommandType;
-  executionId: string;
+  executionId?: string;
   workflowId: string;
   tabId: number;
   nodeType: string;

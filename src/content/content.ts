@@ -81,6 +81,7 @@ if ((window as any).changemeExtensionInitialized) {
       switch (message.type) {
         case WorkflowCommandType.INIT_TRIGGER:
           const initTriggerCommand = message as TriggerCommand;
+          const start = Date.now();
           const triggerRegistry = TriggerRegistry.getInstance();
           triggerRegistry
             .setupTrigger(
@@ -88,16 +89,35 @@ if ((window as any).changemeExtensionInitialized) {
               initTriggerCommand.nodeConfig,
               initTriggerCommand.workflowId,
               initTriggerCommand.nodeId,
-              async (data?: any) =>
-                sendResponse({
-                  success: true,
-                  data: data || initTriggerCommand.nodeConfig,
-                }),
+              async (data?: any) => {
+                console.debug(
+                  "Content: Trigger fired:",
+                  initTriggerCommand.nodeId,
+                  "with data:",
+                  data,
+                );
+                const duration = Date.now() - start;
+                chrome.runtime
+                  .sendMessage({
+                    type: WorkflowCommandType.TRIGGER_FIRED,
+                    url: window.location.href,
+                    workflowId: initTriggerCommand.workflowId,
+                    triggerNodeId: initTriggerCommand.nodeId,
+                    data: data || initTriggerCommand.nodeConfig,
+                    duration,
+                  })
+                  .catch((error) => {
+                    console.error(
+                      "Failed to send workflow script response:",
+                      error,
+                    );
+                  });
+              },
             )
             .catch((error: any) =>
               sendResponse({ success: false, error: error.message }),
             );
-          break;
+          return false;
         case WorkflowCommandType.EXECUTE_ACTION:
           const executeActionCommand = message as ActionCommand;
           const actionRegistry = ActionRegistry.getInstance();
