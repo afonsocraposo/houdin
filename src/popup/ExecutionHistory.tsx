@@ -110,10 +110,6 @@ function ExecutionHistory() {
     browserAPI.tabs.create({ url: configUrl });
   };
 
-  const manualRefresh = () => {
-    loadExecutions();
-  };
-
   const getStats = () => {
     return {
       total: executions.length,
@@ -131,33 +127,6 @@ function ExecutionHistory() {
 
   return (
     <Stack gap="sm">
-      <Group justify="space-between">
-        <Title order={4}>Session Activity</Title>
-        <Group gap="xs">
-          <Button
-            size="xs"
-            variant="light"
-            leftSection={<IconRefresh size={12} />}
-            onClick={manualRefresh}
-            loading={isRefreshing}
-          >
-            Refresh
-          </Button>
-          <Button size="xs" variant="light" onClick={clearHistory}>
-            Clear
-          </Button>
-        </Group>
-      </Group>
-
-      {lastRefresh && (
-        <TimeAgoText
-          timestamp={lastRefresh}
-          prefix="Last updated"
-          size="xs"
-          c="dimmed"
-        />
-      )}
-
       <Group gap="xs">
         <Badge color="blue" variant="light" size="sm">
           {stats.total} executed
@@ -175,18 +144,18 @@ function ExecutionHistory() {
       </Group>
 
       {recentExecutions.length === 0 ? (
-        <Card mih={172} withBorder>
+        <Card flex={1} withBorder>
           <Text size="sm" c="dimmed" ta="center">
             No workflow executions in this session
           </Text>
         </Card>
       ) : (
-        <Card withBorder p="sm">
+        <Card flex={1} withBorder p="sm">
           <Stack gap="xs">
             <Text size="sm" fw={500}>
               Recent Workflows:
             </Text>
-            <ScrollArea h={116}>
+            <ScrollArea>
               <Stack gap="xs">
                 {recentExecutions.map((execution) => (
                   <Group key={execution.id} justify="space-between" gap="xs">
