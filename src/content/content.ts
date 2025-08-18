@@ -43,7 +43,10 @@ if ((window as any).changemeExtensionInitialized) {
         event.source === window &&
         event.data.type === "workflow-script-response"
       ) {
-        console.log("Content: Received workflow script response:", event.data);
+        console.debug(
+          "Content: Received workflow script response:",
+          event.data,
+        );
         // Forward the message to the extension
         chrome.runtime
           .sendMessage({
@@ -147,11 +150,19 @@ if ((window as any).changemeExtensionInitialized) {
     initContentScript();
   }
 
+  const cleanUpHttpTriggers = () => {
+    // Clean up any registered HTTP triggers
+    chrome.runtime.sendMessage({
+      type: WorkflowCommandType.CLEAN_HTTP_TRIGGERS,
+    });
+  };
+
   // Cleanup on page unload
   window.addEventListener("beforeunload", () => {
     if (contentInjector) {
       contentInjector.destroy();
     }
+    cleanUpHttpTriggers();
     (window as any).changemeExtensionInitialized = false;
   });
 }

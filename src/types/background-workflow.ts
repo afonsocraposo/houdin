@@ -18,6 +18,7 @@ export enum WorkflowCommandType {
   EXECUTE_ACTION = "EXECUTE_ACTION",
   INIT_TRIGGER = "INIT_TRIGGER",
   TRIGGER_FIRED = "TRIGGER_FIRED",
+  CLEAN_HTTP_TRIGGERS = "CLEAN_HTTP_TRIGGERS",
 }
 
 // Command system for content scripts

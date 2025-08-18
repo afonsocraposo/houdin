@@ -30,7 +30,7 @@ export class ExecutionTracker {
       this.status = WorkflowExecutionStatus.FAILED;
     }
     this.success = success;
-    console.log(this.nodeResults);
+    console.debug(this.nodeResults);
     this.saveExecution();
   }
 

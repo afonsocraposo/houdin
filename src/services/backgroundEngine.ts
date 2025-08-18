@@ -30,9 +30,6 @@ export class BackgroundWorkflowEngine {
     this.storageManager.onStorageChanged((workflows) => {
       console.debug("Workflows updated, reloading...");
       this.workflows = workflows;
-
-      // Sync HTTP triggers in background script
-      // chrome.runtime.sendMessage({ type: "SYNC_HTTP_TRIGGERS" });
     });
   }
 
@@ -136,7 +133,7 @@ export class BackgroundWorkflowEngine {
   }
 
   private removeActiveExecutor = (executorId: string): void => {
-    console.log(
+    console.debug(
       `Removing active executor: ${executorId}`,
       this.activeExecutors,
     );

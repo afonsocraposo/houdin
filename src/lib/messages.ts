@@ -13,6 +13,6 @@ export const sendMessageToContentScript = async (
   tabId: number,
   message: any,
 ): Promise<any> => {
-  console.log(`Sending message to content script in tab ${tabId}:`, message);
+  console.debug(`Sending message to content script in tab ${tabId}:`, message);
   return await browserAPI.tabs.sendMessage(tabId, message);
 };

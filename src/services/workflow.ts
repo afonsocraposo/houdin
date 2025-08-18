@@ -120,7 +120,7 @@ export class WorkflowExecutor {
   }
 
   public onActionExecuted(nodeId: string, result: any): void {
-    console.log("Action executed:", nodeId, result);
+    console.debug("Action executed:", nodeId, result);
     this.context.setOutput(nodeId, result);
     // Find all actions connected to this node
     const connections = this.workflow.connections.filter(

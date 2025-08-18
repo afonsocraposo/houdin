@@ -75,22 +75,27 @@ workflowEngine.initialize().then(() => {
         }
 
         const triggerCallback = async (data: any) => {
+          console.debug("HTTP trigger fired:", {
+            tabId: sender.tab.id,
+            workflowId: message.workflowId,
+            triggerNodeId: message.triggerNodeId,
+            data,
+          });
           // Send trigger event back to content script
-          if (sender.tab?.id) {
-            runtime.tabs
-              .sendMessage(sender.tab.id, {
-                type: "HTTP_TRIGGER_FIRED",
-                workflowId: message.workflowId,
-                triggerNodeId: message.triggerNodeId,
-                data,
-              })
-              .catch(() => {
-                // send and forget
-              });
-          }
+          runtime.tabs
+            .sendMessage(sender.tab.id, {
+              type: "HTTP_TRIGGER_FIRED",
+              workflowId: message.workflowId,
+              triggerNodeId: message.triggerNodeId,
+              data,
+            })
+            .catch(() => {
+              // send and forget
+            });
         };
 
         httpListener.registerTrigger(
+          sender.tab.id,
           message.workflowId,
           message.triggerNodeId,
           message.urlPattern,
@@ -98,14 +103,10 @@ workflowEngine.initialize().then(() => {
           triggerCallback,
         );
         return false;
-      } else if (message.type === "UNREGISTER_HTTP_TRIGGER") {
-        // Unregister HTTP trigger
-        console.debug("Background: Unregistering HTTP trigger", message);
+      } else if (message.type === WorkflowCommandType.CLEAN_HTTP_TRIGGERS) {
+        // Unregister HTTP triggers
         if (httpListener) {
-          httpListener.unregisterTrigger(
-            message.workflowId,
-            message.triggerNodeId,
-          );
+          httpListener.unregisterTriggers(sender.tab.id);
         }
         return false;
       } else if (message.type === WorkflowCommandType.TRIGGER_FIRED) {

@@ -1,6 +1,7 @@
 // Manifest V3 compatible HTTP trigger system using chrome.webRequest API
 
 interface HttpTrigger {
+  tabId: number; // Tab ID for specific tab triggers
   workflowId: string;
   triggerNodeId: string;
   urlPattern: string;
@@ -39,6 +40,7 @@ export class HttpListenerWebRequest {
 
   // Register a trigger with direct callback execution
   registerTrigger(
+    tabId: number,
     workflowId: string,
     triggerNodeId: string,
     urlPattern: string,
@@ -48,28 +50,32 @@ export class HttpListenerWebRequest {
     // Remove existing trigger with same ID if it exists
     this.triggers = this.triggers.filter(
       (t) =>
-        !(t.workflowId === workflowId && t.triggerNodeId === triggerNodeId),
+        !(
+          t.tabId == tabId &&
+          t.workflowId === workflowId &&
+          t.triggerNodeId === triggerNodeId
+        ),
     );
 
     // Add new trigger
     this.triggers.push({
+      tabId,
       workflowId,
       triggerNodeId,
       urlPattern,
       method,
       onTrigger,
     });
+    console.debug("Registered triggers:", this.triggers);
 
     // Start listening if not already
     this.startListening();
   }
 
-  // Unregister a trigger
-  unregisterTrigger(workflowId: string, triggerNodeId: string): void {
-    this.triggers = this.triggers.filter(
-      (t) =>
-        !(t.workflowId === workflowId && t.triggerNodeId === triggerNodeId),
-    );
+  // Unregister triggers for a specific tab
+  unregisterTriggers(tabId: number): void {
+    console.debug("Unregistering triggers for tab:", tabId);
+    this.triggers = this.triggers.filter((t) => !(t.tabId === tabId));
 
     // Stop listening if no more triggers
     if (this.triggers.length === 0) {
@@ -164,7 +170,7 @@ export class HttpListenerWebRequest {
     this.pendingRequests.set(details.requestId, requestData);
 
     // Check triggers immediately for request
-    this.checkTriggers(requestData);
+    this.checkTriggers(details.tabId, requestData);
   };
 
   private onHeadersReceived = (
@@ -176,9 +182,13 @@ export class HttpListenerWebRequest {
     }, 5000);
   };
 
-  private async checkTriggers(requestData: RequestData): Promise<void> {
+  private async checkTriggers(
+    tabId: number,
+    requestData: RequestData,
+  ): Promise<void> {
     for (const trigger of this.triggers) {
       if (
+        trigger.tabId === tabId &&
         this.matchesPattern(requestData.url, trigger.urlPattern) &&
         this.matchesMethod(requestData.method, trigger.method)
       ) {

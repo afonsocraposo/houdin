@@ -67,7 +67,7 @@ export class UserScriptManager {
         world: "MAIN",
         injectImmediately: true,
       });
-      console.log("UserScript execution results:", results);
+      console.debug("UserScript execution results:", results);
 
       // Check if execution was successful
       if (results && results.length > 0) {
