@@ -29,6 +29,7 @@ export class ExecutionTracker {
     } else {
       this.status = WorkflowExecutionStatus.FAILED;
     }
+    this.completedAt = Date.now();
     this.success = success;
     console.debug(this.nodeResults);
     this.saveExecution();
@@ -36,26 +37,18 @@ export class ExecutionTracker {
 
   addNodeResult(nodeResult: NodeExecutionResult): void {
     this.nodeResults.push(nodeResult);
-    this.updateActiveExecution();
-  }
-
-  private async updateActiveExecution(): Promise<void> {
-    const storageManager = StorageManager.getInstance();
-    await storageManager.saveActiveWorkflowExecution(
-      this.getWorkflowExecution(),
-    );
   }
 
   private async saveExecution(): Promise<void> {
     const storageManager = StorageManager.getInstance();
     await storageManager.saveWorkflowExecution(this.getWorkflowExecution());
-    await storageManager.clearActiveWorkflowExecution(this.executionId);
   }
 
   private getWorkflowExecution(): WorkflowExecution {
     const workflowExecution: WorkflowExecution = {
       id: this.executionId,
       workflowId: this.workflowId,
+      triggerType: this.trigger,
       startedAt: this.startedAt,
       completedAt: this.completedAt,
       status: this.status,

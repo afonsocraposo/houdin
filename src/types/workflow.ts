@@ -38,8 +38,9 @@ export enum WorkflowExecutionStatus {
 export interface WorkflowExecution {
   id: string;
   workflowId: string;
+  triggerType: string;
   startedAt: number;
-  completedAt?: number;
+  completedAt: number | undefined;
   status: WorkflowExecutionStatus;
   nodeResults: NodeExecutionResult[];
   url: string;

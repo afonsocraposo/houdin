@@ -32,12 +32,9 @@ function ExecutionHistory() {
   const loadExecutions = async () => {
     setIsRefreshing(true);
     try {
-      const response = await new Promise<{ executions: WorkflowExecution[] }>(
-        (resolve) => {
-          browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
-        },
-      );
-      setExecutions(response.executions || []);
+      const storageManager = StorageManager.getInstance();
+      const executions = await storageManager.getWorkflowExecutions();
+      setExecutions(executions);
       setLastRefresh(Date.now());
     } catch (error) {
       console.error("Failed to load executions:", error);
@@ -120,7 +117,6 @@ function ExecutionHistory() {
   const getStats = () => {
     return {
       total: executions.length,
-      running: executions.filter((e) => e.status === "running").length,
       completed: executions.filter((e) => e.status === "completed").length,
       failed: executions.filter((e) => e.status === "failed").length,
     };
@@ -154,11 +150,11 @@ function ExecutionHistory() {
       </Group>
 
       {lastRefresh && (
-        <TimeAgoText 
-          timestamp={lastRefresh} 
+        <TimeAgoText
+          timestamp={lastRefresh}
           prefix="Last updated"
-          size="xs" 
-          c="dimmed" 
+          size="xs"
+          c="dimmed"
         />
       )}
 
@@ -166,11 +162,6 @@ function ExecutionHistory() {
         <Badge color="blue" variant="light" size="sm">
           {stats.total} executed
         </Badge>
-        {stats.running > 0 && (
-          <Badge color="blue" size="sm">
-            {stats.running} running
-          </Badge>
-        )}
         {stats.completed > 0 && (
           <Badge color="green" size="sm">
             {stats.completed} completed
@@ -203,10 +194,10 @@ function ExecutionHistory() {
                       <Text size="xs" truncate>
                         {getWorkflowName(execution.workflowId)}
                       </Text>
-                      <TimeAgoText 
+                      <TimeAgoText
                         timestamp={execution.startedAt}
-                        size="xs" 
-                        c="dimmed" 
+                        size="xs"
+                        c="dimmed"
                       />
                     </Stack>
                     <Badge

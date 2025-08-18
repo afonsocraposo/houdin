@@ -22,12 +22,14 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
 
   const loadExecutions = async () => {
     try {
-      const response = await new Promise<{ executions: WorkflowExecution[] }>(
-        (resolve) => {
-          browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
-        },
+      const storageManager = StorageManager.getInstance();
+      const activeExecutions =
+        await storageManager.getActiveWorkflowExecutions();
+      const executions = Array.from<WorkflowExecution>(
+        (activeExecutions as any).values(),
       );
-      setExecutions(response.executions || []);
+
+      setExecutions(executions);
     } catch (error) {
       console.error("Failed to load executions:", error);
       setExecutions([]);
@@ -37,16 +39,16 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Load workflows and executions in parallel to avoid blocking
       const [workflows] = await Promise.all([
         (async () => {
           const storageManager = StorageManager.getInstance();
           return await storageManager.getWorkflows();
         })(),
-        loadExecutions()
+        loadExecutions(),
       ]);
-      
+
       setWorkflows(workflows);
     } catch (error) {
       console.error("Error loading data:", error);
