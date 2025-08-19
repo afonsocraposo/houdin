@@ -1,5 +1,6 @@
 import { initializeActions } from "../services/actionInitializer";
 import { ActionRegistry } from "../services/actionRegistry";
+import { initializeCredentials } from "../services/credentialInitializer";
 import { ContentInjector } from "../services/injector";
 import { NotificationService } from "../services/notification";
 import { initializeTriggers } from "../services/triggerInitializer";
@@ -79,6 +80,7 @@ if ((window as any).changemeExtensionInitialized) {
   const setupBackgroundEngineBridge = () => {
     initializeTriggers();
     initializeActions();
+    initializeCredentials();
     // Listen for messages from the background workflow engine
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       switch (message.type) {
