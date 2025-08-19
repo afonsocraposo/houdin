@@ -13,6 +13,7 @@ import {
   ActionIcon,
   Select,
   TextInput,
+  Code,
 } from "@mantine/core";
 import {
   IconChevronDown,
@@ -31,6 +32,7 @@ import { StorageManager } from "../services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "./TimeAgoText";
 import { formatTimeAgo } from "../utils/time";
+import { CodeHighlight } from "@mantine/code-highlight";
 
 function ExecutionHistoryPage() {
   const navigate = useNavigate();
@@ -461,7 +463,9 @@ function ExecutionHistoryPage() {
                                                   >
                                                     View Output
                                                   </summary>
-                                                  <pre
+                                                  <CodeHighlight
+                                                    w={300}
+                                                    mah={200}
                                                     style={{
                                                       fontSize: "10px",
                                                       background:
@@ -472,16 +476,18 @@ function ExecutionHistoryPage() {
                                                       maxHeight: "200px",
                                                       overflow: "auto",
                                                     }}
-                                                  >
-                                                    {typeof node.data ===
-                                                    "object"
-                                                      ? JSON.stringify(
-                                                          node.data,
-                                                          null,
-                                                          2,
-                                                        )
-                                                      : String(node.data)}
-                                                  </pre>
+                                                    language="json"
+                                                    code={
+                                                      typeof node.data ===
+                                                      "object"
+                                                        ? JSON.stringify(
+                                                            node.data,
+                                                            null,
+                                                            2,
+                                                          )
+                                                        : String(node.data)
+                                                    }
+                                                  />
                                                 </details>
                                               ) : (
                                                 <Text

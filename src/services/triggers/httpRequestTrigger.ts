@@ -74,7 +74,7 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
         // Set the request data in context
         // context.setOutput(context.triggerNode.id, message.data);
         // Trigger the workflow
-        onTrigger({ message: "HTTP request matched" });
+        onTrigger(message.data);
       }
       return false;
     };
