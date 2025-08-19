@@ -10,41 +10,11 @@ A cross-browser extension built with TypeScript, React, Mantine UI, and Vite wit
 - 📦 TypeScript for type safety
 - 🔧 Modern development setup
 
-## Development
+## License TL;DR (PolyForm Noncommercial 1.0.0)
 
-1. Install dependencies:
-
-```bash
-npm install
-```
-
-2. Start development server:
-
-```bash
-npm run dev
-```
-
-3. Load the extension in your browser:
-   - **Chrome**: Go to `chrome://extensions/`, enable Developer mode, click "Load unpacked" and select the `dist` folder
-   - **Firefox**: Go to `about:debugging`, click "This Firefox", click "Load Temporary Add-on" and select the manifest.json from the `dist` folder
-
-## Build
-
-```bash
-npm run build
-```
-
-## Project Structure
-
-```
-src/
-├── manifest.json          # Extension manifest
-├── popup/                 # Extension popup
-│   ├── index.html
-│   ├── popup.tsx
-│   └── App.tsx
-├── background/            # Background script
-│   └── background.ts
-└── content/              # Content script
-    └── content.ts
-```
+- ✅ Free to use, copy, modify, and share for noncommercial purposes
+- ✅ OK for personal projects, research, education, nonprofits, government
+- ✅ You can make changes/derivatives, but must include this license + notices
+- ❌ No commercial use (can’t sell, use in paid products/services, or for profit)
+- ❌ No sublicensing or transferring the license
+- ⚠️ Software is “as is” — no warranty, no liability
