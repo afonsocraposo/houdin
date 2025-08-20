@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   Stack,
-  Title,
   Text,
   Button,
   Card,
@@ -14,7 +13,6 @@ import {
   IconX,
   IconPlayerPlay,
   IconHistory,
-  IconRefresh,
 } from "@tabler/icons-react";
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
@@ -23,27 +21,18 @@ import { TimeAgoText } from "../components/TimeAgoText";
 function ExecutionHistory() {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
-  const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
 
   const loadExecutions = async () => {
-    setIsRefreshing(true);
     try {
-      const response = await new Promise<{ executions: WorkflowExecution[] }>(
-        (resolve) => {
-          browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
-        },
-      );
-      setExecutions(response.executions || []);
-      setLastRefresh(Date.now());
+      const storageManager = StorageManager.getInstance();
+      const executions = await storageManager.getWorkflowExecutions();
+      setExecutions(executions);
     } catch (error) {
       console.error("Failed to load executions:", error);
       setExecutions([]);
-    } finally {
-      setIsRefreshing(false);
     }
   };
 
@@ -97,15 +86,6 @@ function ExecutionHistory() {
     }
   };
 
-  const clearHistory = async () => {
-    try {
-      browserAPI.runtime.sendMessage({ type: "EXECUTIONS_CLEARED" });
-      setExecutions([]);
-    } catch (error) {
-      console.error("Failed to clear executions:", error);
-    }
-  };
-
   const openFullHistory = () => {
     // Open config page with executions tab
     const configUrl =
@@ -113,14 +93,9 @@ function ExecutionHistory() {
     browserAPI.tabs.create({ url: configUrl });
   };
 
-  const manualRefresh = () => {
-    loadExecutions();
-  };
-
   const getStats = () => {
     return {
       total: executions.length,
-      running: executions.filter((e) => e.status === "running").length,
       completed: executions.filter((e) => e.status === "completed").length,
       failed: executions.filter((e) => e.status === "failed").length,
     };
@@ -135,42 +110,10 @@ function ExecutionHistory() {
 
   return (
     <Stack gap="sm">
-      <Group justify="space-between">
-        <Title order={4}>Session Activity</Title>
-        <Group gap="xs">
-          <Button
-            size="xs"
-            variant="light"
-            leftSection={<IconRefresh size={12} />}
-            onClick={manualRefresh}
-            loading={isRefreshing}
-          >
-            Refresh
-          </Button>
-          <Button size="xs" variant="light" onClick={clearHistory}>
-            Clear
-          </Button>
-        </Group>
-      </Group>
-
-      {lastRefresh && (
-        <TimeAgoText 
-          timestamp={lastRefresh} 
-          prefix="Last updated"
-          size="xs" 
-          c="dimmed" 
-        />
-      )}
-
       <Group gap="xs">
         <Badge color="blue" variant="light" size="sm">
           {stats.total} executed
         </Badge>
-        {stats.running > 0 && (
-          <Badge color="blue" size="sm">
-            {stats.running} running
-          </Badge>
-        )}
         {stats.completed > 0 && (
           <Badge color="green" size="sm">
             {stats.completed} completed
@@ -184,18 +127,18 @@ function ExecutionHistory() {
       </Group>
 
       {recentExecutions.length === 0 ? (
-        <Card mih={172} withBorder>
+        <Card flex={1} withBorder>
           <Text size="sm" c="dimmed" ta="center">
             No workflow executions in this session
           </Text>
         </Card>
       ) : (
-        <Card withBorder p="sm">
+        <Card flex={1} withBorder p="sm">
           <Stack gap="xs">
             <Text size="sm" fw={500}>
               Recent Workflows:
             </Text>
-            <ScrollArea h={116}>
+            <ScrollArea>
               <Stack gap="xs">
                 {recentExecutions.map((execution) => (
                   <Group key={execution.id} justify="space-between" gap="xs">
@@ -203,10 +146,10 @@ function ExecutionHistory() {
                       <Text size="xs" truncate>
                         {getWorkflowName(execution.workflowId)}
                       </Text>
-                      <TimeAgoText 
+                      <TimeAgoText
                         timestamp={execution.startedAt}
-                        size="xs" 
-                        c="dimmed" 
+                        size="xs"
+                        c="dimmed"
                       />
                     </Stack>
                     <Badge

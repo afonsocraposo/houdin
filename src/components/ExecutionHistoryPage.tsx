@@ -31,6 +31,7 @@ import { StorageManager } from "../services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "./TimeAgoText";
 import { formatTimeAgo } from "../utils/time";
+import { CodeHighlight } from "@mantine/code-highlight";
 
 function ExecutionHistoryPage() {
   const navigate = useNavigate();
@@ -48,17 +49,13 @@ function ExecutionHistoryPage() {
   // Get workflowId from URL params or query params
   const workflowId = urlWorkflowId || searchParams.get("workflow") || "";
 
-  // Cross-browser API compatibility
-  const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
-
   const loadExecutions = async () => {
     try {
-      const response = await new Promise<{ executions: WorkflowExecution[] }>(
-        (resolve) => {
-          browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
-        },
-      );
-      setExecutions(response.executions || []);
+      const storageManager = StorageManager.getInstance();
+      const executions = (
+        await storageManager.getWorkflowExecutions()
+      ).reverse();
+      setExecutions(executions);
     } catch (error) {
       console.error("Failed to load executions:", error);
       setExecutions([]);
@@ -102,7 +99,7 @@ function ExecutionHistoryPage() {
         (e) =>
           e.id.toLowerCase().includes(search) ||
           e.workflowId.toLowerCase().includes(search) ||
-          e.trigger?.type.toLowerCase().includes(search),
+          e.triggerType.toLowerCase().includes(search),
       );
     }
 
@@ -152,9 +149,10 @@ function ExecutionHistoryPage() {
 
   const clearHistory = async () => {
     try {
-      browserAPI.runtime.sendMessage({ type: "EXECUTIONS_CLEARED" });
+      const storageManager = StorageManager.getInstance();
+      await storageManager.clearWorkflowExecutions();
       setExecutions([]);
-      setExpanded([]);
+      setFilteredExecutions([]);
     } catch (error) {
       console.error("Failed to clear executions:", error);
     }
@@ -163,7 +161,6 @@ function ExecutionHistoryPage() {
   const getStats = () => {
     return {
       total: filteredExecutions.length,
-      running: filteredExecutions.filter((e) => e.status === "running").length,
       completed: filteredExecutions.filter((e) => e.status === "completed")
         .length,
       failed: filteredExecutions.filter((e) => e.status === "failed").length,
@@ -226,8 +223,7 @@ function ExecutionHistoryPage() {
         </Group>
 
         <Text c="dimmed">
-          Session-based execution tracking - data is cleared when browser
-          session ends.
+          Execution tracking - the last 50 executions are kept.
           {executions.length > 0 &&
             ` Found ${executions.length} total executions.`}
         </Text>
@@ -237,11 +233,6 @@ function ExecutionHistoryPage() {
           <Badge color="blue" variant="light" size="lg">
             {stats.total} total
           </Badge>
-          {stats.running > 0 && (
-            <Badge color="blue" size="lg">
-              {stats.running} running
-            </Badge>
-          )}
           {stats.completed > 0 && (
             <Badge color="green" size="lg">
               {stats.completed} completed
@@ -268,7 +259,6 @@ function ExecutionHistoryPage() {
               placeholder="Filter by status"
               data={[
                 { value: "", label: "All statuses" },
-                { value: "running", label: "Running" },
                 { value: "completed", label: "Completed" },
                 { value: "failed", label: "Failed" },
               ]}
@@ -360,7 +350,7 @@ function ExecutionHistoryPage() {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm">
-                          {execution.trigger?.type || "Manual"}
+                          {execution.triggerType || "unknown"}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -419,7 +409,6 @@ function ExecutionHistoryPage() {
                                       <Table.Th>Status</Table.Th>
                                       <Table.Th>Duration</Table.Th>
                                       <Table.Th>Output</Table.Th>
-                                      <Table.Th>Error</Table.Th>
                                     </Table.Tr>
                                   </Table.Thead>
                                   <Table.Tbody>
@@ -459,54 +448,55 @@ function ExecutionHistoryPage() {
                                                 : "-"}
                                             </Text>
                                           </Table.Td>
-                                          <Table.Td style={{ maxWidth: 300 }}>
-                                            {node.output && (
-                                              <details>
-                                                <summary
-                                                  style={{
-                                                    cursor: "pointer",
-                                                    fontSize: "11px",
-                                                    color:
-                                                      "var(--mantine-color-blue-6)",
-                                                  }}
+                                          <Table.Td style={{ width: 300 }}>
+                                            {node.data &&
+                                              (node.status === "success" ? (
+                                                <details>
+                                                  <summary
+                                                    style={{
+                                                      cursor: "pointer",
+                                                      fontSize: "11px",
+                                                      color:
+                                                        "var(--mantine-color-blue-6)",
+                                                    }}
+                                                  >
+                                                    View Output
+                                                  </summary>
+                                                  <CodeHighlight
+                                                    w={300}
+                                                    mah={200}
+                                                    style={{
+                                                      fontSize: "10px",
+                                                      background:
+                                                        "var(--mantine-color-gray-0)",
+                                                      padding: "8px",
+                                                      borderRadius: "4px",
+                                                      marginTop: "4px",
+                                                      maxHeight: "200px",
+                                                      overflow: "auto",
+                                                    }}
+                                                    language="json"
+                                                    code={
+                                                      typeof node.data ===
+                                                      "object"
+                                                        ? JSON.stringify(
+                                                            node.data,
+                                                            null,
+                                                            2,
+                                                          )
+                                                        : String(node.data)
+                                                    }
+                                                  />
+                                                </details>
+                                              ) : (
+                                                <Text
+                                                  size="xs"
+                                                  c="red"
+                                                  truncate
                                                 >
-                                                  View Output
-                                                </summary>
-                                                <pre
-                                                  style={{
-                                                    fontSize: "10px",
-                                                    background:
-                                                      "var(--mantine-color-gray-0)",
-                                                    padding: "8px",
-                                                    borderRadius: "4px",
-                                                    marginTop: "4px",
-                                                    maxHeight: "200px",
-                                                    overflow: "auto",
-                                                  }}
-                                                >
-                                                  {typeof node.output ===
-                                                  "object"
-                                                    ? JSON.stringify(
-                                                        node.output,
-                                                        null,
-                                                        2,
-                                                      )
-                                                    : String(node.output)}
-                                                </pre>
-                                              </details>
-                                            )}
-                                          </Table.Td>
-                                          <Table.Td>
-                                            {node.error && (
-                                              <Text
-                                                size="xs"
-                                                c="red"
-                                                truncate
-                                                style={{ maxWidth: 300 }}
-                                              >
-                                                {node.error}
-                                              </Text>
-                                            )}
+                                                  {JSON.stringify(node.data)}
+                                                </Text>
+                                              ))}
                                           </Table.Td>
                                         </Table.Tr>
                                       ))}

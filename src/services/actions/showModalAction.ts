@@ -2,7 +2,6 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { ModalService } from "../modal";
 
@@ -44,40 +43,22 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
 
   async execute(
     config: ShowModalActionConfig,
-    context: ActionExecutionContext,
-    nodeId: string,
+    _workflowId: string,
+    _nodeId: string,
+    onSuccess: (data?: any) => void,
+    _onError: (error: Error) => void,
   ): Promise<void> {
     const { modalTitle, modalContent } = config;
 
-    const interpolatedTitle = context.interpolateVariables(
-      modalTitle || "Workflow Result",
-    );
-    const interpolatedContent = context.interpolateVariables(
-      modalContent || "",
-    );
-
     // Show the modal
     ModalService.showModal({
-      title: interpolatedTitle,
-      content: interpolatedContent,
+      title: modalTitle,
+      content: modalContent,
     });
 
-    context.setOutput(nodeId, {
-      title: interpolatedTitle,
-      content: interpolatedContent,
-    });
-
-    // Wait for modal to be dismissed before continuing workflow
-    return new Promise<void>((resolve) => {
-      const handleModalDismiss = (event: Event) => {
-        const customEvent = event as CustomEvent;
-        if (customEvent.detail?.type === "modalDismissed") {
-          window.removeEventListener("modalDispatch", handleModalDismiss);
-          resolve();
-        }
-      };
-      
-      window.addEventListener("modalDispatch", handleModalDismiss);
+    onSuccess({
+      title: modalTitle,
+      content: modalContent,
     });
   }
 }

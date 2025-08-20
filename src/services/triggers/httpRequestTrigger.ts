@@ -1,9 +1,4 @@
-import {
-  BaseTrigger,
-  TriggerConfigSchema,
-  TriggerExecutionContext,
-  TriggerSetupResult,
-} from "../../types/triggers";
+import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
 
 // HTTP Request Trigger Configuration
 export interface HttpRequestTriggerConfig {
@@ -50,9 +45,10 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
 
   async setup(
     config: HttpRequestTriggerConfig,
-    context: TriggerExecutionContext,
-    onTrigger: () => Promise<void>,
-  ): Promise<TriggerSetupResult> {
+    workflowId: string,
+    nodeId: string,
+    onTrigger: (data?: any) => Promise<void>,
+  ): Promise<void> {
     const { urlPattern, method } = config;
 
     if (!urlPattern) {
@@ -62,8 +58,8 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
     // Send registration message to background script
     chrome.runtime.sendMessage({
       type: "REGISTER_HTTP_TRIGGER",
-      workflowId: context.workflowId || "",
-      triggerNodeId: context.triggerNode.id,
+      workflowId: workflowId || "",
+      triggerNodeId: nodeId,
       urlPattern,
       method,
     });
@@ -72,41 +68,24 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
     const messageListener = (message: any) => {
       if (
         message.type === "HTTP_TRIGGER_FIRED" &&
-        message.workflowId === context.workflowId &&
-        message.triggerNodeId === context.triggerNode.id
+        message.workflowId === workflowId &&
+        message.triggerNodeId === nodeId
       ) {
         // Set the request data in context
-        context.setOutput(context.triggerNode.id, message.data);
+        // context.setOutput(context.triggerNode.id, message.data);
         // Trigger the workflow
-        onTrigger();
+        onTrigger(message.data);
       }
+      return false;
     };
 
     chrome.runtime.onMessage.addListener(messageListener);
 
     console.debug("HTTP Request Trigger registered with background script", {
-      workflowId: context.workflowId,
-      triggerNodeId: context.triggerNode.id,
+      workflowId,
+      triggerNodeId: nodeId,
       urlPattern,
       method,
     });
-
-    return {
-      cleanup: () => {
-        // Unregister from background script
-        chrome.runtime.sendMessage({
-          type: "UNREGISTER_HTTP_TRIGGER",
-          workflowId: context.workflowId || "",
-          triggerNodeId: context.triggerNode.id,
-        });
-
-        chrome.runtime.onMessage.removeListener(messageListener);
-
-        console.debug("HTTP Request Trigger unregistered", {
-          workflowId: context.workflowId,
-          triggerNodeId: context.triggerNode.id,
-        });
-      },
-    };
   }
 }

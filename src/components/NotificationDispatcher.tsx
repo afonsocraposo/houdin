@@ -31,8 +31,8 @@ export default function NotificationDispatcher() {
   }, []);
 
   return (
-    <>
-      <Notifications zIndex={1001} />
-    </>
+    <div>
+      <Notifications zIndex={1000000} />
+    </div>
   ); // No UI component needed, just handling events
 }

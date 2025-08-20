@@ -18,26 +18,32 @@ export interface WorkflowConnection {
 // Execution tracking for individual nodes
 export interface NodeExecutionResult {
   nodeId: string;
-  status: "success" | "error" | "skipped";
-  output?: any;
-  error?: string;
+  nodeType: "trigger" | "action" | "condition";
+  nodeName: string;
+  nodeConfig: any;
+  status: "success" | "error";
+  data: any;
   executedAt: number;
   duration?: number;
 }
 
+export enum WorkflowExecutionStatus {
+  WAITING = "waiting",
+  IN_PROGRESS = "in_progress",
+  COMPLETED = "completed",
+  FAILED = "failed",
+  CANCELLED = "cancelled",
+}
 // Workflow execution record
 export interface WorkflowExecution {
   id: string;
   workflowId: string;
+  triggerType: string;
   startedAt: number;
-  completedAt?: number;
-  status: "running" | "completed" | "failed";
+  completedAt: number | undefined;
+  status: WorkflowExecutionStatus;
   nodeResults: NodeExecutionResult[];
   url: string;
-  trigger: {
-    type: string;
-    data?: any;
-  };
 }
 
 export interface WorkflowDefinition {

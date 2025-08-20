@@ -1,8 +1,7 @@
 import { Text, Badge, Group, Card, Stack, ScrollArea } from "@mantine/core";
-import { IconCheck, IconClock, IconHistory } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { StorageManager } from "../services/storage";
-import { WorkflowDefinition, WorkflowExecution } from "../types/workflow";
+import { WorkflowDefinition } from "../types/workflow";
 
 interface ActiveWorkflowsProps {
   currentUrl: string;
@@ -10,7 +9,6 @@ interface ActiveWorkflowsProps {
 
 function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
-  const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Cross-browser API compatibility
@@ -20,33 +18,11 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
     loadData();
   }, []);
 
-  const loadExecutions = async () => {
-    try {
-      const response = await new Promise<{ executions: WorkflowExecution[] }>(
-        (resolve) => {
-          browserAPI.runtime.sendMessage({ type: "GET_EXECUTIONS" }, resolve);
-        },
-      );
-      setExecutions(response.executions || []);
-    } catch (error) {
-      console.error("Failed to load executions:", error);
-      setExecutions([]);
-    }
-  };
-
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      // Load workflows and executions in parallel to avoid blocking
-      const [workflows] = await Promise.all([
-        (async () => {
-          const storageManager = StorageManager.getInstance();
-          return await storageManager.getWorkflows();
-        })(),
-        loadExecutions()
-      ]);
-      
+      const storageManager = StorageManager.getInstance();
+      const workflows = await storageManager.getWorkflows();
       setWorkflows(workflows);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -82,43 +58,6 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
         return false;
       }
     });
-  };
-
-  const getWorkflowStatus = (workflow: WorkflowDefinition) => {
-    const isActive = getActiveWorkflows().includes(workflow);
-    if (!isActive) return "inactive";
-
-    // Check if workflow has any running executions
-    const runningExecution = executions.find(
-      (exec) => exec.workflowId === workflow.id && exec.status === "running",
-    );
-
-    return runningExecution ? "running" : "ready";
-  };
-
-  const getLastExecutionTime = (workflow: WorkflowDefinition) => {
-    const workflowExecutions = executions.filter(
-      (exec) => exec.workflowId === workflow.id,
-    );
-    if (workflowExecutions.length === 0) return workflow.lastExecuted;
-
-    // Get the most recent execution
-    const latestExecution = workflowExecutions.sort(
-      (a, b) => b.startedAt - a.startedAt,
-    )[0];
-    return latestExecution.startedAt;
-  };
-
-  const formatLastExecution = (timestamp?: number) => {
-    if (!timestamp) return "Never";
-
-    const now = Date.now();
-    const diff = now - timestamp;
-
-    if (diff < 60000) return "Just now";
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return `${Math.floor(diff / 86400000)}d ago`;
   };
 
   const handleWorkflowClick = (workflow: WorkflowDefinition) => {
@@ -175,44 +114,6 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
                         <Badge size="xs" variant="light" color="blue">
                           {workflow.nodes.length} nodes
                         </Badge>
-                        <Badge
-                          size="xs"
-                          variant="light"
-                          color={
-                            getWorkflowStatus(workflow) === "ready"
-                              ? "green"
-                              : getWorkflowStatus(workflow) === "running"
-                                ? "blue"
-                                : "orange"
-                          }
-                          leftSection={
-                            getWorkflowStatus(workflow) === "ready" ? (
-                              <IconCheck size={10} />
-                            ) : getWorkflowStatus(workflow) === "running" ? (
-                              <IconClock size={10} />
-                            ) : (
-                              <IconClock size={10} />
-                            )
-                          }
-                        >
-                          {getWorkflowStatus(workflow) === "ready"
-                            ? "Ready"
-                            : getWorkflowStatus(workflow) === "running"
-                              ? "Running"
-                              : "Standby"}
-                        </Badge>
-                        {getLastExecutionTime(workflow) && (
-                          <Badge
-                            size="xs"
-                            variant="light"
-                            color="gray"
-                            leftSection={<IconHistory size={10} />}
-                          >
-                            {formatLastExecution(
-                              getLastExecutionTime(workflow),
-                            )}
-                          </Badge>
-                        )}
                       </Group>
                     </div>
                   </Group>

@@ -72,14 +72,16 @@ export default function PermissionButton() {
             )}
           </Alert>
           <Group>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={requestPermission}
-              loading={isRequesting}
-            >
-              Request Permission
-            </Button>
+            {permissionStatus.browser !== "chrome" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={requestPermission}
+                loading={isRequesting}
+              >
+                Request Permission
+              </Button>
+            )}
             <Button size="sm" variant="subtle" onClick={checkPermission}>
               Refresh Status
             </Button>

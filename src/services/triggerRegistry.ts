@@ -1,9 +1,8 @@
-import { BaseTrigger, TriggerMetadata, TriggerExecutionContext, TriggerSetupResult } from '../types/triggers';
+import { BaseTrigger, TriggerMetadata } from "../types/triggers";
 
 export class TriggerRegistry {
   private static instance: TriggerRegistry;
   private triggers = new Map<string, BaseTrigger>();
-  private activeTriggers = new Map<string, TriggerSetupResult>(); // Track active triggers for cleanup
 
   private constructor() {}
 
@@ -31,15 +30,16 @@ export class TriggerRegistry {
 
   // Get all trigger metadata for UI
   getAllTriggerMetadata(): TriggerMetadata[] {
-    return this.getAllTriggers().map(trigger => trigger.metadata);
+    return this.getAllTriggers().map((trigger) => trigger.metadata);
   }
 
   // Setup a trigger
   async setupTrigger(
     type: string,
     config: Record<string, any>,
-    context: TriggerExecutionContext,
-    onTrigger: () => Promise<void>
+    workflowId: string,
+    nodeId: string,
+    onTrigger: (data?: any) => Promise<void>,
   ): Promise<void> {
     const trigger = this.getTrigger(type);
     if (!trigger) {
@@ -49,43 +49,21 @@ export class TriggerRegistry {
     // Validate configuration before setup
     const validation = trigger.validate(config);
     if (!validation.valid) {
-      throw new Error(`Trigger configuration invalid: ${validation.errors.join(', ')}`);
+      throw new Error(
+        `Trigger configuration invalid: ${validation.errors.join(", ")}`,
+      );
     }
-
-    // Clean up existing trigger with same node ID if it exists
-    this.cleanupTrigger(context.triggerNode.id);
 
     // Setup with defaults applied
     const configWithDefaults = trigger.getConfigWithDefaults(config);
-    const setupResult = await trigger.setup(configWithDefaults, context, onTrigger);
-    
-    // Store the setup result for cleanup
-    if (setupResult.cleanup) {
-      this.activeTriggers.set(context.triggerNode.id, setupResult);
-    }
-  }
-
-  // Cleanup a specific trigger
-  cleanupTrigger(nodeId: string): void {
-    const triggerSetup = this.activeTriggers.get(nodeId);
-    if (triggerSetup?.cleanup) {
-      triggerSetup.cleanup();
-      this.activeTriggers.delete(nodeId);
-    }
-  }
-
-  // Cleanup all active triggers
-  cleanupAllTriggers(): void {
-    this.activeTriggers.forEach((triggerSetup) => {
-      if (triggerSetup.cleanup) {
-        triggerSetup.cleanup();
-      }
-    });
-    this.activeTriggers.clear();
+    await trigger.setup(configWithDefaults, workflowId, nodeId, onTrigger);
   }
 
   // Validate trigger configuration
-  validateConfig(type: string, config: Record<string, any>): { valid: boolean; errors: string[] } {
+  validateConfig(
+    type: string,
+    config: Record<string, any>,
+  ): { valid: boolean; errors: string[] } {
     const trigger = this.getTrigger(type);
     if (!trigger) {
       return { valid: false, errors: [`Trigger type '${type}' not found`] };
@@ -114,12 +92,12 @@ export class TriggerRegistry {
   // Get trigger categories for UI (compatible with existing NODE_CATEGORIES)
   getTriggerCategories() {
     return {
-      triggers: this.getAllTriggers().map(trigger => ({
+      triggers: this.getAllTriggers().map((trigger) => ({
         type: trigger.metadata.type,
         label: trigger.metadata.label,
         icon: trigger.metadata.icon,
-        description: trigger.metadata.description
-      }))
+        description: trigger.metadata.description,
+      })),
     };
   }
 }

@@ -2,18 +2,18 @@ import {
   WorkflowDefinition,
   WorkflowNode,
   WorkflowExecutionContext,
-  NodeExecutionResult,
 } from "../types/workflow";
-import { NotificationService } from "./notification";
-import { ActionRegistry } from "./actionRegistry";
-import { TriggerRegistry, initializeTriggers } from "./triggerInitializer";
-import { TriggerExecutionContext } from "../types/triggers";
-import { initializeActions } from "./actionInitializer";
-import { initializeCredentials } from "./credentialInitializer";
 import { ExecutionTracker } from "./executionTracker";
+import { generateId } from "../utils/helpers";
+import { sendMessageToContentScript } from "../lib/messages";
+import {
+  ActionCommand,
+  WorkflowCommandType,
+} from "../types/background-workflow";
+import { ActionRegistry } from "./actionRegistry";
 
-class ExecutionContext implements WorkflowExecutionContext {
-  outputs: Record<string, any> = {};
+export class ExecutionContext implements WorkflowExecutionContext {
+  constructor(public outputs: Record<string, any> = {}) {}
 
   setOutput(nodeId: string, value: any): void {
     this.outputs[nodeId] = value;
@@ -30,14 +30,24 @@ class ExecutionContext implements WorkflowExecutionContext {
     return text.replace(/\{\{([^}]+)\}\}/g, (match, expression) => {
       const parts = expression.trim().split(".");
       const nodeId = parts[0];
-      const property = parts[1];
+      const properties = parts.slice(1);
 
       const output = this.getOutput(nodeId);
       if (output === undefined) return match; // Keep original if not found
 
       let result = output;
-      if (property && typeof output === "object" && output !== null) {
-        result = output[property];
+      let i = 0;
+      while (
+        i < properties.length &&
+        typeof output === "object" &&
+        output !== null
+      ) {
+        const property = properties[i];
+        if (!(property in result)) {
+          break;
+        }
+        result = result[property];
+        i++;
       }
 
       if (result && typeof result === "object") {
@@ -50,175 +60,78 @@ class ExecutionContext implements WorkflowExecutionContext {
 }
 
 export class WorkflowExecutor {
+  public readonly id: string;
+  public readonly workflowId: string;
+  public readonly tabId: number;
   private context: ExecutionContext;
-  private eventListener: (event: Event) => void;
-  private triggerRegistry: TriggerRegistry;
   private executionTracker: ExecutionTracker;
-  private currentExecutionId?: string;
 
-  constructor(private workflow: WorkflowDefinition) {
+  constructor(
+    tabId: number,
+    private workflow: WorkflowDefinition,
+    private triggerNode: WorkflowNode,
+    url: string,
+    private onDone?: (executorId: string) => void,
+  ) {
+    this.id = generateId();
+    this.workflowId = workflow.id;
+    this.tabId = tabId;
     this.context = new ExecutionContext();
-    this.executionTracker = ExecutionTracker.getInstance();
-
-    // Initialize registries
-    initializeTriggers();
-    initializeActions();
-    initializeCredentials();
-
-    this.triggerRegistry = TriggerRegistry.getInstance();
-
-    // Set up listener for component triggers
-    this.eventListener = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail?.workflowId === this.workflow.id) {
-        this.context.setOutput(
-          customEvent.detail.nodeId,
-          customEvent.detail.data,
-        );
-        this.executeConnectedActionsFromNode(customEvent.detail.nodeId);
-      }
-    };
-    document.addEventListener("workflow-component-trigger", this.eventListener);
-  }
-
-  async execute(): Promise<void> {
-    if (!this.workflow.enabled) {
-      console.debug("Workflow is disabled, skipping execution");
-      return;
-    }
-    console.debug("Executing workflow:", this.workflow.name);
-
-    try {
-      // Find trigger nodes and set them up
-      const triggerNodes = this.workflow.nodes.filter(
-        (node) => node.type === "trigger",
-      );
-
-      for (const triggerNode of triggerNodes) {
-        await this.setupTrigger(triggerNode);
-      }
-    } catch (error) {
-      console.error("Error executing workflow:", error);
-      NotificationService.showErrorNotification({
-        message: `Error executing ${this.workflow.name}`,
-      });
-    }
-  }
-
-  private async setupTrigger(node: WorkflowNode): Promise<void> {
-    // Access trigger type correctly - it's stored as triggerType, not type
-    const triggerType = node.data?.triggerType;
-    const triggerConfig = node.data?.config || {};
-
-    if (!triggerType) {
-      console.error(
-        "No trigger type found for node:",
-        node.id,
-        "node.data:",
-        node.data,
-      );
-      return;
-    }
-
-    // Create trigger execution context
-    const triggerContext: TriggerExecutionContext = Object.assign(
-      this.context,
-      {
-        workflowId: this.workflow.id,
-        triggerNode: node,
-      },
+    this.executionTracker = new ExecutionTracker(
+      workflow.id,
+      this.id,
+      url,
+      triggerNode.data?.triggerType,
     );
-
-    // Use trigger registry to setup the trigger
-    try {
-      await this.triggerRegistry.setupTrigger(
-        triggerType,
-        triggerConfig,
-        triggerContext,
-        async () => {
-          // Start execution tracking when trigger fires
-          this.currentExecutionId = this.executionTracker.startExecution(
-            this.workflow.id,
-            triggerType,
-            triggerConfig,
-          );
-
-          console.debug(
-            `Trigger fired, started execution ${this.currentExecutionId} for workflow ${this.workflow.id}`,
-          );
-
-          // Record trigger node result
-          const triggerResult: NodeExecutionResult = {
-            nodeId: node.id,
-            status: "success",
-            output: { triggerType, config: triggerConfig },
-            executedAt: Date.now(),
-            duration: 0,
-          };
-
-          if (this.currentExecutionId) {
-            console.debug(`Adding trigger node result:`, triggerResult);
-            this.executionTracker.addNodeResult(
-              this.currentExecutionId,
-              triggerResult,
-            );
-          }
-
-          await this.executeConnectedActions(node);
-        },
-      );
-    } catch (error) {
-      console.error(`Error setting up trigger ${triggerType}:`, error);
-      NotificationService.showErrorNotification({
-        message: `Error setting up trigger: ${error}`,
-      });
-    }
   }
 
-  private async executeConnectedActions(
-    triggerNode: WorkflowNode,
-  ): Promise<void> {
+  async start(triggerData: any, duration: number): Promise<void> {
+    console.debug(
+      "Trigger fired for workflow:",
+      this.workflow.name,
+      this.triggerNode.type,
+      triggerData,
+    );
+    this.context.setOutput(this.triggerNode.id, triggerData);
+    this.executionTracker.startExecution();
+    this.executionTracker.addNodeResult({
+      nodeId: this.triggerNode.id,
+      nodeType: "trigger",
+      nodeName: this.triggerNode.data?.triggerType || "unknown",
+      nodeConfig: this.triggerNode.data?.config || {},
+      data: triggerData,
+      status: "success",
+      executedAt: Date.now(),
+      duration, // Duration will be updated later
+    });
     // Find all actions connected to this trigger
     const connections = this.workflow.connections.filter(
-      (conn) => conn.source === triggerNode.id,
+      (conn) => conn.source === this.triggerNode.id,
     );
 
-    try {
-      for (const connection of connections) {
-        const actionNode = this.workflow.nodes.find(
-          (n) => n.id === connection.target,
-        );
-        if (actionNode && actionNode.type === "action") {
-          await this.executeAction(actionNode);
-        }
+    for (const connection of connections) {
+      const actionNode = this.workflow.nodes.find(
+        (n) => n.id === connection.target,
+      );
+      if (actionNode && actionNode.type === "action") {
+        this.executeAction(actionNode);
       }
-
-      // Mark execution as completed - ExecutionTracker will auto-determine final status
-      if (this.currentExecutionId) {
-        this.executionTracker.completeExecution(
-          this.currentExecutionId,
-          "completed",
-        );
-        this.currentExecutionId = undefined;
-      }
-    } catch (error) {
-      // Mark execution as failed if we have one
-      if (this.currentExecutionId) {
-        this.executionTracker.completeExecution(
-          this.currentExecutionId,
-          "failed",
-        );
-        this.currentExecutionId = undefined;
-      }
-      throw error;
     }
   }
 
-  private async executeConnectedActionsFromNode(nodeId: string): Promise<void> {
+  public onActionExecuted(nodeId: string, result: any): void {
+    console.debug("Action executed:", nodeId, result);
+    this.context.setOutput(nodeId, result);
     // Find all actions connected to this node
     const connections = this.workflow.connections.filter(
       (conn) => conn.source === nodeId,
     );
+
+    if (connections.length === 0) {
+      console.debug("No further actions connected to node:", nodeId);
+      this.destroy(true);
+      return;
+    }
 
     // Execute actions sequentially to ensure proper error propagation
     for (const connection of connections) {
@@ -227,161 +140,99 @@ export class WorkflowExecutor {
       );
       if (actionNode && actionNode.type === "action") {
         // This will throw an error if the action fails, stopping the workflow
-        await this.executeAction(actionNode);
+        this.executeAction(actionNode);
       }
     }
   }
 
   private async executeAction(node: WorkflowNode): Promise<void> {
-    // Access action type correctly - it's stored as actionType, not type
-    const actionType = node.data?.actionType;
-    const actionConfig = node.data?.config || {};
     const actionRegistry = ActionRegistry.getInstance();
+    // Access trigger type correctly - it's stored as triggerType, not type
+    const actionType = node.data?.actionType;
+    const actionConfig: Object = node.data?.config || {};
 
-    if (!actionType) {
-      const errorMsg = `No action type found for node: ${node.id}`;
-      console.error(errorMsg, "node.data:", node.data);
-
-      const nodeResult: NodeExecutionResult = {
-        nodeId: node.id,
-        status: "error",
-        error: errorMsg,
-        executedAt: Date.now(),
-        duration: 0,
-      };
-
-      if (this.currentExecutionId) {
-        this.executionTracker.addNodeResult(
-          this.currentExecutionId,
-          nodeResult,
-        );
+    // iterate object properties and interpolate variables
+    for (const key in actionConfig) {
+      if (actionConfig.hasOwnProperty(key)) {
+        //@ts-ignore
+        const value = actionConfig[key];
+        if (typeof value === "string") {
+          //@ts-ignore
+          actionConfig[key] = this.context.interpolateVariables(value);
+        }
       }
-
-      throw new Error(errorMsg);
     }
 
-    const startTime = Date.now();
-    let nodeResult: NodeExecutionResult;
+    const action = actionRegistry.getAction(actionType);
+    const runBackground = action !== undefined;
 
-    console.debug(
-      `Executing action ${actionType} for node ${node.id}, execution: ${this.currentExecutionId}`,
-    );
+    // Send command to content script to set up the trigger
+    const message: ActionCommand = {
+      type: WorkflowCommandType.EXECUTE_ACTION,
+      executionId: this.id,
+      workflowId: this.workflow.id,
+      tabId: this.tabId,
+      nodeType: actionType,
+      nodeConfig: actionConfig,
+      nodeId: node.id,
+    };
+    try {
+      const start = Date.now();
 
-    // Try to execute with the new action system first
-    if (actionRegistry.hasAction(actionType)) {
-      try {
-        // Create extended context with workflow ID
-        const extendedContext = Object.assign(this.context, {
-          workflowId: this.workflow.id,
-        });
+      const result = runBackground
+        ? await this.executeActionInBackground(message)
+        : await sendMessageToContentScript(this.tabId, message);
 
-        await actionRegistry.execute(
-          actionType,
-          actionConfig,
-          extendedContext,
-          node.id,
-        );
-
-        nodeResult = {
+      const duration = Date.now() - start;
+      if (!result || !result.success) {
+        this.executionTracker.addNodeResult({
           nodeId: node.id,
-          status: "success",
-          output: extendedContext.getOutput(node.id),
-          executedAt: startTime,
-          duration: Date.now() - startTime,
-        };
-
-        console.debug(
-          `Action completed successfully for node ${node.id}:`,
-          nodeResult,
-        );
-
-        // Add successful node result to execution tracker
-        if (this.currentExecutionId) {
-          this.executionTracker.addNodeResult(
-            this.currentExecutionId,
-            nodeResult,
-          );
-        }
-      } catch (error) {
-        nodeResult = {
-          nodeId: node.id,
+          nodeType: "action",
+          nodeName: actionType,
+          nodeConfig: actionConfig,
+          data: result?.error,
           status: "error",
-          error: error instanceof Error ? error.message : String(error),
-          executedAt: startTime,
-          duration: Date.now() - startTime,
-        };
-
-        console.error(`Error executing action ${actionType} for node ${node.id}:`, error);
-
-        // Add failed node result to execution tracker
-        if (this.currentExecutionId) {
-          this.executionTracker.addNodeResult(
-            this.currentExecutionId,
-            nodeResult,
-          );
-        }
-
-        NotificationService.showErrorNotification({
-          message: `Error executing action ${actionType} (node: ${node.id}): ${error instanceof Error ? error.message : error}`,
+          executedAt: start,
+          duration,
         });
-
-        // Throw error to stop workflow execution
-        throw error;
+        throw new Error(`Action ${actionType}: ${result?.error}`);
       }
-
-      // Execute connected actions after the current action completes successfully
-      // Handle errors from connected actions separately so they don't get attributed to this action
-      try {
-        await this.executeConnectedActionsFromNode(node.id);
-      } catch (error) {
-        // Connected action failed - don't report this as an error from the current action
-        // The error will already be reported by the failing connected action
-        console.debug(`Connected action failed after ${node.id} completed successfully`);
-        throw error; // Re-throw to stop workflow execution
-      }
-    } else {
-      const errorMsg = `Unknown action type: ${actionType} for node: ${node.id}`;
-      nodeResult = {
+      // Track the execution result
+      this.executionTracker.addNodeResult({
         nodeId: node.id,
-        status: "error",
-        error: errorMsg,
-        executedAt: startTime,
-        duration: Date.now() - startTime,
-      };
-
-      console.error(`Unknown action type: ${actionType} for node: ${node.id}`);
-
-      // Add failed node result to execution tracker
-      if (this.currentExecutionId) {
-        this.executionTracker.addNodeResult(
-          this.currentExecutionId,
-          nodeResult,
-        );
-      }
-
-      NotificationService.showErrorNotification({
-        message: `Error: No action type found for node ${node.id}`,
+        nodeType: "action",
+        nodeName: actionType,
+        nodeConfig: actionConfig,
+        data: result.data,
+        status: "success",
+        executedAt: start,
+        duration,
       });
-
-      // Throw error to stop workflow execution
-      throw new Error(errorMsg);
+      this.onActionExecuted(node.id, result.data);
+    } catch (error) {
+      console.error("Error executing action:", error);
+      this.destroy(false);
     }
   }
-
-  destroy(): void {
-    // Clean up only triggers for this workflow's nodes
-    const triggerNodes = this.workflow.nodes.filter(
-      (node) => node.type === "trigger",
-    );
-
-    triggerNodes.forEach((node) => {
-      this.triggerRegistry.cleanupTrigger(node.id);
+  private executeActionInBackground(message: ActionCommand): Promise<any> {
+    return new Promise(async (resolve) => {
+      const executeActionCommand = message as ActionCommand;
+      const actionRegistry = ActionRegistry.getInstance();
+      actionRegistry
+        .execute(
+          executeActionCommand.nodeType,
+          executeActionCommand.nodeConfig,
+          executeActionCommand.workflowId,
+          executeActionCommand.nodeId,
+          this.tabId,
+        )
+        .then((result) => resolve({ success: true, data: result }))
+        .catch((error) => resolve({ success: false, error: error.message }));
     });
+  }
 
-    // Remove event listener
-    document.removeEventListener(
-      "workflow-component-trigger",
-      this.eventListener,
-    );
+  destroy(success: boolean): void {
+    this.onDone?.(this.id);
+    this.executionTracker.completeExecution(success);
   }
 }

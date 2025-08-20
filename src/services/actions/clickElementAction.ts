@@ -2,10 +2,8 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { getElement } from "../../utils/helpers";
-import { NotificationService } from "../notification";
 
 interface ClickElementActionConfig {
   elementSelector: string;
@@ -49,8 +47,10 @@ export class ClickElementAction extends BaseAction<ClickElementActionConfig> {
 
   async execute(
     config: ClickElementActionConfig,
-    context: ActionExecutionContext,
-    nodeId: string,
+    _workflowId: string,
+    _nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { elementSelector, selectorType } = config;
 
@@ -58,12 +58,9 @@ export class ClickElementAction extends BaseAction<ClickElementActionConfig> {
     if (element) {
       // Simulate a click on the element
       element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      context.setOutput(nodeId, element.outerHTML);
+      onSuccess({ element: element.outerHTML });
     } else {
-      NotificationService.showErrorNotification({
-        message: "Element not found for clicking",
-      });
-      context.setOutput(nodeId, "");
+      onError(new Error(`Element not found for selector: ${elementSelector}`));
     }
   }
 }

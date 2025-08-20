@@ -1,4 +1,3 @@
-import { WorkflowExecutionContext } from "./workflow";
 import { BaseMetadata, BaseConfigurable } from "./base";
 import {
   ConfigProperty,
@@ -12,11 +11,8 @@ export type ActionConfigSchema = ConfigSchema;
 export type ActionValidationResult = ValidationResult;
 
 // Action-specific metadata extends base metadata
-export interface ActionMetadata extends BaseMetadata {}
-
-// Extended execution context that includes workflow info
-export interface ActionExecutionContext extends WorkflowExecutionContext {
-  workflowId?: string;
+export interface ActionMetadata extends BaseMetadata {
+  disableTimeout?: boolean; // Whether to disable timeout for this action
 }
 
 // Abstract base class for all actions
@@ -28,7 +24,10 @@ export abstract class BaseAction<
   // Execute the action
   abstract execute(
     config: TConfig,
-    context: ActionExecutionContext,
+    workflowId: string,
     nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
+    tabId?: number,
   ): Promise<void>;
 }

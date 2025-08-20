@@ -2,7 +2,6 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-  ActionExecutionContext,
 } from "../../types/actions";
 import { OpenAIService } from "../openai";
 import { NotificationService } from "../notification";
@@ -82,8 +81,10 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
   }
   async execute(
     config: LLMOpenAIActionConfig,
-    context: ActionExecutionContext,
-    nodeId: string,
+    _workflowId: string,
+    _nodeId: string,
+    onSuccess: (data?: any) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { credentialId, model, prompt, maxTokens, temperature } = config;
 
@@ -91,6 +92,7 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
       NotificationService.showErrorNotification({
         message: "No OpenAI credential selected",
       });
+      onError(new Error("No OpenAI credential available"));
       return;
     }
 
@@ -98,13 +100,11 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
       NotificationService.showErrorNotification({
         message: "No prompt provided for OpenAI",
       });
+      onError(new Error("No prompt provided for OpenAI"));
       return;
     }
 
     try {
-      // Interpolate variables in the prompt
-      const interpolatedPrompt = context.interpolateVariables(prompt);
-
       // Show loading notification
       NotificationService.showNotification({
         title: "Calling OpenAI API...",
@@ -115,20 +115,19 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
       const response = await OpenAIService.callChatCompletion(
         credentialId,
         model,
-        interpolatedPrompt,
+        prompt,
         maxTokens,
         temperature,
       );
 
       // Store the response in the execution context
-      context.setOutput(nodeId, response);
-    } catch (error) {
-      console.error("Error executing OpenAI action:", error);
+      onSuccess(response);
+    } catch (error: any) {
       NotificationService.showErrorNotification({
         message: `OpenAI API error: ${error}`,
       });
       // Store empty response on error
-      context.setOutput(nodeId, "");
+      onError(error as Error);
     }
   }
 }
