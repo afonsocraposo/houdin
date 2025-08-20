@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   Stack,
-  Title,
   Text,
   Button,
   Card,
@@ -14,7 +13,6 @@ import {
   IconX,
   IconPlayerPlay,
   IconHistory,
-  IconRefresh,
 } from "@tabler/icons-react";
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
 import { StorageManager } from "../services/storage";
@@ -23,24 +21,18 @@ import { TimeAgoText } from "../components/TimeAgoText";
 function ExecutionHistory() {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
-  const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
 
   const loadExecutions = async () => {
-    setIsRefreshing(true);
     try {
       const storageManager = StorageManager.getInstance();
       const executions = await storageManager.getWorkflowExecutions();
       setExecutions(executions);
-      setLastRefresh(Date.now());
     } catch (error) {
       console.error("Failed to load executions:", error);
       setExecutions([]);
-    } finally {
-      setIsRefreshing(false);
     }
   };
 
@@ -91,15 +83,6 @@ function ExecutionHistory() {
         return "blue";
       default:
         return "gray";
-    }
-  };
-
-  const clearHistory = async () => {
-    try {
-      browserAPI.runtime.sendMessage({ type: "EXECUTIONS_CLEARED" });
-      setExecutions([]);
-    } catch (error) {
-      console.error("Failed to clear executions:", error);
     }
   };
 

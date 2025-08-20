@@ -4,7 +4,6 @@ import {
   ActionMetadata,
 } from "../../types/actions";
 import { NotificationService } from "../notification";
-import { ExecutionContext } from "../workflow";
 
 interface ShowNotificationActionConfig {
   notificationTitle: string;

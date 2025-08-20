@@ -13,7 +13,6 @@ import {
   ActionIcon,
   Select,
   TextInput,
-  Code,
 } from "@mantine/core";
 import {
   IconChevronDown,
