@@ -1,6 +1,6 @@
 import { Text, Badge, Group, Card, Stack, ScrollArea } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { StorageManager } from "../services/storage";
+import { ContentStorageClient } from "../services/storage";
 import { WorkflowDefinition } from "../types/workflow";
 
 interface ActiveWorkflowsProps {
@@ -13,6 +13,7 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
 
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
+  const storageClient = new ContentStorageClient();
 
   useEffect(() => {
     loadData();
@@ -21,8 +22,7 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const storageManager = StorageManager.getInstance();
-      const workflows = await storageManager.getWorkflows();
+      const workflows = await storageClient.getWorkflows();
       setWorkflows(workflows);
     } catch (error) {
       console.error("Error loading data:", error);

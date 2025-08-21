@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { WorkflowDesigner } from "./WorkflowDesigner";
-import { StorageManager } from "../services/storage";
+import { ContentStorageClient } from "../services/storage";
 import { WorkflowDefinition } from "../types/workflow";
 
 interface DesignerViewProps {
@@ -10,16 +10,18 @@ interface DesignerViewProps {
 
 function DesignerView({ workflowId }: DesignerViewProps) {
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
-  const [editingWorkflow, setEditingWorkflow] = useState<WorkflowDefinition | null>(null);
+  const [editingWorkflow, setEditingWorkflow] =
+    useState<WorkflowDefinition | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const storageManager = StorageManager.getInstance();
+
+  const storageClient = new ContentStorageClient();
 
   useEffect(() => {
     // Load existing workflows from storage
     const loadData = async () => {
       try {
-        const loadedWorkflows = await storageManager.getWorkflows();
+        const loadedWorkflows = await storageClient.getWorkflows();
         setWorkflows(loadedWorkflows);
       } catch (error) {
         console.error("Failed to load workflows:", error);
@@ -45,11 +47,13 @@ function DesignerView({ workflowId }: DesignerViewProps) {
         ? workflows.map((w) => (w.id === workflow.id ? workflow : w))
         : [...workflows, workflow];
 
-      await storageManager.saveWorkflows(updatedWorkflows);
+      await storageClient.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
 
       // Sync HTTP triggers in background script when explicitly saving
-      const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
+      const runtime = (
+        typeof browser !== "undefined" ? browser : chrome
+      ) as any;
       runtime.runtime.sendMessage({ type: "SYNC_HTTP_TRIGGERS" });
 
       // Navigate back to workflows list, preserving the current tab

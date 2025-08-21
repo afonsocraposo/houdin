@@ -15,7 +15,7 @@ import {
   IconHistory,
 } from "@tabler/icons-react";
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
-import { StorageManager } from "../services/storage";
+import { ContentStorageClient } from "../services/storage";
 import { TimeAgoText } from "../components/TimeAgoText";
 
 function ExecutionHistory() {
@@ -24,11 +24,11 @@ function ExecutionHistory() {
 
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
+  const storageClient = new ContentStorageClient();
 
   const loadExecutions = async () => {
     try {
-      const storageManager = StorageManager.getInstance();
-      const executions = await storageManager.getWorkflowExecutions();
+      const executions = await storageClient.getWorkflowExecutions();
       setExecutions(executions);
     } catch (error) {
       console.error("Failed to load executions:", error);
@@ -38,8 +38,7 @@ function ExecutionHistory() {
 
   const loadWorkflows = async () => {
     try {
-      const storageManager = StorageManager.getInstance();
-      const workflowList = await storageManager.getWorkflows();
+      const workflowList = await storageClient.getWorkflows();
       setWorkflows(workflowList);
     } catch (error) {
       console.error("Failed to load workflows:", error);
@@ -109,7 +108,7 @@ function ExecutionHistory() {
   const stats = getStats();
 
   return (
-    <Stack gap="sm">
+    <Stack gap="sm" h={350}>
       <Group gap="xs">
         <Badge color="blue" variant="light" size="sm">
           {stats.total} executed

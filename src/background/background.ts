@@ -1,6 +1,7 @@
 import { HttpListenerWebRequest } from "../services/httpListenerWebRequest";
 import { BackgroundWorkflowEngine } from "../services/backgroundEngine";
 import { WorkflowCommandType } from "../types/background-workflow";
+import { StorageServer } from "../services/storage";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -50,7 +51,10 @@ if (runtime.webNavigation) {
   });
 }
 
-const workflowEngine = new BackgroundWorkflowEngine();
+const storageServer = StorageServer.getInstance();
+storageServer.init();
+
+const workflowEngine = new BackgroundWorkflowEngine(storageServer);
 workflowEngine.initialize().then(() => {
   runtime.webNavigation.onCompleted.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {

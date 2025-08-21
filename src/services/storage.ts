@@ -1,106 +1,306 @@
 import { WorkflowDefinition } from "../types/workflow";
-import { Credential } from "../types/credentials";
+import type { Credential } from "../types/credentials";
 import { WorkflowExecution } from "../types/workflow";
+import { StorageAction } from "../types/storage";
 
-export class StorageManager {
-  private static instance: StorageManager;
+const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
-  static getInstance(): StorageManager {
-    if (!StorageManager.instance) {
-      StorageManager.instance = new StorageManager();
+const MAX_EXECUTIONS = 50; // Limit for workflow executions
+
+export class StorageServer {
+  private static instance: StorageServer | null = null;
+  private subscribers: Map<string, Set<chrome.runtime.Port>> = new Map();
+  private portConnections: Set<chrome.runtime.Port> = new Set();
+  private localListeners: Map<string, Set<(value: any) => void>> = new Map();
+
+  static getInstance(): StorageServer {
+    if (!StorageServer.instance) {
+      StorageServer.instance = new StorageServer();
     }
-    return StorageManager.instance;
+    return StorageServer.instance;
+  }
+
+  public init() {
+    // Handle long-lived connections for listeners
+    runtime.runtime.onConnect.addListener((port: chrome.runtime.Port) => {
+      if (port.name === "storage-listener") {
+        this.portConnections.add(port);
+
+        port.onDisconnect.addListener(() => {
+          this.portConnections.delete(port);
+          // Remove port from all subscriptions
+          this.subscribers.forEach((ports) => ports.delete(port));
+        });
+
+        port.onMessage.addListener((message) => {
+          switch (message.type) {
+            case StorageAction.SUBSCRIBE:
+              this.subscribe(port, message.key);
+              break;
+            case StorageAction.UNSUBSCRIBE:
+              this.unsubscribe(port, message.key);
+              break;
+          }
+        });
+      }
+    });
+
+    runtime.runtime.onMessage.addListener(
+      (message: any, _sender: any, sendResponse: (response: any) => void) => {
+        switch (message.type) {
+          case StorageAction.GET:
+            this.get(message.key)
+              .then((value: any) => {
+                sendResponse({ success: true, value });
+              })
+              .catch((error: any) => {
+                sendResponse({ success: false, error: error.message });
+              });
+            break;
+          case StorageAction.SET:
+            this.set(message.key, message.value)
+              .then(() => {
+                sendResponse({ success: true });
+                // Notify subscribers of the change
+                this.notifySubscribers(message.key, message.value);
+                this.notifyLocalListeners(message.key, message.value);
+              })
+              .catch((error: any) => {
+                sendResponse({ success: false, error: error.message });
+              });
+            break;
+          case StorageAction.REMOVE:
+            this.remove(message.key)
+              .then(() => {
+                sendResponse({ success: true });
+                // Notify subscribers of the removal
+                this.notifySubscribers(message.key, null);
+                this.notifyLocalListeners(message.key, null);
+              })
+              .catch((error: any) => {
+                sendResponse({ success: false, error: error.message });
+              });
+            break;
+          case "ping":
+            // Handle ping for connection testing
+            sendResponse({ success: true });
+            break;
+          default:
+            return false;
+        }
+        return true; // Indicates that we will send a response asynchronously
+      },
+    );
+  }
+
+  private subscribe(port: chrome.runtime.Port, key: string) {
+    if (!this.subscribers.has(key)) {
+      this.subscribers.set(key, new Set());
+    }
+    this.subscribers.get(key)!.add(port);
+  }
+
+  private unsubscribe(port: chrome.runtime.Port, key: string) {
+    const subscribers = this.subscribers.get(key);
+    if (subscribers) {
+      subscribers.delete(port);
+      if (subscribers.size === 0) {
+        this.subscribers.delete(key);
+      }
+    }
+  }
+
+  private notifySubscribers(key: string, value: any) {
+    const subscribers = this.subscribers.get(key);
+    if (subscribers) {
+      const message = {
+        type: StorageAction.CHANGE_NOTIFICATION,
+        key,
+        value,
+      };
+
+      subscribers.forEach((port) => {
+        try {
+          port.postMessage(message);
+        } catch (error) {
+          // Port might be disconnected, remove it
+          subscribers.delete(port);
+        }
+      });
+    }
+  }
+
+  private notifyLocalListeners(key: string, value: any) {
+    const callbacks = this.localListeners.get(key);
+    if (callbacks) {
+      callbacks.forEach((callback) => {
+        try {
+          callback(value);
+        } catch (error) {
+          console.error(
+            `Error in local storage listener callback for key ${key}:`,
+            error,
+          );
+        }
+      });
+    }
   }
 
   private getStorageAPI() {
     // Firefox uses 'browser' namespace, Chrome uses 'chrome'
-    if (typeof browser !== "undefined" && (browser as any).storage) {
-      return { api: (browser as any).storage, isFirefox: true };
+    if (typeof browser !== "undefined" && browser.storage) {
+      return { api: browser.storage.local, isFirefox: true };
     } else if (typeof chrome !== "undefined" && chrome.storage) {
-      return { api: chrome.storage, isFirefox: false };
+      return { api: chrome.storage.local, isFirefox: false };
     }
     console.error("No storage API available");
     return null;
   }
 
-  private async get(key: string): Promise<any> {
+  // Generic storage methods - only these should be public
+  public async get(key: string): Promise<any> {
     const storage = this.getStorageAPI();
     if (!storage) return null;
 
-    try {
-      let result: any;
+    let result: any;
 
-      if (storage.isFirefox) {
-        result = await storage.api.sync.get([key]);
-      } else {
+    if (storage.isFirefox) {
+      result = await storage.api.get([key]);
+    } else {
+      // Chrome storage API uses promises in newer versions
+      try {
+        result = await storage.api.get(key);
+      } catch (error) {
+        // Fallback to callback pattern for older Chrome versions
         result = await new Promise((resolve, reject) => {
-          storage.api.sync.get([key], (result: any) => {
-            if ((chrome as any)?.runtime?.lastError) {
-              reject((chrome as any).runtime.lastError);
+          (storage.api as any).get(key, (result: any) => {
+            if (chrome?.runtime?.lastError) {
+              reject(chrome.runtime.lastError);
             } else {
               resolve(result);
             }
           });
         });
       }
-
-      return result[key] || null;
-    } catch (error) {
-      console.error(`Failed to get ${key}:`, error);
-      return null;
     }
+
+    return result[key] || null;
   }
 
-  private async set(key: string, value: any): Promise<void> {
+  public async set(key: string, value: any): Promise<void> {
     const storage = this.getStorageAPI();
     if (!storage) return;
 
-    try {
-      const data = { [key]: value };
+    const data = { [key]: value };
 
-      if (storage.isFirefox) {
-        await storage.api.sync.set(data);
-      } else {
+    if (storage.isFirefox) {
+      await storage.api.set(data);
+    } else {
+      // Chrome storage API uses promises in newer versions
+      try {
+        await storage.api.set(data);
+      } catch (error) {
+        // Fallback to callback pattern for older Chrome versions
         await new Promise<void>((resolve, reject) => {
-          storage.api.sync.set(data, () => {
-            if ((chrome as any)?.runtime?.lastError) {
-              reject((chrome as any).runtime.lastError);
+          (storage.api as any).set(data, () => {
+            if (chrome?.runtime?.lastError) {
+              reject(chrome.runtime.lastError);
             } else {
               resolve();
             }
           });
         });
       }
-    } catch (error) {
-      console.error(`Failed to set ${key}:`, error);
-      throw error;
     }
+
+    // Notify listeners after successful set
+    this.notifySubscribers(key, value);
+    this.notifyLocalListeners(key, value);
   }
 
-  private async remove(key: string): Promise<void> {
+  public async remove(key: string): Promise<void> {
     const storage = this.getStorageAPI();
     if (!storage) return;
 
-    try {
-      if (storage.isFirefox) {
-        await storage.api.sync.remove([key]);
-      } else {
+    if (storage.isFirefox) {
+      await storage.api.remove([key]);
+    } else {
+      // Chrome storage API uses promises in newer versions
+      try {
+        await storage.api.remove(key);
+      } catch (error) {
+        // Fallback to callback pattern for older Chrome versions
         await new Promise<void>((resolve, reject) => {
-          storage.api.sync.remove([key], () => {
-            if ((chrome as any)?.runtime?.lastError) {
-              reject((chrome as any).runtime.lastError);
+          (storage.api as any).remove(key, () => {
+            if (chrome?.runtime?.lastError) {
+              reject(chrome.runtime.lastError);
             } else {
               resolve();
             }
           });
         });
       }
-    } catch (error) {
-      console.error(`Failed to remove ${key}:`, error);
-      throw error;
     }
+
+    // Notify listeners after successful removal
+    this.notifySubscribers(key, null);
+    this.notifyLocalListeners(key, null);
   }
 
+  public addListener(key: string, callback: (value: any) => void): () => void {
+    if (!this.localListeners.has(key)) {
+      this.localListeners.set(key, new Set());
+    }
+
+    this.localListeners.get(key)!.add(callback);
+
+    // Return unsubscribe function
+    return () => {
+      const callbacks = this.localListeners.get(key);
+      if (callbacks) {
+        callbacks.delete(callback);
+        if (callbacks.size === 0) {
+          this.localListeners.delete(key);
+        }
+      }
+    };
+  }
+}
+
+// Interface for storage operations
+interface IStorageClient {
+  getWorkflows(): Promise<WorkflowDefinition[]>;
+  saveWorkflows(workflows: WorkflowDefinition[]): Promise<void>;
+  getCredentials(): Promise<Credential[]>;
+  saveCredentials(credentials: Credential[]): Promise<void>;
+  getCredentialsByType(type: string): Promise<Credential[]>;
+  getWorkflowExecutions(): Promise<WorkflowExecution[]>;
+  saveWorkflowExecutions(executions: WorkflowExecution[]): Promise<void>;
+  saveWorkflowExecution(execution: WorkflowExecution): Promise<void>;
+  clearWorkflowExecutions(): Promise<void>;
+  addWorkflowsListener(
+    callback: (workflows: WorkflowDefinition[]) => void,
+  ): () => void;
+  addCredentialsListener(
+    callback: (credentials: Credential[]) => void,
+  ): () => void;
+  addWorkflowExecutionsListener(
+    callback: (executions: WorkflowExecution[]) => void,
+  ): () => void;
+}
+
+// Base class with shared business logic
+abstract class StorageClientBase implements IStorageClient {
+  // Abstract methods that subclasses must implement
+  protected abstract get(key: string): Promise<any>;
+  protected abstract set(key: string, value: any): Promise<void>;
+  protected abstract remove(key: string): Promise<void>;
+  public abstract addListener(
+    key: string,
+    callback: (value: any) => void,
+  ): () => void;
+
+  // Shared business logic methods
   async getWorkflows(): Promise<WorkflowDefinition[]> {
     try {
       return (await this.get("workflows")) || [];
@@ -116,18 +316,6 @@ export class StorageManager {
     } catch (error) {
       console.error("Failed to save workflows:", error);
       throw error;
-    }
-  }
-
-  onStorageChanged(callback: (workflows: WorkflowDefinition[]) => void): void {
-    const storage = this.getStorageAPI();
-    if (storage) {
-      storage.api.onChanged.addListener((changes: any, namespace: string) => {
-        if (namespace === "sync" && changes.workflows) {
-          const workflows = changes.workflows?.newValue || [];
-          callback(workflows);
-        }
-      });
     }
   }
 
@@ -149,25 +337,11 @@ export class StorageManager {
     }
   }
 
-  // Get credentials filtered by type
   async getCredentialsByType(type: string): Promise<Credential[]> {
     const allCredentials = await this.getCredentials();
     return allCredentials.filter((cred) => cred.type === type);
   }
 
-  onCredentialsChanged(callback: (credentials: Credential[]) => void): void {
-    const storage = this.getStorageAPI();
-    if (storage) {
-      storage.api.onChanged.addListener((changes: any, namespace: string) => {
-        if (namespace === "sync" && changes.credentials) {
-          const credentials = changes.credentials?.newValue || [];
-          callback(credentials);
-        }
-      });
-    }
-  }
-
-  // Workflow execution tracking methods
   async getWorkflowExecutions(): Promise<WorkflowExecution[]> {
     try {
       return (await this.get("workflowExecutions")) || [];
@@ -177,13 +351,23 @@ export class StorageManager {
     }
   }
 
+  async saveWorkflowExecutions(executions: WorkflowExecution[]): Promise<void> {
+    try {
+      await this.set("workflowExecutions", executions);
+      console.debug("Workflow executions saved successfully");
+    } catch (error) {
+      console.error("Failed to save workflow executions:", error);
+      throw error;
+    }
+  }
+
   async saveWorkflowExecution(execution: WorkflowExecution): Promise<void> {
     try {
       const executions = await this.getWorkflowExecutions();
-
-      // Keep only last 50 executions
-      const newExecutions = [...(executions?.slice(0, 49) || []), execution];
-
+      const newExecutions = [
+        ...(executions?.slice(0, MAX_EXECUTIONS) || []),
+        execution,
+      ];
       await this.set("workflowExecutions", newExecutions);
       console.debug("Workflow execution saved successfully");
     } catch (error) {
@@ -199,6 +383,242 @@ export class StorageManager {
     } catch (error) {
       console.error("Failed to clear workflow executions:", error);
       throw error;
+    }
+  }
+
+  // Convenience methods for listeners
+  addWorkflowsListener(
+    callback: (workflows: WorkflowDefinition[]) => void,
+  ): () => void {
+    return this.addListener("workflows", callback);
+  }
+
+  addCredentialsListener(
+    callback: (credentials: Credential[]) => void,
+  ): () => void {
+    return this.addListener("credentials", callback);
+  }
+
+  addWorkflowExecutionsListener(
+    callback: (executions: WorkflowExecution[]) => void,
+  ): () => void {
+    return this.addListener("workflowExecutions", callback);
+  }
+}
+
+// Background storage client - communicates directly with StorageServer
+export class BackgroundStorageClient extends StorageClientBase {
+  private storageServer: StorageServer;
+
+  constructor() {
+    super();
+    this.storageServer = StorageServer.getInstance();
+  }
+
+  protected async get(key: string): Promise<any> {
+    return await this.storageServer.get(key);
+  }
+
+  protected async set(key: string, value: any): Promise<void> {
+    await this.storageServer.set(key, value);
+  }
+
+  protected async remove(key: string): Promise<void> {
+    await this.storageServer.remove(key);
+  }
+
+  public addListener(key: string, callback: (value: any) => void): () => void {
+    return this.storageServer.addListener(key, callback);
+  }
+}
+
+// Content storage client - communicates via messages
+export class ContentStorageClient extends StorageClientBase {
+  private listeners: Map<string, Set<(value: any) => void>> = new Map();
+  private port: chrome.runtime.Port | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private isConnecting = false;
+
+  protected async get(key: string): Promise<any> {
+    const result = await runtime.runtime.sendMessage({
+      type: StorageAction.GET,
+      key,
+    });
+    if (!result || !result.success) {
+      throw new Error(
+        `Failed to get key ${key}: ${result?.error || "Unknown error"}`,
+      );
+    }
+    return result.value;
+  }
+
+  protected async set(key: string, value: any): Promise<void> {
+    const result = await runtime.runtime.sendMessage({
+      type: StorageAction.SET,
+      key,
+      value,
+    });
+    if (!result || !result.success) {
+      throw new Error(
+        `Failed to set key ${key}: ${result?.error || "Unknown error"}`,
+      );
+    }
+  }
+
+  protected async remove(key: string): Promise<void> {
+    const result = await runtime.runtime.sendMessage({
+      type: StorageAction.REMOVE,
+      key,
+    });
+    if (!result || !result.success) {
+      throw new Error(
+        `Failed to remove key ${key}: ${result?.error || "Unknown error"}`,
+      );
+    }
+  }
+
+  public addListener(key: string, callback: (value: any) => void): () => void {
+    if (!this.listeners.has(key)) {
+      this.listeners.set(key, new Set());
+    }
+
+    this.listeners.get(key)!.add(callback);
+
+    // Only try to connect if we don't have a port yet
+    if (!this.port && !this.isConnecting) {
+      this.initPort().catch((error) => {
+        console.warn("Failed to establish storage listener connection:", error);
+      });
+    }
+
+    // Subscribe to this key if we have a connection
+    if (this.port) {
+      this.port.postMessage({
+        type: StorageAction.SUBSCRIBE,
+        key,
+      });
+    }
+
+    // Return unsubscribe function
+    return () => {
+      const callbacks = this.listeners.get(key);
+      if (callbacks) {
+        callbacks.delete(callback);
+        if (callbacks.size === 0) {
+          this.listeners.delete(key);
+          // Unsubscribe from this key
+          if (this.port) {
+            this.port.postMessage({
+              type: StorageAction.UNSUBSCRIBE,
+              key,
+            });
+          }
+        }
+      }
+    };
+  }
+
+  private async initPort(): Promise<void> {
+    if (this.isConnecting || this.port) return;
+
+    this.isConnecting = true;
+
+    try {
+      // Check if background script is available
+      await this.pingBackgroundScript();
+
+      this.port = runtime.runtime.connect({ name: "storage-listener" });
+
+      if (this.port) {
+        this.port.onMessage.addListener((message) => {
+          if (message.type === StorageAction.CHANGE_NOTIFICATION) {
+            this.handleStorageChange(message.key, message.value);
+          }
+        });
+
+        this.port.onDisconnect.addListener(() => {
+          this.port = null;
+          this.isConnecting = false;
+
+          // Only attempt reconnection if we have active listeners
+          if (this.listeners.size > 0) {
+            this.scheduleReconnect();
+          }
+        });
+
+        // Re-subscribe to all existing listeners
+        this.listeners.forEach((_callbacks, key) => {
+          if (this.port) {
+            this.port.postMessage({
+              type: StorageAction.SUBSCRIBE,
+              key,
+            });
+          }
+        });
+
+        this.reconnectAttempts = 0;
+        this.isConnecting = false;
+      }
+    } catch (error) {
+      this.isConnecting = false;
+      console.warn(
+        "Failed to connect to background script for storage listeners:",
+        error,
+      );
+
+      if (this.listeners.size > 0) {
+        this.scheduleReconnect();
+      }
+    }
+  }
+
+  private async pingBackgroundScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      runtime.runtime.sendMessage({ type: "ping" }, (_response: any) => {
+        if (runtime.runtime.lastError) {
+          reject(new Error(runtime.runtime.lastError.message));
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.warn(
+        "Max reconnection attempts reached. Storage listeners disabled.",
+      );
+      return;
+    }
+
+    this.reconnectAttempts++;
+    const delay = Math.min(
+      1000 * Math.pow(2, this.reconnectAttempts - 1),
+      30000,
+    );
+
+    setTimeout(() => {
+      if (this.listeners.size > 0) {
+        this.initPort();
+      }
+    }, delay);
+  }
+
+  private handleStorageChange(key: string, value: any) {
+    const callbacks = this.listeners.get(key);
+    if (callbacks) {
+      callbacks.forEach((callback) => {
+        try {
+          callback(value);
+        } catch (error) {
+          console.error(
+            `Error in storage listener callback for key ${key}:`,
+            error,
+          );
+        }
+      });
     }
   }
 }
