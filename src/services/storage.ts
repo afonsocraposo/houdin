@@ -5,6 +5,8 @@ import { StorageAction } from "../types/storage";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
+const MAX_EXECUTIONS = 50; // Limit for workflow executions
+
 export class StorageServer {
   private static instance: StorageServer | null = null;
   private subscribers: Map<string, Set<chrome.runtime.Port>> = new Map();
@@ -362,7 +364,10 @@ abstract class StorageClientBase implements IStorageClient {
   async saveWorkflowExecution(execution: WorkflowExecution): Promise<void> {
     try {
       const executions = await this.getWorkflowExecutions();
-      const newExecutions = [...(executions?.slice(0, 49) || []), execution];
+      const newExecutions = [
+        ...(executions?.slice(0, MAX_EXECUTIONS) || []),
+        execution,
+      ];
       await this.set("workflowExecutions", newExecutions);
       console.debug("Workflow execution saved successfully");
     } catch (error) {
