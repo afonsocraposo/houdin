@@ -23,7 +23,7 @@ export default function ElementSelectedModal({
       onClose={close}
       title="Element Inspector"
       trapFocus={false}
-      zIndex={1000} // Ensure modal is on top
+      zIndex={1000000} // Ensure modal is on top
     >
       <Stack justify="stretch">
         <InfoRow label="Selector" value={selector} />
