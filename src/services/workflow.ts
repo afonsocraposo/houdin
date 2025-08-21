@@ -4,7 +4,7 @@ import {
   WorkflowExecutionContext,
 } from "../types/workflow";
 import { ExecutionTracker } from "./executionTracker";
-import { generateId } from "../utils/helpers";
+import { deepCopy, generateId } from "../utils/helpers";
 import { sendMessageToContentScript } from "../lib/messages";
 import {
   ActionCommand,
@@ -13,7 +13,10 @@ import {
 import { ActionRegistry } from "./actionRegistry";
 
 export class ExecutionContext implements WorkflowExecutionContext {
-  constructor(public outputs: Record<string, any> = {}) {}
+  public outputs: Record<string, any>;
+  constructor() {
+    this.outputs = {};
+  }
 
   setOutput(nodeId: string, value: any): void {
     this.outputs[nodeId] = value;
@@ -65,16 +68,18 @@ export class WorkflowExecutor {
   public readonly tabId: number;
   private context: ExecutionContext;
   private executionTracker: ExecutionTracker;
+  private readonly workflow: WorkflowDefinition;
 
   constructor(
     tabId: number,
-    private workflow: WorkflowDefinition,
+    workflow: WorkflowDefinition,
     private triggerNode: WorkflowNode,
     url: string,
     private onDone?: (executorId: string) => void,
   ) {
     this.id = generateId();
     this.workflowId = workflow.id;
+    this.workflow = workflow;
     this.tabId = tabId;
     this.context = new ExecutionContext();
     this.executionTracker = new ExecutionTracker(
@@ -149,7 +154,7 @@ export class WorkflowExecutor {
     const actionRegistry = ActionRegistry.getInstance();
     // Access trigger type correctly - it's stored as triggerType, not type
     const actionType = node.data?.actionType;
-    const actionConfig: Object = node.data?.config || {};
+    const actionConfig: Object = deepCopy(node.data?.config || {});
 
     // iterate object properties and interpolate variables
     for (const key in actionConfig) {
