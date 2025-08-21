@@ -257,28 +257,10 @@ export class UserScriptManager {
         const Return = function(data) {
           resolve({ success: true, data: data });
         };
-
-        try {
-          ${userScript}
-
-          // If no Return was called, auto-resolve
-          resolve({ success: true, data: null });
-        } catch (evalError) {
-          // Check if this is a CSP error
-          const errorMessage = evalError?.message || evalError?.toString() || '';
-          const isCSPError = errorMessage.includes('Content-Security-Policy') ||
-                           errorMessage.includes('unsafe-eval') ||
-                           errorMessage.includes('script-src') ||
-                           errorMessage.includes('CSP');
-
-          const finalError = isCSPError ? 'CSP_VIOLATION: ' + errorMessage : errorMessage;
-
-          resolve({ success: false, error: finalError });
-        }
-      }).catch(error => ({
-        success: false,
-        error: error.message || error.toString()
-      }));
+        ${userScript}
+        // If no Return was called, auto-resolve
+        resolve({ success: true, data: null });
+      }).catch(error => ({success: false, error: error.message || error.toString()}));
 
       // Send the result back to the background script
       window.postMessage({
