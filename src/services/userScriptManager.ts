@@ -237,90 +237,59 @@ export class UserScriptManager {
 
   private createWrappedScript(userScript: string): string {
     return `
-        class ResultError extends Error {
-            constructor(data) {
-                super("Script returned data");
-                this.data = data;
-                this.name = "ResultError";
+      (async function() {
+        return await new Promise(resolve => {
+            const Return = function(data) {
+                resolve({ success: true, data: data });
             }
-        }
-      (function() {
-        try {
-          let resultReturned = false;
-
-          // Helper function for scripts to send data back
-          const Return = function(data) {
-            throw new ResultError(data)
-          };
-
-          // Execute the user script
-          ${userScript}
-          return { success: true, data: undefined };
-        } catch (error) {
-            if (error instanceof ResultError) {
-                return { success: true, data: error.data };
-            }
-            console.error('Custom script execution error:', error);
-            return { success: false, error: error.message || error.toString() };
-        }
+            ${userScript}
+            // If no Return was called, resolve with success
+            resolve({ success: true, data: null });
+        }).catch(error => ({success: false, error: error.message || error.toString()}));
       })();
     `;
   }
 
   private createFallbackScript(userScript: string, nodeId: string): string {
     return `
-      (function() {
+    (async function() {
+      const promiseResult = await new Promise(resolve => {
+        const Return = function(data) {
+          resolve({ success: true, data: data });
+        };
+
         try {
-          let resultReturned = false;
+          ${userScript}
 
-          // Helper function for scripts to send data back using window.postMessage
-          Return = function(data) {
-            if (!resultReturned) {
-              resultReturned = true;
-              // Send postMessage for content script bridge
-              window.postMessage({
-                type: 'workflow-script-response',
-                nodeId: '${nodeId}',
-                result: data
-              }, '*');
-            }
-          };
+          // If no Return was called, auto-resolve
+          resolve({ success: true, data: null });
+        } catch (evalError) {
+          // Check if this is a CSP error
+          const errorMessage = evalError?.message || evalError?.toString() || '';
+          const isCSPError = errorMessage.includes('Content-Security-Policy') ||
+                           errorMessage.includes('unsafe-eval') ||
+                           errorMessage.includes('script-src') ||
+                           errorMessage.includes('CSP');
 
-          // Execute the user script
-          try {
-            ${userScript}
-            Return();
-          } catch (evalError) {
-            // Check if this is a CSP error
-            const errorMessage = evalError?.message || evalError?.toString() || '';
-            if (errorMessage.includes('Content-Security-Policy') ||
-                errorMessage.includes('unsafe-eval') ||
-                errorMessage.includes('script-src') ||
-                errorMessage.includes('CSP')) {
-              // This is a CSP violation - send special error
-              window.postMessage({
-                type: 'workflow-script-response',
-                nodeId: '${nodeId}',
-                result: null,
-                error: 'CSP_VIOLATION: ' + errorMessage
-              }, '*');
+          const finalError = isCSPError ? 'CSP_VIOLATION: ' + errorMessage : errorMessage;
 
-              return; // Stop execution here
-            }
-            // Regular error - re-throw to be caught by outer catch
-            throw evalError;
-          }
-        } catch (error) {
-          console.error('Custom script execution error:', error);
-          // Send postMessage for content script bridge
-          window.postMessage({
-            type: 'workflow-script-response',
-            nodeId: '${nodeId}',
-            result: null,
-            error: error.message
-          }, '*');
+          resolve({ success: false, error: finalError });
         }
-      })();
-    `;
+      }).catch(error => ({
+        success: false,
+        error: error.message || error.toString()
+      }));
+
+      // Send the result back to the background script
+      window.postMessage({
+        type: 'workflow-script-response',
+        nodeId: '${nodeId}',
+        result: promiseResult.success ? promiseResult.data : null,
+        error: promiseResult.success ? undefined : promiseResult.error
+      }, '*');
+
+      return promiseResult;
+    })();
+  `;
   }
 }
