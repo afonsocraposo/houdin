@@ -27,7 +27,7 @@ import {
   IconArrowLeft,
 } from "@tabler/icons-react";
 import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
-import { StorageManager } from "../services/storage";
+import { ContentStorageClient } from "../services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "./TimeAgoText";
 import { formatTimeAgo } from "../utils/time";
@@ -46,14 +46,15 @@ function ExecutionHistoryPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchFilter, setSearchFilter] = useState<string>("");
 
+  const storageClient = new ContentStorageClient();
+
   // Get workflowId from URL params or query params
   const workflowId = urlWorkflowId || searchParams.get("workflow") || "";
 
   const loadExecutions = async () => {
     try {
-      const storageManager = StorageManager.getInstance();
       const executions = (
-        await storageManager.getWorkflowExecutions()
+        await storageClient.getWorkflowExecutions()
       ).reverse();
       setExecutions(executions);
     } catch (error) {
@@ -64,8 +65,7 @@ function ExecutionHistoryPage() {
 
   const loadWorkflows = async () => {
     try {
-      const storageManager = StorageManager.getInstance();
-      const workflowList = await storageManager.getWorkflows();
+      const workflowList = await storageClient.getWorkflows();
       setWorkflows(workflowList);
     } catch (error) {
       console.error("Failed to load workflows:", error);
@@ -149,8 +149,7 @@ function ExecutionHistoryPage() {
 
   const clearHistory = async () => {
     try {
-      const storageManager = StorageManager.getInstance();
-      await storageManager.clearWorkflowExecutions();
+      await storageClient.clearWorkflowExecutions();
       setExecutions([]);
       setFilteredExecutions([]);
     } catch (error) {

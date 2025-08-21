@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Select, Loader } from "@mantine/core";
-import { StorageManager } from "../services/storage";
+import { ContentStorageClient } from "../services/storage";
 import { Credential } from "../types/credentials";
 
 interface CredentialsSelectProps {
@@ -23,7 +23,11 @@ export const CredentialsSelect: React.FC<CredentialsSelectProps> = ({
   credentialType,
 }) => {
   const [loading, setLoading] = useState(true);
-  const [options, setOptions] = useState<{ value: string; label: string }[]>([]);
+  const [options, setOptions] = useState<{ value: string; label: string }[]>(
+    [],
+  );
+
+  const storageClient = new ContentStorageClient();
 
   useEffect(() => {
     loadCredentials();
@@ -32,13 +36,12 @@ export const CredentialsSelect: React.FC<CredentialsSelectProps> = ({
   const loadCredentials = async () => {
     setLoading(true);
     try {
-      const storageManager = StorageManager.getInstance();
       let credentials: Credential[];
-      
+
       if (credentialType) {
-        credentials = await storageManager.getCredentialsByType(credentialType);
+        credentials = await storageClient.getCredentialsByType(credentialType);
       } else {
-        credentials = await storageManager.getCredentials();
+        credentials = await storageClient.getCredentials();
       }
 
       const credentialOptions = credentials.map((cred) => ({

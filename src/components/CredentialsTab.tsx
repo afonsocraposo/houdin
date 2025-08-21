@@ -16,7 +16,7 @@ import {
 } from "@mantine/core";
 import { IconPlus, IconEdit, IconTrash, IconKey } from "@tabler/icons-react";
 import { Credential } from "../types/credentials";
-import { StorageManager } from "../services/storage";
+import { ContentStorageClient } from "../services/storage";
 import { CredentialRegistry } from "../services/credentialRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
 import { NotificationService } from "../services/notification";
@@ -40,8 +40,8 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
     config: {} as Record<string, any>,
   });
 
-  const storageManager = StorageManager.getInstance();
   const credentialRegistry = CredentialRegistry.getInstance();
+  const storageClient = new ContentStorageClient();
 
   useEffect(() => {
     loadCredentials();
@@ -50,12 +50,17 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
       setCredentials(updatedCredentials);
     };
 
-    storageManager.onCredentialsChanged(handleCredentialsChange);
+    const unsubscribe = storageClient.addCredentialsListener(
+      handleCredentialsChange,
+    );
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const loadCredentials = async () => {
     try {
-      const loadedCredentials = await storageManager.getCredentials();
+      const loadedCredentials = await storageClient.getCredentials();
       setCredentials(loadedCredentials);
     } catch (error) {
       console.error("Failed to load credentials:", error);
@@ -98,7 +103,7 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
         ? credentials.map((c) => (c.id === credential.id ? credential : c))
         : [...credentials, credential];
 
-      await storageManager.saveCredentials(updatedCredentials);
+      await storageClient.saveCredentials(updatedCredentials);
       setCredentials(updatedCredentials);
       handleCloseModal();
       onSaved?.();
@@ -129,7 +134,7 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
 
     try {
       const updatedCredentials = credentials.filter((c) => c.id !== id);
-      await storageManager.saveCredentials(updatedCredentials);
+      await storageClient.saveCredentials(updatedCredentials);
       setCredentials(updatedCredentials);
       onSaved?.();
     } catch (error) {

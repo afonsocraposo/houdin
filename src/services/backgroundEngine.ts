@@ -1,5 +1,5 @@
 import { sendMessageToContentScript } from "../lib/messages";
-import { StorageManager } from "../services/storage";
+import { BackgroundStorageClient, StorageServer } from "../services/storage";
 import {
   TriggerCommand,
   WorkflowCommandType,
@@ -13,28 +13,27 @@ import { WorkflowExecutor } from "./workflow";
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();
   private workflows: WorkflowDefinition[] = [];
-  private storageManager: StorageManager;
+  private storageClient: BackgroundStorageClient;
 
-  constructor() {
-    this.storageManager = StorageManager.getInstance();
+  constructor(storageServer: StorageServer) {
+    this.storageClient = new BackgroundStorageClient();
     initializeBackgroundActions();
   }
 
   async initialize(): Promise<void> {
-    console.debug("Content injector initialized");
     await this.loadWorkflows();
     this.setupStorageListener();
   }
 
   private setupStorageListener(): void {
-    this.storageManager.onStorageChanged((workflows) => {
+    this.storageClient.addWorkflowsListener((workflows) => {
       console.debug("Workflows updated, reloading...");
       this.workflows = workflows;
     });
   }
 
   private async loadWorkflows(): Promise<void> {
-    this.workflows = await this.storageManager.getWorkflows();
+    this.workflows = await this.storageClient.getWorkflows();
     console.debug("Loaded workflows:", this.workflows.length);
   }
 

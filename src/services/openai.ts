@@ -1,4 +1,4 @@
-import { StorageManager } from "./storage";
+import { ContentStorageClient } from "./storage";
 import { CredentialRegistry } from "./credentialRegistry";
 import { HttpClientService } from "./httpClient";
 
@@ -33,9 +33,9 @@ export class OpenAIService {
   ): Promise<string> {
     try {
       // Get the credential
-      const storageManager = StorageManager.getInstance();
+      const storageClient = new ContentStorageClient();
       const credentialRegistry = CredentialRegistry.getInstance();
-      const credentials = await storageManager.getCredentials();
+      const credentials = await storageClient.getCredentials();
       const credential = credentials.find((c) => c.id === credentialId);
 
       if (!credential) {

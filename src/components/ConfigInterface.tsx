@@ -32,7 +32,7 @@ import {
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { StorageManager } from "../services/storage";
+import { ContentStorageClient } from "../services/storage";
 import { ImportModal } from "./ImportModal";
 import { ExportModal } from "./ExportModal";
 import { CredentialsTab } from "./CredentialsTab";
@@ -53,15 +53,16 @@ function ConfigInterface() {
   const [workflowToExport, setWorkflowToExport] =
     useState<WorkflowDefinition | null>(null);
   const [activeTab, setActiveTab] = useState<string>("workflows");
-  const storageManager = StorageManager.getInstance();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const storageClient = new ContentStorageClient();
+
   useEffect(() => {
-    // Load existing workflows from storage using StorageManager
+    // Load existing workflows from storage using storage
     const loadData = async () => {
       try {
-        const loadedWorkflows = await storageManager.getWorkflows();
+        const loadedWorkflows = await storageClient.getWorkflows();
         setWorkflows(loadedWorkflows);
       } catch (error) {
         console.error("Failed to load workflows:", error);
@@ -75,13 +76,18 @@ function ConfigInterface() {
       setWorkflows(updatedWorkflows);
     };
 
-    storageManager.onStorageChanged(handleStorageChange);
+    const unsubscribe = storageClient.addWorkflowsListener(handleStorageChange);
 
     // Check if URL alert should be shown
     const urlAlertDismissed = localStorage.getItem("urlAlertDismissed");
     if (!urlAlertDismissed) {
       setShowUrlAlert(true);
     }
+
+    return () => {
+      // Clean up listener on unmount
+      unsubscribe();
+    };
   }, []); // Load workflows once on mount
 
   // Handle tab routing
@@ -114,7 +120,7 @@ function ConfigInterface() {
   const handleDeleteWorkflow = async (id: string) => {
     try {
       const updatedWorkflows = workflows.filter((w) => w.id !== id);
-      await storageManager.saveWorkflows(updatedWorkflows);
+      await storageClient.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
     } catch (error) {
       console.error("Failed to delete workflow:", error);
@@ -126,7 +132,7 @@ function ConfigInterface() {
       const updatedWorkflows = workflows.map((w) =>
         w.id === id ? { ...w, enabled: !w.enabled } : w,
       );
-      await storageManager.saveWorkflows(updatedWorkflows);
+      await storageClient.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
     } catch (error) {
       console.error("Failed to toggle workflow:", error);
@@ -141,7 +147,7 @@ function ConfigInterface() {
   const handleImportWorkflow = async (workflow: WorkflowDefinition) => {
     try {
       const updatedWorkflows = [...workflows, workflow];
-      await storageManager.saveWorkflows(updatedWorkflows);
+      await storageClient.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -301,7 +307,9 @@ function ConfigInterface() {
                                 variant="subtle"
                                 color="blue"
                                 onClick={() =>
-                                  navigate(`/executions?workflow=${workflow.id}`)
+                                  navigate(
+                                    `/executions?workflow=${workflow.id}`,
+                                  )
                                 }
                                 title="View execution history"
                               >
@@ -326,8 +334,9 @@ function ConfigInterface() {
                                 <IconTrash size={16} />
                               </ActionIcon>
                             </Group>
-                           </Table.Td>
-                         </Table.Tr>                      ))}
+                          </Table.Td>
+                        </Table.Tr>
+                      ))}
                   </Table.Tbody>
                 </Table>
               )}
