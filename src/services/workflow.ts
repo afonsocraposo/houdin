@@ -69,6 +69,7 @@ export class WorkflowExecutor {
   private context: ExecutionContext;
   private executionTracker: ExecutionTracker;
   private readonly workflow: WorkflowDefinition;
+  private nodesProcessing: Set<string> = new Set();
 
   constructor(
     tabId: number,
@@ -133,6 +134,7 @@ export class WorkflowExecutor {
     );
 
     if (connections.length === 0) {
+      this.nodesProcessing.delete(nodeId);
       console.debug("No further actions connected to node:", nodeId);
       this.destroy(true);
       return;
@@ -148,9 +150,11 @@ export class WorkflowExecutor {
         this.executeAction(actionNode);
       }
     }
+    this.nodesProcessing.delete(nodeId);
   }
 
   private async executeAction(node: WorkflowNode): Promise<void> {
+    this.nodesProcessing.add(node.id);
     const actionRegistry = ActionRegistry.getInstance();
     // Access trigger type correctly - it's stored as triggerType, not type
     const actionType = node.data?.actionType;
@@ -216,7 +220,7 @@ export class WorkflowExecutor {
       this.onActionExecuted(node.id, result.data);
     } catch (error) {
       console.error("Error executing action:", error);
-      this.destroy(false);
+      this.destroy(false, true);
     }
   }
   private executeActionInBackground(message: ActionCommand): Promise<any> {
@@ -236,7 +240,11 @@ export class WorkflowExecutor {
     });
   }
 
-  destroy(success: boolean): void {
+  destroy(success: boolean, force: boolean = false): void {
+    console.log("destroying", this.nodesProcessing);
+    if (!force && this.nodesProcessing.size !== 0) {
+      return;
+    }
     this.onDone?.(this.id);
     this.executionTracker.completeExecution(success);
   }
