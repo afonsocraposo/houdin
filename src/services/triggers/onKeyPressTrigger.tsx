@@ -55,7 +55,6 @@ export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig> {
       if (pressedCombo === keyCombo) {
         event.preventDefault();
         await onTrigger({ keyCombo: pressedCombo, timestamp: Date.now() });
-        window.removeEventListener("keyup", handleKeyPress);
       }
     };
 
