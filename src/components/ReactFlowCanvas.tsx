@@ -121,15 +121,24 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Convert workflow connections to React Flow edges
   const reactFlowEdges: Edge[] = useMemo(
     () =>
-      workflowConnections.map((conn) => ({
-        id: conn.id,
-        source: conn.source,
-        target: conn.target,
-        sourceHandle: conn.sourceHandle,
-        targetHandle: conn.targetHandle,
-        type: "smoothstep",
-        animated: false,
-      })),
+      workflowConnections.map(
+        (conn) =>
+          ({
+            id: conn.id,
+            source: conn.source,
+            target: conn.target,
+            sourceHandle: conn.sourceHandle,
+            targetHandle: conn.targetHandle,
+            type: "smoothstep",
+            animated: false,
+            markerEnd: {
+              type: "arrow",
+              width: 20,
+              height: 20,
+            },
+            style: { strokeWidth: 2 },
+          }) as Edge,
+      ),
     [workflowConnections],
   );
 
@@ -485,6 +494,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           minZoom: 1,
           maxZoom: 1,
         }}
+        disableKeyboardA11y
       >
         <Background />
         <Controls />
