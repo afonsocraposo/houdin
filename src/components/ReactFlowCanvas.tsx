@@ -43,6 +43,8 @@ import { TriggerRegistry } from "../services/triggerRegistry";
 import { initializeTriggers } from "../services/triggerInitializer";
 import { initializeActions } from "../services/actionInitializer";
 import CanvasNode from "./CanvasNode";
+import { useHotkeys } from "@mantine/hooks";
+import { NotificationService } from "../services/notification";
 
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
@@ -344,16 +346,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     onNodesChange(layoutedNodes);
   }, [workflowNodes, workflowConnections, onNodesChange, getLayoutedElements]);
 
-  const createNode = (
-    type: string,
-    category: "triggers" | "actions" | "conditions",
-  ) => {
-    const nodeType = category.slice(0, -1) as
-      | "trigger"
-      | "action"
-      | "condition";
-    let defaultConfig = {};
-
+  const getNewNodePosition = () => {
     // Calculate position for new node (center-right of existing nodes)
     let newPosition = { x: 300, y: 100 }; // Default position for first node
 
@@ -376,6 +369,19 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         y: centerY,
       };
     }
+    return newPosition;
+  };
+  const createNode = (
+    type: string,
+    category: "triggers" | "actions" | "conditions",
+  ) => {
+    const nodeType = category.slice(0, -1) as
+      | "trigger"
+      | "action"
+      | "condition";
+    let defaultConfig = {};
+
+    const newPosition = getNewNodePosition();
 
     const newNode: WorkflowNode = {
       id: `${nodeType}-${Date.now()}`,
@@ -465,12 +471,51 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     [],
   );
 
+  useHotkeys([
+    ["mod + C", () => onNodeCopy()],
+    ["mod + V", () => onNodePaste()],
+  ]);
+
+  const onNodeCopy = useCallback(() => {
+    if (selectedNode) {
+      navigator.clipboard.writeText(JSON.stringify(selectedNode));
+      NotificationService.showNotification({
+        message: `Node copied to clipboard`,
+        timeout: 1000,
+      });
+    }
+  }, [selectedNode]);
+
+  const onNodePaste = useCallback(() => {
+    navigator.clipboard
+      .readText()
+      .then((text) => {
+        const node: WorkflowNode = JSON.parse(text);
+        if (node && node.id && node.type) {
+          const newPosition = getNewNodePosition();
+
+          const newNode = {
+            ...node,
+            id: `${node.type}-${Date.now()}`, // New unique ID
+            position: newPosition,
+          };
+          onNodesChange([...workflowNodes, newNode]);
+          onNodeSelect(newNode);
+          panToShowNode(newPosition);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to read clipboard contents: ", err);
+      });
+  }, [workflowNodes, onNodesChange, onNodeSelect]);
+
   if (hasInitialized.current === false) {
     if (workflowNodes.length !== nodes.length) {
       return null; // Prevent rendering until initial fitView is done
     }
     hasInitialized.current = true;
   }
+
   return (
     <Box style={{ position: "relative", width: "100%", height: "100%" }}>
       <ReactFlow
