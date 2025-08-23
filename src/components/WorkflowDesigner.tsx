@@ -66,11 +66,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     workflow?.connections || [],
   );
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
-  
-  // Wrapper function to handle node selection
-  const handleNodeSelect = useCallback((node: WorkflowNode | null) => {
-    setSelectedNode(node);
-  }, []);
+
   const [exportModalOpened, setExportModalOpened] = useState(false);
 
   // Auto-save state
@@ -170,7 +166,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   // Debounced auto-save function
   const debouncedAutoSave = useDebouncedCallback(() => {
     // Only auto-save for new workflows (drafts)
-    if (!hasUnsavedChanges || !isDraft) {
+    if (!hasUnsavedChanges) {
       return;
     }
     performAutoSave();
@@ -178,10 +174,19 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   // Trigger auto-save when changes occur (only for new workflows)
   useEffect(() => {
-    if (isDraft) {
+    if (isDraft && hasUnsavedChanges) {
       debouncedAutoSave();
     }
-  }, [hasUnsavedChanges, workflowName, debouncedAutoSave, isDraft]);
+  }, [hasUnsavedChanges, debouncedAutoSave, isDraft]);
+
+  useEffect(markAsChanged, [
+    workflowName,
+    workflowDescription,
+    workflowUrlPattern,
+    workflowEnabled,
+    nodes,
+    connections,
+  ]);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
@@ -206,7 +211,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         setWorkflowDescription(workflow.description || "");
         setWorkflowUrlPattern(workflow.urlPattern || "*://*/*");
         setWorkflowEnabled(workflow.enabled ?? true);
-        
+
         // Try to maintain selected node by finding updated version
         if (selectedNode) {
           const updatedSelectedNode = (workflow.nodes || []).find(
@@ -226,7 +231,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     );
     setNodes(updatedNodes);
     setSelectedNode(updatedNode);
-    markAsChanged();
   };
 
   const handleSave = () => {
@@ -287,6 +291,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     };
   };
 
+  console.log("Rendering WorkflowDesigner", workflow?.nodes);
   return (
     <Container fluid pt="xl" px="0" h="100vh">
       <Stack h="100%">
@@ -373,7 +378,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     value={workflowName}
                     onChange={(e) => {
                       setWorkflowName(e.target.value);
-                      markAsChanged();
                     }}
                   />
                 </Grid.Col>
@@ -385,7 +389,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     value={workflowUrlPattern}
                     onChange={(e) => {
                       setWorkflowUrlPattern(e.target.value);
-                      markAsChanged();
                     }}
                   />
                 </Grid.Col>
@@ -396,7 +399,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     value={workflowDescription}
                     onChange={(e) => {
                       setWorkflowDescription(e.target.value);
-                      markAsChanged();
                     }}
                   />
                 </Grid.Col>
@@ -407,7 +409,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     checked={workflowEnabled}
                     onChange={(e) => {
                       setWorkflowEnabled(e.target.checked);
-                      markAsChanged();
                     }}
                   />
                 </Grid.Col>
@@ -430,14 +431,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
             connections={connections}
             onNodesChange={(newNodes) => {
               setNodes(newNodes);
-              markAsChanged();
             }}
             onConnectionsChange={(newConnections) => {
               setConnections(newConnections);
-              markAsChanged();
             }}
             selectedNode={selectedNode}
-            onNodeSelect={handleNodeSelect}
+            onNodeSelect={setSelectedNode}
           />
           {/* Drawer  */}
           <Transition
