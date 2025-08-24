@@ -16,21 +16,18 @@ import {
   Background,
   Controls,
   MiniMap,
-  NodeProps,
-  Handle,
-  Position,
   ConnectionLineType,
   NodeChange,
   EdgeChange,
   useReactFlow,
+  getNodesBounds,
+  getViewportForBounds,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
   Box,
-  Group,
   Text,
   ActionIcon,
-  Card,
   Button,
   Stack,
   Transition,
@@ -38,15 +35,16 @@ import {
   Tooltip,
   ScrollArea,
 } from "@mantine/core";
-import { IconPlus, IconTrash, IconLayoutGrid } from "@tabler/icons-react";
+import { IconPlus, IconLayoutGrid } from "@tabler/icons-react";
 import { WorkflowNode, WorkflowConnection } from "../types/workflow";
-import { copyToClipboard } from "../utils/helpers";
 import dagre from "@dagrejs/dagre";
-import { NotificationService } from "../services/notification";
 import { ActionRegistry } from "../services/actionRegistry";
 import { TriggerRegistry } from "../services/triggerRegistry";
 import { initializeTriggers } from "../services/triggerInitializer";
 import { initializeActions } from "../services/actionInitializer";
+import CanvasNode from "./CanvasNode";
+import { useHotkeys } from "@mantine/hooks";
+import { NotificationService } from "../services/notification";
 
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
@@ -57,186 +55,12 @@ interface ReactFlowCanvasProps {
   selectedNode: WorkflowNode | null;
 }
 
-// Custom node component
-const CustomNode: React.FC<NodeProps> = ({ data, id, selected }) => {
-  const nodeData = data as WorkflowNode["data"] & WorkflowNode;
-
-  const handleCopyNodeId = useCallback(
-    async (nodeId: string, event: React.MouseEvent) => {
-      event.stopPropagation();
-      const success = await copyToClipboard(nodeId);
-      if (success) {
-        NotificationService.showNotification({
-          message: `Node ID copied: ${nodeId}`,
-          timeout: 1000,
-        });
-      } else {
-        NotificationService.showErrorNotification({
-          message: `Failed to copy node ID: ${nodeId}`,
-          timeout: 1000,
-        });
-      }
-    },
-    [],
-  );
-
-  const getNodeIcon = (node: WorkflowNode) => {
-    // Initialize registries to ensure they're loaded
-    initializeTriggers();
-    initializeActions();
-
-    const actionRegistry = ActionRegistry.getInstance();
-    const triggerRegistry = TriggerRegistry.getInstance();
-
-    const nodeType = node.data[node.type + "Type"];
-
-    if (node.type === "action") {
-      const action = actionRegistry.getAction(nodeType);
-      return action?.metadata.icon || "❓";
-    } else if (node.type === "trigger") {
-      const trigger = triggerRegistry.getTrigger(nodeType);
-      return trigger?.metadata.icon || "❓";
-    }
-
-    return "❓";
-  };
-
-  const getNodeLabel = (node: WorkflowNode) => {
-    // Initialize registries to ensure they're loaded
-    initializeTriggers();
-    initializeActions();
-
-    const actionRegistry = ActionRegistry.getInstance();
-    const triggerRegistry = TriggerRegistry.getInstance();
-
-    const nodeType = node.data[node.type + "Type"];
-
-    if (node.type === "action") {
-      const action = actionRegistry.getAction(nodeType);
-      return action?.metadata.label || "Unknown";
-    } else if (node.type === "trigger") {
-      const trigger = triggerRegistry.getTrigger(nodeType);
-      return trigger?.metadata.label || "Unknown";
-    }
-
-    return "Unknown";
-  };
-
-  const getNodeColor = (node: WorkflowNode) => {
-    switch (node.type) {
-      case "trigger":
-        return "#e03131";
-      case "action":
-        return "#1971c2";
-      case "condition":
-        return "#f08c00";
-      default:
-        return "#495057";
-    }
-  };
-
-  const deleteNode = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    if (nodeData.onDeleteNode) {
-      nodeData.onDeleteNode(id);
-    }
-  };
-
-  return (
-    <Card
-      style={{
-        width: "200px",
-        border: selected
-          ? `2px solid ${getNodeColor(nodeData)}`
-          : "1px solid #dee2e6",
-        background: "white",
-        overflow: "visible", // Allow handles to show outside the card
-      }}
-    >
-      {/* Input handles */}
-      {(nodeData.inputs || []).map((input: string) => (
-        <Handle
-          key={input}
-          type="target"
-          position={Position.Left}
-          id={input}
-          style={{
-            top: "50%",
-            transformOrigin: "center",
-            width: 16,
-            height: 16,
-            background: "#adb5bd",
-            border: "2px solid #fff",
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#495057";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#adb5bd";
-          }}
-        />
-      ))}
-
-      {/* Output handles */}
-      {(nodeData.outputs || []).map((output: string) => (
-        <Handle
-          key={output}
-          type="source"
-          position={Position.Right}
-          id={output}
-          style={{
-            top: "50%",
-            width: 16,
-            height: 16,
-            background: "#adb5bd",
-            border: "2px solid #fff",
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#495057";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#adb5bd";
-          }}
-        />
-      ))}
-
-      <Group justify="space-between" mb="xs">
-        <Group gap="xs">
-          <Text size="lg">{getNodeIcon(nodeData)}</Text>
-          <div>
-            <Text size="sm" fw={500} c={getNodeColor(nodeData)}>
-              {getNodeLabel(nodeData)}
-            </Text>
-            <Text
-              size="xs"
-              c="dimmed"
-              style={{
-                fontFamily: "monospace",
-                cursor: "pointer",
-                userSelect: "all",
-              }}
-              onClick={(e) => handleCopyNodeId(id, e)}
-              title="Click to copy node ID"
-            >
-              {id}
-            </Text>
-          </div>
-        </Group>
-        <ActionIcon size="sm" color="red" variant="subtle" onClick={deleteNode}>
-          <IconTrash size={14} />
-        </ActionIcon>
-      </Group>
-
-      <Text size="xs" c="dimmed">
-        {nodeData.type}
-      </Text>
-    </Card>
-  );
-};
-
 export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
+  useEffect(() => {
+    // Initialize registries to ensure they're loaded
+    initializeTriggers();
+    initializeActions();
+  }, []);
   return (
     <ReactFlowProvider>
       <ReactFlowCanvasInner {...props} />
@@ -256,20 +80,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const reactFlowInstance = useReactFlow();
   const hasInitialized = useRef(false);
 
-  // Center and zoom to fit only on initial load
   useEffect(() => {
-    if (workflowNodes.length > 0 && !hasInitialized.current) {
-      hasInitialized.current = true;
-      // Set zoom to 100% (1.0) and center the nodes
-      setTimeout(() => {
-        reactFlowInstance.fitView({
-          padding: 0.1,
-          minZoom: 1,
-          maxZoom: 1,
-        });
-      }, 100); // Small delay to ensure nodes are rendered
-    }
-  }, [workflowNodes.length, reactFlowInstance]);
+    if (selectedNode !== null) setShowNodePalette(false);
+  }, [selectedNode]);
 
   // Handle node deletion directly
   const handleNodeDeletion = useCallback(
@@ -310,15 +123,24 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Convert workflow connections to React Flow edges
   const reactFlowEdges: Edge[] = useMemo(
     () =>
-      workflowConnections.map((conn) => ({
-        id: conn.id,
-        source: conn.source,
-        target: conn.target,
-        sourceHandle: conn.sourceHandle,
-        targetHandle: conn.targetHandle,
-        type: "smoothstep",
-        animated: false,
-      })),
+      workflowConnections.map(
+        (conn) =>
+          ({
+            id: conn.id,
+            source: conn.source,
+            target: conn.target,
+            sourceHandle: conn.sourceHandle,
+            targetHandle: conn.targetHandle,
+            type: "smoothstep",
+            animated: false,
+            markerEnd: {
+              type: "arrow",
+              width: 20,
+              height: 20,
+            },
+            style: { strokeWidth: 2 },
+          }) as Edge,
+      ),
     [workflowConnections],
   );
 
@@ -326,21 +148,21 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const [edges, setEdges, onEdgesChangeFlow] = useEdgesState(reactFlowEdges);
 
   // Update React Flow state when workflow data changes (but prevent infinite loops)
-  React.useEffect(() => {
+  useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [workflowNodes, setNodes]); // Removed selectedNode from dependencies to prevent re-render cycles
+  }, [workflowNodes, setNodes]);
 
   // Handle selection changes separately to avoid re-render cycles
-  React.useEffect(() => {
+  useEffect(() => {
     setNodes((currentNodes) =>
       currentNodes.map((node) => ({
         ...node,
         selected: selectedNode?.id === node.id,
-      }))
+      })),
     );
   }, [selectedNode, setNodes]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setEdges(reactFlowEdges);
   }, [workflowConnections, setEdges]); // Update when connections change
 
@@ -422,7 +244,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Handle node selection
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      setShowNodePalette(false);
       const workflowNode = workflowNodes.find((n) => n.id === node.id);
       onNodeSelect(workflowNode || null);
     },
@@ -431,9 +252,12 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
   // Handle background click (deselect)
   const onPaneClick = useCallback(() => {
-    setShowNodePalette(false);
+    if (selectedNode === null) {
+      setShowNodePalette(false);
+      return; // No change if nothing is selected
+    }
     onNodeSelect(null);
-  }, [onNodeSelect]);
+  }, [onNodeSelect, selectedNode]);
 
   const getLayoutedElements = useCallback(
     (nodes: WorkflowNode[], edges: WorkflowConnection[]) => {
@@ -522,16 +346,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     onNodesChange(layoutedNodes);
   }, [workflowNodes, workflowConnections, onNodesChange, getLayoutedElements]);
 
-  const createNode = (
-    type: string,
-    category: "triggers" | "actions" | "conditions",
-  ) => {
-    const nodeType = category.slice(0, -1) as
-      | "trigger"
-      | "action"
-      | "condition";
-    let defaultConfig = {};
-
+  const getNewNodePosition = () => {
     // Calculate position for new node (center-right of existing nodes)
     let newPosition = { x: 300, y: 100 }; // Default position for first node
 
@@ -554,6 +369,19 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         y: centerY,
       };
     }
+    return newPosition;
+  };
+  const createNode = (
+    type: string,
+    category: "triggers" | "actions" | "conditions",
+  ) => {
+    const nodeType = category.slice(0, -1) as
+      | "trigger"
+      | "action"
+      | "condition";
+    let defaultConfig = {};
+
+    const newPosition = getNewNodePosition();
 
     const newNode: WorkflowNode = {
       id: `${nodeType}-${Date.now()}`,
@@ -566,93 +394,44 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
     const updatedNodes = [...workflowNodes, newNode];
     onNodesChange(updatedNodes);
-    setShowNodePalette(false);
-    
+
     // Select the new node immediately after creation
     onNodeSelect(newNode);
 
-    // Pan to include the new node in view while preserving zoom level
-    setTimeout(() => {
-      const currentZoom = reactFlowInstance.getZoom();
-      const viewport = reactFlowInstance.getViewport();
+    panToShowNode(newPosition);
+  };
+  const panToShowNode = (nodePosition: { x: number; y: number }) => {
+    // Get the current viewport dimensions
+    const canvasElement = document.querySelector(".react-flow__viewport");
+    if (!canvasElement) return;
 
-      // If zoomed in beyond 100%, reset to 100% first
-      if (currentZoom > 1) {
-        reactFlowInstance.setViewport(
-          { x: viewport.x, y: viewport.y, zoom: 1 },
-          { duration: 300 },
-        );
+    const canvasRect = canvasElement.getBoundingClientRect();
+    const canvasWidth = canvasRect.width;
+    const canvasHeight = canvasRect.height;
 
-        // After zoom reset, pan to show the new node
-        setTimeout(() => {
-          panToShowNode(newPosition);
-        }, 350);
-      } else {
-        // Maintain current zoom and just pan
-        panToShowNode(newPosition);
-      }
-    }, 100);
+    const node = {
+      id: "temp",
+      position: nodePosition,
+      data: {},
+      width: 200,
+      height: 150,
+    };
+    const bounds = getNodesBounds([node]);
+    const viewport = reactFlowInstance.getViewport();
+    const zoom = viewport.zoom;
 
-    function panToShowNode(nodePosition: { x: number; y: number }) {
-      const currentViewport = reactFlowInstance.getViewport();
-      const currentZoom = reactFlowInstance.getZoom();
-
-      // Get the current viewport dimensions
-      const canvasElement = document.querySelector(".react-flow__viewport");
-      if (!canvasElement) return;
-
-      const canvasRect = canvasElement.getBoundingClientRect();
-      const canvasWidth = canvasRect.width;
-      const canvasHeight = canvasRect.height;
-
-      // Calculate node position in screen coordinates
-      const nodeScreenX = (nodePosition.x + currentViewport.x) * currentZoom;
-      const nodeScreenY = (nodePosition.y + currentViewport.y) * currentZoom;
-
-      // Node dimensions
-      const nodeWidth = 200 * currentZoom;
-      const nodeHeight = 150 * currentZoom;
-
-      // Check if node is visible with some padding
-      const padding = 50;
-      const isVisible =
-        nodeScreenX >= padding &&
-        nodeScreenY >= padding &&
-        nodeScreenX + nodeWidth <= canvasWidth - padding &&
-        nodeScreenY + nodeHeight <= canvasHeight - padding;
-
-      if (!isVisible) {
-        // Calculate how much we need to pan to show the node
-        let deltaX = 0;
-        let deltaY = 0;
-
-        // Horizontal panning
-        if (nodeScreenX < padding) {
-          deltaX = (padding - nodeScreenX) / currentZoom;
-        } else if (nodeScreenX + nodeWidth > canvasWidth - padding) {
-          deltaX =
-            (canvasWidth - padding - nodeWidth - nodeScreenX) / currentZoom;
-        }
-
-        // Vertical panning
-        if (nodeScreenY < padding) {
-          deltaY = (padding - nodeScreenY) / currentZoom;
-        } else if (nodeScreenY + nodeHeight > canvasHeight - padding) {
-          deltaY =
-            (canvasHeight - padding - nodeHeight - nodeScreenY) / currentZoom;
-        }
-
-        // Apply the pan
-        reactFlowInstance.setViewport(
-          {
-            x: currentViewport.x + deltaX,
-            y: currentViewport.y + deltaY,
-            zoom: currentZoom,
-          },
-          { duration: 300 },
-        );
-      }
-    }
+    const newViewport = getViewportForBounds(
+      bounds,
+      canvasWidth / zoom,
+      canvasHeight / zoom,
+      zoom, // min zoom level
+      1, // max zoom level
+      10, // padding
+    );
+    reactFlowInstance.setViewport(newViewport, {
+      duration: 300,
+      interpolate: "linear",
+    });
   };
 
   // Helper function to get node categories from registries
@@ -687,10 +466,55 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Define custom node types
   const nodeTypes = useMemo(
     () => ({
-      custom: CustomNode,
+      custom: CanvasNode,
     }),
     [],
   );
+
+  useHotkeys([
+    ["mod + C", () => onNodeCopy()],
+    ["mod + V", () => onNodePaste()],
+  ]);
+
+  const onNodeCopy = useCallback(() => {
+    if (selectedNode) {
+      navigator.clipboard.writeText(JSON.stringify(selectedNode));
+      NotificationService.showNotification({
+        message: `Node copied to clipboard`,
+        timeout: 1000,
+      });
+    }
+  }, [selectedNode]);
+
+  const onNodePaste = useCallback(() => {
+    navigator.clipboard
+      .readText()
+      .then((text) => {
+        const node: WorkflowNode = JSON.parse(text);
+        if (node && node.id && node.type) {
+          const newPosition = getNewNodePosition();
+
+          const newNode = {
+            ...node,
+            id: `${node.type}-${Date.now()}`, // New unique ID
+            position: newPosition,
+          };
+          onNodesChange([...workflowNodes, newNode]);
+          onNodeSelect(newNode);
+          panToShowNode(newPosition);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to read clipboard contents: ", err);
+      });
+  }, [workflowNodes, onNodesChange, onNodeSelect]);
+
+  if (hasInitialized.current === false) {
+    if (workflowNodes.length !== nodes.length) {
+      return null; // Prevent rendering until initial fitView is done
+    }
+    hasInitialized.current = true;
+  }
 
   return (
     <Box style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -715,6 +539,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           minZoom: 1,
           maxZoom: 1,
         }}
+        disableKeyboardA11y
       >
         <Background />
         <Controls />
@@ -735,7 +560,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       {/* Add Node Button */}
       <ActionIcon
         style={{ position: "absolute", top: 16, right: 16 }}
-        onClick={() => setShowNodePalette(!showNodePalette)}
+        onClick={() => setShowNodePalette(true)}
       >
         <IconPlus size={32} />
       </ActionIcon>

@@ -70,6 +70,11 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     navigate(`/?tab=${currentTab}`);
   };
 
+  // If a workflowId is specified, only render if we found the workflow to edit
+  if (workflowId && !editingWorkflow) {
+    return null;
+  }
+
   return (
     <WorkflowDesigner
       workflow={editingWorkflow || undefined}

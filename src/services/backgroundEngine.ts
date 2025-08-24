@@ -1,5 +1,5 @@
 import { sendMessageToContentScript } from "../lib/messages";
-import { BackgroundStorageClient, StorageServer } from "../services/storage";
+import { BackgroundStorageClient } from "../services/storage";
 import {
   TriggerCommand,
   WorkflowCommandType,
@@ -15,7 +15,7 @@ export class BackgroundWorkflowEngine {
   private workflows: WorkflowDefinition[] = [];
   private storageClient: BackgroundStorageClient;
 
-  constructor(storageServer: StorageServer) {
+  constructor() {
     this.storageClient = new BackgroundStorageClient();
     initializeBackgroundActions();
   }
