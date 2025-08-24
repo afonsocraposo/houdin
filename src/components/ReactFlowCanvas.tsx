@@ -34,6 +34,7 @@ import {
   Paper,
   Tooltip,
   ScrollArea,
+  useComputedColorScheme,
 } from "@mantine/core";
 import { IconPlus, IconLayoutGrid } from "@tabler/icons-react";
 import { WorkflowNode, WorkflowConnection } from "../types/workflow";
@@ -76,6 +77,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   onNodeSelect,
   selectedNode,
 }) => {
+  const colorScheme = useComputedColorScheme();
   const [showNodePalette, setShowNodePalette] = useState(false);
   const reactFlowInstance = useReactFlow();
   const hasInitialized = useRef(false);
@@ -540,6 +542,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           maxZoom: 1,
         }}
         disableKeyboardA11y
+        colorMode={colorScheme}
       >
         <Background />
         <Controls />
