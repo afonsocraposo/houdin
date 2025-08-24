@@ -128,12 +128,10 @@ export default function CanvasNode({
     <Card
       style={{
         width: "200px",
-        border: selected
-          ? `2px solid ${getNodeColor(nodeData)}`
-          : "1px solid #dee2e6",
-        background: "white",
+        borderColor: selected ? `${getNodeColor(nodeData)}` : "#dee2e6",
         overflow: "visible", // Allow handles to show outside the card
       }}
+      withBorder
     >
       {/* Input handles */}
       {(nodeData.inputs || []).map((input: string) =>

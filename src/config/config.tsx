@@ -25,7 +25,7 @@ if (container) {
   const root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <MantineProvider>
+      <MantineProvider defaultColorScheme="auto">
         <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
           <HashRouter>
             <ConfigApp />
