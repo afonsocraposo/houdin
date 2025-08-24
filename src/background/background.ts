@@ -51,10 +51,11 @@ if (runtime.webNavigation) {
   });
 }
 
+// Initialize storage server
+// @ts-ignore
 const storageServer = StorageServer.getInstance();
-storageServer.init();
 
-const workflowEngine = new BackgroundWorkflowEngine(storageServer);
+const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
   runtime.webNavigation.onCompleted.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {

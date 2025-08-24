@@ -13,14 +13,7 @@ export class StorageServer {
   private portConnections: Set<chrome.runtime.Port> = new Set();
   private localListeners: Map<string, Set<(value: any) => void>> = new Map();
 
-  static getInstance(): StorageServer {
-    if (!StorageServer.instance) {
-      StorageServer.instance = new StorageServer();
-    }
-    return StorageServer.instance;
-  }
-
-  public init() {
+  private constructor() {
     // Handle long-lived connections for listeners
     runtime.runtime.onConnect.addListener((port: chrome.runtime.Port) => {
       if (port.name === "storage-listener") {
@@ -91,6 +84,13 @@ export class StorageServer {
         return true; // Indicates that we will send a response asynchronously
       },
     );
+  }
+
+  static getInstance(): StorageServer {
+    if (!StorageServer.instance) {
+      StorageServer.instance = new StorageServer();
+    }
+    return StorageServer.instance;
   }
 
   private subscribe(port: chrome.runtime.Port, key: string) {
