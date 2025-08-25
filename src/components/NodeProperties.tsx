@@ -72,6 +72,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
             {/* Configuration */}
             <SchemaBasedProperties
+              defaultConfig={trigger.getDefaultConfig()}
               schema={schema}
               values={data.config}
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
@@ -111,6 +112,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
             {/* Configuration */}
             <SchemaBasedProperties
+              defaultConfig={action.getDefaultConfig()}
               schema={schema}
               values={data.config}
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
@@ -125,7 +127,10 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     return null;
   };
 
-  const renderConditionProperties = (data: any) => {
+  const renderConditionProperties = (
+    data: any,
+    errors: Record<string, string[]> | undefined,
+  ) => {
     const conditionType = data.conditionType;
 
     switch (conditionType) {

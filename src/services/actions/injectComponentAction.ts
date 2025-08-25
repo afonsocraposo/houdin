@@ -11,14 +11,10 @@ import { getElement } from "../../utils/helpers";
 
 interface InjectComponentActionConfig {
   targetSelector: string;
+  componentType: "text";
   selectorType: "css" | "xpath";
-  componentType: string;
   componentText: string;
-  buttonColor?: string;
-  buttonTextColor?: string;
   textColor?: string;
-  inputPlaceholder?: string;
-  fabIcon?: string;
   useMarkdown?: boolean;
   customStyle?: string;
 }
@@ -28,7 +24,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
     type: "inject-component",
     label: "Inject Component",
     icon: "💉",
-    description: "Add button, floating action button, input, or text to page",
+    description: "Add text to page",
     disableTimeout: true,
   };
 
@@ -78,15 +74,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
         componentType: {
           type: "select",
           label: "Component Type",
-          options: [
-            { value: "button", label: "Button" },
-            {
-              value: "floating-action-button",
-              label: "Floating Action Button",
-            },
-            { value: "input", label: "Input Field" },
-            { value: "text", label: "Text/Label" },
-          ],
+          options: [{ value: "text", label: "Text/Label" }],
           defaultValue: "button",
         },
         componentText: {
@@ -94,40 +82,6 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           label: "Component Text",
           placeholder: "Click me, Enter text, etc.",
           defaultValue: "Hello",
-        },
-
-        // Button-specific properties
-        buttonColor: {
-          type: "color",
-          label: "Button Color",
-          description: "Background color of the button",
-          defaultValue: "#228be6",
-          showWhen: {
-            field: "componentType",
-            value: ["button", "floating-action-button"],
-          },
-        },
-        buttonTextColor: {
-          type: "color",
-          label: "Button Text Color",
-          description: "Text color of the button",
-          defaultValue: "#ffffff",
-          showWhen: {
-            field: "componentType",
-            value: ["button", "floating-action-button"],
-          },
-        },
-
-        // Floating Action Button specific properties
-        fabIcon: {
-          type: "text",
-          label: "FAB Icon",
-          placeholder: "🚀, ❤️, ✨, 📧, etc.",
-          description: "What to display as the icon",
-          showWhen: {
-            field: "componentType",
-            value: "floating-action-button",
-          },
         },
 
         // Text-specific properties
@@ -147,21 +101,6 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           description:
             "Render text as markdown (supports **bold**, *italic*, links, lists, etc.)",
           defaultValue: true,
-          // showWhen: {
-          //   field: "componentType",
-          //   value: "text",
-          // },
-        },
-
-        // Input-specific properties
-        inputPlaceholder: {
-          type: "text",
-          label: "Input Placeholder",
-          placeholder: "Enter text...",
-          showWhen: {
-            field: "componentType",
-            value: "input",
-          },
         },
 
         // Advanced styling (for all types)
@@ -189,19 +128,12 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       targetSelector,
       componentType,
       componentText,
-      buttonColor,
-      buttonTextColor,
       textColor,
-      inputPlaceholder,
-      fabIcon,
       useMarkdown,
       customStyle,
     } = config;
 
-    const targetElement =
-      componentType === "floating-action-button"
-        ? document.body
-        : getElement(targetSelector, selectorType);
+    const targetElement = getElement(targetSelector, selectorType);
 
     if (!targetElement) {
       NotificationService.showErrorNotification({
@@ -216,24 +148,13 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       componentText,
 
       // Color properties (will be handled by individual factories)
-      buttonColor,
-      buttonTextColor,
       textColor,
-
-      // Input-specific properties
-      inputPlaceholder,
-
-      // Floating Action Button specific properties
-      fabIcon,
 
       // Text-specific properties
       useMarkdown,
 
       // Custom styles
       customStyle,
-
-      // Legacy properties for backward compatibility
-      targetSelector,
     };
 
     const component = ComponentFactory.create(
@@ -249,46 +170,11 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       true, // coreOnly
     );
 
-    // For interactive components (button, FAB), wait for user interaction
     // For non-interactive components (text), continue immediately
-    if (
-      componentType === "button" ||
-      componentType === "floating-action-button"
-    ) {
-      // Wait for user interaction before continuing workflow
-      return new Promise<void>((resolve) => {
-        const handleComponentTrigger = (event: Event) => {
-          const customEvent = event as CustomEvent;
-          if (
-            customEvent.detail?.workflowId === workflowId &&
-            customEvent.detail?.nodeId === nodeId
-          ) {
-            document.removeEventListener(
-              "workflow-component-trigger",
-              handleComponentTrigger,
-            );
-            // Update output with interaction data
-            onSuccess({
-              componentType,
-              injected: true,
-              text: componentText,
-              interactionData: customEvent.detail?.data,
-            });
-            resolve();
-          }
-        };
-
-        document.addEventListener(
-          "workflow-component-trigger",
-          handleComponentTrigger,
-        );
-      });
-    } else {
-      onSuccess({
-        componentType,
-        injected: true,
-        text: componentText,
-      });
-    }
+    onSuccess({
+      componentType,
+      injected: true,
+      text: componentText,
+    });
   }
 }

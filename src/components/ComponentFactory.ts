@@ -5,7 +5,12 @@ import InputFactory from "./factory/input";
 import FloatingActionButtonFactory from "./factory/floatingActionButton";
 
 export class ComponentFactory {
-  static create(recipe: any, workflowId: string, nodeId: string): ReactElement {
+  static create(
+    recipe: any,
+    workflowId: string,
+    nodeId: string,
+    preview: boolean = false,
+  ): ReactElement {
     switch (recipe.componentType) {
       case "button":
         return ButtonFactory({
@@ -21,12 +26,13 @@ export class ComponentFactory {
             this.triggerNextAction(workflowId, nodeId, { text });
           },
         });
-      case "floating-action-button":
+      case "fab":
         return FloatingActionButtonFactory({
           recipe,
           onClick: () => {
             this.triggerNextAction(workflowId, nodeId);
           },
+          preview,
         });
       default:
         return TextFactory({ recipe });

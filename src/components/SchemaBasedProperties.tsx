@@ -15,6 +15,7 @@ import { CredentialsSelect } from "./CredentialsSelect";
 import CodeEditor from "./CodeEditor";
 
 interface SchemaBasedPropertiesProps {
+  defaultConfig?: Record<string, any>;
   schema: ConfigSchema;
   values: Record<string, any>;
   onChange: (path: string, value: any) => void;
@@ -22,6 +23,7 @@ interface SchemaBasedPropertiesProps {
 }
 
 export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
+  defaultConfig = {},
   schema,
   values,
   onChange,
@@ -223,6 +225,12 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           </>
         );
       case "custom":
+        // merge default config with current values
+        Object.keys(defaultConfig).forEach((configKey) => {
+          if (values[configKey] === undefined) {
+            values[configKey] = defaultConfig[configKey];
+          }
+        });
         return (
           <div key={key}>
             <InputLabel mb="xs">{property.label}</InputLabel>
