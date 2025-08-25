@@ -4,7 +4,7 @@ import { NotificationService } from "../services/notification";
 import { copyToClipboard } from "../utils/helpers";
 import { ActionRegistry } from "../services/actionRegistry";
 import { TriggerRegistry } from "../services/triggerRegistry";
-import { ActionIcon, Card, Group, Text, Tooltip } from "@mantine/core";
+import { ActionIcon, Card, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { Handle, Position } from "@xyflow/react";
 import { IconTrash } from "@tabler/icons-react";
 
@@ -145,7 +145,7 @@ export default function CanvasNode({
         NodeHandle({ type: "source", position: Position.Right, id: output }),
       )}
 
-      <Group justify="space-between" mb="xs">
+      <Stack>
         <Group gap="xs">
           <Text size="lg">{getNodeIcon(nodeData)}</Text>
           <div>
@@ -168,14 +168,17 @@ export default function CanvasNode({
             </Tooltip>
           </div>
         </Group>
-        <ActionIcon size="sm" color="red" variant="subtle" onClick={deleteNode}>
-          <IconTrash size={14} />
-        </ActionIcon>
-      </Group>
-
-      <Text size="xs" c="dimmed">
-        {nodeData.type}
-      </Text>
+        <Group justify="end">
+          <ActionIcon
+            size="sm"
+            color="red"
+            variant="subtle"
+            onClick={deleteNode}
+          >
+            <IconTrash size={14} />
+          </ActionIcon>
+        </Group>
+      </Stack>
     </Card>
   );
 }
