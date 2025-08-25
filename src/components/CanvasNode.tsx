@@ -1,15 +1,20 @@
 import { useCallback } from "react";
-import { WorkflowNode } from "../types/workflow";
+import {
+  ActionNodeData,
+  TriggerNodeData,
+  WorkflowNode,
+} from "../types/workflow";
 import { NotificationService } from "../services/notification";
 import { copyToClipboard } from "../utils/helpers";
 import { ActionRegistry } from "../services/actionRegistry";
 import { TriggerRegistry } from "../services/triggerRegistry";
 import { ActionIcon, Card, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { Handle, Position } from "@xyflow/react";
-import { IconTrash } from "@tabler/icons-react";
+import { IconAlertCircle, IconTrash } from "@tabler/icons-react";
 
 interface CanvasNodeProps {
-  data: WorkflowNode["data"] & WorkflowNode;
+  data: WorkflowNode["data"] &
+    WorkflowNode & { onDeleteNode?: (id: string) => void; error: boolean };
   id: string;
   selected: boolean;
 }
@@ -75,12 +80,12 @@ export default function CanvasNode({
     const actionRegistry = ActionRegistry.getInstance();
     const triggerRegistry = TriggerRegistry.getInstance();
 
-    const nodeType = node.data[node.type + "Type"];
-
     if (node.type === "action") {
+      const nodeType = (node.data as ActionNodeData).actionType;
       const action = actionRegistry.getAction(nodeType);
       return action?.metadata.icon || "❓";
     } else if (node.type === "trigger") {
+      const nodeType = (node.data as TriggerNodeData).triggerType;
       const trigger = triggerRegistry.getTrigger(nodeType);
       return trigger?.metadata.icon || "❓";
     }
@@ -92,12 +97,12 @@ export default function CanvasNode({
     const actionRegistry = ActionRegistry.getInstance();
     const triggerRegistry = TriggerRegistry.getInstance();
 
-    const nodeType = node.data[node.type + "Type"];
-
     if (node.type === "action") {
+      const nodeType = (node.data as ActionNodeData).actionType;
       const action = actionRegistry.getAction(nodeType);
       return action?.metadata.label || "Unknown";
     } else if (node.type === "trigger") {
+      const nodeType = (node.data as TriggerNodeData).triggerType;
       const trigger = triggerRegistry.getTrigger(nodeType);
       return trigger?.metadata.label || "Unknown";
     }
@@ -125,12 +130,17 @@ export default function CanvasNode({
     }
   };
 
+  const borderColor = nodeData.error
+    ? "red"
+    : selected
+      ? getNodeColor(nodeData)
+      : "#dee2e6";
   return (
     <Card
       key={id}
       style={{
         width: "200px",
-        borderColor: selected ? `${getNodeColor(nodeData)}` : "#dee2e6",
+        borderColor,
         overflow: "visible", // Allow handles to show outside the card
       }}
       withBorder
@@ -146,8 +156,11 @@ export default function CanvasNode({
       )}
 
       <Stack>
-        <Group gap="xs">
-          <Text size="lg">{getNodeIcon(nodeData)}</Text>
+        <Stack gap="xs">
+          <Group justify="space-between">
+            <Text size="lg">{getNodeIcon(nodeData)}</Text>
+            {nodeData.error && <IconAlertCircle color="red" />}
+          </Group>
           <div>
             <Text size="sm" fw={500} c={getNodeColor(nodeData)}>
               {getNodeLabel(nodeData)}
@@ -167,7 +180,7 @@ export default function CanvasNode({
               </Text>
             </Tooltip>
           </div>
-        </Group>
+        </Stack>
         <Group justify="end">
           <ActionIcon
             size="sm"

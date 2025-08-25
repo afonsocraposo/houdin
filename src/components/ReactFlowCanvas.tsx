@@ -54,6 +54,7 @@ interface ReactFlowCanvasProps {
   onConnectionsChange: (connections: WorkflowConnection[]) => void;
   onNodeSelect: (node: WorkflowNode | null) => void;
   selectedNode: WorkflowNode | null;
+  errors: Record<string, Record<string, string[]>>;
 }
 
 export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
@@ -76,6 +77,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   onConnectionsChange,
   onNodeSelect,
   selectedNode,
+  errors,
 }) => {
   const colorScheme = useComputedColorScheme();
   const [showNodePalette, setShowNodePalette] = useState(false);
@@ -116,10 +118,15 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         id: node.id,
         type: "custom",
         position: node.position,
-        data: { ...node.data, ...node, onDeleteNode: handleNodeDeletion }, // Include delete handler
+        data: {
+          ...node.data,
+          ...node,
+          onDeleteNode: handleNodeDeletion,
+          error: errors[node.id] !== undefined,
+        },
         selected: selectedNode?.id === node.id,
       })),
-    [workflowNodes, selectedNode, handleNodeDeletion],
+    [workflowNodes, selectedNode, handleNodeDeletion, errors],
   );
 
   // Convert workflow connections to React Flow edges
@@ -152,7 +159,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [workflowNodes, setNodes]);
+  }, [workflowNodes.length, setNodes, errors]);
 
   // Handle selection changes separately to avoid re-render cycles
   useEffect(() => {

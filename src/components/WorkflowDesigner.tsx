@@ -33,6 +33,8 @@ import {
   WorkflowNode,
   WorkflowConnection,
   WorkflowDefinition,
+  TriggerNodeData,
+  ActionNodeData,
 } from "../types/workflow";
 import { hasLength, matches, useForm } from "@mantine/form";
 import { TriggerRegistry } from "../services/triggerRegistry";
@@ -50,6 +52,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   onCancel,
 }) => {
   const navigate = useNavigate();
+  const [schemaErrors, setSchemaErrors] = useState<
+    Record<string, Record<string, string[]>>
+  >({});
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(
     null,
   );
@@ -208,6 +213,17 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   }, [workflow, currentWorkflowId]); // Removed selectedNode and nodes from dependencies
 
+  useEffect(() => {
+    // clear selected node schema errors
+    if (selectedNode && schemaErrors[selectedNode.id]) {
+      setSchemaErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[selectedNode.id];
+        return updated;
+      });
+    }
+  }, [nodes]);
+
   const handleNodeUpdate = (updatedNode: WorkflowNode) => {
     const updatedNodes = nodes.map((n) =>
       n.id === updatedNode.id ? updatedNode : n,
@@ -227,25 +243,28 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     const actionRegistry = ActionRegistry.getInstance();
 
     // validate workflow
-    let hasErrors = false;
+    const schemaErrors: Record<string, Record<string, string[]>> = {};
     nodes.forEach((node) => {
       if (node.type === "trigger") {
-        console.log(node);
         const { valid, errors } = triggerRegistry.validateConfig(
-          node.data.type,
+          (node.data as TriggerNodeData).triggerType,
           node.data.config,
         );
         if (!valid) {
-          hasErrors = true;
-          console.warn(
-            `Trigger node '${node.id}' has invalid configuration: ${errors.join(
-              ", ",
-            )}`,
-          );
+          schemaErrors[node.id] = errors;
+        }
+      } else if (node.type === "action") {
+        const { valid, errors } = actionRegistry.validateConfig(
+          (node.data as ActionNodeData).actionType,
+          node.data.config,
+        );
+        if (!valid) {
+          schemaErrors[node.id] = errors;
         }
       }
     });
-    if (hasErrors) {
+    if (Object.keys(schemaErrors).length > 0) {
+      setSchemaErrors(schemaErrors);
       return;
     }
 
@@ -411,14 +430,11 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           <ReactFlowCanvas
             nodes={nodes}
             connections={connections}
-            onNodesChange={(newNodes) => {
-              setNodes(newNodes);
-            }}
-            onConnectionsChange={(newConnections) => {
-              setConnections(newConnections);
-            }}
+            onNodesChange={setNodes}
+            onConnectionsChange={setConnections}
             selectedNode={selectedNode}
             onNodeSelect={setSelectedNode}
+            errors={schemaErrors}
           />
           {/* Drawer  */}
           <Transition
@@ -444,6 +460,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 <NodeProperties
                   node={selectedNode}
                   onNodeUpdate={handleNodeUpdate}
+                  errors={schemaErrors[selectedNode?.id || ""]}
                 />
               </Paper>
             )}

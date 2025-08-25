@@ -1,3 +1,4 @@
+import { ValidationResult } from "../types/config-properties";
 import { BaseTrigger, TriggerMetadata } from "../types/triggers";
 
 export class TriggerRegistry {
@@ -50,7 +51,7 @@ export class TriggerRegistry {
     const validation = trigger.validate(config);
     if (!validation.valid) {
       throw new Error(
-        `Trigger configuration invalid: ${validation.errors.join(", ")}`,
+        `Trigger configuration invalid: ${JSON.stringify(validation.errors)}`,
       );
     }
 
@@ -60,13 +61,13 @@ export class TriggerRegistry {
   }
 
   // Validate trigger configuration
-  validateConfig(
-    type: string,
-    config: Record<string, any>,
-  ): { valid: boolean; errors: string[] } {
+  validateConfig(type: string, config: Record<string, any>): ValidationResult {
     const trigger = this.getTrigger(type);
     if (!trigger) {
-      return { valid: false, errors: [`Trigger type '${type}' not found`] };
+      return {
+        valid: false,
+        errors: { "": [`Trigger type '${type}' not found`] },
+      };
     }
 
     return trigger.validate(config);

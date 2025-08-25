@@ -1,4 +1,5 @@
 import { BaseAction, ActionMetadata } from "../types/actions";
+import { ValidationResult } from "../types/config-properties";
 import { NotificationService } from "./notification";
 
 export class ActionRegistry {
@@ -57,7 +58,7 @@ export class ActionRegistry {
     if (!validation.valid) {
       NotificationService.showErrorNotification({
         title: `Error executing action ${nodeId}`,
-        message: `Action configuration invalid: ${validation.errors.join(", ")}`,
+        message: `Action configuration invalid: ${JSON.stringify(validation.errors)}`,
       });
     }
 
@@ -78,13 +79,13 @@ export class ActionRegistry {
   }
 
   // Validate action configuration
-  validateConfig(
-    type: string,
-    config: Record<string, any>,
-  ): { valid: boolean; errors: string[] } {
+  validateConfig(type: string, config: Record<string, any>): ValidationResult {
     const action = this.getAction(type);
     if (!action) {
-      return { valid: false, errors: [`Action type '${type}' not found`] };
+      return {
+        valid: false,
+        errors: { "": [`Action type '${type}' not found`] },
+      };
     }
 
     return action.validate(config);

@@ -2,9 +2,19 @@ export interface WorkflowNode {
   id: string;
   type: "trigger" | "action" | "condition";
   position: { x: number; y: number };
-  data: any;
+  data: TriggerNodeData | ActionNodeData | BaseNodeData;
   inputs?: string[];
   outputs?: string[];
+}
+
+interface BaseNodeData {
+  config: Record<string, any>;
+}
+export interface TriggerNodeData extends BaseNodeData {
+  triggerType: string;
+}
+export interface ActionNodeData extends BaseNodeData {
+  actionType: string;
 }
 
 export interface WorkflowConnection {

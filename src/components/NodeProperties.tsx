@@ -1,6 +1,10 @@
 import React from "react";
 import { Stack, Text, Card, Group, ScrollArea } from "@mantine/core";
-import { WorkflowNode } from "../types/workflow";
+import {
+  ActionNodeData,
+  TriggerNodeData,
+  WorkflowNode,
+} from "../types/workflow";
 import { ActionRegistry } from "../services/actionRegistry";
 import { TriggerRegistry } from "../services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
@@ -8,11 +12,13 @@ import { SchemaBasedProperties } from "./SchemaBasedProperties";
 interface NodePropertiesProps {
   node: WorkflowNode | null;
   onNodeUpdate: (updatedNode: WorkflowNode) => void;
+  errors?: Record<string, string[]>;
 }
 
 export const NodeProperties: React.FC<NodePropertiesProps> = ({
   node,
   onNodeUpdate,
+  errors,
 }) => {
   if (!node) {
     return (
@@ -28,7 +34,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     const pathParts = path.split(".");
     const updatedNode = { ...node };
 
-    let current = updatedNode.data;
+    let current = updatedNode.data as any;
     for (let i = 0; i < pathParts.length - 1; i++) {
       if (!current[pathParts[i]]) {
         current[pathParts[i]] = {};
@@ -40,7 +46,10 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     onNodeUpdate(updatedNode);
   };
 
-  const renderTriggerProperties = (data: any) => {
+  const renderTriggerProperties = (
+    data: any,
+    errors: Record<string, string[]> | undefined,
+  ) => {
     const triggerRegistry = TriggerRegistry.getInstance();
     const triggerType = data.triggerType;
 
@@ -66,6 +75,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
               schema={schema}
               values={data.config}
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
+              errors={errors}
             />
           </Stack>
         );
@@ -75,7 +85,10 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     return null;
   };
 
-  const renderActionProperties = (data: any) => {
+  const renderActionProperties = (
+    data: any,
+    errors: Record<string, string[]> | undefined,
+  ) => {
     const actionRegistry = ActionRegistry.getInstance();
     const actionType = data.actionType;
 
@@ -101,6 +114,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
               schema={schema}
               values={data.config}
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
+              errors={errors}
             />
           </Stack>
         );
@@ -135,7 +149,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   const getNodeTitle = (node: WorkflowNode): string => {
     if (node.type === "trigger") {
-      const triggerType = node.data?.triggerType;
+      const triggerType = (node.data as TriggerNodeData).triggerType;
       const triggerRegistry = TriggerRegistry.getInstance();
       const trigger = triggerRegistry.getTrigger(triggerType);
       return trigger
@@ -144,7 +158,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     }
 
     if (node.type === "action") {
-      const actionType = node.data?.actionType;
+      const actionType = (node.data as ActionNodeData).actionType;
       const actionRegistry = ActionRegistry.getInstance();
       const action = actionRegistry.getAction(actionType);
       return action
@@ -152,11 +166,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
         : "Action";
     }
 
-    if (node.type === "condition") {
-      return "Condition";
-    }
-
-    return "Node";
+    return "Unknown";
   };
 
   return (
@@ -168,9 +178,11 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       </Group>
       <ScrollArea h="95%" style={{ overflowY: "auto" }}>
         <Stack gap="md">
-          {node.type === "trigger" && renderTriggerProperties(node.data)}
-          {node.type === "action" && renderActionProperties(node.data)}
-          {node.type === "condition" && renderConditionProperties(node.data)}
+          {node.type === "trigger" &&
+            renderTriggerProperties(node.data, errors)}
+          {node.type === "action" && renderActionProperties(node.data, errors)}
+          {node.type === "condition" &&
+            renderConditionProperties(node.data, errors)}
         </Stack>
       </ScrollArea>
     </>

@@ -88,7 +88,7 @@ export interface ConfigSchema {
 // Validation result
 export interface ValidationResult {
   valid: boolean;
-  errors: string[];
+  errors: Record<string, string[]>;
 }
 
 // Type guards for runtime type checking
@@ -113,10 +113,11 @@ export function validateConfig(
   config: Record<string, any>,
   schema: ConfigSchema,
 ): ValidationResult {
-  const errors: string[] = [];
+  const errors: Record<string, string[]> = {};
 
   Object.entries(schema.properties).forEach(([key, property]) => {
     const value = config[key];
+    const propertyErrors: string[] = [];
 
     // Check required properties
     if (
@@ -124,7 +125,8 @@ export function validateConfig(
       (value === undefined || value === null || value === "") &&
       !property.defaultValue
     ) {
-      errors.push(`${property.label} is required`);
+      propertyErrors.push(`${property.label} is required`);
+      errors[key] = propertyErrors;
       return;
     }
 
@@ -136,37 +138,46 @@ export function validateConfig(
     // Type-specific validation
     if (isNumberProperty(property)) {
       if (isNaN(Number(value))) {
-        errors.push(`${property.label} must be a number`);
+        propertyErrors.push(`${property.label} must be a number`);
       } else {
         const num = Number(value);
         if (property.min !== undefined && num < property.min) {
-          errors.push(`${property.label} must be at least ${property.min}`);
+          propertyErrors.push(
+            `${property.label} must be at least ${property.min}`,
+          );
         }
         if (property.max !== undefined && num > property.max) {
-          errors.push(`${property.label} must be at most ${property.max}`);
+          propertyErrors.push(
+            `${property.label} must be at most ${property.max}`,
+          );
         }
       }
     } else if (isBooleanProperty(property)) {
       if (typeof value !== "boolean") {
-        errors.push(`${property.label} must be a boolean value`);
+        propertyErrors.push(`${property.label} must be a boolean value`);
       }
     } else if (isSelectProperty(property)) {
       if (!property.options.some((opt) => opt.value === value)) {
-        errors.push(`${property.label} must be one of the available options`);
+        propertyErrors.push(
+          `${property.label} must be one of the available options`,
+        );
       }
     } else if (isColorProperty(property)) {
       // Validate hex color format (#RRGGBB or #RGB)
       const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
       if (!hexColorRegex.test(value)) {
-        errors.push(
+        propertyErrors.push(
           `${property.label} must be a valid hex color (e.g., #FF0000 or #F00)`,
         );
       }
     }
+    if (propertyErrors.length > 0) {
+      errors[key] = propertyErrors;
+    }
   });
 
   return {
-    valid: errors.length === 0,
+    valid: Object.keys(errors).length === 0,
     errors,
   };
 }
