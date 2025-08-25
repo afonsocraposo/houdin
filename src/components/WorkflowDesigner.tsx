@@ -34,6 +34,9 @@ import {
   WorkflowConnection,
   WorkflowDefinition,
 } from "../types/workflow";
+import { hasLength, matches, useForm } from "@mantine/form";
+import { TriggerRegistry } from "../services/triggerRegistry";
+import { ActionRegistry } from "../services/actionRegistry";
 
 interface WorkflowDesignerProps {
   workflow?: WorkflowDefinition;
@@ -51,16 +54,19 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     null,
   );
   const [isDraft, setIsDraft] = useState(!workflow); // Track if this is a new workflow draft
-  const [workflowName, setWorkflowName] = useState(workflow?.name || "");
-  const [workflowDescription, setWorkflowDescription] = useState(
-    workflow?.description || "",
-  );
-  const [workflowUrlPattern, setWorkflowUrlPattern] = useState(
-    workflow?.urlPattern || "https://*",
-  );
-  const [workflowEnabled, setWorkflowEnabled] = useState(
-    workflow?.enabled ?? true,
-  );
+  const form = useForm({
+    mode: "uncontrolled",
+    initialValues: {
+      name: workflow?.name || "",
+      description: workflow?.description || "",
+      urlPattern: workflow?.urlPattern || "https://*",
+      enabled: workflow?.enabled ?? true,
+    },
+    validate: {
+      name: hasLength({ min: 2 }, "Name must be at least 2 characters long"),
+      urlPattern: matches(/^https?:\/\/\S+$/, "Must be a valid URL pattern"),
+    },
+  });
   const [nodes, setNodes] = useState<WorkflowNode[]>(workflow?.nodes || []);
   const [connections, setConnections] = useState<WorkflowConnection[]>(
     workflow?.connections || [],
@@ -86,10 +92,18 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       if (storedDraft) {
         try {
           const draft = JSON.parse(storedDraft);
-          setWorkflowName(draft.name || "");
-          setWorkflowDescription(draft.description || "");
-          setWorkflowUrlPattern(draft.urlPattern || "https://*");
-          setWorkflowEnabled(draft.enabled ?? true);
+          if (draft.name) {
+            form.values.name = draft.name;
+          }
+          if (draft.description) {
+            form.values.description = draft.description;
+          }
+          if (draft.urlPattern) {
+            form.values.urlPattern = draft.urlPattern;
+          }
+          if (typeof draft.enabled === "boolean") {
+            form.values.enabled = draft.enabled;
+          }
           setNodes(draft.nodes || []);
           setConnections(draft.connections || []);
           console.debug("Loaded workflow draft from session storage");
@@ -109,12 +123,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     if (!isDraft) return; // Only save drafts for new workflows
 
     const draftWorkflow = {
-      name: workflowName,
-      description: workflowDescription,
-      urlPattern: workflowUrlPattern,
+      name: form.values.name,
+      description: form.values.description,
+      urlPattern: form.values.urlPattern,
       nodes,
       connections,
-      enabled: workflowEnabled,
+      enabled: form.values.enabled,
       lastUpdated: Date.now(),
     };
 
@@ -124,15 +138,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     } catch (error) {
       console.warn("Failed to save workflow draft to session storage:", error);
     }
-  }, [
-    isDraft,
-    workflowName,
-    workflowDescription,
-    workflowUrlPattern,
-    nodes,
-    connections,
-    workflowEnabled,
-  ]);
+  }, [isDraft, form.values, nodes, connections]);
 
   // Clear draft from session storage
   const clearDraft = useCallback(() => {
@@ -179,14 +185,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   }, [hasUnsavedChanges, debouncedAutoSave, isDraft]);
 
-  useEffect(markAsChanged, [
-    workflowName,
-    workflowDescription,
-    workflowUrlPattern,
-    workflowEnabled,
-    nodes,
-    connections,
-  ]);
+  useEffect(markAsChanged, [form.values, nodes, connections]);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
@@ -198,29 +197,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       if (isNewWorkflow) {
         setCurrentWorkflowId(workflow.id || null);
         setIsDraft(false); // If we have a workflow prop, it's not a draft
-        setWorkflowName(workflow.name || "");
-        setWorkflowDescription(workflow.description || "");
-        setWorkflowUrlPattern(workflow.urlPattern || "*://*/*");
-        setWorkflowEnabled(workflow.enabled ?? true);
+        form.values.name = workflow.name || "";
+        form.values.description = workflow.description || "";
+        form.values.urlPattern = workflow.urlPattern || "https://*";
+        form.values.enabled = workflow.enabled ?? true;
         setNodes(workflow.nodes || []);
         setConnections(workflow.connections || []);
         setSelectedNode(null);
-      } else {
-        // Same workflow - only update metadata, don't reset nodes/connections
-        setWorkflowName(workflow.name || "");
-        setWorkflowDescription(workflow.description || "");
-        setWorkflowUrlPattern(workflow.urlPattern || "*://*/*");
-        setWorkflowEnabled(workflow.enabled ?? true);
-
-        // Try to maintain selected node by finding updated version
-        if (selectedNode) {
-          const updatedSelectedNode = (workflow.nodes || []).find(
-            (n) => n.id === selectedNode.id,
-          );
-          if (updatedSelectedNode) {
-            setSelectedNode(updatedSelectedNode);
-          }
-        }
       }
     }
   }, [workflow, currentWorkflowId]); // Removed selectedNode and nodes from dependencies
@@ -234,26 +217,39 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   };
 
   const handleSave = () => {
-    if (!workflowName.trim()) {
-      alert("Please enter a workflow name");
+    const result = form.validate();
+    if (result.hasErrors) {
+      form.setErrors(result.errors);
       return;
     }
 
-    if (!workflowUrlPattern.trim()) {
-      alert("Please enter a URL pattern");
+    const triggerRegistry = TriggerRegistry.getInstance();
+    const actionRegistry = ActionRegistry.getInstance();
+
+    // validate workflow
+    let hasErrors = false;
+    nodes.forEach((node) => {
+      if (node.type === "trigger") {
+        console.log(node);
+        const { valid, errors } = triggerRegistry.validateConfig(
+          node.data.type,
+          node.data.config,
+        );
+        if (!valid) {
+          hasErrors = true;
+          console.warn(
+            `Trigger node '${node.id}' has invalid configuration: ${errors.join(
+              ", ",
+            )}`,
+          );
+        }
+      }
+    });
+    if (hasErrors) {
       return;
     }
 
-    const workflowDefinition: WorkflowDefinition = {
-      id: workflow?.id || `workflow-${Date.now()}`,
-      name: workflowName,
-      description: workflowDescription,
-      urlPattern: workflowUrlPattern,
-      nodes,
-      connections,
-      enabled: workflowEnabled,
-      lastUpdated: Date.now(),
-    };
+    const workflowDefinition = getCurrentWorkflowDefinition();
 
     onSave(workflowDefinition);
     setHasUnsavedChanges(false);
@@ -281,17 +277,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   const getCurrentWorkflowDefinition = (): WorkflowDefinition => {
     return {
       id: workflow?.id || `workflow-${Date.now()}`,
-      name: workflowName,
-      description: workflowDescription,
-      urlPattern: workflowUrlPattern,
       nodes,
       connections,
-      enabled: workflowEnabled,
       lastUpdated: Date.now(),
+      ...form.getValues(),
     };
   };
 
-  console.log("Rendering WorkflowDesigner", workflow?.nodes);
   return (
     <Container fluid pt="xl" px="0" h="100vh">
       <Stack h="100%">
@@ -369,61 +361,51 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           </Group>
 
           <Card withBorder padding="lg">
-            <Stack gap="md">
+            <form>
               <Grid>
                 <Grid.Col span={6}>
                   <TextInput
+                    mt="lg"
+                    {...form.getInputProps("name")}
                     label="Workflow Name"
                     placeholder="Enter workflow name"
-                    value={workflowName}
-                    onChange={(e) => {
-                      setWorkflowName(e.target.value);
-                    }}
                   />
                 </Grid.Col>
+
                 <Grid.Col span={6}>
                   <TextInput
+                    {...form.getInputProps("urlPattern")}
                     label="URL Pattern"
-                    placeholder="*://example.com/* or https://github.com/*/pull/*"
+                    placeholder="https://afonsoraposo.com/*"
                     description="Use * for wildcards. The workflow will only run on matching URLs."
-                    value={workflowUrlPattern}
-                    onChange={(e) => {
-                      setWorkflowUrlPattern(e.target.value);
-                    }}
                   />
                 </Grid.Col>
+
                 <Grid.Col span={8}>
                   <TextInput
+                    {...form.getInputProps("description")}
                     label="Description (Optional)"
                     placeholder="Describe what this workflow does"
-                    value={workflowDescription}
-                    onChange={(e) => {
-                      setWorkflowDescription(e.target.value);
-                    }}
                   />
                 </Grid.Col>
+
                 <Grid.Col span={4}>
                   <Switch
-                    label="Enabled"
-                    description="Whether this workflow is active"
-                    checked={workflowEnabled}
-                    onChange={(e) => {
-                      setWorkflowEnabled(e.target.checked);
-                    }}
+                    {...form.getInputProps("enabled", { type: "checkbox" })}
+                    label={form.values.enabled ? "Active" : "Inactive"}
+                    mt="xl"
                   />
                 </Grid.Col>
               </Grid>
-            </Stack>
+            </form>
           </Card>
         </Stack>
 
-        {workflowName.trim() && (
-          <ExportModal
-            opened={exportModalOpened}
-            onClose={() => setExportModalOpened(false)}
-            workflow={getCurrentWorkflowDefinition()}
-          />
-        )}
+        <ExportModal
+          opened={exportModalOpened}
+          onClose={() => setExportModalOpened(false)}
+          workflow={getCurrentWorkflowDefinition()}
+        />
 
         <Box flex={1} style={{ position: "relative" }}>
           <ReactFlowCanvas

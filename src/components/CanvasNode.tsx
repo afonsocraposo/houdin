@@ -25,6 +25,7 @@ function NodeHandle({
 }) {
   return (
     <Handle
+      key={id}
       type={type}
       position={position}
       id={id}
@@ -126,6 +127,7 @@ export default function CanvasNode({
 
   return (
     <Card
+      key={id}
       style={{
         width: "200px",
         borderColor: selected ? `${getNodeColor(nodeData)}` : "#dee2e6",
