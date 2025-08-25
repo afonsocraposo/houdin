@@ -526,7 +526,14 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   }
 
   return (
-    <Box style={{ position: "relative", width: "100%", height: "100%" }}>
+    <Box
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+      }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -598,40 +605,45 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             <Text fw={500} mb="md">
               Add Node
             </Text>
-            <ScrollArea h="100%">
+            <ScrollArea h="100%" pb="xl">
               <Stack>
                 {Object.entries(getNodeCategories()).map(
-                  ([category, items]) => (
-                    <div key={category}>
-                      <Text
-                        size="sm"
-                        fw={500}
-                        c="dimmed"
-                        tt="capitalize"
-                        mb="xs"
-                      >
-                        {category}
-                      </Text>
-                      {items.map((item) => (
-                        <Button
-                          key={item.type}
-                          variant="subtle"
-                          fullWidth
-                          justify="start"
-                          leftSection={<Text size="lg">{item.icon}</Text>}
+                  ([category, items]) => {
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={category}>
+                        <Text
+                          size="sm"
+                          fw={500}
+                          c="dimmed"
+                          tt="capitalize"
                           mb="xs"
-                          onClick={() => createNode(item.type, category as any)}
                         >
-                          <Stack align="flex-start" gap={0}>
-                            <Text size="sm">{item.label}</Text>
-                            <Text size="xs" c="dimmed">
-                              {item.description}
-                            </Text>
-                          </Stack>
-                        </Button>
-                      ))}
-                    </div>
-                  ),
+                          {category}
+                        </Text>
+                        {items.map((item) => (
+                          <Button
+                            key={item.type}
+                            variant="subtle"
+                            fullWidth
+                            justify="start"
+                            leftSection={<Text size="lg">{item.icon}</Text>}
+                            mb="xs"
+                            onClick={() =>
+                              createNode(item.type, category as any)
+                            }
+                          >
+                            <Stack align="flex-start" gap={0}>
+                              <Text size="sm">{item.label}</Text>
+                              <Text size="xs" c="dimmed">
+                                {item.description}
+                              </Text>
+                            </Stack>
+                          </Button>
+                        ))}
+                      </div>
+                    );
+                  },
                 )}
               </Stack>
             </ScrollArea>
