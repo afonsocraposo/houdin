@@ -169,6 +169,7 @@ export class WorkflowExecutor {
         //@ts-ignore
         const value = actionConfig[key];
         if (typeof value === "string") {
+          console.log("Interpolating", key, value);
           //@ts-ignore
           actionConfig[key] = this.context.interpolateVariables(value);
         }

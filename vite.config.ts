@@ -56,7 +56,7 @@ export default defineConfig(({ command }) => {
           return manifest;
         },
         watchFilePaths: ["src", "public", "icons", "manifest.json"],
-        additionalInputs: ["src/config/index.html"],
+        additionalInputs: ["src/config/index.html", "src/config/style.css"],
       }),
       // Custom plugin to conditionally inject React Refresh script
       {

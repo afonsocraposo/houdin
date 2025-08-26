@@ -13,6 +13,7 @@ import {
   ActionIcon,
   Select,
   TextInput,
+  Box,
 } from "@mantine/core";
 import {
   IconChevronDown,
@@ -469,31 +470,30 @@ function ExecutionHistoryPage() {
                                                   >
                                                     View Output
                                                   </summary>
-                                                  <CodeHighlight
-                                                    w={300}
-                                                    mah={200}
+                                                  <Box
+                                                    my={8}
                                                     style={{
-                                                      fontSize: "10px",
-                                                      background:
-                                                        "var(--mantine-color-gray-0)",
-                                                      padding: "8px",
-                                                      borderRadius: "4px",
-                                                      marginTop: "4px",
-                                                      maxHeight: "200px",
-                                                      overflow: "auto",
+                                                      overflow: "hidden",
+                                                      borderRadius: 8,
                                                     }}
-                                                    language="json"
-                                                    code={
-                                                      typeof node.data ===
-                                                        "object"
-                                                        ? JSON.stringify(
-                                                          node.data,
-                                                          null,
-                                                          2,
-                                                        )
-                                                        : String(node.data)
-                                                    }
-                                                  />
+                                                  >
+                                                    <CodeHighlight
+                                                      w={300}
+                                                      h="100%"
+                                                      mah={200}
+                                                      language="json"
+                                                      code={
+                                                        typeof node.data ===
+                                                          "object"
+                                                          ? JSON.stringify(
+                                                            node.data,
+                                                            null,
+                                                            2,
+                                                          )
+                                                          : String(node.data)
+                                                      }
+                                                    />
+                                                  </Box>
                                                 </details>
                                               ) : (
                                                 <Text

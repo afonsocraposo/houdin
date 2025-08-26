@@ -201,8 +201,8 @@ export class UserScriptManager {
                 console.error("Outer script error:", outerError);
                 const errorMsg =
                   outerError &&
-                  typeof outerError === "object" &&
-                  "message" in outerError
+                    typeof outerError === "object" &&
+                    "message" in outerError
                     ? outerError.message
                     : outerError?.toString() || "Unknown error";
                 window.postMessage(
