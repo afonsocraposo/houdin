@@ -129,7 +129,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   const renderConditionProperties = (
     data: any,
-    errors: Record<string, string[]> | undefined,
+    _errors: Record<string, string[]> | undefined,
   ) => {
     const conditionType = data.conditionType;
 

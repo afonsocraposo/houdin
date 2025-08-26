@@ -1,10 +1,11 @@
-import { BaseCredential, CredentialMetadata } from '../types/credentials';
+import { ValidationResult } from "../types/config-properties";
+import { BaseCredential, CredentialMetadata } from "../types/credentials";
 
 export class CredentialRegistry {
   private static instance: CredentialRegistry;
   private credentials = new Map<string, BaseCredential>();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): CredentialRegistry {
     if (!CredentialRegistry.instance) {
@@ -30,11 +31,14 @@ export class CredentialRegistry {
 
   // Get all credential metadata for UI
   getAllCredentialMetadata(): CredentialMetadata[] {
-    return this.getAllCredentials().map(credential => credential.metadata);
+    return this.getAllCredentials().map((credential) => credential.metadata);
   }
 
   // Get authentication object from credential configuration
-  getAuth(type: string, config: Record<string, any>): Record<string, any> | null {
+  getAuth(
+    type: string,
+    config: Record<string, any>,
+  ): Record<string, any> | null {
     const credential = this.getCredential(type);
     if (!credential) {
       throw new Error(`Credential type '${type}' not found in registry`);
@@ -43,7 +47,9 @@ export class CredentialRegistry {
     // Validate configuration before getting auth
     const validation = credential.validate(config);
     if (!validation.valid) {
-      throw new Error(`Credential configuration invalid: ${validation.errors.join(', ')}`);
+      throw new Error(
+        `Credential configuration invalid: ${JSON.stringify(validation.errors)}`,
+      );
     }
 
     // Get auth with defaults applied
@@ -52,10 +58,13 @@ export class CredentialRegistry {
   }
 
   // Validate credential configuration
-  validateConfig(type: string, config: Record<string, any>): { valid: boolean; errors: string[] } {
+  validateConfig(type: string, config: Record<string, any>): ValidationResult {
     const credential = this.getCredential(type);
     if (!credential) {
-      return { valid: false, errors: [`Credential type '${type}' not found`] };
+      return {
+        valid: false,
+        errors: { "": [`Credential type '${type}' not found`] },
+      };
     }
 
     return credential.validate(config);
@@ -81,12 +90,12 @@ export class CredentialRegistry {
   // Get credential categories for UI
   getCredentialCategories() {
     return {
-      credentials: this.getAllCredentials().map(credential => ({
+      credentials: this.getAllCredentials().map((credential) => ({
         type: credential.metadata.type,
         label: credential.metadata.label,
         icon: credential.metadata.icon,
-        description: credential.metadata.description
-      }))
+        description: credential.metadata.description,
+      })),
     };
   }
 }

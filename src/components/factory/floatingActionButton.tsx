@@ -1,4 +1,4 @@
-import { ActionIcon, Affix, Tooltip } from "@mantine/core";
+import { ActionIcon, Affix } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { CSSProperties } from "react";
 

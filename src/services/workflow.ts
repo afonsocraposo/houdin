@@ -2,6 +2,8 @@ import {
   WorkflowDefinition,
   WorkflowNode,
   WorkflowExecutionContext,
+  TriggerNodeData,
+  ActionNodeData,
 } from "../types/workflow";
 import { ExecutionTracker } from "./executionTracker";
 import { deepCopy, generateId } from "../utils/helpers";
@@ -87,7 +89,7 @@ export class WorkflowExecutor {
       workflow.id,
       this.id,
       url,
-      triggerNode.data?.triggerType,
+      (triggerNode.data as TriggerNodeData)?.triggerType,
     );
   }
 
@@ -103,7 +105,8 @@ export class WorkflowExecutor {
     this.executionTracker.addNodeResult({
       nodeId: this.triggerNode.id,
       nodeType: "trigger",
-      nodeName: this.triggerNode.data?.triggerType || "unknown",
+      nodeName:
+        (this.triggerNode.data as TriggerNodeData)?.triggerType || "unknown",
       nodeConfig: this.triggerNode.data?.config || {},
       data: triggerData,
       status: "success",
@@ -157,7 +160,7 @@ export class WorkflowExecutor {
     this.nodesProcessing.add(node.id);
     const actionRegistry = ActionRegistry.getInstance();
     // Access trigger type correctly - it's stored as triggerType, not type
-    const actionType = node.data?.actionType;
+    const actionType = (node.data as ActionNodeData)?.actionType;
     const actionConfig: Object = deepCopy(node.data?.config || {});
 
     // iterate object properties and interpolate variables

@@ -26,7 +26,12 @@ import {
   IconSearch,
   IconArrowLeft,
 } from "@tabler/icons-react";
-import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
+import {
+  WorkflowExecution,
+  WorkflowDefinition,
+  ActionNodeData,
+  TriggerNodeData,
+} from "../types/workflow";
 import { ContentStorageClient } from "../services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "./TimeAgoText";
@@ -179,9 +184,12 @@ function ExecutionHistoryPage() {
     if (!node) return "unknown";
 
     if (node.type === "action") {
-      return `action:${node.data?.actionType || "unknown"}`;
+      const actionType = (node.data as ActionNodeData)?.actionType || "unknown";
+      return `action:${actionType}`;
     } else if (node.type === "trigger") {
-      return `trigger:${node.data?.triggerType || "unknown"}`;
+      const triggerType =
+        (node.data as TriggerNodeData)?.triggerType || "unknown";
+      return `trigger:${triggerType}`;
     }
 
     return node.type;
@@ -477,12 +485,12 @@ function ExecutionHistoryPage() {
                                                     language="json"
                                                     code={
                                                       typeof node.data ===
-                                                      "object"
+                                                        "object"
                                                         ? JSON.stringify(
-                                                            node.data,
-                                                            null,
-                                                            2,
-                                                          )
+                                                          node.data,
+                                                          null,
+                                                          2,
+                                                        )
                                                         : String(node.data)
                                                     }
                                                   />
