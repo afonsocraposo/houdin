@@ -84,7 +84,7 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
       if (!validation.valid) {
         NotificationService.showErrorNotification({
           title: "Invalid configuration",
-          message: validation.errors.join(", "),
+          message: JSON.stringify(validation.errors),
         });
         return;
       }

@@ -7,7 +7,7 @@ import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github_light_default";
 import "ace-builds/src-noconflict/theme-github_dark";
 import ace from "ace-builds/src-noconflict/ace";
-import { Box } from "@mantine/core";
+import { Box, useComputedColorScheme } from "@mantine/core";
 
 // Configure ace for extension environment
 ace.config.set("basePath", "");
@@ -35,7 +35,6 @@ if (typeof document !== "undefined") {
   style.textContent = placeholderStyles;
   document.head.appendChild(style);
 }
-// import { useColorScheme } from "@mantine/hooks";
 
 interface CodeEditorProps {
   language?: string;
@@ -53,12 +52,12 @@ export default function CodeEditor({
   placeholder,
   editorKey,
 }: CodeEditorProps) {
-  // const colorscheme = useColorScheme();
+  const colorscheme = useComputedColorScheme();
   return (
     <Box h={height ?? 200} w="100%">
       <AceEditor
         mode={language || "text"}
-        theme={"github_light_default"}
+        theme={colorscheme === "light" ? "github_light_default" : "github_dark"}
         value={value}
         onChange={(val) => onChange(val)}
         wrapEnabled={true}
@@ -84,7 +83,6 @@ export default function CodeEditor({
         highlightActiveLine={false}
         placeholder={placeholder}
         style={{
-          border: "1px solid #ced4da",
           borderRadius: "4px",
           fontFamily: "Monaco, Menlo, Ubuntu Mono, monospace",
           fontSize: "14px",

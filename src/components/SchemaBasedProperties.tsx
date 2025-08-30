@@ -15,15 +15,19 @@ import { CredentialsSelect } from "./CredentialsSelect";
 import CodeEditor from "./CodeEditor";
 
 interface SchemaBasedPropertiesProps {
+  defaultConfig?: Record<string, any>;
   schema: ConfigSchema;
   values: Record<string, any>;
   onChange: (path: string, value: any) => void;
+  errors?: Record<string, string[]>;
 }
 
 export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
+  defaultConfig = {},
   schema,
   values,
   onChange,
+  errors = {},
 }) => {
   // Check if a property should be shown based on showWhen condition
   const shouldShowProperty = (property: ConfigProperty): boolean => {
@@ -39,7 +43,12 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
     return fieldValue === conditionValue;
   };
 
-  const renderProperty = (key: string, property: ConfigProperty) => {
+  const renderProperty = (
+    key: string,
+    property: ConfigProperty,
+    errors: string[],
+  ) => {
+    const errorMessage = errors && errors.length > 0 ? errors[0] : null;
     if (!shouldShowProperty(property)) {
       return null;
     }
@@ -58,6 +67,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             onChange={(e) => onChange(key, e.target.value)}
             required={property.required}
             type={property.sensitive ? "password" : "text"}
+            error={errorMessage}
           />
         );
       case "text":
@@ -70,6 +80,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
             required={property.required}
+            error={errorMessage}
           />
         );
 
@@ -84,6 +95,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
             required={property.required}
+            error={errorMessage}
           />
         );
 
@@ -98,6 +110,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             value={value}
             onChange={(val) => onChange(key, val)}
             required={property.required}
+            error={errorMessage}
           />
         );
 
@@ -114,6 +127,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             value={value}
             onChange={(val) => onChange(key, val)}
             required={property.required}
+            error={errorMessage}
           />
         );
 
@@ -146,6 +160,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             value={value}
             onChange={(val) => onChange(key, val)}
             required={property.required}
+            error={errorMessage}
           />
         );
 
@@ -168,6 +183,11 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
               placeholder={property.placeholder}
               editorKey={key}
             />
+            {errorMessage && (
+              <Text size="xs" c="red" mt="xs">
+                {errorMessage}
+              </Text>
+            )}
           </div>
         );
 
@@ -180,28 +200,47 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             // labelPosition="left"
             checked={Boolean(value)}
             onChange={(e) => onChange(key, e.currentTarget.checked)}
+            error={errorMessage}
           />
         );
 
       case "credentials":
         return (
-          <CredentialsSelect
-            key={key}
-            label={property.label}
-            placeholder={property.placeholder}
-            description={property.description}
-            value={value}
-            onChange={(val) => onChange(key, val)}
-            required={property.required}
-            credentialType={property.credentialType}
-          />
+          <>
+            <CredentialsSelect
+              key={key}
+              label={property.label}
+              placeholder={property.placeholder}
+              description={property.description}
+              value={value}
+              onChange={(val) => onChange(key, val)}
+              required={property.required}
+              credentialType={property.credentialType}
+            />
+            {errorMessage && (
+              <Text size="xs" c="red" mt="xs">
+                {errorMessage}
+              </Text>
+            )}
+          </>
         );
       case "custom":
+        // merge default config with current values
+        Object.keys(defaultConfig).forEach((configKey) => {
+          if (values[configKey] === undefined) {
+            values[configKey] = defaultConfig[configKey];
+          }
+        });
         return (
           <div key={key}>
             <InputLabel mb="xs">{property.label}</InputLabel>
             <br />
             {property.render(values, onChange)}
+            {errorMessage && (
+              <Text size="xs" c="red" mt="xs">
+                {errorMessage}
+              </Text>
+            )}
           </div>
         );
       default:
@@ -212,7 +251,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
   return (
     <Stack gap="md">
       {Object.entries(schema.properties).map(([key, property]) =>
-        renderProperty(key, property),
+        renderProperty(key, property, errors[key]),
       )}
     </Stack>
   );

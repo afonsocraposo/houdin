@@ -34,6 +34,7 @@ import {
   Paper,
   Tooltip,
   ScrollArea,
+  useComputedColorScheme,
 } from "@mantine/core";
 import { IconPlus, IconLayoutGrid } from "@tabler/icons-react";
 import { WorkflowNode, WorkflowConnection } from "../types/workflow";
@@ -53,6 +54,7 @@ interface ReactFlowCanvasProps {
   onConnectionsChange: (connections: WorkflowConnection[]) => void;
   onNodeSelect: (node: WorkflowNode | null) => void;
   selectedNode: WorkflowNode | null;
+  errors: Record<string, Record<string, string[]>>;
 }
 
 export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
@@ -75,7 +77,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   onConnectionsChange,
   onNodeSelect,
   selectedNode,
+  errors,
 }) => {
+  const colorScheme = useComputedColorScheme();
   const [showNodePalette, setShowNodePalette] = useState(false);
   const reactFlowInstance = useReactFlow();
   const hasInitialized = useRef(false);
@@ -114,10 +118,15 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         id: node.id,
         type: "custom",
         position: node.position,
-        data: { ...node.data, ...node, onDeleteNode: handleNodeDeletion }, // Include delete handler
+        data: {
+          ...node.data,
+          ...node,
+          onDeleteNode: handleNodeDeletion,
+          error: errors[node.id] !== undefined,
+        },
         selected: selectedNode?.id === node.id,
       })),
-    [workflowNodes, selectedNode, handleNodeDeletion],
+    [workflowNodes, selectedNode, handleNodeDeletion, errors],
   );
 
   // Convert workflow connections to React Flow edges
@@ -150,7 +159,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [workflowNodes, setNodes]);
+  }, [workflowNodes.length, setNodes, errors]);
 
   // Handle selection changes separately to avoid re-render cycles
   useEffect(() => {
@@ -517,7 +526,14 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   }
 
   return (
-    <Box style={{ position: "relative", width: "100%", height: "100%" }}>
+    <Box
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+      }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -540,6 +556,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           maxZoom: 1,
         }}
         disableKeyboardA11y
+        colorMode={colorScheme}
       >
         <Background />
         <Controls />
@@ -588,40 +605,45 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             <Text fw={500} mb="md">
               Add Node
             </Text>
-            <ScrollArea h="100%">
+            <ScrollArea h="100%" pb="xl">
               <Stack>
                 {Object.entries(getNodeCategories()).map(
-                  ([category, items]) => (
-                    <div key={category}>
-                      <Text
-                        size="sm"
-                        fw={500}
-                        c="dimmed"
-                        tt="capitalize"
-                        mb="xs"
-                      >
-                        {category}
-                      </Text>
-                      {items.map((item) => (
-                        <Button
-                          key={item.type}
-                          variant="subtle"
-                          fullWidth
-                          justify="start"
-                          leftSection={<Text size="lg">{item.icon}</Text>}
+                  ([category, items]) => {
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={category}>
+                        <Text
+                          size="sm"
+                          fw={500}
+                          c="dimmed"
+                          tt="capitalize"
                           mb="xs"
-                          onClick={() => createNode(item.type, category as any)}
                         >
-                          <Stack align="flex-start" gap={0}>
-                            <Text size="sm">{item.label}</Text>
-                            <Text size="xs" c="dimmed">
-                              {item.description}
-                            </Text>
-                          </Stack>
-                        </Button>
-                      ))}
-                    </div>
-                  ),
+                          {category}
+                        </Text>
+                        {items.map((item) => (
+                          <Button
+                            key={item.type}
+                            variant="subtle"
+                            fullWidth
+                            justify="start"
+                            leftSection={<Text size="lg">{item.icon}</Text>}
+                            mb="xs"
+                            onClick={() =>
+                              createNode(item.type, category as any)
+                            }
+                          >
+                            <Stack align="flex-start" gap={0}>
+                              <Text size="sm">{item.label}</Text>
+                              <Text size="xs" c="dimmed">
+                                {item.description}
+                              </Text>
+                            </Stack>
+                          </Button>
+                        ))}
+                      </div>
+                    );
+                  },
                 )}
               </Stack>
             </ScrollArea>

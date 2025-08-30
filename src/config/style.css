@@ -1,0 +1,4 @@
+@import url("highlight.js/styles/github-dark.css") screen and
+  (prefers-color-scheme: dark);
+@import url("highlight.js/styles/github.css") screen and
+  (prefers-color-scheme: light);

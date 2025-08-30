@@ -13,6 +13,7 @@ import {
   ActionIcon,
   Select,
   TextInput,
+  Box,
 } from "@mantine/core";
 import {
   IconChevronDown,
@@ -26,7 +27,12 @@ import {
   IconSearch,
   IconArrowLeft,
 } from "@tabler/icons-react";
-import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
+import {
+  WorkflowExecution,
+  WorkflowDefinition,
+  ActionNodeData,
+  TriggerNodeData,
+} from "../types/workflow";
 import { ContentStorageClient } from "../services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "./TimeAgoText";
@@ -179,9 +185,12 @@ function ExecutionHistoryPage() {
     if (!node) return "unknown";
 
     if (node.type === "action") {
-      return `action:${node.data?.actionType || "unknown"}`;
+      const actionType = (node.data as ActionNodeData)?.actionType || "unknown";
+      return `action:${actionType}`;
     } else if (node.type === "trigger") {
-      return `trigger:${node.data?.triggerType || "unknown"}`;
+      const triggerType =
+        (node.data as TriggerNodeData)?.triggerType || "unknown";
+      return `trigger:${triggerType}`;
     }
 
     return node.type;
@@ -461,31 +470,30 @@ function ExecutionHistoryPage() {
                                                   >
                                                     View Output
                                                   </summary>
-                                                  <CodeHighlight
-                                                    w={300}
-                                                    mah={200}
+                                                  <Box
+                                                    my={8}
                                                     style={{
-                                                      fontSize: "10px",
-                                                      background:
-                                                        "var(--mantine-color-gray-0)",
-                                                      padding: "8px",
-                                                      borderRadius: "4px",
-                                                      marginTop: "4px",
-                                                      maxHeight: "200px",
-                                                      overflow: "auto",
+                                                      overflow: "hidden",
+                                                      borderRadius: 8,
                                                     }}
-                                                    language="json"
-                                                    code={
-                                                      typeof node.data ===
-                                                      "object"
-                                                        ? JSON.stringify(
+                                                  >
+                                                    <CodeHighlight
+                                                      w={300}
+                                                      h="100%"
+                                                      mah={200}
+                                                      language="json"
+                                                      code={
+                                                        typeof node.data ===
+                                                          "object"
+                                                          ? JSON.stringify(
                                                             node.data,
                                                             null,
                                                             2,
                                                           )
-                                                        : String(node.data)
-                                                    }
-                                                  />
+                                                          : String(node.data)
+                                                      }
+                                                    />
+                                                  </Box>
                                                 </details>
                                               ) : (
                                                 <Text

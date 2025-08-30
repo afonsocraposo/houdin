@@ -4,7 +4,11 @@ import {
   TriggerCommand,
   WorkflowCommandType,
 } from "../types/background-workflow";
-import { WorkflowDefinition, WorkflowNode } from "../types/workflow";
+import {
+  TriggerNodeData,
+  WorkflowDefinition,
+  WorkflowNode,
+} from "../types/workflow";
 import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow";
 
@@ -68,7 +72,7 @@ export class BackgroundWorkflowEngine {
     node: WorkflowNode,
   ): Promise<void> {
     // Access trigger type correctly - it's stored as triggerType, not type
-    const triggerType = node.data?.triggerType;
+    const triggerType = (node.data as TriggerNodeData)?.triggerType;
     const triggerConfig = node.data?.config || {};
 
     if (!triggerType) {

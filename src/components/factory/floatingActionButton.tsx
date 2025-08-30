@@ -1,15 +1,17 @@
-import { ActionIcon, Affix, Tooltip } from "@mantine/core";
+import { ActionIcon, Affix } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { CSSProperties } from "react";
 
 interface FloatingActionButtonProps {
   recipe: any;
   onClick?: () => void;
+  preview?: boolean;
 }
 
 export default function FloatingActionButtonFactory({
   recipe,
   onClick,
+  preview = false,
 }: FloatingActionButtonProps) {
   // Default position for the floating action button
   const defaultPosition: {
@@ -68,30 +70,30 @@ export default function FloatingActionButtonFactory({
   }
 
   const iconColor = recipe.buttonTextColor || "#ffffff";
-  const tooltipText = recipe.componentText || "Floating Action Button";
 
   // Check if an emoji icon is provided, otherwise use the Plus icon
-  const emojiIcon = recipe.fabIcon.substring(0, 2); // Use the first character as the emoji icon
+  const emojiIcon = recipe.componentText?.substring(0, 2); // Use the first character as the emoji icon
   const hasEmojiIcon = emojiIcon && emojiIcon.trim().length > 0;
 
-  return (
-    <Affix position={position}>
-      <Tooltip label={tooltipText} position="left">
-        <ActionIcon
-          onClick={onClick}
-          style={buttonStyle}
-          color={recipe.buttonColor ? undefined : "blue"}
-          radius="xl"
-          size={60}
-          variant="filled"
-        >
-          {hasEmojiIcon ? (
-            <span style={{ fontSize: "24px", lineHeight: 1 }}>{emojiIcon}</span>
-          ) : (
-            <IconPlus stroke={1.5} size={30} color={iconColor} />
-          )}
-        </ActionIcon>
-      </Tooltip>
-    </Affix>
+  const button = (
+    <ActionIcon
+      onClick={onClick}
+      style={buttonStyle}
+      color={recipe.buttonColor ? undefined : "blue"}
+      radius="xl"
+      size={60}
+      variant="filled"
+    >
+      {hasEmojiIcon ? (
+        <span style={{ fontSize: "24px", lineHeight: 1 }}>{emojiIcon}</span>
+      ) : (
+        <IconPlus stroke={1.5} size={30} color={iconColor} />
+      )}
+    </ActionIcon>
   );
+  if (preview) {
+    return button;
+  }
+
+  return <Affix position={position}>{button}</Affix>;
 }

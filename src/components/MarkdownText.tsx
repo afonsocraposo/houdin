@@ -24,25 +24,39 @@ export default function MarkdownText({
         rehypePlugins={[rehypeSanitize]}
         components={{
           h1: ({ children }) => (
-            <Title order={2} mb="sm" c={c}>{children}</Title>
+            <Title order={2} mb="sm" c={c}>
+              {children}
+            </Title>
           ),
           h2: ({ children }) => (
-            <Title order={3} mt="md" mb="sm" c={c}>{children}</Title>
+            <Title order={3} mt="md" mb="sm" c={c}>
+              {children}
+            </Title>
           ),
           h3: ({ children }) => (
-            <Title order={4} mt="md" mb="sm" c={c}>{children}</Title>
+            <Title order={4} mt="md" mb="sm" c={c}>
+              {children}
+            </Title>
           ),
           h4: ({ children }) => (
-            <Title order={5} mt="md" mb="sm" c={c}>{children}</Title>
+            <Title order={5} mt="md" mb="sm" c={c}>
+              {children}
+            </Title>
           ),
           h5: ({ children }) => (
-            <Title order={6} mt="md" mb="sm" c={c}>{children}</Title>
+            <Title order={6} mt="md" mb="sm" c={c}>
+              {children}
+            </Title>
           ),
           h6: ({ children }) => (
-            <Title order={6} mt="md" mb="sm" c={c}>{children}</Title>
+            <Title order={6} mt="md" mb="sm" c={c}>
+              {children}
+            </Title>
           ),
           p: ({ children }) => (
-            <Text mb="sm" size="sm" c={c}>{children}</Text>
+            <Text mb="sm" size="sm" c={c}>
+              {children}
+            </Text>
           ),
           ul: ({ children }) => (
             <List
@@ -63,7 +77,7 @@ export default function MarkdownText({
             if (!children) {
               return <>{children}</>;
             }
-            if (typeof children === 'string' && !children.includes('\n')) {
+            if (typeof children === "string" && !children.includes("\n")) {
               return <Code c={c}>{children}</Code>;
             }
             // NOTE Languages are passed down through the class name with `react-markdown`

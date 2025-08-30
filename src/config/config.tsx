@@ -12,7 +12,7 @@ import {
   createHighlightJsAdapter,
 } from "@mantine/code-highlight";
 import hljs from "highlight.js/lib/core";
-import "highlight.js/styles/github.css";
+import "./style.css";
 
 import jsonLang from "highlight.js/lib/languages/json";
 
@@ -25,7 +25,7 @@ if (container) {
   const root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <MantineProvider>
+      <MantineProvider defaultColorScheme="auto">
         <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
           <HashRouter>
             <ConfigApp />

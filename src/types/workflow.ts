@@ -2,9 +2,19 @@ export interface WorkflowNode {
   id: string;
   type: "trigger" | "action" | "condition";
   position: { x: number; y: number };
-  data: any;
+  data: TriggerNodeData | ActionNodeData | BaseNodeData;
   inputs?: string[];
   outputs?: string[];
+}
+
+interface BaseNodeData {
+  config: Record<string, any>;
+}
+export interface TriggerNodeData extends BaseNodeData {
+  triggerType: string;
+}
+export interface ActionNodeData extends BaseNodeData {
+  actionType: string;
 }
 
 export interface WorkflowConnection {
@@ -71,19 +81,4 @@ export interface WorkflowExecutionContext {
 export interface NodeData<T = Record<string, any>> {
   type: string;
   config: T;
-}
-
-// Helper function to check if a component type can trigger next actions
-export function canComponentTriggerActions(componentType: string): boolean {
-  return componentType === "button" || componentType === "input";
-}
-
-// Helper function to check if a node can have outgoing connections
-export function canNodeHaveOutgoingConnections(node: WorkflowNode): boolean {
-  if (node.type === "action" && node.data?.actionType === "inject-component") {
-    const componentType = node.data?.config?.componentType;
-    return canComponentTriggerActions(componentType);
-  }
-  // All other node types can have outgoing connections
-  return true;
 }
