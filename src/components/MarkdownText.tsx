@@ -82,7 +82,6 @@ export default function MarkdownText({
             }
             // NOTE Languages are passed down through the class name with `react-markdown`
             const [, language] = className?.split("-") || [];
-            console.log(language);
             return (
               <CodeHighlight
                 my="xs"
