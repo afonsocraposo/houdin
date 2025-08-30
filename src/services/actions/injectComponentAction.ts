@@ -75,7 +75,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           type: "select",
           label: "Component Type",
           options: [{ value: "text", label: "Text/Label" }],
-          defaultValue: "button",
+          defaultValue: "text",
         },
         componentText: {
           type: "textarea",
