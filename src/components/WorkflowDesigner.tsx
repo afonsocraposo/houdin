@@ -226,7 +226,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const handleNodeUpdate = (updatedNode: WorkflowNode) => {
     const updatedNodes = nodes.map((n) =>
-      n.id === updatedNode.id ? updatedNode : n,
+      n.id === updatedNode.id
+        ? {
+            ...updatedNode,
+            position: n.position, // keep original position
+          }
+        : n,
     );
     setNodes(updatedNodes);
     setSelectedNode(updatedNode);
