@@ -159,7 +159,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [workflowNodes.length, setNodes, errors]);
+  }, [workflowNodes, setNodes, errors]);
 
   // Handle selection changes separately to avoid re-render cycles
   useEffect(() => {
