@@ -2,8 +2,8 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
-import { ModalService } from "../modal";
+} from "@/types/actions";
+import { ModalService } from "@/services/modal";
 
 interface ShowModalActionConfig {
   modalTitle: string;

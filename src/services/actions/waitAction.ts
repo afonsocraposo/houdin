@@ -2,7 +2,7 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
+} from "@/types/actions";
 
 interface WaitActionConfig {
   duration: number; // Duration in milliseconds

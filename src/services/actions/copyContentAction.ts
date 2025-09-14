@@ -2,9 +2,9 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
-import { copyToClipboard, getElement } from "../../utils/helpers";
-import { NotificationService } from "../notification";
+} from "@/types/actions";
+import { copyToClipboard, getElement } from "@/utils/helpers";
+import { NotificationService } from "@/services/notification";
 
 interface CopyContentActionConfig {
   selector: string;

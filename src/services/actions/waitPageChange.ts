@@ -2,7 +2,7 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
+} from "@/types/actions";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 

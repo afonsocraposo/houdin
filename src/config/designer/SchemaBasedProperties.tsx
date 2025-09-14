@@ -10,9 +10,9 @@ import {
   Text,
   Switch,
 } from "@mantine/core";
-import { ConfigSchema, ConfigProperty } from "../../types/config-properties";
-import { CredentialsSelect } from "../../components/CredentialsSelect";
-import CodeEditor from "../../components/CodeEditor";
+import { ConfigSchema, ConfigProperty } from "@/types/config-properties";
+import { CredentialsSelect } from "@/components/CredentialsSelect";
+import CodeEditor from "@/components/CodeEditor";
 
 interface SchemaBasedPropertiesProps {
   defaultConfig?: Record<string, any>;

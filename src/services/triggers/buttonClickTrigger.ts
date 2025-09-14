@@ -1,9 +1,9 @@
 import React from "react";
-import { ComponentFactory } from "../../components/ComponentFactory";
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
-import { getElement } from "../../utils/helpers";
-import { NotificationService } from "../notification";
-import { ContentInjector } from "../injector";
+import { ComponentFactory } from "@/components/ComponentFactory";
+import { BaseTrigger, TriggerConfigSchema } from "@/types/triggers";
+import { getElement } from "@/utils/helpers";
+import { NotificationService } from "@/services/notification";
+import { ContentInjector } from "@/services/injector";
 
 interface ButtonClickTriggerConfig {
   targetSelector: string;

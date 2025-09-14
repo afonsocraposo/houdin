@@ -1,14 +1,14 @@
-import { sendMessageToContentScript } from "../lib/messages";
-import { BackgroundStorageClient } from "../services/storage";
+import { sendMessageToContentScript } from "@/lib/messages";
+import { BackgroundStorageClient } from "@/services/storage";
 import {
   TriggerCommand,
   WorkflowCommandType,
-} from "../types/background-workflow";
+} from "@/types/background-workflow";
 import {
   TriggerNodeData,
   WorkflowDefinition,
   WorkflowNode,
-} from "../types/workflow";
+} from "@/types/workflow";
 import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow";
 

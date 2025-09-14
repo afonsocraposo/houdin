@@ -1,7 +1,7 @@
 import { Text, Badge, Group, Card, Stack, ScrollArea } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { ContentStorageClient } from "../services/storage";
-import { WorkflowDefinition } from "../types/workflow";
+import { ContentStorageClient } from "@/services/storage";
+import { WorkflowDefinition } from "@/types/workflow";
 
 interface ActiveWorkflowsProps {
   currentUrl: string;

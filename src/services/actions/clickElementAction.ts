@@ -2,8 +2,8 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
-import { getElement } from "../../utils/helpers";
+} from "@/types/actions";
+import { getElement } from "@/utils/helpers";
 
 interface ClickElementActionConfig {
   elementSelector: string;

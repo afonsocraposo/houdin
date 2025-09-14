@@ -14,8 +14,8 @@ import {
   Anchor,
   Space,
 } from "@mantine/core";
-import logoSvg from "../../assets/icons/icon.svg";
-import { initializeCredentials } from "../../services/credentialInitializer";
+import logoSvg from "@/assets/icons/icon.svg";
+import { initializeCredentials } from "@/services/credentialInitializer";
 import {
   IconInfoCircle,
   IconCheck,
@@ -26,14 +26,14 @@ import {
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ContentStorageClient } from "../../services/storage";
+import { ContentStorageClient } from "@/services/storage";
 import { ImportModal } from "./ImportModal";
 import { ExportModal } from "./ExportModal";
-import { CredentialsTab } from "../credentials/CredentialsTab";
-import { WorkflowDefinition } from "../../types/workflow";
-import { APP_VERSION } from "../../utils/version";
+import { CredentialsTab } from "@/config/credentials/CredentialsTab";
+import { WorkflowDefinition } from "@/types/workflow";
+import { APP_VERSION } from "@/utils/version";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
-import { generateId } from "../../utils/helpers";
+import { generateId } from "@/utils/helpers";
 
 function ConfigInterface() {
   // Initialize credentials on app startup

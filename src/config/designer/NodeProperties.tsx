@@ -4,9 +4,9 @@ import {
   ActionNodeData,
   TriggerNodeData,
   WorkflowNode,
-} from "../../types/workflow";
-import { ActionRegistry } from "../../services/actionRegistry";
-import { TriggerRegistry } from "../../services/triggerRegistry";
+} from "@/types/workflow";
+import { ActionRegistry } from "@/services/actionRegistry";
+import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
 
 interface NodePropertiesProps {

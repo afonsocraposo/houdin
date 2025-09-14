@@ -1,5 +1,5 @@
-import ModalDispatcher from "../components/ModalDispatcher";
-import NotificationDispatcher from "../components/NotificationDispatcher";
+import ModalDispatcher from "@/components/ModalDispatcher";
+import NotificationDispatcher from "@/components/NotificationDispatcher";
 
 declare global {
   interface WindowEventMap {

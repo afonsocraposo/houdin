@@ -1,4 +1,4 @@
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
+import { BaseTrigger, TriggerConfigSchema } from "@/types/triggers";
 
 interface DelayTriggerConfig {
   delay: number;

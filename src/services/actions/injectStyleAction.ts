@@ -2,8 +2,8 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
-import { NotificationService } from "../notification";
+} from "@/types/actions";
+import { NotificationService } from "@/services/notification";
 
 interface InjectStyleActionConfig {
   customScript: string;

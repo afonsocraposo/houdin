@@ -1,5 +1,5 @@
-import { BaseCredential, CredentialMetadata } from '../../types/credentials';
-import { ConfigSchema } from '../../types/config-properties';
+import { BaseCredential, CredentialMetadata } from "@/types/credentials";
+import { ConfigSchema } from "@/types/config-properties";
 
 interface OpenAIConfig {
   apiKey: string;
@@ -13,38 +13,38 @@ interface OpenAIAuth {
 
 export class OpenAICredential extends BaseCredential<OpenAIConfig, OpenAIAuth> {
   readonly metadata: CredentialMetadata = {
-    type: 'openai',
-    label: 'OpenAI API Key',
-    icon: 'IconBrain',
-    description: 'OpenAI API credentials for GPT models and other AI services'
+    type: "openai",
+    label: "OpenAI API Key",
+    icon: "IconBrain",
+    description: "OpenAI API credentials for GPT models and other AI services",
   };
 
   getConfigSchema(): ConfigSchema {
     return {
       properties: {
         apiKey: {
-          type: 'string',
-          label: 'API Key',
-          description: 'Your OpenAI API key',
+          type: "string",
+          label: "API Key",
+          description: "Your OpenAI API key",
           required: true,
           sensitive: true,
-          placeholder: 'sk-...',
-          defaultValue: ''
+          placeholder: "sk-...",
+          defaultValue: "",
         },
         organizationId: {
-          type: 'string',
-          label: 'Organization ID',
-          description: 'Optional OpenAI organization ID',
+          type: "string",
+          label: "Organization ID",
+          description: "Optional OpenAI organization ID",
           required: false,
-          placeholder: 'org-...',
-          defaultValue: ''
-        }
-      }
+          placeholder: "org-...",
+          defaultValue: "",
+        },
+      },
     };
   }
-getAuth(config: OpenAIConfig): OpenAIAuth {
+  getAuth(config: OpenAIConfig): OpenAIAuth {
     const auth: OpenAIAuth = {
-      apiKey: config.apiKey
+      apiKey: config.apiKey,
     };
 
     if (config.organizationId?.trim()) {

@@ -4,14 +4,14 @@ import {
   WorkflowExecutionContext,
   TriggerNodeData,
   ActionNodeData,
-} from "../types/workflow";
+} from "@/types/workflow";
 import { ExecutionTracker } from "./executionTracker";
-import { deepCopy, generateId } from "../utils/helpers";
-import { sendMessageToContentScript } from "../lib/messages";
+import { deepCopy, generateId } from "@/utils/helpers";
+import { sendMessageToContentScript } from "@/lib/messages";
 import {
   ActionCommand,
   WorkflowCommandType,
-} from "../types/background-workflow";
+} from "@/types/background-workflow";
 import { ActionRegistry } from "./actionRegistry";
 
 export class ExecutionContext implements WorkflowExecutionContext {

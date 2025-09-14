@@ -18,9 +18,9 @@ import {
   WorkflowExecution,
   WorkflowDefinition,
   WorkflowExecutionStats,
-} from "../types/workflow";
-import { ContentStorageClient } from "../services/storage";
-import { TimeAgoText } from "../components/TimeAgoText";
+} from "@/types/workflow";
+import { ContentStorageClient } from "@/services/storage";
+import { TimeAgoText } from "@/components/TimeAgoText";
 
 function ExecutionHistory() {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);

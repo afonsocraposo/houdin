@@ -1,6 +1,6 @@
 import { Text } from "@mantine/core";
 import { CSSProperties } from "react";
-import MarkdownText from "../MarkdownText";
+import MarkdownText from "@/components/MarkdownText";
 
 interface TextProps {
   recipe: any;

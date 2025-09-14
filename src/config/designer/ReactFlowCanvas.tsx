@@ -37,15 +37,15 @@ import {
   useComputedColorScheme,
 } from "@mantine/core";
 import { IconPlus, IconLayoutGrid } from "@tabler/icons-react";
-import { WorkflowNode, WorkflowConnection } from "../../types/workflow";
+import { WorkflowNode, WorkflowConnection } from "@/types/workflow";
 import dagre from "@dagrejs/dagre";
-import { ActionRegistry } from "../../services/actionRegistry";
-import { TriggerRegistry } from "../../services/triggerRegistry";
-import { initializeTriggers } from "../../services/triggerInitializer";
-import { initializeActions } from "../../services/actionInitializer";
+import { ActionRegistry } from "@/services/actionRegistry";
+import { TriggerRegistry } from "@/services/triggerRegistry";
+import { initializeTriggers } from "@/services/triggerInitializer";
+import { initializeActions } from "@/services/actionInitializer";
 import CanvasNode from "./CanvasNode";
 import { useHotkeys } from "@mantine/hooks";
-import { NotificationService } from "../../services/notification";
+import { NotificationService } from "@/services/notification";
 
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];

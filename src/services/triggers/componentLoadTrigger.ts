@@ -1,5 +1,5 @@
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
-import { getElement } from "../../utils/helpers";
+import { BaseTrigger, TriggerConfigSchema } from "@/types/triggers";
+import { getElement } from "@/utils/helpers";
 
 interface ComponentLoadTriggerConfig {
   selectorType: "css" | "xpath" | "text";

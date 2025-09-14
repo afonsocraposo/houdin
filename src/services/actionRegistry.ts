@@ -1,5 +1,5 @@
-import { BaseAction, ActionMetadata } from "../types/actions";
-import { ValidationResult } from "../types/config-properties";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { ValidationResult } from "@/types/config-properties";
 import { NotificationService } from "./notification";
 
 export class ActionRegistry {

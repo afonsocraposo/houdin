@@ -6,7 +6,7 @@ import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/code-highlight/styles.css";
 import ConfigApp from "./ConfigApp";
-import NotificationDispatcher from "../components/NotificationDispatcher";
+import NotificationDispatcher from "@/components/NotificationDispatcher";
 import {
   CodeHighlightAdapterProvider,
   createHighlightJsAdapter,

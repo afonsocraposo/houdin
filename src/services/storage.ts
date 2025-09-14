@@ -2,10 +2,10 @@ import {
   WorkflowDefinition,
   WorkflowExecutionStats,
   WorkflowExecutionStatus,
-} from "../types/workflow";
-import type { Credential } from "../types/credentials";
-import { WorkflowExecution } from "../types/workflow";
-import { StorageAction } from "../types/storage";
+} from "@/types/workflow";
+import type { Credential } from "@/types/credentials";
+import { WorkflowExecution } from "@/types/workflow";
+import { StorageAction } from "@/types/storage";
 import { StorageKeys } from "./storage-keys";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;

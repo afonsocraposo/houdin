@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import ElementSelectedModal from "../components/modals/elementSelected";
-import CustomModal from "../components/modals/customModal";
+import ElementSelectedModal from "@/components/modals/elementSelected";
+import CustomModal from "@/components/modals/customModal";
 
 export default function ModalDispatcher() {
   const [modal, setModal] = useState<string | null>(null);

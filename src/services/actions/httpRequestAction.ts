@@ -2,11 +2,11 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
-import { NotificationService } from "../notification";
-import { ContentStorageClient } from "../storage";
-import { CredentialRegistry } from "../credentialRegistry";
-import { HttpClientService } from "../httpClient";
+} from "@/types/actions";
+import { NotificationService } from "@/services/notification";
+import { ContentStorageClient } from "@/services/storage";
+import { CredentialRegistry } from "@/services/credentialRegistry";
+import { HttpClientService } from "@/services/httpClient";
 
 interface HttpRequestActionConfig {
   url: string;

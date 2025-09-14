@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import webExtension from "vite-plugin-web-extension";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ command }) => {
   const isDev = command === "serve";
@@ -86,6 +87,7 @@ export default defineConfig(({ command }) => {
           },
         },
       },
+      tsconfigPaths(),
     ],
     build: {
       outDir: "dist",

@@ -1,5 +1,5 @@
-import { ValidationResult } from "../types/config-properties";
-import { BaseCredential, CredentialMetadata } from "../types/credentials";
+import { ValidationResult } from "@/types/config-properties";
+import { BaseCredential, CredentialMetadata } from "@/types/credentials";
 
 export class CredentialRegistry {
   private static instance: CredentialRegistry;

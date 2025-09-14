@@ -10,7 +10,7 @@ import {
   Alert,
 } from "@mantine/core";
 import { IconDownload, IconCopy, IconCheck } from "@tabler/icons-react";
-import { WorkflowDefinition } from "../../types/workflow";
+import { WorkflowDefinition } from "@/types/workflow";
 
 interface ExportModalProps {
   opened: boolean;

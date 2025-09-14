@@ -1,7 +1,7 @@
-import { HttpListenerWebRequest } from "../services/httpListenerWebRequest";
-import { BackgroundWorkflowEngine } from "../services/backgroundEngine";
-import { WorkflowCommandType } from "../types/background-workflow";
-import { StorageServer } from "../services/storage";
+import { HttpListenerWebRequest } from "@/services/httpListenerWebRequest";
+import { BackgroundWorkflowEngine } from "@/services/backgroundEngine";
+import { WorkflowCommandType } from "@/types/background-workflow";
+import { StorageServer } from "@/services/storage";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 

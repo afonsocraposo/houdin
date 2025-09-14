@@ -12,7 +12,7 @@ import { IconPointer, IconHistory, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
-import iconSvg from "../assets/icons/icon.svg";
+import iconSvg from "@/assets/icons/icon.svg";
 
 function App() {
   // Cross-browser API compatibility

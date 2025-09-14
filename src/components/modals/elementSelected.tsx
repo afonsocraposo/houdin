@@ -1,6 +1,6 @@
 import { Modal, Stack, Textarea, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import CopyToClipboardButton from "../CopyToClibooardButton";
+import CopyToClipboardButton from "@/components/CopyToClibooardButton";
 
 interface ElementSelectedModalProps {
   data: {

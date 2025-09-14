@@ -27,18 +27,18 @@ import {
 import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
-import { ExportModal } from "../workflows/ExportModal";
-import { TimeAgoText } from "../../components/TimeAgoText";
+import { ExportModal } from "@/config/workflows/ExportModal";
+import { TimeAgoText } from "@/components/TimeAgoText";
 import {
   WorkflowNode,
   WorkflowConnection,
   WorkflowDefinition,
   TriggerNodeData,
   ActionNodeData,
-} from "../../types/workflow";
+} from "@/types/workflow";
 import { hasLength, matches, useForm } from "@mantine/form";
-import { TriggerRegistry } from "../../services/triggerRegistry";
-import { ActionRegistry } from "../../services/actionRegistry";
+import { TriggerRegistry } from "@/services/triggerRegistry";
+import { ActionRegistry } from "@/services/actionRegistry";
 
 interface WorkflowDesignerProps {
   workflow?: WorkflowDefinition;

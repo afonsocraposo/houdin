@@ -1,4 +1,4 @@
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
+import { BaseTrigger, TriggerConfigSchema } from "@/types/triggers";
 
 // HTTP Request Trigger Configuration
 export interface HttpRequestTriggerConfig {

@@ -2,12 +2,12 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
-import { ComponentFactory } from "../../components/ComponentFactory";
-import { ContentInjector } from "../injector";
-import { NotificationService } from "../notification";
+} from "@/types/actions";
+import { ComponentFactory } from "@/components/ComponentFactory";
+import { ContentInjector } from "@/services/injector";
+import { NotificationService } from "@/services/notification";
 import React from "react";
-import { getElement } from "../../utils/helpers";
+import { getElement } from "@/utils/helpers";
 
 interface InjectComponentActionConfig {
   targetSelector: string;

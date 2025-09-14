@@ -1,15 +1,15 @@
-import { initializeActions } from "../services/actionInitializer";
-import { ActionRegistry } from "../services/actionRegistry";
-import { initializeCredentials } from "../services/credentialInitializer";
-import { ContentInjector } from "../services/injector";
-import { NotificationService } from "../services/notification";
-import { initializeTriggers } from "../services/triggerInitializer";
-import { TriggerRegistry } from "../services/triggerRegistry";
+import { initializeActions } from "@/services/actionInitializer";
+import { ActionRegistry } from "@/services/actionRegistry";
+import { initializeCredentials } from "@/services/credentialInitializer";
+import { ContentInjector } from "@/services/injector";
+import { NotificationService } from "@/services/notification";
+import { initializeTriggers } from "@/services/triggerInitializer";
+import { TriggerRegistry } from "@/services/triggerRegistry";
 import {
   ActionCommand,
   TriggerCommand,
   WorkflowCommandType,
-} from "../types/background-workflow";
+} from "@/types/background-workflow";
 
 console.debug("Content script loaded");
 

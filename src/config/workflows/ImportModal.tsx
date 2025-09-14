@@ -9,7 +9,7 @@ import {
   Box,
 } from "@mantine/core";
 import { IconUpload, IconFileImport } from "@tabler/icons-react";
-import { WorkflowDefinition } from "../../types/workflow";
+import { WorkflowDefinition } from "@/types/workflow";
 
 interface ImportModalProps {
   opened: boolean;

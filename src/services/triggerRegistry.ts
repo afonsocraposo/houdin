@@ -1,5 +1,5 @@
-import { ValidationResult } from "../types/config-properties";
-import { BaseTrigger, TriggerMetadata } from "../types/triggers";
+import { ValidationResult } from "@/types/config-properties";
+import { BaseTrigger, TriggerMetadata } from "@/types/triggers";
 
 export class TriggerRegistry {
   private static instance: TriggerRegistry;

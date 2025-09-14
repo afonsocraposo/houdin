@@ -2,9 +2,9 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
-import { OpenAIService } from "../openai";
-import { NotificationService } from "../notification";
+} from "@/types/actions";
+import { OpenAIService } from "@/services/openai";
+import { NotificationService } from "@/services/notification";
 
 interface LLMOpenAIActionConfig {
   credentialId: string;

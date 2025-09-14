@@ -1,5 +1,5 @@
 import { ActionIcon, Badge, Group, Switch, Table, Text } from "@mantine/core";
-import { WorkflowDefinition } from "../../types/workflow";
+import { WorkflowDefinition } from "@/types/workflow";
 import {
   IconCopy,
   IconDownload,

@@ -1,5 +1,5 @@
-import { KeybindingSetter } from "../../components/KeybindingSetter";
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
+import { KeybindingSetter } from "@/components/KeybindingSetter";
+import { BaseTrigger, TriggerConfigSchema } from "@/types/triggers";
 
 interface KeyPressTriggerConfig {
   keyCombo: string;

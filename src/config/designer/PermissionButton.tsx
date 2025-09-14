@@ -3,7 +3,7 @@ import { Button, Alert, Text, Group } from "@mantine/core";
 import {
   UserScriptPermissionChecker,
   UserScriptPermissionStatus,
-} from "../../services/userScriptPermissionChecker";
+} from "@/services/userScriptPermissionChecker";
 
 export default function PermissionButton() {
   const [permissionStatus, setPermissionStatus] =

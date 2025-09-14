@@ -1,6 +1,6 @@
 import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import MarkdownText from "../MarkdownText";
+import MarkdownText from "@/components/MarkdownText";
 
 interface ElementSelectedModalProps {
   data: {

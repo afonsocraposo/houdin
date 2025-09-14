@@ -2,16 +2,16 @@ import {
   BaseAction,
   ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
+} from "@/types/actions";
 import {
   UserScriptPermissionChecker,
   UserScriptPermissionStatus,
-} from "../userScriptPermissionChecker";
-import PermissionButton from "../../config/designer/PermissionButton";
+} from "@/services/userScriptPermissionChecker";
+import PermissionButton from "@/config/designer/PermissionButton";
 import {
   UserScriptExecuteResponse,
   UserScriptManager,
-} from "../userScriptManager";
+} from "@/services/userScriptManager";
 
 // Custom Script Action Configuration
 export interface CustomScriptActionConfig {

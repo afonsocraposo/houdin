@@ -1,5 +1,5 @@
-import { BaseCredential, CredentialMetadata } from "../../types/credentials";
-import { ConfigSchema } from "../../types/config-properties";
+import { BaseCredential, CredentialMetadata } from "@/types/credentials";
+import { ConfigSchema } from "@/types/config-properties";
 
 interface HTTPConfig {
   authType: "none" | "bearer" | "basic" | "api_key";

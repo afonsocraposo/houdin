@@ -3,11 +3,11 @@ import {
   ActionNodeData,
   TriggerNodeData,
   WorkflowNode,
-} from "../../types/workflow";
-import { NotificationService } from "../../services/notification";
-import { copyToClipboard } from "../../utils/helpers";
-import { ActionRegistry } from "../../services/actionRegistry";
-import { TriggerRegistry } from "../../services/triggerRegistry";
+} from "@/types/workflow";
+import { NotificationService } from "@/services/notification";
+import { copyToClipboard } from "@/utils/helpers";
+import { ActionRegistry } from "@/services/actionRegistry";
+import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionIcon, Card, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { Handle, Position } from "@xyflow/react";
 import { IconAlertCircle, IconTrash } from "@tabler/icons-react";
