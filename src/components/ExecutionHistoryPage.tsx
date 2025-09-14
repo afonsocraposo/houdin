@@ -59,9 +59,7 @@ function ExecutionHistoryPage() {
 
   const loadExecutions = async () => {
     try {
-      const executions = (
-        await storageClient.getWorkflowExecutions()
-      ).reverse();
+      const executions = await storageClient.getWorkflowExecutions();
       setExecutions(executions);
     } catch (error) {
       console.error("Failed to load executions:", error);

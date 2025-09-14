@@ -1,4 +1,8 @@
-import { WorkflowDefinition, WorkflowExecutionStats } from "../types/workflow";
+import {
+  WorkflowDefinition,
+  WorkflowExecutionStats,
+  WorkflowExecutionStatus,
+} from "../types/workflow";
 import type { Credential } from "../types/credentials";
 import { WorkflowExecution } from "../types/workflow";
 import { StorageAction } from "../types/storage";
@@ -7,6 +11,11 @@ import { StorageKeys } from "./storage-keys";
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
 const MAX_EXECUTIONS = 50; // Limit for workflow executions
+
+interface getWorkflowExecutionsOptions {
+  limit?: number;
+  reverse?: boolean;
+}
 
 export class StorageServer {
   private static instance: StorageServer | null = null;
@@ -346,11 +355,17 @@ abstract class StorageClientBase implements IStorageClient {
     return allCredentials.filter((cred) => cred.type === type);
   }
 
-  async getWorkflowExecutions(limit?: number): Promise<WorkflowExecution[]> {
+  async getWorkflowExecutions(
+    options?: getWorkflowExecutionsOptions,
+  ): Promise<WorkflowExecution[]> {
+    const { limit, reverse = true } = options || {};
     try {
-      const result = (await this.get(StorageKeys.WORKFLOW_EXECUTIONS)) || [];
+      let result = (await this.get(StorageKeys.WORKFLOW_EXECUTIONS)) || [];
       if (limit && limit > 0) {
-        return result.slice(0, limit);
+        result = result.slice(-limit);
+      }
+      if (reverse) {
+        result = result.reverse();
       }
       return result;
     } catch (error) {
@@ -371,7 +386,7 @@ abstract class StorageClientBase implements IStorageClient {
 
   async saveWorkflowExecution(execution: WorkflowExecution): Promise<void> {
     try {
-      const executions = await this.getWorkflowExecutions();
+      const executions = await this.getWorkflowExecutions({ reverse: false });
       const newExecutions = [
         ...(executions?.slice(0, MAX_EXECUTIONS) || []),
         execution,

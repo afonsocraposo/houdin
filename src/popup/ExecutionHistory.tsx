@@ -37,7 +37,9 @@ function ExecutionHistory() {
 
   const loadExecutions = async () => {
     try {
-      const executions = await storageClient.getWorkflowExecutions(5);
+      const executions = await storageClient.getWorkflowExecutions({
+        limit: 5,
+      });
       setExecutions(executions);
     } catch (error) {
       console.error("Failed to load executions:", error);
