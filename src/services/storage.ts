@@ -1,8 +1,4 @@
-import {
-  WorkflowDefinition,
-  WorkflowExecutionStats,
-  WorkflowExecutionStatus,
-} from "@/types/workflow";
+import { WorkflowDefinition, WorkflowExecutionStats } from "@/types/workflow";
 import type { Credential } from "@/types/credentials";
 import { WorkflowExecution } from "@/types/workflow";
 import { StorageAction } from "@/types/storage";
@@ -386,11 +382,11 @@ abstract class StorageClientBase implements IStorageClient {
 
   async saveWorkflowExecution(execution: WorkflowExecution): Promise<void> {
     try {
-      const executions = await this.getWorkflowExecutions({ reverse: false });
-      const newExecutions = [
-        ...(executions?.slice(0, MAX_EXECUTIONS) || []),
-        execution,
-      ];
+      const executions = await this.getWorkflowExecutions({
+        reverse: false,
+        limit: MAX_EXECUTIONS - 1,
+      });
+      const newExecutions = [...(executions || []), execution];
       await this.set(StorageKeys.WORKFLOW_EXECUTIONS, newExecutions);
       console.debug("Workflow execution saved successfully");
 
