@@ -137,7 +137,7 @@ export default function AddNodeList({
         {(styles) => (
           <Paper
             shadow="md"
-            p="md"
+            p="sm"
             style={{
               ...styles,
               position: "absolute",
@@ -148,75 +148,75 @@ export default function AddNodeList({
               zIndex: 1,
             }}
           >
-            <Text fw={500} mb="md">
-              Add Node
-            </Text>
-            <TextInput
-              value={search}
-              onChange={(e) => setSearch(e.target.value.trim())}
-              placeholder="Search nodes..."
-              mb="md"
-              leftSection={<IconSearch size={16} />}
-              rightSection={
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  aria-label="Clear search"
-                  onClick={() => setSearch("")}
-                >
-                  <IconX size={16} />
-                </ActionIcon>
-              }
-            />
+            <Stack h="100%">
+              <Text fw={500}>Add Node</Text>
+              <TextInput
+                value={search}
+                onChange={(e) => setSearch(e.target.value.trim())}
+                placeholder="Search nodes..."
+                mb="md"
+                leftSection={<IconSearch size={16} />}
+                rightSection={
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    aria-label="Clear search"
+                    onClick={() => setSearch("")}
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                }
+              />
 
-            <ScrollArea h="100%" pb="xl">
-              <Stack>
-                {Object.entries(nodeCategories).map(([category, items]) => {
-                  const nodes = items as NodeMetadata[];
-                  if (nodes.length === 0) return null;
-                  return (
-                    <div key={category}>
-                      <Text
-                        size="sm"
-                        fw={500}
-                        c="dimmed"
-                        tt="capitalize"
-                        mb="xs"
-                      >
-                        {category + "s"}
-                      </Text>
-                      {nodes.map((item) => (
-                        <Button
-                          key={item.type}
-                          variant="subtle"
-                          fullWidth
-                          justify="start"
-                          leftSection={<Text size="lg">{item.icon}</Text>}
+              <ScrollArea type="hover" flex={1}>
+                <Stack>
+                  {Object.entries(nodeCategories).map(([category, items]) => {
+                    const nodes = items as NodeMetadata[];
+                    if (nodes.length === 0) return null;
+                    return (
+                      <div key={category}>
+                        <Text
+                          size="sm"
+                          fw={500}
+                          c="dimmed"
+                          tt="capitalize"
                           mb="xs"
-                          onClick={() =>
-                            createNode(item.type, category as NodeType)
-                          }
                         >
-                          <Stack align="flex-start" gap={0} w="100%">
-                            <Text size="sm">{item.label}</Text>
-                            <Text
-                              w="100%"
-                              size="xs"
-                              c="dimmed"
-                              title={item.description}
-                              lineClamp={2}
-                              truncate="end"
-                            >
-                              {item.description}
-                            </Text>
-                          </Stack>
-                        </Button>
-                      ))}
-                    </div>
-                  );
-                })}
-              </Stack>
-            </ScrollArea>
+                          {category + "s"}
+                        </Text>
+                        {nodes.map((item) => (
+                          <Button
+                            key={item.type}
+                            variant="subtle"
+                            fullWidth
+                            justify="start"
+                            leftSection={<Text size="lg">{item.icon}</Text>}
+                            mb="xs"
+                            onClick={() =>
+                              createNode(item.type, category as NodeType)
+                            }
+                          >
+                            <Stack align="flex-start" gap={0} w="100%">
+                              <Text size="sm">{item.label}</Text>
+                              <Text
+                                w="100%"
+                                size="xs"
+                                c="dimmed"
+                                title={item.description}
+                                lineClamp={2}
+                                truncate="end"
+                              >
+                                {item.description}
+                              </Text>
+                            </Stack>
+                          </Button>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </Stack>
+              </ScrollArea>
+            </Stack>
           </Paper>
         )}
       </Transition>
