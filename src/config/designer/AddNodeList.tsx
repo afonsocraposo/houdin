@@ -75,6 +75,7 @@ export default function AddNodeList({
 
   useEffect(() => {
     setShowNodePalette(opened);
+    setSearch("");
   }, [opened]);
 
   useEffect(() => {
@@ -87,7 +88,7 @@ export default function AddNodeList({
 
   const handleSearch = useDebouncedCallback((value: string) => {
     const filteredCategories = {
-      trigger: nodeCategories.trigger.filter(
+      trigger: fullCategories.trigger.filter(
         (item) =>
           item.label.toLowerCase().includes(value.toLowerCase()) ||
           item.description.toLowerCase().includes(value.toLowerCase()) ||
