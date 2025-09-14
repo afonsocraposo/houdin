@@ -13,6 +13,7 @@ import { WaitAction } from "./actions/waitAction";
 import { WaitPageChangeAction } from "./actions/waitPageChange";
 import { NavigateUrlAction } from "./actions/navigateUrlAction";
 import { PressKeyAction } from "./actions/pressKeyAction";
+import { TypeTextAction } from "./actions/typeTextAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -33,6 +34,7 @@ export function initializeActions(): void {
   registry.register(WaitPageChangeAction);
   registry.register(NavigateUrlAction);
   registry.register(PressKeyAction);
+  registry.register(TypeTextAction);
 }
 
 export function initializeBackgroundActions(): void {
