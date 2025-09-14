@@ -244,7 +244,7 @@ export class WorkflowExecutor {
   }
 
   destroy(success: boolean, force: boolean = false): void {
-    console.log("destroying", this.nodesProcessing);
+    console.debug("destroying", this.nodesProcessing);
     if (!force && this.nodesProcessing.size !== 0) {
       return;
     }

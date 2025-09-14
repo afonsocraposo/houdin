@@ -37,7 +37,9 @@ export class ActionRegistry {
 
   // Get all action metadata for UI
   getAllActionMetadata(): ActionMetadata[] {
-    return this.getAllActions().map((action) => action.metadata);
+    return this.getAllActions()
+      .map((action) => action.metadata)
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
 
   // Execute an action

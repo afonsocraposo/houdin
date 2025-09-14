@@ -31,7 +31,9 @@ export class TriggerRegistry {
 
   // Get all trigger metadata for UI
   getAllTriggerMetadata(): TriggerMetadata[] {
-    return this.getAllTriggers().map((trigger) => trigger.metadata);
+    return this.getAllTriggers()
+      .map((trigger) => trigger.metadata)
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
 
   // Setup a trigger

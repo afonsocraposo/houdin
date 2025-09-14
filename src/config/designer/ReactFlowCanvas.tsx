@@ -75,11 +75,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const colorScheme = useComputedColorScheme();
   const reactFlowInstance = useReactFlow();
   const hasInitialized = useRef(false);
-  const [showNodePalette, setShowNodePalette] = useState(false);
-
-  useEffect(() => {
-    if (selectedNode !== null) setShowNodePalette(false);
-  }, [selectedNode]);
+  const [opened, setOpened] = useState(false);
 
   // Handle node deletion directly
   const handleNodeDeletion = useCallback(
@@ -162,6 +158,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         selected: selectedNode?.id === node.id,
       })),
     );
+    setOpened(false);
   }, [selectedNode, setNodes]);
 
   useEffect(() => {
@@ -254,12 +251,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
   // Handle background click (deselect)
   const onPaneClick = useCallback(() => {
-    if (selectedNode === null) {
-      setShowNodePalette(false);
-      return; // No change if nothing is selected
-    }
+    setOpened(false);
+    // do nothing if no change
+    if (selectedNode === null) return;
     onNodeSelect(null);
-  }, [onNodeSelect, selectedNode]);
+  }, [selectedNode]);
 
   const getLayoutedElements = useCallback(
     (nodes: WorkflowNode[], edges: WorkflowConnection[]) => {
@@ -532,7 +528,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       </Tooltip>
 
       {/* Add Node Button */}
-      <AddNodeList createNode={createNode} opened={showNodePalette} />
+      <AddNodeList
+        createNode={createNode}
+        opened={opened}
+        onChange={(value) => setOpened(value)}
+      />
     </Box>
   );
 };
