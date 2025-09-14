@@ -15,11 +15,11 @@ import {
   Textarea,
 } from "@mantine/core";
 import { IconPlus, IconEdit, IconTrash, IconKey } from "@tabler/icons-react";
-import { Credential } from "../types/credentials";
-import { ContentStorageClient } from "../services/storage";
-import { CredentialRegistry } from "../services/credentialRegistry";
-import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import { NotificationService } from "../services/notification";
+import { Credential } from "../../types/credentials";
+import { ContentStorageClient } from "../../services/storage";
+import { CredentialRegistry } from "../../services/credentialRegistry";
+import { SchemaBasedProperties } from "../designer/SchemaBasedProperties";
+import { NotificationService } from "../../services/notification";
 
 interface CredentialsTabProps {
   onSaved?: () => void;

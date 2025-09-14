@@ -7,7 +7,7 @@ import {
   UserScriptPermissionChecker,
   UserScriptPermissionStatus,
 } from "../userScriptPermissionChecker";
-import PermissionButton from "../../components/PermissionButton";
+import PermissionButton from "../../config/designer/PermissionButton";
 import {
   UserScriptExecuteResponse,
   UserScriptManager,

@@ -5,39 +5,35 @@ import {
   Button,
   Stack,
   Card,
-  Switch,
   Group,
   Badge,
   Notification,
   Alert,
-  ActionIcon,
   Table,
   Tabs,
   Anchor,
   Space,
 } from "@mantine/core";
-import logoSvg from "../assets/icons/icon.svg";
-import { initializeCredentials } from "../services/credentialInitializer";
+import logoSvg from "../../assets/icons/icon.svg";
+import { initializeCredentials } from "../../services/credentialInitializer";
 import {
   IconInfoCircle,
   IconCheck,
   IconPlus,
-  IconTrash,
-  IconEdit,
   IconNetwork,
-  IconDownload,
   IconUpload,
   IconKey,
-  IconHistory,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ContentStorageClient } from "../services/storage";
+import { ContentStorageClient } from "../../services/storage";
 import { ImportModal } from "./ImportModal";
 import { ExportModal } from "./ExportModal";
-import { CredentialsTab } from "./CredentialsTab";
-import { WorkflowDefinition } from "../types/workflow";
-import { APP_VERSION } from "../utils/version";
+import { CredentialsTab } from "../credentials/CredentialsTab";
+import { WorkflowDefinition } from "../../types/workflow";
+import { APP_VERSION } from "../../utils/version";
+import ConfigWorkflowItem from "./ConfigWorkflowItem";
+import { generateId } from "../../utils/helpers";
 
 function ConfigInterface() {
   // Initialize credentials on app startup
@@ -142,6 +138,27 @@ function ConfigInterface() {
   const handleExportWorkflow = (workflow: WorkflowDefinition) => {
     setWorkflowToExport(workflow);
     setExportModalOpened(true);
+  };
+
+  const handleDuplicateWorkflow = async (workflow: WorkflowDefinition) => {
+    try {
+      const newWorkflow = {
+        ...workflow,
+        id: generateId(),
+        name: `${workflow.name} (Copy)`,
+        lastUpdated: Date.now(),
+        executionCount: 0,
+        lastExecuted: undefined,
+      } as WorkflowDefinition;
+      const updatedWorkflows = [...workflows, newWorkflow];
+      await storageClient.saveWorkflows(updatedWorkflows);
+      setWorkflows(updatedWorkflows);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error("Failed to duplicate workflow:", error);
+      alert("Failed to duplicate workflow. Please try again.");
+    }
   };
 
   const handleImportWorkflow = async (workflow: WorkflowDefinition) => {
@@ -264,78 +281,15 @@ function ConfigInterface() {
                         (a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0),
                       )
                       .map((workflow) => (
-                        <Table.Tr key={workflow.id}>
-                          <Table.Td>
-                            <Text fw={500}>{workflow.name}</Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text
-                              size="sm"
-                              c="dimmed"
-                              style={{ fontFamily: "monospace" }}
-                            >
-                              {workflow.urlPattern || "No pattern set"}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm" c="dimmed">
-                              {workflow.description || "No description"}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Badge variant="light">
-                              {workflow.nodes.length} nodes
-                            </Badge>
-                          </Table.Td>
-                          <Table.Td>
-                            <Switch
-                              checked={workflow.enabled}
-                              onChange={() => handleToggleWorkflow(workflow.id)}
-                              size="sm"
-                            />
-                          </Table.Td>
-                          <Table.Td>
-                            <Group gap="xs">
-                              <ActionIcon
-                                variant="subtle"
-                                onClick={() => handleEditWorkflow(workflow)}
-                                title="Edit workflow"
-                              >
-                                <IconEdit size={16} />
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="subtle"
-                                color="blue"
-                                onClick={() =>
-                                  navigate(
-                                    `/executions?workflow=${workflow.id}`,
-                                  )
-                                }
-                                title="View execution history"
-                              >
-                                <IconHistory size={16} />
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="subtle"
-                                color="blue"
-                                onClick={() => handleExportWorkflow(workflow)}
-                                title="Export workflow"
-                              >
-                                <IconDownload size={16} />
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="subtle"
-                                color="red"
-                                onClick={() =>
-                                  handleDeleteWorkflow(workflow.id)
-                                }
-                                title="Delete workflow"
-                              >
-                                <IconTrash size={16} />
-                              </ActionIcon>
-                            </Group>
-                          </Table.Td>
-                        </Table.Tr>
+                        <ConfigWorkflowItem
+                          key={workflow.id}
+                          workflow={workflow}
+                          handleEditWorkflow={handleEditWorkflow}
+                          handleDeleteWorkflow={handleDeleteWorkflow}
+                          handleToggleWorkflow={handleToggleWorkflow}
+                          handleExportWorkflow={handleExportWorkflow}
+                          handleDuplicateWorkflow={handleDuplicateWorkflow}
+                        />
                       ))}
                   </Table.Tbody>
                 </Table>

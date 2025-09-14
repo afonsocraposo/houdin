@@ -1,7 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { Modal, Stack, Textarea, Button, Group, Text, Box } from '@mantine/core';
-import { IconUpload, IconFileImport } from '@tabler/icons-react';
-import { WorkflowDefinition } from '../types/workflow';
+import React, { useState, useRef } from "react";
+import {
+  Modal,
+  Stack,
+  Textarea,
+  Button,
+  Group,
+  Text,
+  Box,
+} from "@mantine/core";
+import { IconUpload, IconFileImport } from "@tabler/icons-react";
+import { WorkflowDefinition } from "../../types/workflow";
 
 interface ImportModalProps {
   opened: boolean;
@@ -9,24 +17,34 @@ interface ImportModalProps {
   onImport: (workflow: WorkflowDefinition) => void;
 }
 
-export const ImportModal: React.FC<ImportModalProps> = ({ opened, onClose, onImport }) => {
-  const [jsonContent, setJsonContent] = useState('');
+export const ImportModal: React.FC<ImportModalProps> = ({
+  opened,
+  onClose,
+  onImport,
+}) => {
+  const [jsonContent, setJsonContent] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImport = async () => {
     if (!jsonContent.trim()) {
-      setError('Please paste JSON content or drag a file');
+      setError("Please paste JSON content or drag a file");
       return;
     }
 
     try {
       const importedWorkflow: WorkflowDefinition = JSON.parse(jsonContent);
-      
+
       // Validate required fields
-      if (!importedWorkflow.name || !importedWorkflow.nodes || !importedWorkflow.connections) {
-        setError('Invalid workflow format. Required fields: name, nodes, connections');
+      if (
+        !importedWorkflow.name ||
+        !importedWorkflow.nodes ||
+        !importedWorkflow.connections
+      ) {
+        setError(
+          "Invalid workflow format. Required fields: name, nodes, connections",
+        );
         return;
       }
 
@@ -34,15 +52,15 @@ export const ImportModal: React.FC<ImportModalProps> = ({ opened, onClose, onImp
       const newWorkflow: WorkflowDefinition = {
         ...importedWorkflow,
         id: `workflow-${Date.now()}`,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
 
       onImport(newWorkflow);
-      setJsonContent('');
+      setJsonContent("");
       setError(null);
       onClose();
     } catch (err) {
-      setError('Invalid JSON format. Please check your input.');
+      setError("Invalid JSON format. Please check your input.");
     }
   };
 
@@ -54,7 +72,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ opened, onClose, onImp
       setError(null);
     };
     reader.onerror = () => {
-      setError('Failed to read file');
+      setError("Failed to read file");
     };
     reader.readAsText(file);
   };
@@ -72,14 +90,16 @@ export const ImportModal: React.FC<ImportModalProps> = ({ opened, onClose, onImp
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
-    const jsonFile = files.find(file => file.type === 'application/json' || file.name.endsWith('.json'));
-    
+    const jsonFile = files.find(
+      (file) => file.type === "application/json" || file.name.endsWith(".json"),
+    );
+
     if (jsonFile) {
       handleFileRead(jsonFile);
     } else {
-      setError('Please drop a JSON file');
+      setError("Please drop a JSON file");
     }
   };
 
@@ -91,7 +111,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ opened, onClose, onImp
   };
 
   const handleClose = () => {
-    setJsonContent('');
+    setJsonContent("");
     setError(null);
     setDragActive(false);
     onClose();
@@ -106,7 +126,8 @@ export const ImportModal: React.FC<ImportModalProps> = ({ opened, onClose, onImp
     >
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          Paste the JSON content of an exported workflow or drag and drop a JSON file.
+          Paste the JSON content of an exported workflow or drag and drop a JSON
+          file.
         </Text>
 
         <Box
@@ -114,20 +135,25 @@ export const ImportModal: React.FC<ImportModalProps> = ({ opened, onClose, onImp
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           style={{
-            border: `2px dashed ${dragActive ? '#228be6' : '#dee2e6'}`,
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center',
-            backgroundColor: dragActive ? '#f8f9fa' : 'transparent',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            border: `2px dashed ${dragActive ? "#228be6" : "#dee2e6"}`,
+            borderRadius: "8px",
+            padding: "20px",
+            textAlign: "center",
+            backgroundColor: dragActive ? "#f8f9fa" : "transparent",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
           }}
           onClick={() => fileInputRef.current?.click()}
         >
           <Stack align="center" gap="xs">
-            <IconFileImport size={32} color={dragActive ? '#228be6' : '#adb5bd'} />
+            <IconFileImport
+              size={32}
+              color={dragActive ? "#228be6" : "#adb5bd"}
+            />
             <Text size="sm" c="dimmed">
-              {dragActive ? 'Drop your JSON file here' : 'Click here or drag and drop a JSON file'}
+              {dragActive
+                ? "Drop your JSON file here"
+                : "Click here or drag and drop a JSON file"}
             </Text>
           </Stack>
           <input
@@ -135,7 +161,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ opened, onClose, onImp
             type="file"
             accept=".json,application/json"
             onChange={handleFileInputChange}
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
           />
         </Box>
 

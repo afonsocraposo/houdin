@@ -32,11 +32,11 @@ import {
   WorkflowDefinition,
   ActionNodeData,
   TriggerNodeData,
-} from "../types/workflow";
-import { ContentStorageClient } from "../services/storage";
+} from "../../types/workflow";
+import { ContentStorageClient } from "../../services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { TimeAgoText } from "./TimeAgoText";
-import { formatTimeAgo } from "../utils/time";
+import { TimeAgoText } from "../../components/TimeAgoText";
+import { formatTimeAgo } from "../../utils/time";
 import { CodeHighlight } from "@mantine/code-highlight";
 
 function ExecutionHistoryPage() {

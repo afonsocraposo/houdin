@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { WorkflowDesigner } from "./WorkflowDesigner";
-import { ContentStorageClient } from "../services/storage";
-import { WorkflowDefinition } from "../types/workflow";
+import { ContentStorageClient } from "../../services/storage";
+import { WorkflowDefinition } from "../../types/workflow";
 
 interface DesignerViewProps {
   workflowId?: string;

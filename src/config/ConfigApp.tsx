@@ -1,7 +1,7 @@
 import { Routes, Route, useParams } from "react-router-dom";
-import ConfigInterface from "../components/ConfigInterface";
-import DesignerView from "../components/DesignerView";
-import ExecutionHistoryPage from "../components/ExecutionHistoryPage";
+import ConfigInterface from "./workflows/ConfigInterface";
+import DesignerView from "./designer/DesignerView";
+import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
 
 function DesignerWithParams() {
   const { workflowId } = useParams<{ workflowId?: string }>();
