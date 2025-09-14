@@ -16,7 +16,7 @@ import {
   Transition,
 } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
-import { IconPlus, IconX } from "@tabler/icons-react";
+import { IconPlus, IconSearch, IconX } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface NodeMetadata {
@@ -156,6 +156,7 @@ export default function AddNodeList({
               onChange={(e) => setSearch(e.target.value.trim())}
               placeholder="Search nodes..."
               mb="md"
+              leftSection={<IconSearch size={16} />}
               rightSection={
                 <ActionIcon
                   size="sm"
