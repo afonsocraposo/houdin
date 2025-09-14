@@ -42,7 +42,18 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
                 "preview-workflow",
                 "preview-node",
               );
-              return previewComponent;
+              // create iframe-like box
+              return React.createElement(
+                "div",
+                {
+                  style: {
+                    position: "relative",
+                    padding: "10px",
+                    minHeight: "32px",
+                  },
+                },
+                previewComponent,
+              );
             } catch (error) {
               return React.createElement(
                 "div",

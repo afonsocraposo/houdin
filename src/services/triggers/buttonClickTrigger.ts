@@ -43,9 +43,9 @@ export class ButtonClickTrigger extends BaseTrigger<ButtonClickTriggerConfig> {
                 "div",
                 {
                   style: {
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    display: "relative",
+                    minHeight: "32px",
+                    padding: "10px",
                   },
                 },
                 previewComponent,
