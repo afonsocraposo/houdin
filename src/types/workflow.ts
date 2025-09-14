@@ -1,6 +1,7 @@
+export type NodeType = "trigger" | "action" | "condition";
 export interface WorkflowNode {
   id: string;
-  type: "trigger" | "action" | "condition";
+  type: NodeType;
   position: { x: number; y: number };
   data: TriggerNodeData | ActionNodeData | BaseNodeData;
   inputs?: string[];
@@ -28,7 +29,7 @@ export interface WorkflowConnection {
 // Execution tracking for individual nodes
 export interface NodeExecutionResult {
   nodeId: string;
-  nodeType: "trigger" | "action" | "condition";
+  nodeType: NodeType;
   nodeName: string;
   nodeConfig: any;
   status: "success" | "error";
