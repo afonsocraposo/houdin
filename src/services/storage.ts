@@ -1,7 +1,8 @@
-import { WorkflowDefinition } from "../types/workflow";
+import { WorkflowDefinition, WorkflowExecutionStats } from "../types/workflow";
 import type { Credential } from "../types/credentials";
 import { WorkflowExecution } from "../types/workflow";
 import { StorageAction } from "../types/storage";
+import { StorageKeys } from "./storage-keys";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -89,6 +90,9 @@ export class StorageServer {
   static getInstance(): StorageServer {
     if (!StorageServer.instance) {
       StorageServer.instance = new StorageServer();
+      StorageServer.instance.remove(
+        StorageKeys.SESSION_WORKFLOW_EXECUTION_STATS,
+      );
     }
     return StorageServer.instance;
   }
@@ -303,7 +307,7 @@ abstract class StorageClientBase implements IStorageClient {
   // Shared business logic methods
   async getWorkflows(): Promise<WorkflowDefinition[]> {
     try {
-      return (await this.get("workflows")) || [];
+      return (await this.get(StorageKeys.WORKFLOWS)) || [];
     } catch (error) {
       console.error("Failed to get workflows:", error);
       return [];
@@ -312,7 +316,7 @@ abstract class StorageClientBase implements IStorageClient {
 
   async saveWorkflows(workflows: WorkflowDefinition[]): Promise<void> {
     try {
-      await this.set("workflows", workflows);
+      await this.set(StorageKeys.WORKFLOWS, workflows);
     } catch (error) {
       console.error("Failed to save workflows:", error);
       throw error;
@@ -321,7 +325,7 @@ abstract class StorageClientBase implements IStorageClient {
 
   async getCredentials(): Promise<Credential[]> {
     try {
-      return (await this.get("credentials")) || [];
+      return (await this.get(StorageKeys.CREDENTIALS)) || [];
     } catch (error) {
       console.error("Failed to get credentials:", error);
       return [];
@@ -330,7 +334,7 @@ abstract class StorageClientBase implements IStorageClient {
 
   async saveCredentials(credentials: Credential[]): Promise<void> {
     try {
-      await this.set("credentials", credentials);
+      await this.set(StorageKeys.CREDENTIALS, credentials);
     } catch (error) {
       console.error("Failed to save credentials:", error);
       throw error;
@@ -342,9 +346,13 @@ abstract class StorageClientBase implements IStorageClient {
     return allCredentials.filter((cred) => cred.type === type);
   }
 
-  async getWorkflowExecutions(): Promise<WorkflowExecution[]> {
+  async getWorkflowExecutions(limit?: number): Promise<WorkflowExecution[]> {
     try {
-      return (await this.get("workflowExecutions")) || [];
+      const result = (await this.get(StorageKeys.WORKFLOW_EXECUTIONS)) || [];
+      if (limit && limit > 0) {
+        return result.slice(0, limit);
+      }
+      return result;
     } catch (error) {
       console.error("Failed to get workflow executions:", error);
       return [];
@@ -353,7 +361,7 @@ abstract class StorageClientBase implements IStorageClient {
 
   async saveWorkflowExecutions(executions: WorkflowExecution[]): Promise<void> {
     try {
-      await this.set("workflowExecutions", executions);
+      await this.set(StorageKeys.WORKFLOW_EXECUTIONS, executions);
       console.debug("Workflow executions saved successfully");
     } catch (error) {
       console.error("Failed to save workflow executions:", error);
@@ -368,8 +376,18 @@ abstract class StorageClientBase implements IStorageClient {
         ...(executions?.slice(0, MAX_EXECUTIONS) || []),
         execution,
       ];
-      await this.set("workflowExecutions", newExecutions);
+      await this.set(StorageKeys.WORKFLOW_EXECUTIONS, newExecutions);
       console.debug("Workflow execution saved successfully");
+
+      // update stats
+      const stats = await this.getSessionWorkflowExecutionStats();
+      const newStats: WorkflowExecutionStats = {
+        total: stats.total + 1,
+        successful:
+          stats.successful + (execution.status === "completed" ? 1 : 0),
+        failed: stats.failed + (execution.status === "failed" ? 1 : 0),
+      };
+      await this.setSessionWorkflowExecutionStats(newStats);
     } catch (error) {
       console.error("Failed to save workflow execution:", error);
       throw error;
@@ -378,8 +396,41 @@ abstract class StorageClientBase implements IStorageClient {
 
   async clearWorkflowExecutions(): Promise<void> {
     try {
-      await this.remove("workflowExecutions");
+      await this.remove(StorageKeys.WORKFLOW_EXECUTIONS);
       console.debug("All workflow executions cleared successfully");
+    } catch (error) {
+      console.error("Failed to clear workflow executions:", error);
+      throw error;
+    }
+  }
+
+  async getSessionWorkflowExecutionStats(): Promise<WorkflowExecutionStats> {
+    try {
+      const result = await this.get(
+        StorageKeys.SESSION_WORKFLOW_EXECUTION_STATS,
+      );
+      if (result) {
+        return result;
+      }
+    } catch (error) {
+      console.error("Failed to get workflow executions:", error);
+    }
+    return { total: 0, successful: 0, failed: 0 };
+  }
+
+  async setSessionWorkflowExecutionStats(stats: WorkflowExecutionStats) {
+    try {
+      await this.set(StorageKeys.SESSION_WORKFLOW_EXECUTION_STATS, stats);
+      console.debug("Workflow execution stats saved successfully");
+    } catch (error) {
+      console.error("Failed to save workflow executions:", error);
+      throw error;
+    }
+  }
+
+  async clearSessionWorkflowExecutionStats() {
+    try {
+      await this.remove(StorageKeys.SESSION_WORKFLOW_EXECUTION_STATS);
     } catch (error) {
       console.error("Failed to clear workflow executions:", error);
       throw error;
@@ -390,19 +441,19 @@ abstract class StorageClientBase implements IStorageClient {
   addWorkflowsListener(
     callback: (workflows: WorkflowDefinition[]) => void,
   ): () => void {
-    return this.addListener("workflows", callback);
+    return this.addListener(StorageKeys.WORKFLOWS, callback);
   }
 
   addCredentialsListener(
     callback: (credentials: Credential[]) => void,
   ): () => void {
-    return this.addListener("credentials", callback);
+    return this.addListener(StorageKeys.CREDENTIALS, callback);
   }
 
   addWorkflowExecutionsListener(
     callback: (executions: WorkflowExecution[]) => void,
   ): () => void {
-    return this.addListener("workflowExecutions", callback);
+    return this.addListener(StorageKeys.WORKFLOW_EXECUTIONS, callback);
   }
 }
 

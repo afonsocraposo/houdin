@@ -82,3 +82,9 @@ export interface NodeData<T = Record<string, any>> {
   type: string;
   config: T;
 }
+
+export interface WorkflowExecutionStats {
+  total: number;
+  successful: number;
+  failed: number;
+}

@@ -231,9 +231,7 @@ function ExecutionHistoryPage() {
         </Group>
 
         <Text c="dimmed">
-          Execution tracking - the last 50 executions are kept.
-          {executions.length > 0 &&
-            ` Found ${executions.length} total executions.`}
+          Execution tracking (only the last 50 executions are kept).
         </Text>
 
         {/* Statistics */}
