@@ -13,7 +13,7 @@ export class WaitAction extends BaseAction<WaitActionConfig> {
     type: "wait",
     label: "Wait",
     icon: "⏳",
-    description: "Wait for a specified duration before proceeding",
+    description: "Wait for a specified duration before proceeding (delay)",
     disableTimeout: true,
   };
 
