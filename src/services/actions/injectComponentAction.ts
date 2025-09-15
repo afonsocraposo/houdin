@@ -25,7 +25,6 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
     label: "Inject Component",
     icon: "💉",
     description: "Add text to page",
-    disableTimeout: true,
   };
 
   getConfigSchema(): ActionConfigSchema {

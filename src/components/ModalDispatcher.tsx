@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ElementSelectedModal from "@/components/modals/elementSelected";
 import CustomModal from "@/components/modals/customModal";
+import InputModal from "./modals/inputModal";
 
 export default function ModalDispatcher() {
   const [modal, setModal] = useState<string | null>(null);
@@ -35,6 +36,9 @@ export default function ModalDispatcher() {
       )}
       {modal === "customModal" && (
         <CustomModal data={modalData} key={Math.random()} />
+      )}
+      {modal === "inputModal" && (
+        <InputModal data={modalData} key={Math.random()} />
       )}
     </>
   );

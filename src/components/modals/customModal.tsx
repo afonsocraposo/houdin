@@ -16,12 +16,12 @@ export default function CustomModal({
   const handleClose = () => {
     close();
     // Dispatch modal dismissed event for workflow continuation
-    const dismissEvent = new CustomEvent("modalDispatch", {
-      detail: {
-        type: "modalDismissed",
-      },
-    });
-    window.dispatchEvent(dismissEvent);
+    // const dismissEvent = new CustomEvent("modalDispatch", {
+    //   detail: {
+    //     type: "modalDismissed",
+    //   },
+    // });
+    // window.dispatchEvent(dismissEvent);
   };
 
   return (
