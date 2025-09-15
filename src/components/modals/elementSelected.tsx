@@ -12,15 +12,25 @@ interface ElementSelectedModalProps {
       textContent: string;
     };
   };
+  onClose?: () => void;
 }
 export default function ElementSelectedModal({
   data: { selector, element },
+  onClose,
 }: ElementSelectedModalProps) {
   const [opened, { close }] = useDisclosure(true);
+
+  const handleClose = () => {
+    close();
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
     <Modal
       opened={opened}
-      onClose={close}
+      onClose={handleClose}
       title="Element Inspector"
       trapFocus={false}
       zIndex={1000000} // Ensure modal is on top

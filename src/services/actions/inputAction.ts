@@ -34,7 +34,7 @@ export class InputAction extends BaseAction<InputActionConfig> {
   async execute(
     config: InputActionConfig,
     _workflowId: string,
-    nodeId: string,
+    _nodeId: string,
     onSuccess: (data?: any) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
@@ -42,8 +42,7 @@ export class InputAction extends BaseAction<InputActionConfig> {
 
     // Show the modal
     try {
-      const id = `${nodeId}-${Date.now()}`;
-      const detail = await ModalService.showInputModal(id, {
+      const detail = await ModalService.showInputModal({
         title: prompt,
       });
 

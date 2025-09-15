@@ -1,45 +1,55 @@
 import { Modal, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useEffect, useState } from "react";
-import { TIMEOUT_DURATION } from "@/services/modal";
 
-interface ElementSelectedModalProps {
+const TIMEOUT_DURATION = 5 * 60 * 1000;
+
+interface InputModalProps {
   data: {
-    id: string;
+    nonce: string;
     title: string;
   };
+  onClose?: () => void;
 }
 export default function InputModal({
-  data: { id, title },
-}: ElementSelectedModalProps) {
+  data: { nonce, title },
+  onClose,
+}: InputModalProps) {
   const [opened, { close }] = useDisclosure(true);
   const [input, setInput] = useState("");
 
   const sendResponse = (input: string | null = null) => {
     const responseEvent = new CustomEvent("inputModalResponse", {
       detail: {
-        id,
+        nonce,
         input,
       },
     });
     window.dispatchEvent(responseEvent);
   };
 
-  useEffect(() => {
-    setTimeout(close, TIMEOUT_DURATION);
-  }, []); // Close after timeout
+  const handleClose = () => {
+    close();
+    if (onClose) {
+      onClose();
+    }
+  };
 
   useEffect(() => {
-    if (opened) {
-      return;
+    const timeoutId = setTimeout(handleClose, TIMEOUT_DURATION);
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
+    if (!opened) {
+      sendResponse();
     }
-    sendResponse();
   }, [opened]);
 
   return (
     <Modal
       opened={opened}
-      onClose={close}
+      onClose={handleClose}
       title={title}
       trapFocus={false}
       zIndex={1000000} // Ensure modal is on top
@@ -50,7 +60,7 @@ export default function InputModal({
         onKeyUp={(e) => {
           if (e.key === "Enter") {
             sendResponse(input);
-            close();
+            handleClose();
           }
         }}
       />

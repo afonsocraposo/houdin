@@ -1,5 +1,7 @@
 export const TIMEOUT_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 export class ModalService {
+  private static modalId = () => `modal-${Date.now()}-${Math.random()}`;
   public static showModal({
     title,
     content,
@@ -7,35 +9,39 @@ export class ModalService {
     title: string;
     content: string;
     callback?: (data: any) => void;
-  }): void {
+  }): string {
+    const modalId = this.modalId();
     const modalEvent = new CustomEvent("modalDispatch", {
       detail: {
+        id: modalId,
         type: "customModal",
         data: { title, content },
       },
     });
     window.dispatchEvent(modalEvent);
+    return modalId;
   }
 
-  public static async showInputModal(
-    id: string,
-    {
-      title,
-    }: {
-      title: string;
-    },
-  ): Promise<any> {
+  public static async showInputModal({
+    title,
+  }: {
+    title: string;
+    modalId?: string;
+  }): Promise<any> {
+    const nonce = Math.random();
+    const modalId = this.modalId();
     const modalEvent = new CustomEvent("modalDispatch", {
       detail: {
+        id: modalId,
         type: "inputModal",
-        data: { id, title },
+        data: { nonce, title },
       },
     });
     window.dispatchEvent(modalEvent);
     return new Promise((resolve, reject) => {
       const handleResponse = (event: any) => {
         // Ensure the response is for the correct modal instance
-        if (event.detail.id !== id) {
+        if (event.detail.nonce !== nonce) {
           return;
         }
         window.removeEventListener("inputModalResponse", handleResponse);
@@ -51,5 +57,17 @@ export class ModalService {
         reject(new Error("Input modal response timed out"));
       }, TIMEOUT_DURATION);
     });
+  }
+
+  public static closeModal(modalId: string): void {
+    const closeEvent = new CustomEvent("modalClose", {
+      detail: { id: modalId },
+    });
+    window.dispatchEvent(closeEvent);
+  }
+
+  public static closeAllModals(): void {
+    const cleanupEvent = new CustomEvent("modalCleanup");
+    window.dispatchEvent(cleanupEvent);
   }
 }
