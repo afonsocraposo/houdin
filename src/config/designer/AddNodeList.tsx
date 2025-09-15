@@ -94,14 +94,14 @@ export default function AddNodeList({
           item.description.toLowerCase().includes(value.toLowerCase()) ||
           item.type.toLowerCase().includes(value.toLowerCase()),
       ),
-      action: nodeCategories.action.filter(
+      action: fullCategories.action.filter(
         (item) =>
           item.label.toLowerCase().includes(value.toLowerCase()) ||
           item.description.toLowerCase().includes(value.toLowerCase()) ||
           item.type.toLowerCase().includes(value.toLowerCase()),
       ),
       condition: [],
-      // condition: nodeCategories.condition.filter(
+      // condition: fullCategories.condition.filter(
       //   (item) =>
       //     item.label.toLowerCase().includes(value.toLowerCase()) ||
       //     item.description.toLowerCase().includes(value.toLowerCase()) ||
