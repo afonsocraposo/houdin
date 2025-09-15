@@ -26,7 +26,7 @@ export class WaitAction extends BaseAction<WaitActionConfig> {
           description: "Duration to wait in seconds",
           required: true,
           min: 0,
-          defaultValue: 3,
+          defaultValue: 1,
         },
       },
     };
