@@ -1,4 +1,4 @@
-import { ReactElement } from "react";
+import { createElement, ReactElement } from "react";
 import ButtonFactory from "./factory/button";
 import TextFactory from "./factory/text";
 import InputFactory from "./factory/input";
@@ -33,6 +33,10 @@ export class ComponentFactory {
             this.triggerNextAction(workflowId, nodeId);
           },
           preview,
+        });
+      case "html":
+        return createElement("div", {
+          dangerouslySetInnerHTML: { __html: recipe.componentText || "" },
         });
       default:
         return TextFactory({ recipe });

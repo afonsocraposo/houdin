@@ -11,7 +11,7 @@ import { getElement } from "@/utils/helpers";
 
 interface InjectComponentActionConfig {
   targetSelector: string;
-  componentType: "text";
+  componentType: "text" | "html";
   selectorType: "css" | "xpath";
   componentText: string;
   textColor?: string;
@@ -24,7 +24,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
     type: "inject-component",
     label: "Inject Component",
     icon: "💉",
-    description: "Add text to page",
+    description: "Inject a custom component into the page (text, HTML)",
   };
 
   getConfigSchema(): ActionConfigSchema {
@@ -84,12 +84,18 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
         componentType: {
           type: "select",
           label: "Component Type",
-          options: [{ value: "text", label: "Text/Label" }],
+          options: [
+            {
+              value: "text",
+              label: "Text/Label",
+            },
+            { value: "html", label: "HTML" },
+          ],
           defaultValue: "text",
         },
         componentText: {
           type: "textarea",
-          label: "Component Text",
+          label: "Content",
           placeholder: "Click me, Enter text, etc.",
           defaultValue: "Hello",
         },
@@ -111,6 +117,10 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           description:
             "Render text as markdown (supports **bold**, *italic*, links, lists, etc.)",
           defaultValue: true,
+          showWhen: {
+            field: "componentType",
+            value: "text",
+          },
         },
 
         // Advanced styling (for all types)
@@ -118,14 +128,18 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
           type: "code",
           label: "Custom CSS (Advanced)",
           placeholder: "margin: 10px; border-radius: 4px;",
-          description:
-            "Additional CSS properties. For floating action button, use: bottom: 40; right: 40; (in pixels)",
+          description: "Additional CSS properties.",
           language: "text",
           height: 100,
+          showWhen: {
+            field: "componentType",
+            value: ["text"],
+          },
         },
       },
     };
   }
+
   async execute(
     config: InjectComponentActionConfig,
     workflowId: string,
