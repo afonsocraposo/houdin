@@ -49,10 +49,6 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
     errors: string[],
   ) => {
     const errorMessage = errors && errors.length > 0 ? errors[0] : null;
-    if (!shouldShowProperty(property)) {
-      return null;
-    }
-
     const value = values[key] ?? property.defaultValue ?? "";
 
     switch (property.type) {
@@ -242,9 +238,11 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
 
   return (
     <Stack gap="md">
-      {Object.entries(schema.properties).map(([key, property]) => (
-        <div key={key}>{renderProperty(key, property, errors[key])}</div>
-      ))}
+      {Object.entries(schema.properties)
+        .filter(([, property]) => shouldShowProperty(property))
+        .map(([key, property]) => (
+          <div key={key}>{renderProperty(key, property, errors[key])}</div>
+        ))}
     </Stack>
   );
 };
