@@ -150,7 +150,10 @@ export class BackgroundWorkflowEngine {
     return workflow.nodes.filter((node) => node.type === "trigger");
   }
 
-  private matchesUrlPattern(pattern: string, url: string): boolean {
+  private matchesUrlPattern(pattern: string, fullUrl: string): boolean {
+    const _url = new URL(fullUrl);
+    // ignore query params but include hash
+    const url = _url.origin + _url.pathname + _url.hash;
     try {
       // Convert simple wildcard pattern to regex
       const regexPattern = pattern
