@@ -1,7 +1,16 @@
-import { ActionIcon, Badge, Group, Switch, Table, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Badge,
+  Group,
+  Menu,
+  Switch,
+  Table,
+  Text,
+} from "@mantine/core";
 import { WorkflowDefinition } from "@/types/workflow";
 import {
   IconCopy,
+  IconDots,
   IconDownload,
   IconEdit,
   IconHistory,
@@ -52,7 +61,7 @@ export default function ConfigWorkflowItem({
         />
       </Table.Td>
       <Table.Td>
-        <Group gap="xs">
+        <Group gap="xs" wrap="nowrap">
           <ActionIcon
             variant="subtle"
             onClick={() => handleEditWorkflow(workflow)}
@@ -62,35 +71,41 @@ export default function ConfigWorkflowItem({
           </ActionIcon>
           <ActionIcon
             variant="subtle"
-            onClick={() => handleDuplicateWorkflow(workflow)}
-            title="Duplicate workflow"
-          >
-            <IconCopy size={16} />
-          </ActionIcon>
-          <ActionIcon
-            variant="subtle"
             color="blue"
             onClick={() => navigate(`/executions?workflow=${workflow.id}`)}
             title="View execution history"
           >
             <IconHistory size={16} />
           </ActionIcon>
-          <ActionIcon
-            variant="subtle"
-            color="blue"
-            onClick={() => handleExportWorkflow(workflow)}
-            title="Export workflow"
-          >
-            <IconDownload size={16} />
-          </ActionIcon>
-          <ActionIcon
-            variant="subtle"
-            color="red"
-            onClick={() => handleDeleteWorkflow(workflow.id)}
-            title="Delete workflow"
-          >
-            <IconTrash size={16} />
-          </ActionIcon>
+          <Menu>
+            <Menu.Target>
+              <ActionIcon variant="subtle">
+                <IconDots size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Actions</Menu.Label>
+              <Menu.Item
+                leftSection={<IconCopy size={16} />}
+                onClick={() => handleDuplicateWorkflow(workflow)}
+              >
+                Duplicate Workflow
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconDownload size={16} />}
+                onClick={() => handleExportWorkflow(workflow)}
+              >
+                Export Workflow
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconTrash size={16} />}
+                color="red"
+                onClick={() => handleDeleteWorkflow(workflow.id)}
+              >
+                Delete Workflow
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </Table.Td>
     </Table.Tr>

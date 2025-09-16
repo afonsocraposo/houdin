@@ -270,9 +270,9 @@ function ConfigInterface() {
                       <Table.Th>Name</Table.Th>
                       <Table.Th>URL Pattern</Table.Th>
                       <Table.Th>Description</Table.Th>
-                      <Table.Th>Nodes</Table.Th>
-                      <Table.Th>Enabled</Table.Th>
-                      <Table.Th>Actions</Table.Th>
+                      <Table.Th ta="center">Nodes</Table.Th>
+                      <Table.Th ta="center">Enabled</Table.Th>
+                      <Table.Th ta="center">Actions</Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
