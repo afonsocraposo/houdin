@@ -1,5 +1,5 @@
 import React from "react";
-import { Stack, Text, Card, Group, ScrollArea } from "@mantine/core";
+import { Stack, Text, Card, Group, ScrollArea, Tooltip } from "@mantine/core";
 import {
   ActionNodeData,
   TriggerNodeData,
@@ -8,6 +8,11 @@ import {
 import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
+import {
+  IconHelp,
+  IconHelpCircle,
+  IconHelpCircleFilled,
+} from "@tabler/icons-react";
 
 interface NodePropertiesProps {
   node: WorkflowNode | null;
@@ -176,10 +181,22 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   return (
     <>
-      <Group mb="md">
+      <Group mb="md" justify="space-between">
         <Text fw={500} c={getNodeTypeColor(node.type)}>
           {getNodeTitle(node)}
         </Text>
+        <Tooltip
+          label={
+            <Text size="sm">
+              You can reference node data on any field using the syntax:&nbsp;
+              <code>{"{{action-1758059334040}}"}</code> or&nbsp;
+              <code>{"{{action-1758059334040.property}}"}</code>
+            </Text>
+          }
+          withArrow
+        >
+          <IconHelpCircle color="gray" />
+        </Tooltip>
       </Group>
       <ScrollArea h="95%" style={{ overflowY: "auto" }}>
         <Stack gap="md">
