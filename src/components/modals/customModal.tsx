@@ -1,4 +1,4 @@
-import { Modal } from "@mantine/core";
+import { Container, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import MarkdownText from "@/components/MarkdownText";
 
@@ -30,7 +30,11 @@ export default function CustomModal({
       trapFocus={false}
       zIndex={1000000} // Ensure modal is on top
     >
-      <MarkdownText>{content}</MarkdownText>
+      <Container fluid>
+        <MarkdownText style={{ overflowWrap: "break-word" }}>
+          {content}
+        </MarkdownText>
+      </Container>
     </Modal>
   );
 }

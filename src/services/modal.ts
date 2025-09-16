@@ -1,3 +1,5 @@
+import { FormFieldDefinition } from "@/components/formAction/FormBuilder";
+
 export const TIMEOUT_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export class ModalService {
@@ -26,7 +28,6 @@ export class ModalService {
     title,
   }: {
     title: string;
-    modalId?: string;
   }): Promise<any> {
     const nonce = Math.random();
     const modalId = this.modalId();
@@ -55,6 +56,44 @@ export class ModalService {
       setTimeout(() => {
         window.removeEventListener("inputModalResponse", handleResponse);
         reject(new Error("Input modal response timed out"));
+      }, TIMEOUT_DURATION);
+    });
+  }
+
+  public static async showFormModal({
+    title = "",
+    fields,
+  }: {
+    title?: string;
+    fields: FormFieldDefinition[];
+  }): Promise<any> {
+    const nonce = Math.random();
+    const modalId = this.modalId();
+    const modalEvent = new CustomEvent("modalDispatch", {
+      detail: {
+        id: modalId,
+        type: "formModal",
+        data: { nonce, fields },
+      },
+    });
+    window.dispatchEvent(modalEvent);
+    return new Promise((resolve, reject) => {
+      const handleResponse = (event: any) => {
+        // Ensure the response is for the correct modal instance
+        if (event.detail.nonce !== nonce) {
+          return;
+        }
+        window.removeEventListener("formModalResponse", handleResponse);
+        resolve({
+          ...event.detail.values,
+          _timestamp: Date.now(),
+        });
+      };
+      window.addEventListener("formModalResponse", handleResponse);
+      // Optional: Add a timeout to reject the promise if no response is received
+      setTimeout(() => {
+        window.removeEventListener("formModalResponse", handleResponse);
+        reject(new Error("Form modal response timed out"));
       }, TIMEOUT_DURATION);
     });
   }

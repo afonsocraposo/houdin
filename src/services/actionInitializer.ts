@@ -15,6 +15,7 @@ import { NavigateUrlAction } from "./actions/navigateUrlAction";
 import { PressKeyAction } from "./actions/pressKeyAction";
 import { TypeTextAction } from "./actions/typeTextAction";
 import { InputAction } from "./actions/inputAction";
+import { FormAction } from "./actions/formAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -37,6 +38,7 @@ export function initializeActions(): void {
   registry.register(PressKeyAction);
   registry.register(TypeTextAction);
   registry.register(InputAction);
+  registry.register(FormAction);
 }
 
 export function initializeBackgroundActions(): void {

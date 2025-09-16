@@ -1,8 +1,7 @@
+import { TIMEOUT_DURATION } from "@/services/modal";
 import { Modal, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useEffect, useState } from "react";
-
-const TIMEOUT_DURATION = 5 * 60 * 1000;
 
 interface InputModalProps {
   data: {

@@ -57,7 +57,7 @@ export class ExecutionContext implements WorkflowExecutionContext {
 
       if (result && typeof result === "object") {
         // If result is an object, convert to JSON string for display
-        return JSON.stringify(result);
+        return JSON.stringify(result, null, 2);
       }
       return String(result);
     });

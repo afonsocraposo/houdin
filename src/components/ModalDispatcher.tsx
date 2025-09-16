@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ElementSelectedModal from "@/components/modals/elementSelected";
 import CustomModal from "@/components/modals/customModal";
 import InputModal from "./modals/inputModal";
+import FormModal from "./modals/formModal";
 
 interface ModalInstance {
   id: string;
@@ -73,6 +74,14 @@ export default function ModalDispatcher() {
           case "inputModal":
             return (
               <InputModal
+                key={modal.id}
+                data={modal.data}
+                onClose={() => handleModalClose(modal.id)}
+              />
+            );
+          case "formModal":
+            return (
+              <FormModal
                 key={modal.id}
                 data={modal.data}
                 onClose={() => handleModalClose(modal.id)}
