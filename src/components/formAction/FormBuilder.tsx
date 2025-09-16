@@ -1,4 +1,4 @@
-import { ActionIcon, Center, Stack } from "@mantine/core";
+import { ActionIcon, Affix, Box, Center, Group, Stack } from "@mantine/core";
 import FormBuilderItem from "./FormBuilderItem";
 import { IconPlus } from "@tabler/icons-react";
 
@@ -11,7 +11,7 @@ export type FormFieldType =
 export interface FormFieldDefinition {
   name: string;
   label: string;
-  type: FormFieldType | string;
+  type: FormFieldType;
   placeholder?: string;
   required?: boolean;
   defaultValue?: any;
@@ -41,13 +41,36 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
     updatedFields[index] = updatedField;
     onChange("fields", updatedFields);
   };
+  const handleMoveItemUp = (index: number) => {
+    if (index === 0) return; // Can't move the first item up
+    const updatedFields = [...fields];
+    const temp = updatedFields[index - 1];
+    updatedFields[index - 1] = updatedFields[index];
+    updatedFields[index] = temp;
+    onChange("fields", updatedFields);
+  };
+  const handleMoveItemDown = (index: number) => {
+    if (index === fields.length - 1) return; // Can't move the last item down
+    const updatedFields = [...fields];
+    const temp = updatedFields[index + 1];
+    updatedFields[index + 1] = updatedFields[index];
+    updatedFields[index] = temp;
+    onChange("fields", updatedFields);
+  };
+  const handleDeleteItem = (index: number) => {
+    const updatedFields = fields.filter((_, i) => i !== index);
+    onChange("fields", updatedFields);
+  };
   return (
     <Stack align="stretch">
       {fields.map((field, index) => (
         <FormBuilderItem
-          key={index}
+          key={field.name}
           item={field}
           onChange={(updated) => handleItemChange(index, updated)}
+          onMoveUp={() => handleMoveItemUp(index)}
+          onMoveDown={() => handleMoveItemDown(index)}
+          onDelete={() => handleDeleteItem(index)}
         />
       ))}
       <Center mb="md">

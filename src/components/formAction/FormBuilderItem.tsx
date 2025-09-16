@@ -1,22 +1,34 @@
 import {
+  ActionIcon,
+  Affix,
+  Box,
   Card,
   Checkbox,
+  Group,
   NumberInput,
   Select,
   Stack,
   TextInput,
 } from "@mantine/core";
 import { FormFieldDefinition, FormFieldType } from "./FormBuilder";
+import { IconArrowDown, IconArrowUp, IconTrash } from "@tabler/icons-react";
 
+interface FormBuilderItemProps {
+  item: FormFieldDefinition;
+  onChange: (updatedItem: FormFieldDefinition) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDelete: () => void;
+}
 export default function FormBuilderItem({
   item,
   onChange,
-}: {
-  item: FormFieldDefinition;
-  onChange: (updatedItem: FormFieldDefinition) => void;
-}) {
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+}: FormBuilderItemProps) {
   return (
-    <Card>
+    <Card pos="relative">
       <Stack>
         <TextInput
           label="Name"
@@ -83,6 +95,19 @@ export default function FormBuilderItem({
           }
         />
       </Stack>
+      <Box pos="absolute" top={10} right={10}>
+        <Group>
+          <ActionIcon onClick={onMoveUp} size="xs" variant="subtle">
+            <IconArrowUp />
+          </ActionIcon>
+          <ActionIcon onClick={onMoveDown} size="xs" variant="subtle">
+            <IconArrowDown />
+          </ActionIcon>
+          <ActionIcon color="red" onClick={onDelete} size="xs" variant="subtle">
+            <IconTrash />
+          </ActionIcon>
+        </Group>
+      </Box>
     </Card>
   );
 }
