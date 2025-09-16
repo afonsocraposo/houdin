@@ -1,4 +1,4 @@
-import { ActionIcon, Affix, Box, Center, Group, Stack } from "@mantine/core";
+import { ActionIcon, Center, Stack } from "@mantine/core";
 import FormBuilderItem from "./FormBuilderItem";
 import { IconPlus } from "@tabler/icons-react";
 
@@ -65,7 +65,7 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
     <Stack align="stretch">
       {fields.map((field, index) => (
         <FormBuilderItem
-          key={field.name}
+          key={index}
           item={field}
           onChange={(updated) => handleItemChange(index, updated)}
           onMoveUp={() => handleMoveItemUp(index)}

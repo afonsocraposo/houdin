@@ -8,11 +8,7 @@ import {
 import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import {
-  IconHelp,
-  IconHelpCircle,
-  IconHelpCircleFilled,
-} from "@tabler/icons-react";
+import { IconHelpCircle } from "@tabler/icons-react";
 
 interface NodePropertiesProps {
   node: WorkflowNode | null;

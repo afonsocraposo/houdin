@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Affix,
   Box,
   Card,
   Checkbox,
