@@ -13,7 +13,8 @@ interface InjectComponentActionConfig {
   targetSelector: string;
   componentType: "text" | "html";
   selectorType: "css" | "xpath";
-  componentText: string;
+  componentText?: string;
+  componentHtml?: string;
   textColor?: string;
   useMarkdown?: boolean;
   customStyle?: string;
@@ -95,9 +96,24 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
         },
         componentText: {
           type: "textarea",
-          label: "Content",
+          label: "Text Content",
           placeholder: "Click me, Enter text, etc.",
           defaultValue: "Hello",
+          showWhen: {
+            field: "componentType",
+            value: "text",
+          },
+        },
+        componentHtml: {
+          type: "code",
+          language: "html",
+          label: "HTML Content",
+          placeholder: "<b>Hello</b>, <i>world</i>!",
+          defaultValue: "<b>Hello</b>, <i>world</i>!",
+          showWhen: {
+            field: "componentType",
+            value: "html",
+          },
         },
 
         // Text-specific properties
@@ -147,15 +163,8 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
     onSuccess: (data: any) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
-    const {
-      selectorType,
-      targetSelector,
-      componentType,
-      componentText,
-      textColor,
-      useMarkdown,
-      customStyle,
-    } = config;
+    const { selectorType, targetSelector, componentType, componentText } =
+      config;
 
     const targetElement = getElement(targetSelector, selectorType);
 
@@ -166,26 +175,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       return;
     }
 
-    // Build component configuration object that factory components can use
-    const componentConfig = {
-      componentType,
-      componentText,
-
-      // Color properties (will be handled by individual factories)
-      textColor,
-
-      // Text-specific properties
-      useMarkdown,
-
-      // Custom styles
-      customStyle,
-    };
-
-    const component = ComponentFactory.create(
-      componentConfig,
-      workflowId,
-      nodeId,
-    );
+    const component = ComponentFactory.create(config, workflowId, nodeId);
 
     ContentInjector.injectMantineComponentInTarget(
       `container-${workflowId}-${nodeId}`,

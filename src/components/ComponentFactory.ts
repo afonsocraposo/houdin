@@ -36,7 +36,7 @@ export class ComponentFactory {
         });
       case "html":
         return createElement("div", {
-          dangerouslySetInnerHTML: { __html: recipe.componentText || "" },
+          dangerouslySetInnerHTML: { __html: recipe.componentHtml || "" },
         });
       default:
         return TextFactory({ recipe });
