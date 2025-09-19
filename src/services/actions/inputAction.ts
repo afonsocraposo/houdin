@@ -36,7 +36,7 @@ export class InputAction extends BaseAction<InputActionConfig> {
     _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: any) => void,
-    _onError: (error: Error) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { prompt } = config;
 
@@ -51,7 +51,7 @@ export class InputAction extends BaseAction<InputActionConfig> {
         input: detail.input,
       });
     } catch (error) {
-      _onError(error as Error);
+      onError(error as Error);
     }
   }
 }

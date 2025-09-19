@@ -10,6 +10,7 @@ import React from "react";
 import { ModalService } from "../modal";
 
 interface FormActionConfig {
+  title: string;
   fields: FormFieldDefinition[];
 }
 
@@ -25,6 +26,12 @@ export class FormAction extends BaseAction<FormActionConfig> {
   getConfigSchema(): ActionConfigSchema {
     return {
       properties: {
+        title: {
+          type: "text",
+          label: "Form Title",
+          placeholder: "Enter form title",
+          description: "Title of the form to display to the user",
+        },
         fields: {
           type: "custom",
           label: "Form Fields",
@@ -51,16 +58,15 @@ export class FormAction extends BaseAction<FormActionConfig> {
     _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: any) => void,
-    _onError: (error: Error) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
-    const { fields } = config;
+    const { title, fields } = config;
 
     try {
-      const values = await ModalService.showFormModal({ fields });
+      const values = await ModalService.showFormModal({ title, fields });
       onSuccess(values);
     } catch (error) {
-      console.error("Error collecting form input:", error);
-      onSuccess(null); // or handle error as needed
+      onError(error as Error);
     }
   }
 }

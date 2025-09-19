@@ -27,7 +27,8 @@ export default function InputModal({
     window.dispatchEvent(responseEvent);
   };
 
-  const handleClose = () => {
+  const handleClose = (input: string | null = null) => {
+    sendResponse(input);
     close();
     if (onClose) {
       onClose();
@@ -38,12 +39,6 @@ export default function InputModal({
     const timeoutId = setTimeout(handleClose, TIMEOUT_DURATION);
     return () => clearTimeout(timeoutId);
   }, []);
-
-  useEffect(() => {
-    if (!opened) {
-      sendResponse();
-    }
-  }, [opened]);
 
   return (
     <Modal
@@ -58,8 +53,7 @@ export default function InputModal({
         onChange={(e) => setInput(e.currentTarget.value)}
         onKeyUp={(e) => {
           if (e.key === "Enter") {
-            sendResponse(input);
-            handleClose();
+            handleClose(input);
           }
         }}
       />

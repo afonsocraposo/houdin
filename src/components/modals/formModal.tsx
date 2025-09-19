@@ -28,7 +28,8 @@ export default function FormModal({
     window.dispatchEvent(responseEvent);
   };
 
-  const handleClose = () => {
+  const handleClose = (data?: any) => {
+    sendResponse(data);
     close();
     if (onClose) {
       onClose();
@@ -40,21 +41,9 @@ export default function FormModal({
     return () => clearTimeout(timeoutId);
   }, []);
 
-  useEffect(() => {
-    if (!opened) {
-      sendResponse();
-    }
-  }, [opened]);
-
   return (
     <Modal opened={opened} onClose={handleClose} trapFocus={false}>
-      <FormRenderer
-        fields={fields}
-        onSubmit={(data) => {
-          sendResponse(data);
-          handleClose();
-        }}
-      />
+      <FormRenderer fields={fields} onSubmit={(data) => handleClose(data)} />
     </Modal>
   );
 }

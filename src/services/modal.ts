@@ -46,6 +46,10 @@ export class ModalService {
           return;
         }
         window.removeEventListener("inputModalResponse", handleResponse);
+        if (!event.details.input) {
+          reject(new Error("Input modal was closed without submission"));
+          return;
+        }
         resolve({
           input: event.detail.input,
           timestamp: Date.now(),
@@ -73,7 +77,7 @@ export class ModalService {
       detail: {
         id: modalId,
         type: "formModal",
-        data: { nonce, fields },
+        data: { nonce, fields, title },
       },
     });
     window.dispatchEvent(modalEvent);
@@ -84,6 +88,11 @@ export class ModalService {
           return;
         }
         window.removeEventListener("formModalResponse", handleResponse);
+        console.log(event.detail.values);
+        if (!event.detail.values) {
+          reject(new Error("Form modal was closed without submission"));
+          return;
+        }
         resolve({
           ...event.detail.values,
           _timestamp: Date.now(),
