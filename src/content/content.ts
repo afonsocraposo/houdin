@@ -134,9 +134,13 @@ if ((window as any).changemeExtensionInitialized) {
               executeActionCommand.nodeId,
             )
             .then((result) => sendResponse({ success: true, data: result }))
-            .catch((error: any) =>
-              sendResponse({ success: false, error: error.message }),
-            );
+            .catch((error: any) => {
+              NotificationService.showErrorNotification({
+                title: `Error executing ${executeActionCommand.nodeId}`,
+                message: error.message,
+              });
+              sendResponse({ success: false, error: error.message });
+            });
           break;
         default:
           return false; // Ignore other messages
