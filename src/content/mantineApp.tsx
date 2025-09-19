@@ -1,6 +1,11 @@
-import { createTheme, MantineProvider } from "@mantine/core";
+import {
+  createTheme,
+  MantineProvider,
+  mergeThemeOverrides,
+} from "@mantine/core";
 import ModalDispatcher from "@/components/ModalDispatcher";
 import NotificationDispatcher from "@/components/NotificationDispatcher";
+import { mantineTheme } from "@/theme";
 
 declare global {
   interface WindowEventMap {
@@ -15,16 +20,19 @@ const App = (parent: HTMLElement) => {
       defaultColorScheme="auto"
       cssVariablesSelector="#app"
       getRootElement={() => parent}
-      theme={createTheme({
-        components: {
-          Portal: {
-            // Property 'extend' does not exist on type 'ForwardRefExoticComponent<PortalProps & RefAttributes<HTMLDivElement>>'.
-            defaultProps: {
-              target: parent,
+      theme={mergeThemeOverrides(
+        mantineTheme,
+        createTheme({
+          components: {
+            Portal: {
+              // Property 'extend' does not exist on type 'ForwardRefExoticComponent<PortalProps & RefAttributes<HTMLDivElement>>'.
+              defaultProps: {
+                target: parent,
+              },
             },
           },
-        },
-      })}
+        }),
+      )}
     >
       <ModalDispatcher />
       <NotificationDispatcher />

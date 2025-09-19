@@ -15,6 +15,7 @@ import hljs from "highlight.js/lib/core";
 import "./style.css";
 
 import jsonLang from "highlight.js/lib/languages/json";
+import { mantineTheme } from "@/theme";
 
 hljs.registerLanguage("json", jsonLang);
 
@@ -25,7 +26,7 @@ if (container) {
   const root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <MantineProvider defaultColorScheme="auto">
+      <MantineProvider defaultColorScheme="auto" theme={mantineTheme}>
         <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
           <HashRouter>
             <ConfigApp />
