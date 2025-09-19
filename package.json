@@ -1,7 +1,7 @@
 {
-  "name": "changeme",
+  "name": "Houdin",
   "version": "3.2.0",
-  "description": "Browser automation made simple. Inject code, run scripts, and automate tasks with a user-friendly interface.",
+  "description": "Browser automation that feels like magic. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
     "dev": "vite",

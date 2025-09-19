@@ -32,9 +32,9 @@ if (runtime.action) {
   });
 }
 
-// Handle navigation to changeme.config
+// Handle navigation to houdin.config
 runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
-  if (changeInfo.url && changeInfo.url.includes("changeme.config")) {
+  if (changeInfo.url && changeInfo.url.includes("houdin.config")) {
     // Redirect to the config page
     const configUrl = runtime.runtime.getURL("src/config/index.html");
     runtime.tabs.update(tabId, { url: configUrl });
@@ -44,7 +44,7 @@ runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
 // Note: webNavigation API requires additional permission in manifest v3
 if (runtime.webNavigation) {
   runtime.webNavigation.onBeforeNavigate.addListener((details: any) => {
-    if (details.url.includes("changeme.config")) {
+    if (details.url.includes("houdin.config")) {
       const configUrl = runtime.runtime.getURL("src/config/index.html");
       runtime.tabs.update(details.tabId, { url: configUrl });
     }

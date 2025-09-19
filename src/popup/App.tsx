@@ -68,7 +68,7 @@ function App() {
 
   const handleClick = () => {
     // open a new tab with a specific URL
-    browserAPI.tabs.create({ url: "https://changeme.config" });
+    browserAPI.tabs.create({ url: "https://houdin.config" });
     window.close();
   };
 
@@ -98,13 +98,13 @@ function App() {
           <Group align="center">
             <img
               src={iconSvg}
-              alt="changeme icon"
+              alt="Houdin icon"
               style={{ width: 48, height: 48 }}
             />
             <Stack gap={0}>
-              <Title order={2}>changeme</Title>
+              <Title order={2}>Houdin</Title>
               <Text size="sm" c="dimmed">
-                Browser automation made simple
+                Browser automation that feels like magic 🪄
               </Text>
             </Stack>
           </Group>

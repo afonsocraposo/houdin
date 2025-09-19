@@ -14,15 +14,15 @@ import {
 console.debug("Content script loaded");
 
 // Prevent multiple initializations
-if ((window as any).changemeExtensionInitialized) {
-  console.debug("changeme extension already initialized, skipping");
+if ((window as any).houdinExtensionInitialized) {
+  console.debug("Houdin extension already initialized, skipping");
 } else {
-  (window as any).changemeExtensionInitialized = true;
+  (window as any).houdinExtensionInitialized = true;
 
   let contentInjector: ContentInjector;
 
   const initContentScript = () => {
-    console.debug("changeme extension content script initialized");
+    console.debug("Houdin extension content script initialized");
 
     // Initialize content injector
     contentInjector = new ContentInjector();
@@ -169,6 +169,6 @@ if ((window as any).changemeExtensionInitialized) {
       contentInjector.destroy();
     }
     cleanUpHttpTriggers();
-    (window as any).changemeExtensionInitialized = false;
+    (window as any).houdinExtensionInitialized = false;
   });
 }

@@ -184,11 +184,11 @@ function ConfigInterface() {
         <div style={{ textAlign: "center" }}>
           <img
             src={logoSvg}
-            alt="changeme logo"
+            alt="Houdin logo"
             style={{ width: 64, height: 64, marginBottom: 8 }}
           />
           <Title order={1} mt="sm">
-            changeme
+            Houdin
           </Title>
           <Text size="sm" c="dimmed">
             Create visual workflows to inject components and automate tasks on
@@ -216,8 +216,8 @@ function ConfigInterface() {
             onClose={handleAlertClose}
           >
             You can always access this configuration page by typing{" "}
-            <Badge variant="light">https://changeme.config</Badge> in your
-            browser address bar.
+            <Badge variant="light">https://houdin.config</Badge> in your browser
+            address bar.
           </Alert>
         )}
 
@@ -304,7 +304,8 @@ function ConfigInterface() {
 
         <Space h="xl" />
         <Text size="xs" c="dimmed" ta="center">
-          changeme Extension v{APP_VERSION} - Browser automation made simple
+          Houdin Extension v{APP_VERSION} - Browser automation that feels like
+          magic 🪄
         </Text>
         <Text size="xs" c="dimmed" ta="center">
           Made with ❤️ by&nbsp;
