@@ -1,3 +1,9 @@
+import { customAlphabet } from "nanoid";
+
+const ALPHANUM =
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const makeId = customAlphabet(ALPHANUM, 6);
+
 export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
     await navigator.clipboard.writeText(text);
@@ -24,7 +30,7 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
 };
 
 export const generateId = (): string => {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  return makeId();
 };
 
 export const getElement = (

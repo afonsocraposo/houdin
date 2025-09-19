@@ -39,6 +39,7 @@
     "ace-builds": "^1.43.2",
     "highlight.js": "^11.11.1",
     "javascript-time-ago": "^2.5.11",
+    "nanoid": "^5.1.5",
     "react": "^18.3.1",
     "react-ace": "^14.0.1",
     "react-dom": "^18.3.1",
