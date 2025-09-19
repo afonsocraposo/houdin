@@ -9,11 +9,12 @@ interface FormModalProps {
   data: {
     nonce: string;
     fields: FormFieldDefinition[];
+    title: string;
   };
   onClose?: () => void;
 }
 export default function FormModal({
-  data: { nonce, fields },
+  data: { nonce, fields, title },
   onClose,
 }: FormModalProps) {
   const [opened, { close }] = useDisclosure(true);
@@ -42,7 +43,12 @@ export default function FormModal({
   }, []);
 
   return (
-    <Modal opened={opened} onClose={handleClose} trapFocus={false}>
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      trapFocus={false}
+      title={title}
+    >
       <FormRenderer fields={fields} onSubmit={(data) => handleClose(data)} />
     </Modal>
   );
