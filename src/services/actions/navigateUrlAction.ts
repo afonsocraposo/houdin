@@ -1,8 +1,5 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { textProperty } from "@/types/config-properties";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -10,7 +7,11 @@ interface NavigateActionConfig {
   url: string;
 }
 
-export class NavigateUrlAction extends BaseAction<NavigateActionConfig> {
+interface NavigateActionOutput {
+  url: string;
+}
+
+export class NavigateUrlAction extends BaseAction<NavigateActionConfig, NavigateActionOutput> {
   readonly metadata: ActionMetadata = {
     type: "navigate-url",
     label: "Navigate to URL",
@@ -18,25 +19,26 @@ export class NavigateUrlAction extends BaseAction<NavigateActionConfig> {
     description: "Navigate to a specific URL",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        url: {
-          type: "text",
-          label: "URL destination",
-          description: "The URL to navigate to",
-          placeholder: "https://afonsoraposo.com",
-          required: true,
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      url: textProperty({
+        label: "URL destination",
+        description: "The URL to navigate to",
+        placeholder: "https://afonsoraposo.com",
+        required: true,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    url: "https://afonsoraposo.com",
+  };
 
   async execute(
     config: NavigateActionConfig,
     _workflowId: string,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data: NavigateActionOutput) => void,
     onError: (error: Error) => void,
     tabId: number,
   ): Promise<void> {

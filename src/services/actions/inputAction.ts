@@ -1,15 +1,17 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { textProperty } from "@/types/config-properties";
 import { ModalService } from "@/services/modal";
 
 interface InputActionConfig {
   prompt: string;
 }
 
-export class InputAction extends BaseAction<InputActionConfig> {
+interface InputActionOutput {
+  prompt: string;
+  input: string;
+}
+
+export class InputAction extends BaseAction<InputActionConfig, InputActionOutput> {
   readonly metadata: ActionMetadata = {
     type: "input",
     label: "Input",
@@ -18,24 +20,27 @@ export class InputAction extends BaseAction<InputActionConfig> {
     disableTimeout: true,
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        prompt: {
-          type: "text",
-          label: "Prompt",
-          placeholder: "Please provide your input",
-          description: "The message to display in the input modal",
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      prompt: textProperty({
+        label: "Prompt",
+        placeholder: "Please provide your input",
+        description: "The message to display in the input modal",
+        required: true,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    prompt: "Please provide your input",
+    input: "User provided value",
+  };
 
   async execute(
     config: InputActionConfig,
     _workflowId: string,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data: InputActionOutput) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
     const { prompt } = config;

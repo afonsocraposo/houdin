@@ -94,10 +94,7 @@ export class ModalService {
           reject(new Error("Form modal was closed without submission"));
           return;
         }
-        resolve({
-          ...event.detail.values,
-          _timestamp: Date.now(),
-        });
+        resolve(event.detail.values);
       };
       window.addEventListener("formModalResponse", handleResponse);
       // Optional: Add a timeout to reject the promise if no response is received

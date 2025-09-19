@@ -1,20 +1,22 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
 import FormBuilder, {
   FormFieldDefinition,
 } from "@/components/formAction/FormBuilder";
 import React from "react";
 import { ModalService } from "../modal";
+import { customProperty, textProperty } from "@/types/config-properties";
 
 interface FormActionConfig {
   title: string;
   fields: FormFieldDefinition[];
 }
 
-export class FormAction extends BaseAction<FormActionConfig> {
+interface FormActionOutput {
+  [key: string]: any; // Dynamic keys based on form fields
+  _timestamp: number; // Timestamp of form submission
+}
+
+export class FormAction extends BaseAction<FormActionConfig, FormActionOutput> {
   readonly metadata: ActionMetadata = {
     type: "form",
     label: "Form",
@@ -23,35 +25,37 @@ export class FormAction extends BaseAction<FormActionConfig> {
     disableTimeout: true,
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        title: {
-          type: "text",
-          label: "Form Title",
-          placeholder: "Enter form title",
-          description: "Title of the form to display to the user",
+  readonly configSchema = {
+    properties: {
+      title: textProperty({
+        label: "Form Title",
+        placeholder: "Enter form title",
+        description: "Title of the form to display to the user",
+      }),
+      fields: customProperty({
+        label: "Form Fields",
+        description: "Define the fields to collect user input",
+        // required: true,
+        render: (
+          values: Record<string, any>,
+          onChange: (key: string, value: any) => void,
+        ) => {
+          const fields = values.fields || [];
+          return React.createElement(
+            "div",
+            null,
+            FormBuilder({ fields, onChange }),
+          );
         },
-        fields: {
-          type: "custom",
-          label: "Form Fields",
-          description: "Define the fields to collect user input",
-          // required: true,
-          render: (
-            values: Record<string, any>,
-            onChange: (key: string, value: any) => void,
-          ) => {
-            const fields = values.fields || [];
-            return React.createElement(
-              "div",
-              null,
-              FormBuilder({ fields, onChange }),
-            );
-          },
-        },
-      },
-    };
-  }
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    email: "email@example.com",
+    password: "password123",
+    _timestamp: Date.now(),
+  };
 
   async execute(
     config: FormActionConfig,
@@ -64,7 +68,10 @@ export class FormAction extends BaseAction<FormActionConfig> {
 
     try {
       const values = await ModalService.showFormModal({ title, fields });
-      onSuccess(values);
+      onSuccess({
+        ...values,
+        _timestamp: Date.now(),
+      });
     } catch (error) {
       onError(error as Error);
     }

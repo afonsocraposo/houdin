@@ -10,7 +10,6 @@ import {
 } from "@mantine/core";
 import { IconUpload, IconFileImport } from "@tabler/icons-react";
 import { WorkflowDefinition } from "@/types/workflow";
-import { generateId } from "@/utils/helpers";
 import { newWorkflowId } from "@/services/workflow";
 
 interface ImportModalProps {

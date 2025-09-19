@@ -1,15 +1,17 @@
 import { KeybindingSetter } from "@/components/KeybindingSetter";
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { customProperty } from "@/types/config-properties";
 
 interface PressKeyActionConfig {
   keyCombo: string;
 }
 
-export class PressKeyAction extends BaseAction<PressKeyActionConfig> {
+interface PressKeyActionOutput {
+  keyCombo: string;
+  timestamp: number;
+}
+
+export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyActionOutput> {
   readonly metadata: ActionMetadata = {
     type: "press-key",
     label: "Press Key",
@@ -17,34 +19,36 @@ export class PressKeyAction extends BaseAction<PressKeyActionConfig> {
     description: "Press a key or combination",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        keyCombo: {
-          type: "custom",
-          label: "Key Combination",
-          description:
-            "Set the key combination that will trigger this workflow",
-          required: true,
-          render: (
-            values: Record<string, any>,
-            onChange: (key: string, value: any) => void,
-          ) => (
-            <KeybindingSetter
-              value={values.keyCombo}
-              onChange={(combo) => onChange("keyCombo", combo)}
-            />
-          ),
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      keyCombo: customProperty({
+        label: "Key Combination",
+        description:
+          "Set the key combination that will trigger this workflow",
+        required: true,
+        render: (
+          values: Record<string, any>,
+          onChange: (key: string, value: any) => void,
+        ) => (
+          <KeybindingSetter
+            value={values.keyCombo}
+            onChange={(combo) => onChange("keyCombo", combo)}
+          />
+        ),
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    keyCombo: "Ctrl+Enter",
+    timestamp: 1640995200000,
+  };
 
   async execute(
     config: PressKeyActionConfig,
     _workflowId: string,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data: PressKeyActionOutput) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
     const { keyCombo } = config;

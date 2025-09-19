@@ -5,7 +5,7 @@ export class CredentialRegistry {
   private static instance: CredentialRegistry;
   private credentials = new Map<string, BaseCredential>();
 
-  private constructor() { }
+  private constructor() {}
 
   static getInstance(): CredentialRegistry {
     if (!CredentialRegistry.instance) {
@@ -79,7 +79,7 @@ export class CredentialRegistry {
   // Get configuration schema for a credential
   getConfigSchema(type: string) {
     const credential = this.getCredential(type);
-    return credential ? credential.getConfigSchema() : null;
+    return credential ? credential.configSchema : null;
   }
 
   // Check if credential type exists

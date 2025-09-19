@@ -1,17 +1,21 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
 import { getElement } from "@/utils/helpers";
 import { NotificationService } from "@/services/notification";
+import { selectProperty, textProperty } from "@/types/config-properties";
 
 interface GetElementContentActionConfig {
   selector: string;
   selectorType: "css" | "xpath" | "text";
 }
 
-export class GetElementContentAction extends BaseAction<GetElementContentActionConfig> {
+interface GetElementContentActionOutput {
+  content: string; // The extracted text content
+}
+
+export class GetElementContentAction extends BaseAction<
+  GetElementContentActionConfig,
+  GetElementContentActionOutput
+> {
   readonly metadata: ActionMetadata = {
     type: "get-element-content",
     label: "Get Element Content",
@@ -19,32 +23,32 @@ export class GetElementContentAction extends BaseAction<GetElementContentActionC
     description: "Extract text content from page element",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        selectorType: {
-          type: "select",
-          label: "Selector Type",
-          options: [
-            { label: "CSS Selector", value: "css" },
-            { label: "XPath", value: "xpath" },
-            { label: "Text", value: "text" },
-          ],
-          defaultValue: "css",
-          description: "Type of selector to use for element extraction",
-          required: true,
-        },
-        selector: {
-          type: "text",
-          label: "Selector",
-          placeholder: ".title, #content, h1",
-          description: "Selector for the element to extract content from",
-          required: true,
-          defaultValue: "h1",
-        },
-      },
-    };
-  }
+  configSchema = {
+    properties: {
+      selectorType: selectProperty({
+        label: "Selector Type",
+        options: [
+          { label: "CSS Selector", value: "css" },
+          { label: "XPath", value: "xpath" },
+          { label: "Text", value: "text" },
+        ],
+        defaultValue: "css",
+        description: "Type of selector to use for element extraction",
+        required: true,
+      }),
+      selector: textProperty({
+        label: "Selector",
+        placeholder: ".title, #content, h1",
+        description: "Selector for the element to extract content from",
+        required: true,
+        defaultValue: "h1",
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    content: "This text was extracted from the element.",
+  };
 
   async execute(
     config: GetElementContentActionConfig,

@@ -13,6 +13,7 @@ import {
 import { ConfigSchema, ConfigProperty } from "@/types/config-properties";
 import { CredentialsSelect } from "@/components/CredentialsSelect";
 import CodeEditor from "@/components/CodeEditor";
+import PasswordInput from "@/components/PasswordInput";
 
 interface SchemaBasedPropertiesProps {
   defaultConfig?: Record<string, any>;
@@ -52,19 +53,6 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
     const value = values[key] ?? property.defaultValue ?? "";
 
     switch (property.type) {
-      case "string":
-        return (
-          <TextInput
-            label={property.label}
-            placeholder={property.placeholder}
-            description={property.description}
-            value={value}
-            onChange={(e) => onChange(key, e.target.value)}
-            required={property.required}
-            type={property.sensitive ? "password" : "text"}
-            error={errorMessage}
-          />
-        );
       case "text":
         return (
           <TextInput
@@ -77,7 +65,18 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             error={errorMessage}
           />
         );
-
+      case "password":
+        return (
+          <PasswordInput
+            label={property.label}
+            placeholder={property.placeholder}
+            description={property.description}
+            value={value}
+            onChange={(e) => onChange(key, e.target.value)}
+            required={property.required}
+            error={errorMessage}
+          />
+        );
       case "textarea":
         return (
           <Textarea

@@ -1,14 +1,16 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { numberProperty } from "@/types/config-properties";
 
 interface WaitActionConfig {
   duration: number; // Duration in milliseconds
 }
 
-export class WaitAction extends BaseAction<WaitActionConfig> {
+interface WaitActionOutput {
+  duration: number;
+  timestamp: number;
+}
+
+export class WaitAction extends BaseAction<WaitActionConfig, WaitActionOutput> {
   readonly metadata: ActionMetadata = {
     type: "wait",
     label: "Wait",
@@ -17,26 +19,28 @@ export class WaitAction extends BaseAction<WaitActionConfig> {
     disableTimeout: true,
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        duration: {
-          type: "number",
-          label: "Duration (s)",
-          description: "Duration to wait in seconds",
-          required: true,
-          min: 0,
-          defaultValue: 1,
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      duration: numberProperty({
+        label: "Duration (s)",
+        description: "Duration to wait in seconds",
+        required: true,
+        min: 0,
+        defaultValue: 1,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    duration: 1,
+    timestamp: 1640995200000,
+  };
 
   async execute(
     config: WaitActionConfig,
     _workflowId: string,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data: WaitActionOutput) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
     await new Promise<void>((resolve) => {

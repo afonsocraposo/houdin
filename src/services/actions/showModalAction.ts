@@ -1,8 +1,5 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { textProperty, textareaProperty } from "@/types/config-properties";
 import { ModalService } from "@/services/modal";
 
 interface ShowModalActionConfig {
@@ -10,7 +7,12 @@ interface ShowModalActionConfig {
   modalContent: string;
 }
 
-export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
+interface ShowModalActionOutput {
+  title: string;
+  content: string;
+}
+
+export class ShowModalAction extends BaseAction<ShowModalActionConfig, ShowModalActionOutput> {
   readonly metadata: ActionMetadata = {
     type: "show-modal",
     label: "Show Modal",
@@ -18,34 +20,35 @@ export class ShowModalAction extends BaseAction<ShowModalActionConfig> {
     description: "Display modal with content",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        modalTitle: {
-          type: "text",
-          label: "Modal Title",
-          placeholder: "Information, {{node-id}} Data",
-          description:
-            "Title of the modal. Use {{node-id}} to reference action outputs",
-          defaultValue: "Workflow Result",
-        },
-        modalContent: {
-          type: "textarea",
-          label: "Modal Content",
-          placeholder: "The extracted content is: {{get-content-node}}",
-          description:
-            "Content to display. Use {{node-id}} to reference action outputs. Supports Markdown.",
-          rows: 4,
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      modalTitle: textProperty({
+        label: "Modal Title",
+        placeholder: "Information, {{node-id}} Data",
+        description:
+          "Title of the modal. Use {{node-id}} to reference action outputs",
+        defaultValue: "Workflow Result",
+      }),
+      modalContent: textareaProperty({
+        label: "Modal Content",
+        placeholder: "The extracted content is: {{get-content-node}}",
+        description:
+          "Content to display. Use {{node-id}} to reference action outputs. Supports Markdown.",
+        rows: 4,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    title: "Workflow Result",
+    content: "The extracted content is: Example content",
+  };
 
   async execute(
     config: ShowModalActionConfig,
     _workflowId: string,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data: ShowModalActionOutput) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
     const { modalTitle, modalContent } = config;

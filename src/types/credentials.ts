@@ -1,4 +1,4 @@
-import { BaseMetadata, BaseConfigurable } from './base';
+import { BaseMetadata, BaseConfigurable } from "./base";
 
 export interface Credential {
   id: string;
@@ -10,7 +10,7 @@ export interface Credential {
   updatedAt: number;
 }
 
-// Credential metadata is the same as base metadata  
+// Credential metadata is the same as base metadata
 export type CredentialMetadata = BaseMetadata;
 
 // Abstract base class for all credential types

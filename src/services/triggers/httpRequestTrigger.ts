@@ -1,4 +1,5 @@
-import { BaseTrigger, TriggerConfigSchema } from "@/types/triggers";
+import { BaseTrigger } from "@/types/triggers";
+import { textProperty, selectProperty } from "@/types/config-properties";
 
 // HTTP Request Trigger Configuration
 export interface HttpRequestTriggerConfig {
@@ -6,7 +7,14 @@ export interface HttpRequestTriggerConfig {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY";
 }
 
-export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
+interface HttpRequestTriggerOutput {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  body?: any;
+}
+
+export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig, HttpRequestTriggerOutput> {
   readonly metadata = {
     type: "http-request",
     label: "HTTP Request",
@@ -15,39 +23,42 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig> {
       "Trigger when an HTTP request matches the specified URL pattern",
   };
 
-  getConfigSchema(): TriggerConfigSchema {
-    return {
-      properties: {
-        urlPattern: {
-          type: "text",
-          label: "URL Pattern",
-          placeholder: "https://api.example.com/users",
-          description: "URL pattern to match (supports wildcards with *)",
-          required: true,
-        },
-        method: {
-          type: "select",
-          label: "HTTP Method",
-          options: [
-            { value: "ANY", label: "Any Method" },
-            { value: "GET", label: "GET" },
-            { value: "POST", label: "POST" },
-            { value: "PUT", label: "PUT" },
-            { value: "DELETE", label: "DELETE" },
-            { value: "PATCH", label: "PATCH" },
-          ],
-          defaultValue: "ANY",
-          description: "HTTP method to match",
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      urlPattern: textProperty({
+        label: "URL Pattern",
+        placeholder: "https://api.example.com/users",
+        description: "URL pattern to match (supports wildcards with *)",
+        required: true,
+      }),
+      method: selectProperty({
+        label: "HTTP Method",
+        options: [
+          { value: "ANY", label: "Any Method" },
+          { value: "GET", label: "GET" },
+          { value: "POST", label: "POST" },
+          { value: "PUT", label: "PUT" },
+          { value: "DELETE", label: "DELETE" },
+          { value: "PATCH", label: "PATCH" },
+        ],
+        defaultValue: "ANY",
+        description: "HTTP method to match",
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    url: "https://api.example.com/users",
+    method: "GET",
+    headers: { "content-type": "application/json" },
+    body: { name: "John Doe" },
+  };
 
   async setup(
     config: HttpRequestTriggerConfig,
     workflowId: string,
     nodeId: string,
-    onTrigger: (data?: any) => Promise<void>,
+    onTrigger: (data: HttpRequestTriggerOutput) => Promise<void>,
   ): Promise<void> {
     const { urlPattern, method } = config;
 

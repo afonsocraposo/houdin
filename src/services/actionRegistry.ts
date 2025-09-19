@@ -102,7 +102,7 @@ export class ActionRegistry {
   // Get configuration schema for an action
   getConfigSchema(type: string) {
     const action = this.getAction(type);
-    return action ? action.getConfigSchema() : null;
+    return action ? action.configSchema : null;
   }
 
   // Check if action type exists

@@ -1,8 +1,5 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { textProperty, selectProperty } from "@/types/config-properties";
 import { getElement } from "@/utils/helpers";
 
 interface TypeTextActionConfig {
@@ -11,7 +8,12 @@ interface TypeTextActionConfig {
   text: string;
 }
 
-export class TypeTextAction extends BaseAction<TypeTextActionConfig> {
+interface TypeTextActionOutput {
+  text: string;
+  timestamp: number;
+}
+
+export class TypeTextAction extends BaseAction<TypeTextActionConfig, TypeTextActionOutput> {
   readonly metadata: ActionMetadata = {
     type: "type-text",
     label: "Type Text",
@@ -19,50 +21,50 @@ export class TypeTextAction extends BaseAction<TypeTextActionConfig> {
     description: "Type text into input field",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        text: {
-          type: "text",
-          label: "Text to Type",
-          description:
-            "The text that will be typed when this action is executed",
-          required: true,
+  readonly configSchema = {
+    properties: {
+      text: textProperty({
+        label: "Text to Type",
+        description:
+          "The text that will be typed when this action is executed",
+        required: true,
+      }),
+      selectorType: selectProperty({
+        label: "Selector Type. (Optional, defaults to focused input)",
+        options: [
+          { label: "CSS Selector", value: "css" },
+          { label: "XPath", value: "xpath" },
+          { label: "Text", value: "text" },
+          { label: "Focused Input", value: "focused" },
+        ],
+        defaultValue: "focused",
+        description: "Type of selector to use for element selection",
+        required: true,
+      }),
+      elementSelector: textProperty({
+        label: "Element Selector",
+        placeholder: ".title, #content, h1",
+        description: "Selector for the element to click",
+        required: false,
+        defaultValue: "button",
+        showWhen: {
+          field: "selectorType",
+          value: ["css", "xpath", "text"],
         },
-        selectorType: {
-          type: "select",
-          label: "Selector Type. (Optional, defaults to focused input)",
-          options: [
-            { label: "CSS Selector", value: "css" },
-            { label: "XPath", value: "xpath" },
-            { label: "Text", value: "text" },
-            { label: "Focused Input", value: "focused" },
-          ],
-          defaultValue: "focused",
-          description: "Type of selector to use for element selection",
-          required: true,
-        },
-        elementSelector: {
-          type: "text",
-          label: "Element Selector",
-          placeholder: ".title, #content, h1",
-          description: "Selector for the element to click",
-          required: false,
-          defaultValue: "button",
-          showWhen: {
-            field: "selectorType",
-            value: ["css", "xpath", "text"],
-          },
-        },
-      },
-    };
-  }
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    text: "Hello, World!",
+    timestamp: 1640995200000,
+  };
 
   async execute(
     config: TypeTextActionConfig,
     _workflowId: string,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data: TypeTextActionOutput) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
     const { text, selectorType, elementSelector } = config;

@@ -84,7 +84,7 @@ export class TriggerRegistry {
   // Get configuration schema for a trigger
   getConfigSchema(type: string) {
     const trigger = this.getTrigger(type);
-    return trigger ? trigger.getConfigSchema() : null;
+    return trigger ? trigger.configSchema : null;
   }
 
   // Check if trigger type exists

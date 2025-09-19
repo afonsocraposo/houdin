@@ -33,7 +33,6 @@ import { CredentialsTab } from "@/config/credentials/CredentialsTab";
 import { WorkflowDefinition } from "@/types/workflow";
 import { APP_VERSION } from "@/utils/version";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
-import { generateId } from "@/utils/helpers";
 import { newWorkflowId } from "@/services/workflow";
 
 function ConfigInterface() {
