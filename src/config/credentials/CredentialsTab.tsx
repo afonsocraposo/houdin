@@ -20,6 +20,7 @@ import { ContentStorageClient } from "@/services/storage";
 import { CredentialRegistry } from "@/services/credentialRegistry";
 import { SchemaBasedProperties } from "@/config/designer/SchemaBasedProperties";
 import { NotificationService } from "@/services/notification";
+import { generateId } from "@/utils/helpers";
 
 interface CredentialsTabProps {
   onSaved?: () => void;
@@ -90,7 +91,7 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
       }
 
       const credential: Credential = {
-        id: editingCredential?.id || `credential-${Date.now()}`,
+        id: editingCredential?.id || generateId("credential"),
         name: formData.name,
         type: formData.type,
         description: formData.description,

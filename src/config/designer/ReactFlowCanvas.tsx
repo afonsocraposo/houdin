@@ -39,6 +39,7 @@ import CanvasNode from "./CanvasNode";
 import { useHotkeys } from "@mantine/hooks";
 import { NotificationService } from "@/services/notification";
 import AddNodeList from "./AddNodeList";
+import { generateId } from "@/utils/helpers";
 
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
@@ -210,7 +211,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       if (!params.source || !params.target) return;
 
       const newConnection: WorkflowConnection = {
-        id: `conn-${Date.now()}`,
+        id: generateId("conn"),
         source: params.source,
         target: params.target,
         sourceHandle: params.sourceHandle || "output",
@@ -375,7 +376,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     const newPosition = getNewNodePosition();
 
     const newNode: WorkflowNode = {
-      id: `${nodeType}-${Date.now()}`,
+      id: generateId(nodeType),
       type: nodeType,
       position: newPosition,
       data: { [nodeType + "Type"]: type, config: defaultConfig },
@@ -458,7 +459,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
           const newNode = {
             ...node,
-            id: `${node.type}-${Date.now()}`, // New unique ID
+            id: generateId(node.type), // New unique ID
             position: newPosition,
           };
           onNodesChange([...workflowNodes, newNode]);

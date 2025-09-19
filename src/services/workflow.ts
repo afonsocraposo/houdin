@@ -14,6 +14,10 @@ import {
 } from "@/types/background-workflow";
 import { ActionRegistry } from "./actionRegistry";
 
+export function newWorkflowId(): string {
+  return generateId("workflow", 12);
+}
+
 export class ExecutionContext implements WorkflowExecutionContext {
   public outputs: Record<string, any>;
   constructor() {
@@ -80,7 +84,7 @@ export class WorkflowExecutor {
     url: string,
     private onDone?: (executorId: string) => void,
   ) {
-    this.id = generateId();
+    this.id = newWorkflowId();
     this.workflowId = workflow.id;
     this.workflow = workflow;
     this.tabId = tabId;

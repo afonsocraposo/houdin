@@ -3,6 +3,7 @@ import ElementSelectedModal from "@/components/modals/elementSelected";
 import CustomModal from "@/components/modals/customModal";
 import InputModal from "./modals/inputModal";
 import FormModal from "./modals/formModal";
+import { generateId } from "@/utils/helpers";
 
 interface ModalInstance {
   id: string;
@@ -18,7 +19,7 @@ export default function ModalDispatcher() {
       const customEvent = event as CustomEvent;
       const modal = customEvent.detail;
       const modalInstance: ModalInstance = {
-        id: modal.id || `modal-${Date.now()}-${Math.random()}`,
+        id: modal.id || generateId("modal"),
         type: modal.type,
         data: modal.data,
       };

@@ -1,9 +1,10 @@
 import { FormFieldDefinition } from "@/components/formAction/FormBuilder";
+import { generateId } from "@/utils/helpers";
 
 export const TIMEOUT_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export class ModalService {
-  private static modalId = () => `modal-${Date.now()}-${Math.random()}`;
+  private static modalId = () => generateId("modal");
   public static showModal({
     title,
     content,

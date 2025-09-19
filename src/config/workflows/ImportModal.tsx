@@ -10,6 +10,8 @@ import {
 } from "@mantine/core";
 import { IconUpload, IconFileImport } from "@tabler/icons-react";
 import { WorkflowDefinition } from "@/types/workflow";
+import { generateId } from "@/utils/helpers";
+import { newWorkflowId } from "@/services/workflow";
 
 interface ImportModalProps {
   opened: boolean;
@@ -51,7 +53,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
       // Generate new ID and update timestamp
       const newWorkflow: WorkflowDefinition = {
         ...importedWorkflow,
-        id: `workflow-${Date.now()}`,
+        id: newWorkflowId(),
         lastUpdated: Date.now(),
       };
 

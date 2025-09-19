@@ -2,7 +2,6 @@ import { customAlphabet } from "nanoid";
 
 const ALPHANUM =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-const makeId = customAlphabet(ALPHANUM, 6);
 
 export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
@@ -29,7 +28,12 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 
-export const generateId = (): string => {
+export const generateId = (prefix: string = "", len: number = 6): string => {
+  const makeId = customAlphabet(ALPHANUM, len);
+  if (prefix) {
+    return prefix + "-" + makeId();
+  }
+
   return makeId();
 };
 

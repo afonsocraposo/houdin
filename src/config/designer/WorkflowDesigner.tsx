@@ -300,7 +300,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const getCurrentWorkflowDefinition = (): WorkflowDefinition => {
     return {
-      id: workflow?.id || `workflow-${Date.now()}`,
+      id: workflow?.id || "draft-workflow",
       nodes,
       connections,
       lastUpdated: Date.now(),
