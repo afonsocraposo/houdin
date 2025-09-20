@@ -6,8 +6,9 @@ import {
   ActionNodeData,
 } from "@/types/workflow";
 import { ExecutionTracker } from "./executionTracker";
-import { deepCopy, generateId } from "@/utils/helpers";
+import { generateId } from "@/utils/helpers";
 import { sendMessageToContentScript } from "@/lib/messages";
+import cloneDeep from "lodash/cloneDeep";
 import {
   ActionCommand,
   WorkflowCommandType,
@@ -165,7 +166,7 @@ export class WorkflowExecutor {
     const actionRegistry = ActionRegistry.getInstance();
     // Access trigger type correctly - it's stored as triggerType, not type
     const actionType = (node.data as ActionNodeData)?.actionType;
-    const actionConfig: Object = deepCopy(node.data?.config || {});
+    const actionConfig = cloneDeep(node.data?.config || {});
 
     // iterate object properties and interpolate variables
     for (const key in actionConfig) {
@@ -197,7 +198,11 @@ export class WorkflowExecutor {
 
       const result = runBackground
         ? await this.executeActionInBackground(message)
-        : await sendMessageToContentScript(this.tabId, WorkflowCommandType.EXECUTE_ACTION, message);
+        : await sendMessageToContentScript(
+          this.tabId,
+          WorkflowCommandType.EXECUTE_ACTION,
+          message,
+        ); 
 
       const duration = Date.now() - start;
       if (!result || !result.success) {

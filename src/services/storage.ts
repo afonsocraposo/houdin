@@ -6,7 +6,7 @@ import { StorageKeys } from "./storage-keys";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
-const MAX_EXECUTIONS = 50; // Limit for workflow executions
+export const MAX_EXECUTIONS_HISTORY = 50; // Limit for workflow executions
 
 interface getWorkflowExecutionsOptions {
   limit?: number;
@@ -384,7 +384,7 @@ abstract class StorageClientBase implements IStorageClient {
     try {
       const executions = await this.getWorkflowExecutions({
         reverse: false,
-        limit: MAX_EXECUTIONS - 1,
+        limit: MAX_EXECUTIONS_HISTORY - 1,
       });
       const newExecutions = [...(executions || []), execution];
       await this.set(StorageKeys.WORKFLOW_EXECUTIONS, newExecutions);

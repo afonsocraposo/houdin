@@ -13,7 +13,10 @@ interface TypeTextActionOutput {
   timestamp: number;
 }
 
-export class TypeTextAction extends BaseAction<TypeTextActionConfig, TypeTextActionOutput> {
+export class TypeTextAction extends BaseAction<
+  TypeTextActionConfig,
+  TypeTextActionOutput
+> {
   readonly metadata: ActionMetadata = {
     type: "type-text",
     label: "Type Text",
@@ -25,8 +28,7 @@ export class TypeTextAction extends BaseAction<TypeTextActionConfig, TypeTextAct
     properties: {
       text: textProperty({
         label: "Text to Type",
-        description:
-          "The text that will be typed when this action is executed",
+        description: "The text that will be typed when this action is executed",
         required: true,
       }),
       selectorType: selectProperty({
@@ -46,7 +48,7 @@ export class TypeTextAction extends BaseAction<TypeTextActionConfig, TypeTextAct
         placeholder: ".title, #content, h1",
         description: "Selector for the element to click",
         required: false,
-        defaultValue: "button",
+        defaultValue: "input",
         showWhen: {
           field: "selectorType",
           value: ["css", "xpath", "text"],

@@ -33,7 +33,10 @@ import {
   ActionNodeData,
   TriggerNodeData,
 } from "@/types/workflow";
-import { ContentStorageClient } from "@/services/storage";
+import {
+  ContentStorageClient,
+  MAX_EXECUTIONS_HISTORY,
+} from "@/services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import { formatTimeAgo } from "@/utils/time";
@@ -229,7 +232,8 @@ function ExecutionHistoryPage() {
         </Group>
 
         <Text c="dimmed">
-          Execution tracking (only the last 50 executions are kept).
+          Execution tracking (only the last {MAX_EXECUTIONS_HISTORY} executions
+          are kept).
         </Text>
 
         {/* Statistics */}
@@ -487,12 +491,12 @@ function ExecutionHistoryPage() {
                                                         language="json"
                                                         code={
                                                           typeof node.data ===
-                                                          "object"
+                                                            "object"
                                                             ? JSON.stringify(
-                                                                node.data,
-                                                                null,
-                                                                2,
-                                                              )
+                                                              node.data,
+                                                              null,
+                                                              2,
+                                                            )
                                                             : String(node.data)
                                                         }
                                                       />

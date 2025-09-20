@@ -36,7 +36,7 @@ export default function FormBuilderItem({
           onChange={(e) => {
             const value = e.currentTarget.value;
             // check if it matches pattern
-            if (!/^[a-zA-Z_]*$/.test(value)) {
+            if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
               return;
             }
             onChange({ ...item, name: value });

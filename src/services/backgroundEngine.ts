@@ -165,7 +165,7 @@ export class BackgroundWorkflowEngine {
           .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special regex characters
           .replace(/\\\*/g, ".*") // Convert * to .*
           .replace(/\\\?/g, ".") + // Convert ? to .
-        "\/?"; // Optional trailing slash
+        "\\/?"; // Optional trailing slash
 
       const regex = new RegExp(`^${regexPattern}$`, "i");
       return regex.test(url);
