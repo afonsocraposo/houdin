@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Badge,
+  Center,
   Group,
   Menu,
   Switch,
@@ -50,18 +51,20 @@ export default function ConfigWorkflowItem({
           {workflow.description || "No description"}
         </Text>
       </Table.Td>
-      <Table.Td>
+      <Table.Td ta="center">
         <Badge variant="light">{workflow.nodes.length} nodes</Badge>
       </Table.Td>
-      <Table.Td>
-        <Switch
-          checked={workflow.enabled}
-          onChange={() => handleToggleWorkflow(workflow.id)}
-          size="sm"
-        />
+      <Table.Td ta="center">
+        <Center>
+          <Switch
+            checked={workflow.enabled}
+            onChange={() => handleToggleWorkflow(workflow.id)}
+            size="sm"
+          />
+        </Center>
       </Table.Td>
-      <Table.Td>
-        <Group gap="xs" wrap="nowrap">
+      <Table.Td ta="center">
+        <Group gap="xs" wrap="nowrap" justify="center">
           <ActionIcon
             variant="subtle"
             onClick={() => handleEditWorkflow(workflow)}
