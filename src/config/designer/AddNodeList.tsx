@@ -84,7 +84,7 @@ export default function AddNodeList({
     }
   }, [showNodePalette]);
 
-  useEffect(() => {}, []);
+  useEffect(() => { }, []);
 
   const handleSearch = useDebouncedCallback((value: string) => {
     const filteredCategories = {
@@ -153,7 +153,7 @@ export default function AddNodeList({
               <Text fw={500}>Add Node</Text>
               <TextInput
                 value={search}
-                onChange={(e) => setSearch(e.target.value.trim())}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search nodes..."
                 mb="md"
                 leftSection={<IconSearch size={16} />}
