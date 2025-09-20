@@ -8,6 +8,7 @@
     }
   },
   "permissions": [
+    "activeTab",
     "scripting",
     "storage",
     "tabs",
@@ -15,9 +16,6 @@
     "userScripts",
     "webNavigation",
     "webRequest"
-  ],
-  "host_permissions": [
-    "activeTab"
   ],
   "action": {
     "default_popup": "src/popup/index.html",

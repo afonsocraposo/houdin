@@ -48,12 +48,6 @@ export default defineConfig(({ command }) => {
             };
           }
 
-          if (isDev) {
-            manifest.host_permissions = manifest.host_permissions.filter(
-              (item: string) => item !== "http://localhost/*",
-            );
-          }
-
           return manifest;
         },
         watchFilePaths: ["src", "public", "icons", "manifest.json"],
