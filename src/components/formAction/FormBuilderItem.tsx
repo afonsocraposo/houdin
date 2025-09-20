@@ -11,6 +11,7 @@ import {
 } from "@mantine/core";
 import { FormFieldDefinition, FormFieldType } from "./FormBuilder";
 import { IconArrowDown, IconArrowUp, IconTrash } from "@tabler/icons-react";
+import PasswordInput from "../PasswordInput";
 
 interface FormBuilderItemProps {
   item: FormFieldDefinition;
@@ -122,9 +123,16 @@ function ItemDefaultValue({
 }) {
   switch (type) {
     case "text":
-    case "password":
       return (
         <TextInput
+          label="Default Value"
+          value={value}
+          onChange={(e) => onChange(e.currentTarget.value)}
+        />
+      );
+    case "password":
+      return (
+        <PasswordInput
           label="Default Value"
           value={value}
           onChange={(e) => onChange(e.currentTarget.value)}

@@ -11,6 +11,7 @@ export default function PasswordInput(props: TextInputProps) {
         <ActionIcon
           onClick={() => setShowPassword((prev) => !prev)}
           tabIndex={-1}
+          variant="subtle"
         >
           {showPassword ? <IconEyeOff size={16} /> : <IconEye size={16} />}
         </ActionIcon>
