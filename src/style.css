@@ -1,8 +1,6 @@
-@import url("https://fonts.googleapis.com/css?family=Poppins:regular,bold,italic&subset=latin,latin-ext");
-@import url("highlight.js/styles/github-dark.css") screen and
-  (prefers-color-scheme: dark);
-@import url("highlight.js/styles/github.css") screen and
-  (prefers-color-scheme: light);
+@import url("./assets/fonts/poppins.css");
+@import url("highlight.js/styles/github-dark.css") screen and (prefers-color-scheme: dark);
+@import url("highlight.js/styles/github.css") screen and (prefers-color-scheme: light);
 
 .mantine-CodeHighlight-controls {
   opacity: 0.8;

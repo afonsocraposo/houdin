@@ -12,7 +12,7 @@ export default function Logo({
     <Group gap="xs">
       <img src={"/icons/icon.svg"} alt="Logo" width={size} height={size} />
       {title && (
-        <Title order={1} size={size}>
+        <Title order={1} size={size} style={{ fontFamily: "Poppins" }}>
           Houdin
         </Title>
       )}
