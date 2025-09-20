@@ -1,9 +1,19 @@
 import React from "react";
-import { ComponentFactory } from "../../components/ComponentFactory";
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
-import { getElement } from "../../utils/helpers";
-import { NotificationService } from "../notification";
-import { ContentInjector } from "../injector";
+import {
+  ComponentFactory,
+  ComponentTriggerEventDetail,
+} from "@/components/ComponentFactory";
+import { BaseTrigger } from "@/types/triggers";
+import { getElement } from "@/utils/helpers";
+import { NotificationService } from "@/services/notification";
+import { ContentInjector } from "@/services/injector";
+import {
+  codeProperty,
+  colorProperty,
+  customProperty,
+  selectProperty,
+  textProperty,
+} from "@/types/config-properties";
 
 interface ButtonClickTriggerConfig {
   targetSelector: string;
@@ -15,7 +25,16 @@ interface ButtonClickTriggerConfig {
   customStyle?: string;
 }
 
-export class ButtonClickTrigger extends BaseTrigger<ButtonClickTriggerConfig> {
+interface ButtonClickTriggerOutput {
+  componentType: string;
+  interactionData: any;
+  timestamp: number;
+}
+
+export class ButtonClickTrigger extends BaseTrigger<
+  ButtonClickTriggerConfig,
+  ButtonClickTriggerOutput
+> {
   readonly metadata = {
     type: "button-click",
     label: "Button Click",
@@ -23,113 +42,109 @@ export class ButtonClickTrigger extends BaseTrigger<ButtonClickTriggerConfig> {
     description: "Trigger when the injected button is clicked",
   };
 
-  getConfigSchema(): TriggerConfigSchema {
-    return {
-      properties: {
-        // Component preview
-        preview: {
-          type: "custom",
-          label: "Component Preview",
-          render: (values: Record<string, any>) => {
-            try {
-              const previewComponent = ComponentFactory.create(
-                values,
-                "preview-workflow",
-                "preview-node",
-                true, // preview
-              );
-              // center the preview
-              return React.createElement(
-                "div",
-                {
-                  style: {
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  },
+  readonly configSchema = {
+    properties: {
+      // Component preview
+      preview: customProperty({
+        label: "Component Preview",
+        render: (values: Record<string, any>) => {
+          try {
+            const previewComponent = ComponentFactory.create(
+              values,
+              "preview-workflow",
+              "preview-node",
+              true, // preview
+            );
+            // center the preview
+            return React.createElement(
+              "div",
+              {
+                style: {
+                  display: "relative",
+                  minHeight: "32px",
+                  padding: "10px",
                 },
-                previewComponent,
-              );
-            } catch (error) {
-              return React.createElement(
-                "div",
-                { style: { color: "red" } },
-                "Error rendering preview: " + (error as Error).message,
-              );
-            }
+              },
+              previewComponent,
+            );
+          } catch (error) {
+            return React.createElement(
+              "div",
+              { style: { color: "red" } },
+              "Error rendering preview: " + (error as Error).message,
+            );
+          }
+        },
+      }),
+      componentType: selectProperty({
+        label: "Button Type",
+        options: [
+          { value: "button", label: "Button" },
+          {
+            value: "fab",
+            label: "Floating Action Button",
           },
+        ],
+        defaultValue: "fab",
+      }),
+      selectorType: selectProperty({
+        label: "Selector Type",
+        options: [
+          { label: "CSS Selector", value: "css" },
+          { label: "XPath", value: "xpath" },
+        ],
+        defaultValue: "css",
+        description: "Type of selector to use for component injection",
+        showWhen: {
+          field: "componentType",
+          value: ["button"],
         },
-        componentType: {
-          type: "select",
-          label: "Button Type",
-          options: [
-            { value: "button", label: "Button" },
-            {
-              value: "fab",
-              label: "Floating Action Button",
-            },
-          ],
-          defaultValue: "fab",
+      }),
+      targetSelector: textProperty({
+        label: "Target Selector",
+        placeholder: ".header, #main-content",
+        description:
+          "Where to inject the component (not needed for floating action button)",
+        defaultValue: "body",
+        showWhen: {
+          field: "componentType",
+          value: "button",
         },
-        selectorType: {
-          type: "select",
-          label: "Selector Type",
-          options: [
-            { label: "CSS Selector", value: "css" },
-            { label: "XPath", value: "xpath" },
-          ],
-          defaultValue: "css",
-          description: "Type of selector to use for component injection",
-          showWhen: {
-            field: "componentType",
-            value: ["button"],
-          },
-        },
-        targetSelector: {
-          type: "text",
-          label: "Target Selector",
-          placeholder: ".header, #main-content",
-          description:
-            "Where to inject the component (not needed for floating action button)",
-          defaultValue: "body",
-          showWhen: {
-            field: "componentType",
-            value: "button",
-          },
-        },
-        componentText: {
-          type: "textarea",
-          label: "Component Text",
-          placeholder: "Click me",
-          defaultValue: "♥️",
-        },
-        // Button-specific properties
-        buttonColor: {
-          type: "color",
-          label: "Button Color",
-          description: "Background color of the button",
-          defaultValue: "#228be6",
-        },
-        buttonTextColor: {
-          type: "color",
-          label: "Button Text Color",
-          description: "Text color of the button",
-          defaultValue: "#ffffff",
-        },
+      }),
+      componentText: textProperty({
+        label: "Component Text",
+        placeholder: "Click me",
+        defaultValue: "♥️",
+      }),
+      // Button-specific properties
+      buttonColor: colorProperty({
+        label: "Button Color",
+        description: "Background color of the button",
+        defaultValue: "#228be6",
+      }),
+      buttonTextColor: colorProperty({
+        label: "Button Text Color",
+        description: "Text color of the button",
+        defaultValue: "#ffffff",
+      }),
 
-        // Advanced styling (for all types)
-        customStyle: {
-          type: "code",
-          label: "Custom CSS (Advanced)",
-          placeholder: "margin: 10px; border-radius: 4px;",
-          description:
-            "Additional CSS properties. For floating action button, use: bottom: 40; right: 40; (in pixels)",
-          language: "text",
-          height: 100,
-        },
-      },
-    };
-  }
+      // Advanced styling (for all types)
+      customStyle: codeProperty({
+        label: "Custom CSS (Advanced)",
+        placeholder: "margin: 10px; border-radius: 4px;",
+        description:
+          "Additional CSS properties. For floating action button, use: bottom: 40; right: 40; (in pixels)",
+        language: "text",
+        height: 100,
+      }),
+    },
+  };
+
+  outputExample = {
+    componentType: "button",
+    interactionData: {},
+    timestamp: 1697054873000,
+  };
 
   async setup(
     config: ButtonClickTriggerConfig,
@@ -185,7 +200,9 @@ export class ButtonClickTrigger extends BaseTrigger<ButtonClickTriggerConfig> {
 
     // Wait for user interaction before continuing workflow
     return new Promise<void>((resolve) => {
-      const handleComponentTrigger = (event: Event) => {
+      const handleComponentTrigger = (
+        event: CustomEventInit<ComponentTriggerEventDetail>,
+      ) => {
         const customEvent = event as CustomEvent;
         if (
           customEvent.detail?.workflowId === workflowId &&

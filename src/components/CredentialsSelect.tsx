@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Select, Loader } from "@mantine/core";
-import { ContentStorageClient } from "../services/storage";
-import { Credential } from "../types/credentials";
+import { ContentStorageClient } from "@/services/storage";
+import { Credential } from "@/types/credentials";
 
 interface CredentialsSelectProps {
   label: string;

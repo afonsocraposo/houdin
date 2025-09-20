@@ -19,16 +19,16 @@ export abstract class BaseConfigurable<TConfig = Record<string, any>> {
   abstract readonly metadata: BaseMetadata;
 
   // Get the configuration schema
-  abstract getConfigSchema(): ConfigSchema;
+  abstract readonly configSchema: ConfigSchema<TConfig>;
 
   // Get default configuration values (defaults to schema defaults)
   getDefaultConfig(): TConfig {
-    return generateDefaultConfig(this.getConfigSchema()) as TConfig;
+    return generateDefaultConfig(this.configSchema) as TConfig;
   }
 
   // Validate the configuration
   validate(config: Record<string, any>): ValidationResult {
-    return validateConfig(config, this.getConfigSchema());
+    return validateConfig(config, this.configSchema);
   }
 
   // Get configuration with defaults applied
@@ -36,7 +36,7 @@ export abstract class BaseConfigurable<TConfig = Record<string, any>> {
     const defaults = this.getDefaultConfig();
     return applyDefaults(
       config,
-      this.getConfigSchema(),
+      this.configSchema,
       defaults as Record<string, any>,
     ) as TConfig;
   }

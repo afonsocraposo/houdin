@@ -1,10 +1,7 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "../../types/actions";
-import { OpenAIService } from "../openai";
-import { NotificationService } from "../notification";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { credentialsProperty, selectProperty, textareaProperty, numberProperty } from "@/types/config-properties";
+import { OpenAIService } from "@/services/openai";
+import { NotificationService } from "@/services/notification";
 
 interface LLMOpenAIActionConfig {
   credentialId: string;
@@ -14,7 +11,13 @@ interface LLMOpenAIActionConfig {
   temperature?: number; // Made optional
 }
 
-export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
+interface LLMOpenAIActionOutput {
+  response: string;
+  model: string;
+  tokensUsed?: number;
+}
+
+export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig, LLMOpenAIActionOutput> {
   readonly metadata: ActionMetadata = {
     type: "llm-openai",
     label: "LLM OpenAI",
@@ -22,68 +25,67 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
     description: "Send prompt to OpenAI and get response",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        credentialId: {
-          type: "credentials",
-          credentialType: "openai",
-          label: "OpenAI Credential",
-          placeholder: "Select an OpenAI API key",
-          description: "Choose the OpenAI API credential to use",
-          required: true,
-        },
-        model: {
-          type: "select",
-          label: "Model",
-          options: [
-            { label: "GPT-4o (Omni)", value: "gpt-4o" },
-            { label: "GPT-4 Turbo", value: "gpt-4-turbo" },
-            { label: "GPT-4o Mini", value: "gpt-4o-mini" },
-            { label: "GPT-3.5 Turbo", value: "gpt-3.5-turbo" },
-            { label: "GPT-3.5 Turbo (16k)", value: "gpt-3.5-turbo-16k" },
-          ],
-          defaultValue: "gpt-4o-mini",
-        },
-        prompt: {
-          type: "textarea",
-          label: "Prompt",
-          placeholder:
-            "You are a helpful assistant. User input: {{get-content-node}}",
-          description:
-            "Use {{node-id}} to reference outputs from other actions",
-          rows: 4,
-          required: true,
-        },
-        maxTokens: {
-          type: "number",
-          label: "Max Tokens",
-          placeholder: "1000",
-          description:
-            "Maximum number of tokens to generate (optional, uses model default if not set)",
-          min: 1,
-          max: 4000,
-          required: false, // Made optional
-        },
-        temperature: {
-          type: "number",
-          label: "Temperature",
-          placeholder: "0.7",
-          description:
-            "Controls randomness (optional, uses model default if not set)",
-          min: 0,
-          max: 2,
-          step: 0.1,
-          required: false, // Made optional
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      credentialId: credentialsProperty({
+        credentialType: "openai",
+        label: "OpenAI Credential",
+        placeholder: "Select an OpenAI API key",
+        description: "Choose the OpenAI API credential to use",
+        required: true,
+      }),
+      model: selectProperty({
+        label: "Model",
+        options: [
+          { label: "GPT-4o (Omni)", value: "gpt-4o" },
+          { label: "GPT-4 Turbo", value: "gpt-4-turbo" },
+          { label: "GPT-4o Mini", value: "gpt-4o-mini" },
+          { label: "GPT-3.5 Turbo", value: "gpt-3.5-turbo" },
+          { label: "GPT-3.5 Turbo (16k)", value: "gpt-3.5-turbo-16k" },
+        ],
+        defaultValue: "gpt-4o-mini",
+      }),
+      prompt: textareaProperty({
+        label: "Prompt",
+        placeholder:
+          "You are a helpful assistant. User input: {{get-content-node}}",
+        description:
+          "Use {{node-id}} to reference outputs from other actions",
+        rows: 4,
+        required: true,
+      }),
+      maxTokens: numberProperty({
+        label: "Max Tokens",
+        placeholder: "1000",
+        description:
+          "Maximum number of tokens to generate (optional, uses model default if not set)",
+        min: 1,
+        max: 4000,
+        required: false,
+      }),
+      temperature: numberProperty({
+        label: "Temperature",
+        placeholder: "0.7",
+        description:
+          "Controls randomness (optional, uses model default if not set)",
+        min: 0,
+        max: 2,
+        step: 0.1,
+        required: false,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    response: "This is a sample AI response to your prompt.",
+    model: "gpt-4o-mini",
+    tokensUsed: 45,
+  };
   async execute(
     config: LLMOpenAIActionConfig,
     _workflowId: string,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data: LLMOpenAIActionOutput) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
     const { credentialId, model, prompt, maxTokens, temperature } = config;
@@ -121,7 +123,11 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig> {
       );
 
       // Store the response in the execution context
-      onSuccess(response);
+      onSuccess({
+        response,
+        model,
+        tokensUsed: undefined, // OpenAI service doesn't return token count currently
+      });
     } catch (error: any) {
       NotificationService.showErrorNotification({
         message: `OpenAI API error: ${error}`,

@@ -1,11 +1,17 @@
-import { KeybindingSetter } from "../../components/KeybindingSetter";
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
+import { KeybindingSetter } from "@/components/KeybindingSetter";
+import { BaseTrigger } from "@/types/triggers";
+import { customProperty } from "@/types/config-properties";
 
 interface KeyPressTriggerConfig {
   keyCombo: string;
 }
 
-export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig> {
+interface KeyPressTriggerOutput {
+  keyCombo: string;
+  timestamp: number;
+}
+
+export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig, KeyPressTriggerOutput> {
   readonly metadata = {
     type: "key-press",
     label: "Key Press",
@@ -13,34 +19,36 @@ export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig> {
     description: "Trigger when a specific key combination is pressed",
   };
 
-  getConfigSchema(): TriggerConfigSchema {
-    return {
-      properties: {
-        keyCombo: {
-          type: "custom",
-          label: "Key Combination",
-          description:
-            "Set the key combination that will trigger this workflow",
-          required: true,
-          render: (
-            values: Record<string, any>,
-            onChange: (key: string, value: any) => void,
-          ) => (
-            <KeybindingSetter
-              value={values.keyCombo}
-              onChange={(combo) => onChange("keyCombo", combo)}
-            />
-          ),
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      keyCombo: customProperty({
+        label: "Key Combination",
+        description:
+          "Set the key combination that will trigger this workflow",
+        required: true,
+        render: (
+          values: Record<string, any>,
+          onChange: (key: string, value: any) => void,
+        ) => (
+          <KeybindingSetter
+            value={values.keyCombo}
+            onChange={(combo) => onChange("keyCombo", combo)}
+          />
+        ),
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    keyCombo: "Ctrl + Enter",
+    timestamp: 1640995200000,
+  };
 
   async setup(
     config: KeyPressTriggerConfig,
     _workflowId: string,
     _nodeId: string,
-    onTrigger: (data?: any) => Promise<void>,
+    onTrigger: (data: KeyPressTriggerOutput) => Promise<void>,
   ): Promise<void> {
     const { keyCombo } = config;
 

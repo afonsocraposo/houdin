@@ -1,9 +1,9 @@
 import React, {
-  useState,
   useCallback,
   useMemo,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import {
   ReactFlow,
@@ -26,35 +26,38 @@ import {
 import "@xyflow/react/dist/style.css";
 import {
   Box,
-  Text,
   ActionIcon,
-  Button,
-  Stack,
-  Transition,
-  Paper,
   Tooltip,
-  ScrollArea,
   useComputedColorScheme,
+  Group,
 } from "@mantine/core";
-import { IconPlus, IconLayoutGrid } from "@tabler/icons-react";
-import { WorkflowNode, WorkflowConnection } from "../types/workflow";
+import {
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconLayoutGrid,
+} from "@tabler/icons-react";
+import { WorkflowNode, WorkflowConnection, NodeType } from "@/types/workflow";
 import dagre from "@dagrejs/dagre";
-import { ActionRegistry } from "../services/actionRegistry";
-import { TriggerRegistry } from "../services/triggerRegistry";
-import { initializeTriggers } from "../services/triggerInitializer";
-import { initializeActions } from "../services/actionInitializer";
+import { initializeTriggers } from "@/services/triggerInitializer";
+import { initializeActions } from "@/services/actionInitializer";
 import CanvasNode from "./CanvasNode";
 import { useHotkeys } from "@mantine/hooks";
-import { NotificationService } from "../services/notification";
+import { NotificationService } from "@/services/notification";
+import AddNodeList from "./AddNodeList";
+import { generateId } from "@/utils/helpers";
 
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
   connections: WorkflowConnection[];
   onNodesChange: (nodes: WorkflowNode[]) => void;
   onConnectionsChange: (connections: WorkflowConnection[]) => void;
-  onNodeSelect: (node: WorkflowNode | null) => void;
+  onNodeSelect: (id: string | null) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
+  undo: () => void;
+  redo: () => void;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
@@ -78,15 +81,15 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   onNodeSelect,
   selectedNode,
   errors,
+  undo,
+  redo,
+  hasNext,
+  hasPrevious,
 }) => {
   const colorScheme = useComputedColorScheme();
-  const [showNodePalette, setShowNodePalette] = useState(false);
   const reactFlowInstance = useReactFlow();
   const hasInitialized = useRef(false);
-
-  useEffect(() => {
-    if (selectedNode !== null) setShowNodePalette(false);
-  }, [selectedNode]);
+  const [opened, setOpened] = useState(false);
 
   // Handle node deletion directly
   const handleNodeDeletion = useCallback(
@@ -159,7 +162,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [workflowNodes.length, setNodes, errors]);
+  }, [workflowNodes, setNodes, errors]);
 
   // Handle selection changes separately to avoid re-render cycles
   useEffect(() => {
@@ -169,6 +172,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         selected: selectedNode?.id === node.id,
       })),
     );
+    setOpened(false);
   }, [selectedNode, setNodes]);
 
   useEffect(() => {
@@ -220,7 +224,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       if (!params.source || !params.target) return;
 
       const newConnection: WorkflowConnection = {
-        id: `conn-${Date.now()}`,
+        id: generateId("conn"),
         source: params.source,
         target: params.target,
         sourceHandle: params.sourceHandle || "output",
@@ -253,20 +257,18 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Handle node selection
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      const workflowNode = workflowNodes.find((n) => n.id === node.id);
-      onNodeSelect(workflowNode || null);
+      onNodeSelect(node.id);
     },
     [workflowNodes, onNodeSelect],
   );
 
   // Handle background click (deselect)
   const onPaneClick = useCallback(() => {
-    if (selectedNode === null) {
-      setShowNodePalette(false);
-      return; // No change if nothing is selected
-    }
+    setOpened(false);
+    // do nothing if no change
+    if (selectedNode === null) return;
     onNodeSelect(null);
-  }, [onNodeSelect, selectedNode]);
+  }, [selectedNode]);
 
   const getLayoutedElements = useCallback(
     (nodes: WorkflowNode[], edges: WorkflowConnection[]) => {
@@ -380,32 +382,25 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     }
     return newPosition;
   };
-  const createNode = (
-    type: string,
-    category: "triggers" | "actions" | "conditions",
-  ) => {
-    const nodeType = category.slice(0, -1) as
-      | "trigger"
-      | "action"
-      | "condition";
+  const createNode = (type: string, nodeType: NodeType) => {
     let defaultConfig = {};
 
     const newPosition = getNewNodePosition();
 
     const newNode: WorkflowNode = {
-      id: `${nodeType}-${Date.now()}`,
+      id: generateId(nodeType),
       type: nodeType,
       position: newPosition,
       data: { [nodeType + "Type"]: type, config: defaultConfig },
-      inputs: category === "triggers" ? [] : ["input"],
-      outputs: category === "conditions" ? ["true", "false"] : ["output"],
+      inputs: nodeType === "trigger" ? [] : ["input"],
+      outputs: nodeType === "condition" ? ["true", "false"] : ["output"],
     };
 
     const updatedNodes = [...workflowNodes, newNode];
     onNodesChange(updatedNodes);
 
     // Select the new node immediately after creation
-    onNodeSelect(newNode);
+    onNodeSelect(newNode.id);
 
     panToShowNode(newPosition);
   };
@@ -443,35 +438,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     });
   };
 
-  // Helper function to get node categories from registries
-  const getNodeCategories = () => {
-    // Initialize registries to ensure they're loaded
-    initializeTriggers();
-    initializeActions();
-
-    const actionRegistry = ActionRegistry.getInstance();
-    const triggerRegistry = TriggerRegistry.getInstance();
-
-    const categories = {
-      triggers: triggerRegistry.getAllTriggerMetadata().map((metadata) => ({
-        type: metadata.type,
-        label: metadata.label,
-        icon: metadata.icon,
-        description: metadata.description,
-      })),
-      actions: actionRegistry.getAllActionMetadata().map((metadata) => ({
-        type: metadata.type,
-        label: metadata.label,
-        icon: metadata.icon,
-        description: metadata.description,
-      })),
-      // TODO: Add conditions when we have a condition registry
-      conditions: [],
-    };
-
-    return categories;
-  };
-
   // Define custom node types
   const nodeTypes = useMemo(
     () => ({
@@ -483,6 +449,8 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   useHotkeys([
     ["mod + C", () => onNodeCopy()],
     ["mod + V", () => onNodePaste()],
+    ["mod + Z", () => hasPrevious && undo()],
+    ["mod + Shift + Z", () => hasNext && redo()],
   ]);
 
   const onNodeCopy = useCallback(() => {
@@ -505,11 +473,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
           const newNode = {
             ...node,
-            id: `${node.type}-${Date.now()}`, // New unique ID
+            id: generateId(node.type), // New unique ID
             position: newPosition,
           };
           onNodesChange([...workflowNodes, newNode]);
-          onNodeSelect(newNode);
+          onNodeSelect(newNode.id);
           panToShowNode(newPosition);
         }
       })
@@ -563,93 +531,39 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         <MiniMap />
       </ReactFlow>
 
-      {/* Auto-arrange Button */}
-      <Tooltip label="Auto-arrange nodes">
+      <Group
+        style={{ position: "absolute", top: 16, left: 16, zIndex: 1000 }}
+        gap="xs"
+      >
+        <Tooltip label="Auto-arrange nodes">
+          <ActionIcon onClick={autoArrange} variant="subtle">
+            <IconLayoutGrid />
+          </ActionIcon>
+        </Tooltip>
         <ActionIcon
-          style={{ position: "absolute", top: 16, left: 16, zIndex: 1000 }}
-          onClick={autoArrange}
+          onClick={() => undo()}
           variant="subtle"
+          bg={hasPrevious ? undefined : "transparent"}
+          disabled={!hasPrevious}
         >
-          <IconLayoutGrid />
+          <IconArrowBackUp />
         </ActionIcon>
-      </Tooltip>
+        <ActionIcon
+          onClick={() => redo()}
+          variant="subtle"
+          bg={hasNext ? undefined : "transparent"}
+          disabled={!hasNext}
+        >
+          <IconArrowForwardUp />
+        </ActionIcon>
+      </Group>
 
       {/* Add Node Button */}
-      <ActionIcon
-        style={{ position: "absolute", top: 16, right: 16 }}
-        onClick={() => setShowNodePalette(true)}
-      >
-        <IconPlus size={32} />
-      </ActionIcon>
-      {/* Drawer */}
-      <Transition
-        mounted={showNodePalette}
-        transition="slide-left"
-        duration={200}
-        timingFunction="ease"
-      >
-        {(styles) => (
-          <Paper
-            shadow="md"
-            p="md"
-            style={{
-              ...styles,
-              position: "absolute",
-              top: 0,
-              right: 0,
-              height: "100%",
-              width: 300,
-              zIndex: 1,
-            }}
-          >
-            <Text fw={500} mb="md">
-              Add Node
-            </Text>
-            <ScrollArea h="100%" pb="xl">
-              <Stack>
-                {Object.entries(getNodeCategories()).map(
-                  ([category, items]) => {
-                    if (items.length === 0) return null;
-                    return (
-                      <div key={category}>
-                        <Text
-                          size="sm"
-                          fw={500}
-                          c="dimmed"
-                          tt="capitalize"
-                          mb="xs"
-                        >
-                          {category}
-                        </Text>
-                        {items.map((item) => (
-                          <Button
-                            key={item.type}
-                            variant="subtle"
-                            fullWidth
-                            justify="start"
-                            leftSection={<Text size="lg">{item.icon}</Text>}
-                            mb="xs"
-                            onClick={() =>
-                              createNode(item.type, category as any)
-                            }
-                          >
-                            <Stack align="flex-start" gap={0}>
-                              <Text size="sm">{item.label}</Text>
-                              <Text size="xs" c="dimmed">
-                                {item.description}
-                              </Text>
-                            </Stack>
-                          </Button>
-                        ))}
-                      </div>
-                    );
-                  },
-                )}
-              </Stack>
-            </ScrollArea>
-          </Paper>
-        )}
-      </Transition>
+      <AddNodeList
+        createNode={createNode}
+        opened={opened}
+        onChange={(value) => setOpened(value)}
+      />
     </Box>
   );
 };

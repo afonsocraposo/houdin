@@ -1,6 +1,8 @@
-interface NotificationProps {
+import { sendMessageToContentScript } from "@/lib/messages";
+
+export interface NotificationProps {
   title?: string;
-  message?: string;
+  message: string;
   color?: string;
   autoClose?: number;
 }
@@ -10,7 +12,7 @@ const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
 export class NotificationService {
   public static showNotification({
     title,
-    message,
+    message = "",
     timeout = 3000,
   }: {
     title?: string;
@@ -26,7 +28,7 @@ export class NotificationService {
 
   public static showErrorNotification({
     title = "Error",
-    message,
+    message = "",
     timeout = 3000,
   }: {
     title?: string;
@@ -43,7 +45,7 @@ export class NotificationService {
 
   public static showNotificationFromBackground({
     title,
-    message,
+    message = "",
     timeout = 3000,
   }: {
     title?: string;
@@ -73,10 +75,7 @@ export class NotificationService {
         });
 
         if (tabs[0]?.id) {
-          await browserAPI.tabs.sendMessage(tabs[0].id, {
-            type: "SHOW_NOTIFICATION",
-            payload,
-          });
+          sendMessageToContentScript(tabs[0].id, "SHOW_NOTIFICATION", payload);
           console.debug(
             "Background: Sent notification message to content script:",
             payload,
@@ -92,9 +91,12 @@ export class NotificationService {
       }
     } else {
       // Content script: use existing CustomEvent approach
-      const notificationEvent = new CustomEvent("notificationDispatch", {
-        detail: payload,
-      });
+      const notificationEvent = new CustomEvent<NotificationProps>(
+        "notificationDispatch",
+        {
+          detail: payload,
+        },
+      );
       console.debug("Content: Dispatching notification event:", payload);
       window.dispatchEvent(notificationEvent);
     }

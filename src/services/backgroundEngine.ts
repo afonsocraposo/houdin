@@ -1,14 +1,14 @@
-import { sendMessageToContentScript } from "../lib/messages";
-import { BackgroundStorageClient } from "../services/storage";
+import { sendMessageToContentScript } from "@/lib/messages";
+import { BackgroundStorageClient } from "@/services/storage";
 import {
   TriggerCommand,
   WorkflowCommandType,
-} from "../types/background-workflow";
+} from "@/types/background-workflow";
 import {
   TriggerNodeData,
   WorkflowDefinition,
   WorkflowNode,
-} from "../types/workflow";
+} from "@/types/workflow";
 import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow";
 
@@ -95,7 +95,11 @@ export class BackgroundWorkflowEngine {
       nodeId: node.id,
     };
     try {
-      await sendMessageToContentScript(tabId, message);
+      await sendMessageToContentScript(
+        tabId,
+        WorkflowCommandType.INIT_TRIGGER,
+        message,
+      );
     } catch (error) {
       console.error("Error sending trigger setup message:", error);
     }
@@ -150,13 +154,18 @@ export class BackgroundWorkflowEngine {
     return workflow.nodes.filter((node) => node.type === "trigger");
   }
 
-  private matchesUrlPattern(pattern: string, url: string): boolean {
+  private matchesUrlPattern(pattern: string, fullUrl: string): boolean {
+    const _url = new URL(fullUrl);
+    // ignore query params but include hash
+    const url = _url.origin + _url.pathname + _url.hash;
     try {
       // Convert simple wildcard pattern to regex
-      const regexPattern = pattern
-        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special regex characters
-        .replace(/\\\*/g, ".*") // Convert * to .*
-        .replace(/\\\?/g, "."); // Convert ? to .
+      const regexPattern =
+        pattern
+          .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special regex characters
+          .replace(/\\\*/g, ".*") // Convert * to .*
+          .replace(/\\\?/g, ".") + // Convert ? to .
+        "\\/?"; // Optional trailing slash
 
       const regex = new RegExp(`^${regexPattern}$`, "i");
       return regex.test(url);

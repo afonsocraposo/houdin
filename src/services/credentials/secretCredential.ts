@@ -1,5 +1,5 @@
-import { BaseCredential, CredentialMetadata } from "../../types/credentials";
-import { ConfigSchema } from "../../types/config-properties";
+import { BaseCredential, CredentialMetadata } from "@/types/credentials";
+import { passwordProperty } from "@/types/config-properties";
 
 interface SecretConfig {
   secretValue: string;
@@ -17,20 +17,16 @@ export class SecretCredential extends BaseCredential<SecretConfig, SecretAuth> {
     description: "Generic secret storage for API keys, tokens, passwords, etc.",
   };
 
-  getConfigSchema(): ConfigSchema {
-    return {
-      properties: {
-        secretValue: {
-          type: "string",
-          label: "Secret Value",
-          description: "The actual secret value (API key, token, password, etc.)",
-          required: true,
-          sensitive: true,
-          placeholder: "Enter your secret value...",
-        },
-      },
-    };
-  }
+  configSchema = {
+    properties: {
+      secretValue: passwordProperty({
+        label: "Secret Value",
+        description: "The actual secret value (API key, token, password, etc.)",
+        required: true,
+        placeholder: "Enter your secret value...",
+      }),
+    },
+  };
 
   getAuth(config: SecretConfig): SecretAuth {
     return {

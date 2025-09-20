@@ -4,15 +4,20 @@ import {
   WorkflowExecutionContext,
   TriggerNodeData,
   ActionNodeData,
-} from "../types/workflow";
+} from "@/types/workflow";
 import { ExecutionTracker } from "./executionTracker";
-import { deepCopy, generateId } from "../utils/helpers";
-import { sendMessageToContentScript } from "../lib/messages";
+import { generateId } from "@/utils/helpers";
+import { sendMessageToContentScript } from "@/lib/messages";
+import cloneDeep from "lodash/cloneDeep";
 import {
   ActionCommand,
   WorkflowCommandType,
-} from "../types/background-workflow";
+} from "@/types/background-workflow";
 import { ActionRegistry } from "./actionRegistry";
+
+export function newWorkflowId(): string {
+  return generateId("workflow", 12);
+}
 
 export class ExecutionContext implements WorkflowExecutionContext {
   public outputs: Record<string, any>;
@@ -57,7 +62,7 @@ export class ExecutionContext implements WorkflowExecutionContext {
 
       if (result && typeof result === "object") {
         // If result is an object, convert to JSON string for display
-        return JSON.stringify(result);
+        return JSON.stringify(result, null, 2);
       }
       return String(result);
     });
@@ -80,7 +85,7 @@ export class WorkflowExecutor {
     url: string,
     private onDone?: (executorId: string) => void,
   ) {
-    this.id = generateId();
+    this.id = newWorkflowId();
     this.workflowId = workflow.id;
     this.workflow = workflow;
     this.tabId = tabId;
@@ -161,7 +166,7 @@ export class WorkflowExecutor {
     const actionRegistry = ActionRegistry.getInstance();
     // Access trigger type correctly - it's stored as triggerType, not type
     const actionType = (node.data as ActionNodeData)?.actionType;
-    const actionConfig: Object = deepCopy(node.data?.config || {});
+    const actionConfig = cloneDeep(node.data?.config || {});
 
     // iterate object properties and interpolate variables
     for (const key in actionConfig) {
@@ -193,7 +198,11 @@ export class WorkflowExecutor {
 
       const result = runBackground
         ? await this.executeActionInBackground(message)
-        : await sendMessageToContentScript(this.tabId, message);
+        : await sendMessageToContentScript(
+          this.tabId,
+          WorkflowCommandType.EXECUTE_ACTION,
+          message,
+        ); 
 
       const duration = Date.now() - start;
       if (!result || !result.success) {
@@ -244,7 +253,7 @@ export class WorkflowExecutor {
   }
 
   destroy(success: boolean, force: boolean = false): void {
-    console.log("destroying", this.nodesProcessing);
+    console.debug("destroying", this.nodesProcessing);
     if (!force && this.nodesProcessing.size !== 0) {
       return;
     }

@@ -64,6 +64,7 @@ export function KeybindingSetter({ value, onChange }: KeybindingSetterProps) {
       onClick={() => setIsListening(true)}
       ref={buttonRef}
       variant={isListening ? "outline" : "filled"}
+      ml="xs"
     >
       {isListening ? "Press any key..." : keyCombo || "Set Keybinding"}
     </Button>

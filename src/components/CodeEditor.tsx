@@ -52,7 +52,7 @@ export default function CodeEditor({
   placeholder,
   editorKey,
 }: CodeEditorProps) {
-  const colorscheme = useComputedColorScheme();
+  const colorscheme = useComputedColorScheme("dark");
   return (
     <Box h={height ?? 200} w="100%">
       <AceEditor

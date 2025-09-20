@@ -1,4 +1,16 @@
 // Element selector content script
+import { CustomMessage } from "@/lib/messages";
+
+interface ElementSelectedDetail {
+  selector: string;
+  element: {
+    tagName: string;
+    className: string;
+    id: string;
+    textContent: string | null;
+  };
+}
+
 let isSelecting = false;
 let highlightedElement: HTMLElement | null = null;
 let overlay: HTMLDivElement | null = null;
@@ -6,7 +18,7 @@ let overlay: HTMLDivElement | null = null;
 // Create overlay element for highlighting
 function createOverlay(): HTMLDivElement {
   const div = document.createElement("div");
-  div.id = "changeme-element-selector-overlay";
+  div.id = "houdin-element-selector-overlay";
   div.style.cssText = `
       position: absolute;
       background-color: rgba(74, 144, 226, 0.3);
@@ -75,7 +87,7 @@ function handleMouseMove(event: MouseEvent) {
   if (!isSelecting) return;
 
   const target = event.target as HTMLElement;
-  if (target === overlay || target.id === "changeme-element-selector-overlay") {
+  if (target === overlay || target.id === "houdin-element-selector-overlay") {
     return;
   }
 
@@ -98,7 +110,10 @@ function handleClick(event: MouseEvent) {
 }
 
 function showSelectedElement(selector: string, element: HTMLElement) {
-  const event = new CustomEvent("modalDispatch", {
+  const event = new CustomEvent<{
+    type: string;
+    data: ElementSelectedDetail;
+  }>("modalDispatch", {
     detail: {
       type: "elementSelected",
       data: {
@@ -156,7 +171,7 @@ function initSelector() {
 
   // Show instructions
   const instructions = document.createElement("div");
-  instructions.id = "changeme-selector-instructions";
+  instructions.id = "houdin-selector-instructions";
   instructions.innerHTML = `
       <div style="
         position: fixed;
@@ -179,7 +194,7 @@ function initSelector() {
   // Remove instructions after 3 seconds
   setTimeout(() => {
     const instructionsEl = document.getElementById(
-      "changeme-selector-instructions",
+      "houdin-selector-instructions",
     );
     if (instructionsEl) {
       instructionsEl.remove();
@@ -188,7 +203,7 @@ function initSelector() {
 }
 
 // Listen for messages from the extension
-chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: CustomMessage, _, sendResponse) => {
   if (message.type === "START_ELEMENT_SELECTION") {
     initSelector();
     sendResponse({ status: "selector_started" });

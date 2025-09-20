@@ -1,3 +1,8 @@
+import { customAlphabet } from "nanoid";
+
+const ALPHANUM =
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
 export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
     await navigator.clipboard.writeText(text);
@@ -23,8 +28,13 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 
-export const generateId = (): string => {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+export const generateId = (prefix: string = "", len: number = 6): string => {
+  const makeId = customAlphabet(ALPHANUM, len);
+  if (prefix) {
+    return prefix + "-" + makeId();
+  }
+
+  return makeId();
 };
 
 export const getElement = (
@@ -55,8 +65,4 @@ export const getElement = (
     return result.singleNodeValue as Element | null;
   }
   return null;
-};
-
-export const deepCopy = <T>(obj: T): T => {
-  return JSON.parse(JSON.stringify(obj));
 };

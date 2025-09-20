@@ -1,17 +1,21 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "../../types/actions";
-import { copyToClipboard, getElement } from "../../utils/helpers";
-import { NotificationService } from "../notification";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { copyToClipboard, getElement } from "@/utils/helpers";
+import { NotificationService } from "@/services/notification";
+import { selectProperty, textProperty } from "@/types/config-properties";
 
 interface CopyContentActionConfig {
   selector: string;
   selectorType: "css" | "xpath" | "text";
 }
 
-export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
+interface CopyContentActionOutput {
+  content: string; // The copied text content
+}
+
+export class CopyContentAction extends BaseAction<
+  CopyContentActionConfig,
+  CopyContentActionOutput
+> {
   readonly metadata: ActionMetadata = {
     type: "copy-content",
     label: "Copy Content",
@@ -19,37 +23,37 @@ export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
     description: "Copy text from page element",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        selectorType: {
-          type: "select",
-          label: "Selector Type",
-          options: [
-            { label: "CSS Selector", value: "css" },
-            { label: "XPath", value: "xpath" },
-            { label: "Text", value: "text" },
-          ],
-          defaultValue: "css",
-          description: "Type of selector to use for content extraction",
-          required: true,
-        },
-        selector: {
-          type: "text",
-          label: "Source Selector",
-          placeholder: ".content, #description",
-          description: "Element to copy content from",
-          required: true,
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      selectorType: selectProperty({
+        label: "Selector Type",
+        options: [
+          { label: "CSS Selector", value: "css" },
+          { label: "XPath", value: "xpath" },
+          { label: "Text", value: "text" },
+        ],
+        defaultValue: "css",
+        description: "Type of selector to use for content extraction",
+        required: true,
+      }),
+      selector: textProperty({
+        label: "Source Selector",
+        placeholder: ".content, #description",
+        description: "Element to copy content from",
+        required: true,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    content: "This text was copied from the element.",
+  };
 
   async execute(
     config: CopyContentActionConfig,
     _workflowId: string,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data?: CopyContentActionOutput) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
     const { selector, selectorType } = config;
@@ -58,7 +62,7 @@ export class CopyContentAction extends BaseAction<CopyContentActionConfig> {
     if (sourceElement) {
       const textContent = sourceElement.textContent || "";
       await copyToClipboard(textContent);
-      onSuccess(textContent);
+      onSuccess({ content: textContent });
       NotificationService.showNotification({
         title: "Content copied to clipboard!",
       });

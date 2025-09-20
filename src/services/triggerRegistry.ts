@@ -1,5 +1,5 @@
-import { ValidationResult } from "../types/config-properties";
-import { BaseTrigger, TriggerMetadata } from "../types/triggers";
+import { ValidationResult } from "@/types/config-properties";
+import { BaseTrigger, TriggerMetadata } from "@/types/triggers";
 
 export class TriggerRegistry {
   private static instance: TriggerRegistry;
@@ -31,7 +31,9 @@ export class TriggerRegistry {
 
   // Get all trigger metadata for UI
   getAllTriggerMetadata(): TriggerMetadata[] {
-    return this.getAllTriggers().map((trigger) => trigger.metadata);
+    return this.getAllTriggers()
+      .map((trigger) => trigger.metadata)
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
 
   // Setup a trigger
@@ -82,7 +84,7 @@ export class TriggerRegistry {
   // Get configuration schema for a trigger
   getConfigSchema(type: string) {
     const trigger = this.getTrigger(type);
-    return trigger ? trigger.getConfigSchema() : null;
+    return trigger ? trigger.configSchema : null;
   }
 
   // Check if trigger type exists

@@ -1,5 +1,6 @@
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
-import { getElement } from "../../utils/helpers";
+import { BaseTrigger } from "@/types/triggers";
+import { selectProperty, textProperty, numberProperty } from "@/types/config-properties";
+import { getElement } from "@/utils/helpers";
 
 interface ComponentLoadTriggerConfig {
   selectorType: "css" | "xpath" | "text";
@@ -7,7 +8,11 @@ interface ComponentLoadTriggerConfig {
   timeout?: number;
 }
 
-export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig> {
+interface ComponentLoadTriggerOutput {
+  element: string;
+}
+
+export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig, ComponentLoadTriggerOutput> {
   readonly metadata = {
     type: "component-load",
     label: "Component Load",
@@ -15,44 +20,43 @@ export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig
     description: "Trigger when specific element appears",
   };
 
-  getConfigSchema(): TriggerConfigSchema {
-    return {
-      properties: {
-        selectorType: {
-          type: "select",
-          label: "Selector Type",
-          options: [
-            { label: "CSS Selector", value: "css" },
-            { label: "XPath", value: "xpath" },
-            { label: "Text", value: "text" },
-          ],
-          defaultValue: "css",
-          description: "Type of selector to use for element selection",
-          required: true,
-        },
-        selector: {
-          type: "text",
-          label: "CSS Selector",
-          placeholder: '.my-element, #my-id, [data-testid="test"]',
-          description: "Selector for the element to watch for",
-          required: true,
-        },
-        timeout: {
-          type: "number",
-          label: "Timeout (seconds)",
-          placeholder: "30",
-          description: "How long to wait before showing error (default: 30s)",
-          defaultValue: 30,
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      selectorType: selectProperty({
+        label: "Selector Type",
+        options: [
+          { label: "CSS Selector", value: "css" },
+          { label: "XPath", value: "xpath" },
+          { label: "Text", value: "text" },
+        ],
+        defaultValue: "css",
+        description: "Type of selector to use for element selection",
+        required: true,
+      }),
+      selector: textProperty({
+        label: "CSS Selector",
+        placeholder: '.my-element, #my-id, [data-testid="test"]',
+        description: "Selector for the element to watch for",
+        required: true,
+      }),
+      timeout: numberProperty({
+        label: "Timeout (seconds)",
+        placeholder: "30",
+        description: "How long to wait before showing error (default: 30s)",
+        defaultValue: 30,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    element: '<div class="loaded-element">Content</div>',
+  };
 
   async setup(
     config: ComponentLoadTriggerConfig,
     _workflowId: string,
     _nodeId: string,
-    onTrigger: (data?: any) => Promise<void>,
+    onTrigger: (data: ComponentLoadTriggerOutput) => Promise<void>,
   ): Promise<void> {
     const selector = config.selector;
     let hasTriggered = false;

@@ -1,13 +1,15 @@
 import React from "react";
-import { Stack, Text, Card, Group, ScrollArea } from "@mantine/core";
+import { Stack, Text, Card, Group, ScrollArea, Tooltip } from "@mantine/core";
 import {
   ActionNodeData,
   TriggerNodeData,
   WorkflowNode,
-} from "../types/workflow";
-import { ActionRegistry } from "../services/actionRegistry";
-import { TriggerRegistry } from "../services/triggerRegistry";
+} from "@/types/workflow";
+import { ActionRegistry } from "@/services/actionRegistry";
+import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
+import { IconHelpCircle } from "@tabler/icons-react";
+import { CodeHighlight } from "@mantine/code-highlight";
 
 interface NodePropertiesProps {
   node: WorkflowNode | null;
@@ -78,6 +80,19 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
               errors={errors}
             />
+
+            {/* Example output */}
+            {trigger.outputExample && (
+              <Stack gap="xs" mt="md">
+                <Text size="sm" c="dimmed">
+                  Example output:
+                </Text>
+                <CodeHighlight
+                  language="json"
+                  code={JSON.stringify(trigger.outputExample, null, 2)}
+                />
+              </Stack>
+            )}
           </Stack>
         );
       }
@@ -118,6 +133,19 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
               errors={errors}
             />
+
+            {/* Example output */}
+            {action.outputExample && (
+              <Stack gap="xs" mt="md">
+                <Text size="sm" c="dimmed">
+                  Example output:
+                </Text>
+                <CodeHighlight
+                  language="json"
+                  code={JSON.stringify(action.outputExample, null, 2)}
+                />
+              </Stack>
+            )}
           </Stack>
         );
       }
@@ -176,10 +204,22 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   return (
     <>
-      <Group mb="md">
+      <Group mb="md" justify="space-between">
         <Text fw={500} c={getNodeTypeColor(node.type)}>
           {getNodeTitle(node)}
         </Text>
+        <Tooltip
+          label={
+            <Text size="sm">
+              You can reference node data on any field using the syntax:&nbsp;
+              <code>{"{{action-1758059334040}}"}</code> or&nbsp;
+              <code>{"{{action-1758059334040.property}}"}</code>
+            </Text>
+          }
+          withArrow
+        >
+          <IconHelpCircle color="gray" />
+        </Tooltip>
       </Group>
       <ScrollArea h="95%" style={{ overflowY: "auto" }}>
         <Stack gap="md">

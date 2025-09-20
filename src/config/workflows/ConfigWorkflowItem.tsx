@@ -1,0 +1,115 @@
+import {
+  ActionIcon,
+  Badge,
+  Center,
+  Group,
+  Menu,
+  Switch,
+  Table,
+  Text,
+} from "@mantine/core";
+import { WorkflowDefinition } from "@/types/workflow";
+import {
+  IconCopy,
+  IconDots,
+  IconDownload,
+  IconEdit,
+  IconHistory,
+  IconTrash,
+} from "@tabler/icons-react";
+import { useNavigate } from "react-router-dom";
+
+interface ConfigWorkflowItemProps {
+  workflow: WorkflowDefinition;
+  handleEditWorkflow: (workflow: WorkflowDefinition) => void;
+  handleDeleteWorkflow: (workflowId: string) => void;
+  handleDuplicateWorkflow: (workflow: WorkflowDefinition) => void;
+  handleToggleWorkflow: (workflowId: string) => void;
+  handleExportWorkflow: (workflow: WorkflowDefinition) => void;
+}
+export default function ConfigWorkflowItem({
+  workflow,
+  handleEditWorkflow,
+  handleDeleteWorkflow,
+  handleDuplicateWorkflow,
+  handleToggleWorkflow,
+  handleExportWorkflow,
+}: ConfigWorkflowItemProps) {
+  const navigate = useNavigate();
+  return (
+    <Table.Tr key={workflow.id}>
+      <Table.Td>
+        <Text fw={500}>{workflow.name}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" c="dimmed" style={{ fontFamily: "monospace" }}>
+          {workflow.urlPattern || "No pattern set"}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" c="dimmed">
+          {workflow.description || "No description"}
+        </Text>
+      </Table.Td>
+      <Table.Td ta="center">
+        <Badge variant="light">{workflow.nodes.length} nodes</Badge>
+      </Table.Td>
+      <Table.Td ta="center">
+        <Center>
+          <Switch
+            checked={workflow.enabled}
+            onChange={() => handleToggleWorkflow(workflow.id)}
+            size="sm"
+          />
+        </Center>
+      </Table.Td>
+      <Table.Td ta="center">
+        <Group gap="xs" wrap="nowrap" justify="center">
+          <ActionIcon
+            variant="subtle"
+            onClick={() => handleEditWorkflow(workflow)}
+            title="Edit workflow"
+          >
+            <IconEdit size={16} />
+          </ActionIcon>
+          <ActionIcon
+            variant="subtle"
+            onClick={() => navigate(`/executions?workflow=${workflow.id}`)}
+            title="View execution history"
+          >
+            <IconHistory size={16} />
+          </ActionIcon>
+          <Menu>
+            <Menu.Target>
+              <ActionIcon variant="subtle">
+                <IconDots size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Actions</Menu.Label>
+              <Menu.Item
+                leftSection={<IconCopy size={16} />}
+                onClick={() => handleDuplicateWorkflow(workflow)}
+              >
+                Duplicate Workflow
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconDownload size={16} />}
+                onClick={() => handleExportWorkflow(workflow)}
+              >
+                Export Workflow
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconTrash size={16} />}
+                color="red"
+                onClick={() => handleDeleteWorkflow(workflow.id)}
+              >
+                Delete Workflow
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  );
+}

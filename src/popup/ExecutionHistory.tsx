@@ -14,13 +14,22 @@ import {
   IconPlayerPlay,
   IconHistory,
 } from "@tabler/icons-react";
-import { WorkflowExecution, WorkflowDefinition } from "../types/workflow";
-import { ContentStorageClient } from "../services/storage";
-import { TimeAgoText } from "../components/TimeAgoText";
+import {
+  WorkflowExecution,
+  WorkflowDefinition,
+  WorkflowExecutionStats,
+} from "@/types/workflow";
+import { ContentStorageClient } from "@/services/storage";
+import { TimeAgoText } from "@/components/TimeAgoText";
 
 function ExecutionHistory() {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
+  const [stats, setStats] = useState<WorkflowExecutionStats>({
+    total: 0,
+    successful: 0,
+    failed: 0,
+  });
 
   // Cross-browser API compatibility
   const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
@@ -28,11 +37,22 @@ function ExecutionHistory() {
 
   const loadExecutions = async () => {
     try {
-      const executions = await storageClient.getWorkflowExecutions();
+      const executions = await storageClient.getWorkflowExecutions({
+        limit: 5,
+      });
       setExecutions(executions);
     } catch (error) {
       console.error("Failed to load executions:", error);
       setExecutions([]);
+    }
+  };
+
+  const loadSessionStats = async () => {
+    try {
+      const stats = await storageClient.getSessionWorkflowExecutionStats();
+      setStats(stats);
+    } catch (error) {
+      console.error("Failed to load session stats:", error);
     }
   };
 
@@ -48,6 +68,7 @@ function ExecutionHistory() {
   useEffect(() => {
     loadExecutions();
     loadWorkflows();
+    loadSessionStats();
 
     // Set up periodic refresh to get real-time updates
     const interval = setInterval(loadExecutions, 5000); // Reduced frequency to 5 seconds
@@ -92,30 +113,16 @@ function ExecutionHistory() {
     browserAPI.tabs.create({ url: configUrl });
   };
 
-  const getStats = () => {
-    return {
-      total: executions.length,
-      completed: executions.filter((e) => e.status === "completed").length,
-      failed: executions.filter((e) => e.status === "failed").length,
-    };
-  };
-
-  // Get last 5 executions
-  const recentExecutions = executions
-    .sort((a, b) => b.startedAt - a.startedAt)
-    .slice(0, 5);
-
-  const stats = getStats();
-
+  const recentExecutions = executions.slice(0, stats.total);
   return (
     <Stack gap="sm" h={350}>
       <Group gap="xs">
         <Badge color="blue" variant="light" size="sm">
           {stats.total} executed
         </Badge>
-        {stats.completed > 0 && (
+        {stats.successful > 0 && (
           <Badge color="green" size="sm">
-            {stats.completed} completed
+            {stats.successful} completed
           </Badge>
         )}
         {stats.failed > 0 && (

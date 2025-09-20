@@ -1,15 +1,19 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "../../types/actions";
-import { NotificationService } from "../notification";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { NotificationService } from "@/services/notification";
+import { codeProperty } from "@/types/config-properties";
 
 interface InjectStyleActionConfig {
-  customScript: string;
+  customStyle: string;
 }
 
-export class InjectStyleAction extends BaseAction<InjectStyleActionConfig> {
+interface InjectStyleActionOutput {
+  customStyle: string;
+}
+
+export class InjectStyleAction extends BaseAction<
+  InjectStyleActionConfig,
+  InjectStyleActionOutput
+> {
   readonly metadata: ActionMetadata = {
     type: "inject-style",
     label: "Inject Style",
@@ -17,22 +21,23 @@ export class InjectStyleAction extends BaseAction<InjectStyleActionConfig> {
     description: "Inject custom CSS styles",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        customScript: {
-          type: "code",
-          label: "Custom CSS",
-          placeholder:
-            "body { background-color: lightblue; } .my-class { color: red; }",
-          description: "CSS code to inject into the page.",
-          language: "css",
-          height: 200,
-          required: true,
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      customStyle: codeProperty({
+        label: "Custom CSS",
+        placeholder:
+          "body { background-color: lightblue; } .my-class { color: red; }",
+        description: "CSS code to inject into the page.",
+        language: "css",
+        height: 200,
+        required: true,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    customStyle: "body { background-color: lightblue; }",
+  };
 
   async execute(
     config: InjectStyleActionConfig,
@@ -41,10 +46,10 @@ export class InjectStyleAction extends BaseAction<InjectStyleActionConfig> {
     onSuccess: (data?: any) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
-    const { customScript } = config;
+    const { customStyle } = config;
 
     try {
-      this.injectInlineStyle(customScript);
+      this.injectInlineStyle(customStyle);
     } catch (error: any) {
       onError(error as Error);
       NotificationService.showErrorNotification({
@@ -52,7 +57,7 @@ export class InjectStyleAction extends BaseAction<InjectStyleActionConfig> {
       });
     }
     onSuccess({
-      message: "Custom style injected successfully",
+      customStyle,
     });
   }
 

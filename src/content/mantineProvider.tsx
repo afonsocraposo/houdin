@@ -1,14 +1,12 @@
-import { createTheme, MantineProvider } from "@mantine/core";
+import {
+  createTheme,
+  MantineProvider,
+  mergeThemeOverrides,
+} from "@mantine/core";
 import mantineStyles from "@mantine/core/styles.css?inline";
 import mantineNotificationsStyles from "@mantine/notifications/styles.css?inline";
 import mantineCodeHighlightStyles from "@mantine/code-highlight/styles.css?inline";
-
-declare global {
-  interface WindowEventMap {
-    modalDispatch: CustomEvent;
-    notificationDispatch: CustomEvent;
-  }
-}
+import { mantineTheme } from "@/theme";
 
 export default function CustomMantineProvider({
   parent,
@@ -111,16 +109,19 @@ export default function CustomMantineProvider({
         defaultColorScheme="auto"
         cssVariablesSelector="#app"
         getRootElement={() => parent}
-        theme={createTheme({
-          components: {
-            Portal: {
-              // Property 'extend' does not exist on type 'ForwardRefExoticComponent<PortalProps & RefAttributes<HTMLDivElement>>'.
-              defaultProps: {
-                target: parent,
+        theme={mergeThemeOverrides(
+          mantineTheme,
+          createTheme({
+            components: {
+              Portal: {
+                // Property 'extend' does not exist on type 'ForwardRefExoticComponent<PortalProps & RefAttributes<HTMLDivElement>>'.
+                defaultProps: {
+                  target: parent,
+                },
               },
             },
-          },
-        })}
+          }),
+        )}
       >
         {children}
       </MantineProvider>

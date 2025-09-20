@@ -5,39 +5,35 @@ import {
   Button,
   Stack,
   Card,
-  Switch,
   Group,
   Badge,
   Notification,
   Alert,
-  ActionIcon,
   Table,
   Tabs,
   Anchor,
   Space,
 } from "@mantine/core";
-import logoSvg from "../assets/icons/icon.svg";
-import { initializeCredentials } from "../services/credentialInitializer";
+import { initializeCredentials } from "@/services/credentialInitializer";
 import {
   IconInfoCircle,
   IconCheck,
   IconPlus,
-  IconTrash,
-  IconEdit,
   IconNetwork,
-  IconDownload,
   IconUpload,
   IconKey,
-  IconHistory,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ContentStorageClient } from "../services/storage";
+import { ContentStorageClient } from "@/services/storage";
 import { ImportModal } from "./ImportModal";
 import { ExportModal } from "./ExportModal";
-import { CredentialsTab } from "./CredentialsTab";
-import { WorkflowDefinition } from "../types/workflow";
-import { APP_VERSION } from "../utils/version";
+import { CredentialsTab } from "@/config/credentials/CredentialsTab";
+import { WorkflowDefinition } from "@/types/workflow";
+import { APP_VERSION } from "@/utils/version";
+import ConfigWorkflowItem from "./ConfigWorkflowItem";
+import { newWorkflowId } from "@/services/workflow";
+import Logo from "@/components/Logo";
 
 function ConfigInterface() {
   // Initialize credentials on app startup
@@ -144,6 +140,27 @@ function ConfigInterface() {
     setExportModalOpened(true);
   };
 
+  const handleDuplicateWorkflow = async (workflow: WorkflowDefinition) => {
+    try {
+      const newWorkflow = {
+        ...workflow,
+        id: newWorkflowId(),
+        name: `${workflow.name} (Copy)`,
+        lastUpdated: Date.now(),
+        executionCount: 0,
+        lastExecuted: undefined,
+      } as WorkflowDefinition;
+      const updatedWorkflows = [...workflows, newWorkflow];
+      await storageClient.saveWorkflows(updatedWorkflows);
+      setWorkflows(updatedWorkflows);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error("Failed to duplicate workflow:", error);
+      alert("Failed to duplicate workflow. Please try again.");
+    }
+  };
+
   const handleImportWorkflow = async (workflow: WorkflowDefinition) => {
     try {
       const updatedWorkflows = [...workflows, workflow];
@@ -165,17 +182,11 @@ function ConfigInterface() {
     <Container size="xl" py="xl">
       <Stack gap="lg">
         <div style={{ textAlign: "center" }}>
-          <img
-            src={logoSvg}
-            alt="changeme logo"
-            style={{ width: 64, height: 64, marginBottom: 8 }}
-          />
-          <Title order={1} mt="sm">
-            changeme
-          </Title>
+          <Group justify="center">
+            <Logo size={48} title />
+          </Group>
           <Text size="sm" c="dimmed">
-            Create visual workflows to inject components and automate tasks on
-            any website
+            Browser automation that feels like magic
           </Text>
         </div>
 
@@ -199,8 +210,8 @@ function ConfigInterface() {
             onClose={handleAlertClose}
           >
             You can always access this configuration page by typing{" "}
-            <Badge variant="light">https://changeme.config</Badge> in your
-            browser address bar.
+            <Badge variant="light">https://houdin.config</Badge> in your browser
+            address bar.
           </Alert>
         )}
 
@@ -253,9 +264,9 @@ function ConfigInterface() {
                       <Table.Th>Name</Table.Th>
                       <Table.Th>URL Pattern</Table.Th>
                       <Table.Th>Description</Table.Th>
-                      <Table.Th>Nodes</Table.Th>
-                      <Table.Th>Enabled</Table.Th>
-                      <Table.Th>Actions</Table.Th>
+                      <Table.Th ta="center">Nodes</Table.Th>
+                      <Table.Th ta="center">Enabled</Table.Th>
+                      <Table.Th ta="center">Actions</Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
@@ -264,78 +275,15 @@ function ConfigInterface() {
                         (a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0),
                       )
                       .map((workflow) => (
-                        <Table.Tr key={workflow.id}>
-                          <Table.Td>
-                            <Text fw={500}>{workflow.name}</Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text
-                              size="sm"
-                              c="dimmed"
-                              style={{ fontFamily: "monospace" }}
-                            >
-                              {workflow.urlPattern || "No pattern set"}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm" c="dimmed">
-                              {workflow.description || "No description"}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Badge variant="light">
-                              {workflow.nodes.length} nodes
-                            </Badge>
-                          </Table.Td>
-                          <Table.Td>
-                            <Switch
-                              checked={workflow.enabled}
-                              onChange={() => handleToggleWorkflow(workflow.id)}
-                              size="sm"
-                            />
-                          </Table.Td>
-                          <Table.Td>
-                            <Group gap="xs">
-                              <ActionIcon
-                                variant="subtle"
-                                onClick={() => handleEditWorkflow(workflow)}
-                                title="Edit workflow"
-                              >
-                                <IconEdit size={16} />
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="subtle"
-                                color="blue"
-                                onClick={() =>
-                                  navigate(
-                                    `/executions?workflow=${workflow.id}`,
-                                  )
-                                }
-                                title="View execution history"
-                              >
-                                <IconHistory size={16} />
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="subtle"
-                                color="blue"
-                                onClick={() => handleExportWorkflow(workflow)}
-                                title="Export workflow"
-                              >
-                                <IconDownload size={16} />
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="subtle"
-                                color="red"
-                                onClick={() =>
-                                  handleDeleteWorkflow(workflow.id)
-                                }
-                                title="Delete workflow"
-                              >
-                                <IconTrash size={16} />
-                              </ActionIcon>
-                            </Group>
-                          </Table.Td>
-                        </Table.Tr>
+                        <ConfigWorkflowItem
+                          key={workflow.id}
+                          workflow={workflow}
+                          handleEditWorkflow={handleEditWorkflow}
+                          handleDeleteWorkflow={handleDeleteWorkflow}
+                          handleToggleWorkflow={handleToggleWorkflow}
+                          handleExportWorkflow={handleExportWorkflow}
+                          handleDuplicateWorkflow={handleDuplicateWorkflow}
+                        />
                       ))}
                   </Table.Tbody>
                 </Table>
@@ -350,10 +298,10 @@ function ConfigInterface() {
 
         <Space h="xl" />
         <Text size="xs" c="dimmed" ta="center">
-          changeme Extension v{APP_VERSION} - Browser automation made simple
+          Houdin Extension v{APP_VERSION}
         </Text>
         <Text size="xs" c="dimmed" ta="center">
-          Made with ❤️ by&nbsp;
+          Made with 🧡 by&nbsp;
           <Anchor target="_blank" href="https://afonsoraposo.com">
             Afonso Raposo
           </Anchor>

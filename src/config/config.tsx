@@ -6,15 +6,16 @@ import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/code-highlight/styles.css";
 import ConfigApp from "./ConfigApp";
-import NotificationDispatcher from "../components/NotificationDispatcher";
+import NotificationDispatcher from "@/components/NotificationDispatcher";
 import {
   CodeHighlightAdapterProvider,
   createHighlightJsAdapter,
 } from "@mantine/code-highlight";
 import hljs from "highlight.js/lib/core";
-import "./style.css";
+import "@/style.css";
 
 import jsonLang from "highlight.js/lib/languages/json";
+import { mantineTheme } from "@/theme";
 
 hljs.registerLanguage("json", jsonLang);
 
@@ -25,7 +26,7 @@ if (container) {
   const root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <MantineProvider defaultColorScheme="auto">
+      <MantineProvider defaultColorScheme="auto" theme={mantineTheme}>
         <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
           <HashRouter>
             <ConfigApp />

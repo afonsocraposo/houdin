@@ -1,5 +1,9 @@
-import { BaseCredential, CredentialMetadata } from "../../types/credentials";
-import { ConfigSchema } from "../../types/config-properties";
+import { BaseCredential, CredentialMetadata } from "@/types/credentials";
+import {
+  passwordProperty,
+  selectProperty,
+  textProperty,
+} from "@/types/config-properties";
 
 interface HTTPConfig {
   authType: "none" | "bearer" | "basic" | "api_key";
@@ -27,83 +31,72 @@ export class HTTPCredential extends BaseCredential<HTTPConfig, HTTPAuth> {
     description: "HTTP authentication credentials for API requests",
   };
 
-  getConfigSchema(): ConfigSchema {
-    return {
-      properties: {
-        authType: {
-          type: "select",
-          label: "Authentication Type",
-          description: "Type of HTTP authentication to use",
-          required: true,
-          defaultValue: "none",
-          options: [
-            { value: "none", label: "No Authentication" },
-            { value: "bearer", label: "Bearer Token" },
-            { value: "basic", label: "Basic Authentication" },
-            { value: "api_key", label: "API Key Header" },
-          ],
+  configSchema = {
+    properties: {
+      authType: selectProperty({
+        label: "Authentication Type",
+        description: "Type of HTTP authentication to use",
+        required: true,
+        defaultValue: "none",
+        options: [
+          { value: "none", label: "No Authentication" },
+          { value: "bearer", label: "Bearer Token" },
+          { value: "basic", label: "Basic Authentication" },
+          { value: "api_key", label: "API Key Header" },
+        ],
+      }),
+      token: passwordProperty({
+        label: "Bearer Token",
+        description: "Bearer token for authentication",
+        required: false,
+        placeholder: "Enter bearer token...",
+        showWhen: {
+          field: "authType",
+          value: "bearer",
         },
-        token: {
-          type: "string",
-          label: "Bearer Token",
-          description: "Bearer token for authentication",
-          required: false,
-          sensitive: true,
-          placeholder: "Enter bearer token...",
-          showWhen: {
-            field: "authType",
-            value: "bearer",
-          },
+      }),
+      username: textProperty({
+        label: "Username",
+        description: "Username for basic authentication",
+        required: false,
+        placeholder: "Enter username...",
+        showWhen: {
+          field: "authType",
+          value: "basic",
         },
-        username: {
-          type: "string",
-          label: "Username",
-          description: "Username for basic authentication",
-          required: false,
-          placeholder: "Enter username...",
-          showWhen: {
-            field: "authType",
-            value: "basic",
-          },
+      }),
+      password: passwordProperty({
+        label: "Password",
+        description: "Password for basic authentication",
+        required: false,
+        placeholder: "Enter password...",
+        showWhen: {
+          field: "authType",
+          value: "basic",
         },
-        password: {
-          type: "string",
-          label: "Password",
-          description: "Password for basic authentication",
-          required: false,
-          sensitive: true,
-          placeholder: "Enter password...",
-          showWhen: {
-            field: "authType",
-            value: "basic",
-          },
+      }),
+      apiKeyHeader: textProperty({
+        label: "API Key Header",
+        description: "Header name for API key (e.g., X-API-Key)",
+        required: false,
+        placeholder: "X-API-Key",
+        showWhen: {
+          field: "authType",
+          value: "api_key",
         },
-        apiKeyHeader: {
-          type: "string",
-          label: "API Key Header",
-          description: "Header name for API key (e.g., X-API-Key)",
-          required: false,
-          placeholder: "X-API-Key",
-          showWhen: {
-            field: "authType",
-            value: "api_key",
-          },
+      }),
+      apiKeyValue: passwordProperty({
+        label: "API Key Value",
+        description: "API key value",
+        required: false,
+        placeholder: "Enter API key...",
+        showWhen: {
+          field: "authType",
+          value: "api_key",
         },
-        apiKeyValue: {
-          type: "string",
-          label: "API Key Value",
-          description: "API key value",
-          required: false,
-          sensitive: true,
-          placeholder: "Enter API key...",
-          showWhen: {
-            field: "authType",
-            value: "api_key",
-          },
-        },
-      },
-    };
-  }
+      }),
+    },
+  };
 
   getAuth(config: HTTPConfig): HTTPAuth {
     const auth: HTTPAuth = {

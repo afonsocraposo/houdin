@@ -10,9 +10,10 @@ import {
   Text,
   Switch,
 } from "@mantine/core";
-import { ConfigSchema, ConfigProperty } from "../types/config-properties";
-import { CredentialsSelect } from "./CredentialsSelect";
-import CodeEditor from "./CodeEditor";
+import { ConfigSchema, ConfigProperty } from "@/types/config-properties";
+import { CredentialsSelect } from "@/components/CredentialsSelect";
+import CodeEditor from "@/components/CodeEditor";
+import PasswordInput from "@/components/PasswordInput";
 
 interface SchemaBasedPropertiesProps {
   defaultConfig?: Record<string, any>;
@@ -49,31 +50,12 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
     errors: string[],
   ) => {
     const errorMessage = errors && errors.length > 0 ? errors[0] : null;
-    if (!shouldShowProperty(property)) {
-      return null;
-    }
-
     const value = values[key] ?? property.defaultValue ?? "";
 
     switch (property.type) {
-      case "string":
-        return (
-          <TextInput
-            key={key}
-            label={property.label}
-            placeholder={property.placeholder}
-            description={property.description}
-            value={value}
-            onChange={(e) => onChange(key, e.target.value)}
-            required={property.required}
-            type={property.sensitive ? "password" : "text"}
-            error={errorMessage}
-          />
-        );
       case "text":
         return (
           <TextInput
-            key={key}
             label={property.label}
             placeholder={property.placeholder}
             description={property.description}
@@ -83,11 +65,21 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             error={errorMessage}
           />
         );
-
+      case "password":
+        return (
+          <PasswordInput
+            label={property.label}
+            placeholder={property.placeholder}
+            description={property.description}
+            value={value}
+            onChange={(e) => onChange(key, e.target.value)}
+            required={property.required}
+            error={errorMessage}
+          />
+        );
       case "textarea":
         return (
           <Textarea
-            key={key}
             label={property.label}
             placeholder={property.placeholder}
             description={property.description}
@@ -102,7 +94,6 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
       case "select":
         return (
           <Select
-            key={key}
             label={property.label}
             placeholder={property.placeholder}
             description={property.description}
@@ -117,7 +108,6 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
       case "number":
         return (
           <NumberInput
-            key={key}
             label={property.label}
             placeholder={property.placeholder}
             description={property.description}
@@ -136,7 +126,6 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
         return (
           <ColorInput
             closeOnColorSwatchClick
-            key={key}
             label={property.label}
             placeholder={property.placeholder}
             description={property.description}
@@ -166,7 +155,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
 
       case "code":
         return (
-          <div key={key}>
+          <div>
             <InputLabel mb="xs" required={property.required}>
               {property.label}
             </InputLabel>
@@ -194,7 +183,6 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
       case "boolean":
         return (
           <Switch
-            key={key}
             label={property.label}
             description={property.description}
             // labelPosition="left"
@@ -208,7 +196,6 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
         return (
           <>
             <CredentialsSelect
-              key={key}
               label={property.label}
               placeholder={property.placeholder}
               description={property.description}
@@ -232,7 +219,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           }
         });
         return (
-          <div key={key}>
+          <div>
             <InputLabel mb="xs">{property.label}</InputLabel>
             <br />
             {property.render(values, onChange)}
@@ -250,9 +237,11 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
 
   return (
     <Stack gap="md">
-      {Object.entries(schema.properties).map(([key, property]) =>
-        renderProperty(key, property, errors[key]),
-      )}
+      {Object.entries(schema.properties)
+        .filter(([, property]) => shouldShowProperty(property))
+        .map(([key, property]) => (
+          <div key={key}>{renderProperty(key, property, errors[key])}</div>
+        ))}
     </Stack>
   );
 };

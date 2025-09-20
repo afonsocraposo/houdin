@@ -1,10 +1,16 @@
-import { BaseTrigger, TriggerConfigSchema } from "../../types/triggers";
+import { BaseTrigger } from "@/types/triggers";
+import { numberProperty } from "@/types/config-properties";
 
 interface DelayTriggerConfig {
   delay: number;
 }
 
-export class DelayTrigger extends BaseTrigger<DelayTriggerConfig> {
+interface DelayTriggerOutput {
+  delay: number;
+  timestamp: number;
+}
+
+export class DelayTrigger extends BaseTrigger<DelayTriggerConfig, DelayTriggerOutput> {
   readonly metadata = {
     type: "delay",
     label: "Delay",
@@ -12,26 +18,28 @@ export class DelayTrigger extends BaseTrigger<DelayTriggerConfig> {
     description: "Triggers after a specified delay",
   };
 
-  getConfigSchema(): TriggerConfigSchema {
-    return {
-      properties: {
-        delay: {
-          type: "number",
-          label: "Delay (seconds)",
-          placeholder: "1",
-          description: "Time to wait before triggering in seconds",
-          required: true,
-          min: 0,
-          defaultValue: 1,
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      delay: numberProperty({
+        label: "Delay (seconds)",
+        placeholder: "1",
+        description: "Time to wait before triggering in seconds",
+        required: true,
+        min: 0,
+        defaultValue: 1,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    delay: 1,
+    timestamp: 1640995200000,
+  };
   async setup(
     config: DelayTriggerConfig,
     _workflowId: string,
     _nodeId: string,
-    onTrigger: (data?: any) => Promise<void>,
+    onTrigger: (data: DelayTriggerOutput) => Promise<void>,
   ): Promise<void> {
     const delay = config.delay;
 

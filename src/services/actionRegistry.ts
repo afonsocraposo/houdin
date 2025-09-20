@@ -1,5 +1,5 @@
-import { BaseAction, ActionMetadata } from "../types/actions";
-import { ValidationResult } from "../types/config-properties";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { ValidationResult } from "@/types/config-properties";
 import { NotificationService } from "./notification";
 
 export class ActionRegistry {
@@ -37,7 +37,9 @@ export class ActionRegistry {
 
   // Get all action metadata for UI
   getAllActionMetadata(): ActionMetadata[] {
-    return this.getAllActions().map((action) => action.metadata);
+    return this.getAllActions()
+      .map((action) => action.metadata)
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
 
   // Execute an action
@@ -100,7 +102,7 @@ export class ActionRegistry {
   // Get configuration schema for an action
   getConfigSchema(type: string) {
     const action = this.getAction(type);
-    return action ? action.getConfigSchema() : null;
+    return action ? action.configSchema : null;
   }
 
   // Check if action type exists

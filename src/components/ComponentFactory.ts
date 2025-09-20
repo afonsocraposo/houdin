@@ -1,8 +1,14 @@
-import { ReactElement } from "react";
+import { createElement, ReactElement } from "react";
 import ButtonFactory from "./factory/button";
 import TextFactory from "./factory/text";
 import InputFactory from "./factory/input";
 import FloatingActionButtonFactory from "./factory/floatingActionButton";
+
+export interface ComponentTriggerEventDetail {
+  workflowId: string;
+  nodeId: string;
+  data?: any;
+}
 
 export class ComponentFactory {
   static create(
@@ -34,6 +40,10 @@ export class ComponentFactory {
           },
           preview,
         });
+      case "html":
+        return createElement("div", {
+          dangerouslySetInnerHTML: { __html: recipe.componentHtml || "" },
+        });
       default:
         return TextFactory({ recipe });
     }
@@ -45,9 +55,12 @@ export class ComponentFactory {
     data?: any,
   ): void {
     // Dispatch custom event that the workflow executor can listen to
-    const event = new CustomEvent("workflow-component-trigger", {
-      detail: { workflowId, nodeId, data },
-    });
+    const event = new CustomEvent<ComponentTriggerEventDetail>(
+      "workflow-component-trigger",
+      {
+        detail: { workflowId, nodeId, data },
+      },
+    );
     document.dispatchEvent(event);
   }
 }

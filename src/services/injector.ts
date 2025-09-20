@@ -1,6 +1,6 @@
 import { createRoot, Root } from "react-dom/client";
-import MantineDispatcher from "../content/mantineDispatcher";
-import CustomMantineProvider from "../content/mantineProvider";
+import MantineDispatcher from "@/content/mantineDispatcher";
+import CustomMantineProvider from "@/content/mantineProvider";
 
 const MANTINE_INJECTOR_ROOT_ID = "mantine-injector-root";
 export class ContentInjector {

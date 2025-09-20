@@ -1,7 +1,7 @@
 import { Text, Badge, Group, Card, Stack, ScrollArea } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { ContentStorageClient } from "../services/storage";
-import { WorkflowDefinition } from "../types/workflow";
+import { ContentStorageClient } from "@/services/storage";
+import { WorkflowDefinition } from "@/types/workflow";
 
 interface ActiveWorkflowsProps {
   currentUrl: string;
@@ -111,7 +111,7 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
                         {workflow.urlPattern}
                       </Text>
                       <Group gap="xs" mt={4}>
-                        <Badge size="xs" variant="light" color="blue">
+                        <Badge size="xs" variant="light">
                           {workflow.nodes.length} nodes
                         </Badge>
                       </Group>

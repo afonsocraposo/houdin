@@ -1,27 +1,25 @@
-import { Modal } from "@mantine/core";
+import { Container, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import MarkdownText from "../MarkdownText";
+import MarkdownText from "@/components/MarkdownText";
 
-interface ElementSelectedModalProps {
+interface CustomModalProps {
   data: {
     title: string;
     content: string;
   };
+  onClose?: () => void;
 }
 export default function CustomModal({
   data: { title, content },
-}: ElementSelectedModalProps) {
+  onClose,
+}: CustomModalProps) {
   const [opened, { close }] = useDisclosure(true);
 
   const handleClose = () => {
     close();
-    // Dispatch modal dismissed event for workflow continuation
-    const dismissEvent = new CustomEvent("modalDispatch", {
-      detail: {
-        type: "modalDismissed",
-      },
-    });
-    window.dispatchEvent(dismissEvent);
+    if (onClose) {
+      onClose();
+    }
   };
 
   return (
@@ -32,7 +30,11 @@ export default function CustomModal({
       trapFocus={false}
       zIndex={1000000} // Ensure modal is on top
     >
-      <MarkdownText>{content}</MarkdownText>
+      <Container fluid>
+        <MarkdownText style={{ overflowWrap: "break-word" }}>
+          {content}
+        </MarkdownText>
+      </Container>
     </Modal>
   );
 }

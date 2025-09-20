@@ -1,121 +1,173 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "../../types/actions";
-import { ComponentFactory } from "../../components/ComponentFactory";
-import { ContentInjector } from "../injector";
-import { NotificationService } from "../notification";
+import { BaseAction, ActionMetadata } from "@/types/actions";
+import { ComponentFactory } from "@/components/ComponentFactory";
+import { ContentInjector } from "@/services/injector";
+import { NotificationService } from "@/services/notification";
 import React from "react";
-import { getElement } from "../../utils/helpers";
+import { getElement } from "@/utils/helpers";
+import {
+  booleanProperty,
+  codeProperty,
+  colorProperty,
+  customProperty,
+  selectProperty,
+  textareaProperty,
+  textProperty,
+} from "@/types/config-properties";
 
 interface InjectComponentActionConfig {
   targetSelector: string;
-  componentType: "text";
+  componentType: "text" | "html";
   selectorType: "css" | "xpath";
-  componentText: string;
+  componentText?: string;
+  componentHtml?: string;
   textColor?: string;
   useMarkdown?: boolean;
   customStyle?: string;
 }
 
-export class InjectComponentAction extends BaseAction<InjectComponentActionConfig> {
+interface InjectComponentActionOutput {
+  componentType: string;
+  injected: boolean;
+  component: string;
+  customStyle?: string;
+}
+
+export class InjectComponentAction extends BaseAction<
+  InjectComponentActionConfig,
+  InjectComponentActionOutput
+> {
   readonly metadata: ActionMetadata = {
     type: "inject-component",
     label: "Inject Component",
     icon: "💉",
-    description: "Add text to page",
-    disableTimeout: true,
+    description: "Inject a custom component into the page (text, HTML)",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        // Component preview
-        preview: {
-          type: "custom",
-          label: "Component Preview",
-          render: (values: Record<string, any>) => {
-            try {
-              const previewComponent = ComponentFactory.create(
-                values,
-                "preview-workflow",
-                "preview-node",
-              );
-              return previewComponent;
-            } catch (error) {
-              return React.createElement(
-                "div",
-                { style: { color: "red" } },
-                "Error rendering preview: " + (error as Error).message,
-              );
-            }
-          },
+  readonly configSchema = {
+    properties: {
+      // Component preview
+      preview: customProperty({
+        label: "Component Preview",
+        render: (values: Record<string, any>) => {
+          try {
+            const previewComponent = ComponentFactory.create(
+              values,
+              "preview-workflow",
+              "preview-node",
+            );
+            // create iframe-like box
+            return React.createElement(
+              "div",
+              {
+                style: {
+                  position: "relative",
+                  padding: "10px",
+                  minHeight: "32px",
+                },
+              },
+              previewComponent,
+            );
+          } catch (error) {
+            return React.createElement(
+              "div",
+              { style: { color: "red" } },
+              "Error rendering preview: " + (error as Error).message,
+            );
+          }
         },
-        selectorType: {
-          type: "select",
-          label: "Selector Type",
-          options: [
-            { label: "CSS Selector", value: "css" },
-            { label: "XPath", value: "xpath" },
-          ],
-          defaultValue: "css",
-          description: "Type of selector to use for component injection",
-          required: true,
-        },
-        targetSelector: {
-          type: "text",
-          label: "Target Selector",
-          placeholder: ".header, #main-content",
-          description:
-            "Where to inject the component (not needed for floating action button)",
-          defaultValue: "body",
-        },
-        componentType: {
-          type: "select",
-          label: "Component Type",
-          options: [{ value: "text", label: "Text/Label" }],
-          defaultValue: "text",
-        },
-        componentText: {
-          type: "textarea",
-          label: "Component Text",
-          placeholder: "Click me, Enter text, etc.",
-          defaultValue: "Hello",
-        },
-
-        // Text-specific properties
-        textColor: {
-          type: "color",
-          label: "Text Color",
-          description: "Color of the text",
-          defaultValue: "#000000",
-          showWhen: {
-            field: "componentType",
+      }),
+      selectorType: selectProperty({
+        label: "Selector Type",
+        options: [
+          { label: "CSS Selector", value: "css" },
+          { label: "XPath", value: "xpath" },
+        ],
+        defaultValue: "css",
+        description: "Type of selector to use for component injection",
+        required: true,
+      }),
+      targetSelector: textProperty({
+        label: "Target Selector",
+        placeholder: ".header, #main-content",
+        description:
+          "Where to inject the component (not needed for floating action button)",
+        defaultValue: "body",
+      }),
+      componentType: selectProperty({
+        label: "Component Type",
+        options: [
+          {
             value: "text",
+            label: "Text/Label",
           },
+          { value: "html", label: "HTML" },
+        ],
+        defaultValue: "text",
+      }),
+      componentText: textareaProperty({
+        label: "Text Content",
+        placeholder: "Click me, Enter text, etc.",
+        defaultValue: "Hello",
+        showWhen: {
+          field: "componentType",
+          value: "text",
         },
-        useMarkdown: {
-          type: "boolean",
-          label: "Enable Markdown",
-          description:
-            "Render text as markdown (supports **bold**, *italic*, links, lists, etc.)",
-          defaultValue: true,
+      }),
+      componentHtml: codeProperty({
+        language: "html",
+        label: "HTML Content",
+        placeholder: "<b>Hello</b>, <i>world</i>!",
+        defaultValue: "<b>Hello</b>, <i>world</i>!",
+        showWhen: {
+          field: "componentType",
+          value: "html",
         },
+      }),
 
-        // Advanced styling (for all types)
-        customStyle: {
-          type: "code",
-          label: "Custom CSS (Advanced)",
-          placeholder: "margin: 10px; border-radius: 4px;",
-          description:
-            "Additional CSS properties. For floating action button, use: bottom: 40; right: 40; (in pixels)",
-          language: "text",
-          height: 100,
+      // Text-specific properties
+      textColor: colorProperty({
+        label: "Text Color",
+        description: "Color of the text",
+        defaultValue: "#000000",
+        showWhen: {
+          field: "componentType",
+          value: "text",
         },
-      },
-    };
-  }
+      }),
+      useMarkdown: booleanProperty({
+        label: "Enable Markdown",
+        description:
+          "Render text as markdown (supports **bold**, *italic*, links, lists, etc.)",
+        defaultValue: true,
+        showWhen: {
+          field: "componentType",
+          value: "text",
+        },
+      }),
+
+      // Advanced styling (for all types)
+      customStyle: codeProperty({
+        label: "Custom CSS (Advanced)",
+        placeholder: "margin: 10px; border-radius: 4px;",
+        description: "Additional CSS properties.",
+        language: "text",
+        height: 100,
+        showWhen: {
+          field: "componentType",
+          value: ["text"],
+        },
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    componentType: "text",
+    component: "Hello, world!",
+    injected: true,
+    text: "Hello, world!",
+    customStyle: "color: red; font-weight: bold;",
+  };
+
   async execute(
     config: InjectComponentActionConfig,
     workflowId: string,
@@ -123,15 +175,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
     onSuccess: (data: any) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
-    const {
-      selectorType,
-      targetSelector,
-      componentType,
-      componentText,
-      textColor,
-      useMarkdown,
-      customStyle,
-    } = config;
+    const { selectorType, targetSelector, componentType } = config;
 
     const targetElement = getElement(targetSelector, selectorType);
 
@@ -142,26 +186,7 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       return;
     }
 
-    // Build component configuration object that factory components can use
-    const componentConfig = {
-      componentType,
-      componentText,
-
-      // Color properties (will be handled by individual factories)
-      textColor,
-
-      // Text-specific properties
-      useMarkdown,
-
-      // Custom styles
-      customStyle,
-    };
-
-    const component = ComponentFactory.create(
-      componentConfig,
-      workflowId,
-      nodeId,
-    );
+    const component = ComponentFactory.create(config, workflowId, nodeId);
 
     ContentInjector.injectMantineComponentInTarget(
       `container-${workflowId}-${nodeId}`,
@@ -170,11 +195,12 @@ export class InjectComponentAction extends BaseAction<InjectComponentActionConfi
       true, // coreOnly
     );
 
-    // For non-interactive components (text), continue immediately
     onSuccess({
       componentType,
       injected: true,
-      text: componentText,
+      component:
+        componentType === "text" ? config.componentText : config.componentHtml,
+      customStyle: config.customStyle,
     });
   }
 }

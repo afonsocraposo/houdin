@@ -18,15 +18,17 @@ export interface ActionMetadata extends BaseMetadata {
 // Abstract base class for all actions
 export abstract class BaseAction<
   TConfig = Record<string, any>,
+  TOutput = Record<string, any>,
 > extends BaseConfigurable<TConfig> {
   abstract readonly metadata: ActionMetadata;
+  abstract readonly outputExample: TOutput;
 
   // Execute the action
   abstract execute(
     config: TConfig,
     workflowId: string,
     nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data?: TOutput) => void,
     onError: (error: Error) => void,
     tabId?: number,
   ): Promise<void>;

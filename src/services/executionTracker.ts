@@ -2,7 +2,7 @@ import {
   NodeExecutionResult,
   WorkflowExecution,
   WorkflowExecutionStatus,
-} from "../types/workflow";
+} from "@/types/workflow";
 import { BackgroundStorageClient } from "./storage";
 
 export class ExecutionTracker {

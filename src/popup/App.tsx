@@ -1,18 +1,10 @@
-import {
-  Container,
-  Title,
-  Text,
-  Button,
-  Stack,
-  Divider,
-  Tabs,
-  Group,
-} from "@mantine/core";
+import { Container, Text, Button, Stack, Divider, Tabs } from "@mantine/core";
 import { IconPointer, IconHistory, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
-import iconSvg from "../assets/icons/icon.svg";
+import Logo from "@/components/Logo";
+import { sendMessageToContentScript } from "@/lib/messages";
 
 function App() {
   // Cross-browser API compatibility
@@ -68,7 +60,7 @@ function App() {
 
   const handleClick = () => {
     // open a new tab with a specific URL
-    browserAPI.tabs.create({ url: "https://changeme.config" });
+    browserAPI.tabs.create({ url: "https://houdin.config" });
     window.close();
   };
 
@@ -79,9 +71,7 @@ function App() {
         { active: true, currentWindow: true },
         (tabs: any[]) => {
           if (tabs.length > 0 && tabs[0].id) {
-            browserAPI.tabs.sendMessage(tabs[0].id, {
-              type: "START_ELEMENT_SELECTION",
-            });
+            sendMessageToContentScript(tabs[0].id, "START_ELEMENT_SELECTION", {});
           }
         },
       );
@@ -95,19 +85,12 @@ function App() {
     <>
       <Container size="xs" p="md" style={{ width: "320px", height: "500px" }}>
         <Stack gap="sm">
-          <Group align="center">
-            <img
-              src={iconSvg}
-              alt="changeme icon"
-              style={{ width: 48, height: 48 }}
-            />
-            <Stack gap={0}>
-              <Title order={2}>changeme</Title>
-              <Text size="sm" c="dimmed">
-                Browser automation made simple
-              </Text>
-            </Stack>
-          </Group>
+          <Stack gap={0}>
+            <Logo title size={32} />
+            <Text size="sm" c="dimmed">
+              Browser automation that feels like magic
+            </Text>
+          </Stack>
 
           <Tabs
             value={activeTab}

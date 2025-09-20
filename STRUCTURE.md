@@ -1,4 +1,4 @@
-# changeme Extension - Project Structure
+# Houdin Extension - Project Structure
 
 ## 📁 Directory Organization
 

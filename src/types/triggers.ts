@@ -21,14 +21,16 @@ export interface TriggerSetupResult {
 // Abstract base class for all triggers
 export abstract class BaseTrigger<
   TConfig = Record<string, any>,
+  TOutput = Record<string, any>,
 > extends BaseConfigurable<TConfig> {
   abstract readonly metadata: TriggerMetadata;
+  abstract readonly outputExample: TOutput;
 
   // Setup the trigger and return cleanup function
   abstract setup(
     config: TConfig,
     workflowId: string,
     nodeId: string,
-    onTrigger: (data?: any) => Promise<void>,
+    onTrigger: (data?: TOutput) => Promise<void>,
   ): Promise<void>;
 }

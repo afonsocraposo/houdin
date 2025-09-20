@@ -1,4 +1,4 @@
-# changeme Browser Extension
+# Houdin Browser Extension
 
 A cross-browser extension built with TypeScript, React, Mantine UI, and Vite with hot reload support.
 

@@ -27,18 +27,18 @@ import {
 import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
-import { ExportModal } from "./ExportModal";
-import { TimeAgoText } from "./TimeAgoText";
+import { ExportModal } from "@/config/workflows/ExportModal";
+import { TimeAgoText } from "@/components/TimeAgoText";
 import {
   WorkflowNode,
-  WorkflowConnection,
   WorkflowDefinition,
   TriggerNodeData,
   ActionNodeData,
-} from "../types/workflow";
+} from "@/types/workflow";
 import { hasLength, matches, useForm } from "@mantine/form";
-import { TriggerRegistry } from "../services/triggerRegistry";
-import { ActionRegistry } from "../services/actionRegistry";
+import { TriggerRegistry } from "@/services/triggerRegistry";
+import { ActionRegistry } from "@/services/actionRegistry";
+import { useWorkflowState } from "./hooks";
 
 interface WorkflowDesignerProps {
   workflow?: WorkflowDefinition;
@@ -72,11 +72,20 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       urlPattern: matches(/^https?:\/\/\S+$/, "Must be a valid URL pattern"),
     },
   });
-  const [nodes, setNodes] = useState<WorkflowNode[]>(workflow?.nodes || []);
-  const [connections, setConnections] = useState<WorkflowConnection[]>(
-    workflow?.connections || [],
-  );
-  const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
+
+  const {
+    nodes,
+    connections,
+    setNodes,
+    setConnections,
+    undo,
+    redo,
+    current,
+    total,
+  } = useWorkflowState(workflow || null);
+
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
 
   const [exportModalOpened, setExportModalOpened] = useState(false);
 
@@ -208,28 +217,34 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         form.values.enabled = workflow.enabled ?? true;
         setNodes(workflow.nodes || []);
         setConnections(workflow.connections || []);
-        setSelectedNode(null);
+        setSelectedNodeId(null);
       }
     }
   }, [workflow, currentWorkflowId]); // Removed selectedNode and nodes from dependencies
 
   useEffect(() => {
     // clear selected node schema errors
-    if (selectedNode && schemaErrors[selectedNode.id]) {
-      setSchemaErrors((prev) => {
-        const updated = { ...prev };
-        delete updated[selectedNode.id];
-        return updated;
-      });
+    if (selectedNode) {
+      if (schemaErrors[selectedNode.id]) {
+        setSchemaErrors((prev) => {
+          const updated = { ...prev };
+          delete updated[selectedNode.id];
+          return updated;
+        });
+      }
     }
   }, [nodes]);
 
   const handleNodeUpdate = (updatedNode: WorkflowNode) => {
     const updatedNodes = nodes.map((n) =>
-      n.id === updatedNode.id ? updatedNode : n,
+      n.id === updatedNode.id
+        ? {
+            ...updatedNode,
+            position: n.position, // keep original position
+          }
+        : n,
     );
     setNodes(updatedNodes);
-    setSelectedNode(updatedNode);
   };
 
   const handleSave = () => {
@@ -295,7 +310,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const getCurrentWorkflowDefinition = (): WorkflowDefinition => {
     return {
-      id: workflow?.id || `workflow-${Date.now()}`,
+      id: workflow?.id || "draft-workflow",
       nodes,
       connections,
       lastUpdated: Date.now(),
@@ -433,8 +448,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
             onNodesChange={setNodes}
             onConnectionsChange={setConnections}
             selectedNode={selectedNode}
-            onNodeSelect={setSelectedNode}
+            onNodeSelect={setSelectedNodeId}
             errors={schemaErrors}
+            undo={undo}
+            redo={redo}
+            hasPrevious={current > 0}
+            hasNext={current < total - 1}
           />
           {/* Drawer  */}
           <Transition

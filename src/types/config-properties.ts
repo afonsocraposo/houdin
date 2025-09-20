@@ -14,13 +14,12 @@ interface BaseConfigProperty {
 }
 
 // Specific property types using discriminated unions
-export interface StringConfigProperty extends BaseConfigProperty {
-  type: "string";
-  sensitive?: boolean; // For passwords, API keys etc.
-}
-
 export interface TextConfigProperty extends BaseConfigProperty {
   type: "text";
+}
+
+export interface PasswordConfigProperty extends BaseConfigProperty {
+  type: "password";
 }
 
 export interface TextareaConfigProperty extends BaseConfigProperty {
@@ -69,8 +68,8 @@ export interface CredentialsConfigProperty extends BaseConfigProperty {
 
 // Union type for all config properties
 export type ConfigProperty =
-  | StringConfigProperty
   | TextConfigProperty
+  | PasswordConfigProperty
   | TextareaConfigProperty
   | SelectConfigProperty
   | NumberConfigProperty
@@ -81,8 +80,8 @@ export type ConfigProperty =
   | CredentialsConfigProperty;
 
 // Schema definition
-export interface ConfigSchema {
-  properties: Record<string, ConfigProperty>;
+export interface ConfigSchema<TConfig = Record<string, any>> {
+  properties: Record<keyof TConfig, ConfigProperty>;
 }
 
 // Validation result
@@ -185,8 +184,8 @@ export function validateConfig(
 // Get type-based default value for a property
 export function getTypeBasedDefault(property: ConfigProperty): any {
   switch (property.type) {
-    case "string":
     case "text":
+    case "password":
     case "textarea":
     case "code":
     case "credentials":
@@ -256,4 +255,65 @@ export function applyDefaults(
   });
 
   return result;
+}
+
+// Constructor functions for config property types
+export function textProperty(
+  config: Omit<TextConfigProperty, "type">,
+): TextConfigProperty {
+  return { type: "text", ...config };
+}
+
+export function passwordProperty(
+  config: Omit<PasswordConfigProperty, "type">,
+): PasswordConfigProperty {
+  return { type: "password", ...config };
+}
+
+export function textareaProperty(
+  config: Omit<TextareaConfigProperty, "type">,
+): TextareaConfigProperty {
+  return { type: "textarea", ...config };
+}
+
+export function selectProperty(
+  config: Omit<SelectConfigProperty, "type">,
+): SelectConfigProperty {
+  return { type: "select", ...config };
+}
+
+export function numberProperty(
+  config: Omit<NumberConfigProperty, "type">,
+): NumberConfigProperty {
+  return { type: "number", ...config };
+}
+
+export function booleanProperty(
+  config: Omit<BooleanConfigProperty, "type">,
+): BooleanConfigProperty {
+  return { type: "boolean", ...config };
+}
+
+export function colorProperty(
+  config: Omit<ColorConfigProperty, "type">,
+): ColorConfigProperty {
+  return { type: "color", ...config };
+}
+
+export function codeProperty(
+  config: Omit<CodeConfigProperty, "type">,
+): CodeConfigProperty {
+  return { type: "code", ...config };
+}
+
+export function customProperty(
+  config: Omit<CustomConfigProperty, "type">,
+): CustomConfigProperty {
+  return { type: "custom", ...config };
+}
+
+export function credentialsProperty(
+  config: Omit<CredentialsConfigProperty, "type">,
+): CredentialsConfigProperty {
+  return { type: "credentials", ...config };
 }

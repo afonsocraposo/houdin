@@ -1,24 +1,31 @@
 import {
   BaseAction,
-  ActionConfigSchema,
   ActionMetadata,
-} from "../../types/actions";
+} from "@/types/actions";
 import {
   UserScriptPermissionChecker,
   UserScriptPermissionStatus,
-} from "../userScriptPermissionChecker";
-import PermissionButton from "../../components/PermissionButton";
+} from "@/services/userScriptPermissionChecker";
+import PermissionButton from "@/config/designer/PermissionButton";
 import {
   UserScriptExecuteResponse,
   UserScriptManager,
-} from "../userScriptManager";
+} from "@/services/userScriptManager";
+import { codeProperty, customProperty } from "@/types/config-properties";
 
 // Custom Script Action Configuration
 export interface CustomScriptActionConfig {
   customScript: string;
 }
 
-export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
+interface CustomScriptActionOutput {
+  [key: string]: any; // Flexible output structure
+}
+
+export class CustomScriptAction extends BaseAction<
+  CustomScriptActionConfig,
+  CustomScriptActionOutput
+> {
   readonly metadata: ActionMetadata = {
     type: "custom-script",
     label: "Custom Script",
@@ -26,28 +33,29 @@ export class CustomScriptAction extends BaseAction<CustomScriptActionConfig> {
     description: "Execute custom JavaScript code",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {
-        permissionCheck: {
-          type: "custom",
-          label: "UserScript Permission",
-          render: () => PermissionButton(),
-        },
-        customScript: {
-          type: "code",
-          label: "Custom JavaScript",
-          placeholder:
-            "// Access workflow context variables:\n// const prevResult = {{nodeId}}; // Get output from another node\n\nalert('Hello World!');\nconsole.log('Custom script executed');\n\n// Use Return(data) to send data to next actions\n// Return({ message: 'Success' });",
-          description:
-            "JavaScript code to execute. Use {{nodeId}} to access variables from other nodes. Use Return(data) to send data to next actions.",
-          language: "javascript",
-          height: 200,
-          required: true,
-        },
-      },
-    };
-  }
+  readonly configSchema = {
+    properties: {
+      permissionCheck: customProperty({
+        label: "UserScript Permission",
+        render: () => PermissionButton(),
+      }),
+      customScript: codeProperty({
+        label: "Custom JavaScript",
+        placeholder:
+          "// Access workflow context variables:\n// const prevResult = {{nodeId}}; // Get output from another node\n\nalert('Hello World!');\nconsole.log('Custom script executed');\n\n// Use Return(data) to send data to next actions\n// Return({ message: 'Success', foo: 'bar' });",
+        description:
+          "JavaScript code to execute. Use {{nodeId}} to access variables from other nodes. Use Return(data) to send data to next actions.",
+        language: "javascript",
+        height: 200,
+        required: true,
+      }),
+    },
+  };
+
+  readonly outputExample = {
+    message: "Success",
+    foo: "bar",
+  };
 
   async execute(
     config: CustomScriptActionConfig,

@@ -1,7 +1,11 @@
-import { HttpListenerWebRequest } from "../services/httpListenerWebRequest";
-import { BackgroundWorkflowEngine } from "../services/backgroundEngine";
-import { WorkflowCommandType } from "../types/background-workflow";
-import { StorageServer } from "../services/storage";
+import { HttpListenerWebRequest } from "@/services/httpListenerWebRequest";
+import { BackgroundWorkflowEngine } from "@/services/backgroundEngine";
+import {
+  TriggerFiredCommand,
+  WorkflowCommandType,
+} from "@/types/background-workflow";
+import { StorageServer } from "@/services/storage";
+import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -32,9 +36,9 @@ if (runtime.action) {
   });
 }
 
-// Handle navigation to changeme.config
+// Handle navigation to houdin.config
 runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
-  if (changeInfo.url && changeInfo.url.includes("changeme.config")) {
+  if (changeInfo.url && changeInfo.url.includes("houdin.config")) {
     // Redirect to the config page
     const configUrl = runtime.runtime.getURL("src/config/index.html");
     runtime.tabs.update(tabId, { url: configUrl });
@@ -44,7 +48,7 @@ runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
 // Note: webNavigation API requires additional permission in manifest v3
 if (runtime.webNavigation) {
   runtime.webNavigation.onBeforeNavigate.addListener((details: any) => {
-    if (details.url.includes("changeme.config")) {
+    if (details.url.includes("houdin.config")) {
       const configUrl = runtime.runtime.getURL("src/config/index.html");
       runtime.tabs.update(details.tabId, { url: configUrl });
     }
@@ -67,7 +71,11 @@ workflowEngine.initialize().then(() => {
   );
 
   runtime.runtime.onMessage.addListener(
-    (message: any, sender: any, _sundResponse: (response: any) => void) => {
+    (
+      message: CustomMessage,
+      sender: any,
+      _sendResponse: (response: any) => void,
+    ) => {
       if (message.type === "REGISTER_HTTP_TRIGGER") {
         // Register HTTP trigger with webRequest API
         console.debug("Background: Registering HTTP trigger", message);
@@ -82,29 +90,26 @@ workflowEngine.initialize().then(() => {
         const triggerCallback = async (data: any) => {
           console.debug("HTTP trigger fired:", {
             tabId: sender.tab.id,
-            workflowId: message.workflowId,
-            triggerNodeId: message.triggerNodeId,
+            workflowId: message.data.workflowId,
+            triggerNodeId: message.data.triggerNodeId,
             data,
           });
           // Send trigger event back to content script
-          runtime.tabs
-            .sendMessage(sender.tab.id, {
-              type: "HTTP_TRIGGER_FIRED",
-              workflowId: message.workflowId,
-              triggerNodeId: message.triggerNodeId,
-              data,
-            })
-            .catch(() => {
-              // send and forget
-            });
+          sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
+            workflowId: message.data.workflowId,
+            triggerNodeId: message.data.triggerNodeId,
+            data,
+          }).catch(() => {
+            // send and forget
+          });
         };
 
         httpListener.registerTrigger(
           sender.tab.id,
-          message.workflowId,
-          message.triggerNodeId,
-          message.urlPattern,
-          message.method,
+          message.data.workflowId,
+          message.data.triggerNodeId,
+          message.data.urlPattern,
+          message.data.method,
           triggerCallback,
         );
         return false;
@@ -116,11 +121,13 @@ workflowEngine.initialize().then(() => {
         return false;
       } else if (message.type === WorkflowCommandType.TRIGGER_FIRED) {
         const tabId = sender.tab.id;
-        const url = message.url;
-        const workflowId = message.workflowId;
-        const triggerNodeId = message.triggerNodeId;
-        const data = message.data || {};
-        const duration = message.duration || undefined;
+
+        const response = message.data as TriggerFiredCommand;
+        const url = response.url;
+        const workflowId = response.workflowId;
+        const triggerNodeId = response.triggerNodeId;
+        const data = response.data || {};
+        const duration = response.duration || 0;
         workflowEngine.dispatchExecutor(
           url,
           tabId,

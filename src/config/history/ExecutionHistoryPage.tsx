@@ -32,11 +32,14 @@ import {
   WorkflowDefinition,
   ActionNodeData,
   TriggerNodeData,
-} from "../types/workflow";
-import { ContentStorageClient } from "../services/storage";
+} from "@/types/workflow";
+import {
+  ContentStorageClient,
+  MAX_EXECUTIONS_HISTORY,
+} from "@/services/storage";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { TimeAgoText } from "./TimeAgoText";
-import { formatTimeAgo } from "../utils/time";
+import { TimeAgoText } from "@/components/TimeAgoText";
+import { formatTimeAgo } from "@/utils/time";
 import { CodeHighlight } from "@mantine/code-highlight";
 
 function ExecutionHistoryPage() {
@@ -59,9 +62,7 @@ function ExecutionHistoryPage() {
 
   const loadExecutions = async () => {
     try {
-      const executions = (
-        await storageClient.getWorkflowExecutions()
-      ).reverse();
+      const executions = await storageClient.getWorkflowExecutions();
       setExecutions(executions);
     } catch (error) {
       console.error("Failed to load executions:", error);
@@ -231,9 +232,8 @@ function ExecutionHistoryPage() {
         </Group>
 
         <Text c="dimmed">
-          Execution tracking - the last 50 executions are kept.
-          {executions.length > 0 &&
-            ` Found ${executions.length} total executions.`}
+          Execution tracking (only the last {MAX_EXECUTIONS_HISTORY} executions
+          are kept).
         </Text>
 
         {/* Statistics */}
@@ -424,42 +424,45 @@ function ExecutionHistoryPage() {
                                       .sort(
                                         (a, b) => a.executedAt - b.executedAt,
                                       )
-                                      .map((node, i) => (
-                                        <Table.Tr key={i}>
-                                          <Table.Td>
-                                            <Text size="xs" ff="monospace">
-                                              {node.nodeId.slice(-8)}
-                                            </Text>
-                                          </Table.Td>
-                                          <Table.Td>
-                                            <Text size="xs" c="blue">
-                                              {getNodeType(
-                                                execution.workflowId,
-                                                node.nodeId,
-                                              )}
-                                            </Text>
-                                          </Table.Td>
-                                          <Table.Td>
-                                            <Badge
-                                              size="xs"
-                                              color={getStatusColor(
-                                                node.status,
-                                              )}
-                                            >
-                                              {node.status}
-                                            </Badge>
-                                          </Table.Td>
-                                          <Table.Td>
-                                            <Text size="xs">
-                                              {node.duration
-                                                ? `${node.duration}ms`
-                                                : "-"}
-                                            </Text>
-                                          </Table.Td>
-                                          <Table.Td style={{ width: 300 }}>
-                                            {node.data &&
-                                              (node.status === "success" ? (
-                                                <details>
+                                      .map((node, i) => {
+                                        const success =
+                                          node.data &&
+                                          node.status === "success";
+                                        return (
+                                          <Table.Tr key={i}>
+                                            <Table.Td>
+                                              <Text size="xs" ff="monospace">
+                                                {node.nodeId.slice(-8)}
+                                              </Text>
+                                            </Table.Td>
+                                            <Table.Td>
+                                              <Text size="xs" c="blue">
+                                                {getNodeType(
+                                                  execution.workflowId,
+                                                  node.nodeId,
+                                                )}
+                                              </Text>
+                                            </Table.Td>
+                                            <Table.Td>
+                                              <Badge
+                                                size="xs"
+                                                color={getStatusColor(
+                                                  node.status,
+                                                )}
+                                              >
+                                                {node.status}
+                                              </Badge>
+                                            </Table.Td>
+                                            <Table.Td>
+                                              <Text size="xs">
+                                                {node.duration
+                                                  ? `${node.duration}ms`
+                                                  : "-"}
+                                              </Text>
+                                            </Table.Td>
+                                            <Table.Td style={{ width: 300 }}>
+                                              {node.data && (
+                                                <details open={!success}>
                                                   <summary
                                                     style={{
                                                       cursor: "pointer",
@@ -476,37 +479,35 @@ function ExecutionHistoryPage() {
                                                       overflow: "hidden",
                                                       borderRadius: 8,
                                                     }}
+                                                    w={300}
+                                                    display="flex"
+                                                    mah={200}
                                                   >
-                                                    <CodeHighlight
-                                                      w={300}
-                                                      h="100%"
-                                                      mah={200}
-                                                      language="json"
-                                                      code={
-                                                        typeof node.data ===
-                                                          "object"
-                                                          ? JSON.stringify(
-                                                            node.data,
-                                                            null,
-                                                            2,
-                                                          )
-                                                          : String(node.data)
-                                                      }
-                                                    />
+                                                    <ScrollArea
+                                                      w="100%"
+                                                      type="hover"
+                                                    >
+                                                      <CodeHighlight
+                                                        language="json"
+                                                        code={
+                                                          typeof node.data ===
+                                                            "object"
+                                                            ? JSON.stringify(
+                                                              node.data,
+                                                              null,
+                                                              2,
+                                                            )
+                                                            : String(node.data)
+                                                        }
+                                                      />
+                                                    </ScrollArea>
                                                   </Box>
                                                 </details>
-                                              ) : (
-                                                <Text
-                                                  size="xs"
-                                                  c="red"
-                                                  truncate
-                                                >
-                                                  {JSON.stringify(node.data)}
-                                                </Text>
-                                              ))}
-                                          </Table.Td>
-                                        </Table.Tr>
-                                      ))}
+                                              )}
+                                            </Table.Td>
+                                          </Table.Tr>
+                                        );
+                                      })}
                                   </Table.Tbody>
                                 </Table>
                               )}

@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import webExtension from "vite-plugin-web-extension";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ command }) => {
   const isDev = command === "serve";
@@ -56,7 +57,7 @@ export default defineConfig(({ command }) => {
           return manifest;
         },
         watchFilePaths: ["src", "public", "icons", "manifest.json"],
-        additionalInputs: ["src/config/index.html", "src/config/style.css"],
+        additionalInputs: ["src/config/index.html", "src/style.css"],
       }),
       // Custom plugin to conditionally inject React Refresh script
       {
@@ -86,6 +87,7 @@ export default defineConfig(({ command }) => {
           },
         },
       },
+      tsconfigPaths(),
     ],
     build: {
       outDir: "dist",

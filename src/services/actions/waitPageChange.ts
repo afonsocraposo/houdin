@@ -1,14 +1,14 @@
-import {
-  BaseAction,
-  ActionConfigSchema,
-  ActionMetadata,
-} from "../../types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
 interface WaitPageChangeConfig {}
 
-export class WaitPageChangeAction extends BaseAction<WaitPageChangeConfig> {
+interface WaitPageChangeOutput {
+  url: string;
+}
+
+export class WaitPageChangeAction extends BaseAction<WaitPageChangeConfig, WaitPageChangeOutput> {
   readonly metadata: ActionMetadata = {
     type: "wait-page-change",
     label: "Wait page change",
@@ -16,17 +16,19 @@ export class WaitPageChangeAction extends BaseAction<WaitPageChangeConfig> {
     description: "Wait for the page to change before proceeding",
   };
 
-  getConfigSchema(): ActionConfigSchema {
-    return {
-      properties: {},
-    };
-  }
+  readonly configSchema = {
+    properties: {},
+  };
+
+  readonly outputExample = {
+    url: "https://example.com/new-page",
+  };
 
   async execute(
     _config: WaitPageChangeConfig,
     _context: any,
     _nodeId: string,
-    onSuccess: (data?: any) => void,
+    onSuccess: (data: WaitPageChangeOutput) => void,
     onError: (error: Error) => void,
     tabId: number,
   ): Promise<void> {
