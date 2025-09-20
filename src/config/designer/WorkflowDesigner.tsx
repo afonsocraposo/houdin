@@ -15,7 +15,7 @@ import {
   Text,
   Loader,
 } from "@mantine/core";
-import { useDebouncedCallback } from "@mantine/hooks";
+import { useDebouncedCallback, useThrottledCallback } from "@mantine/hooks";
 import {
   IconDeviceFloppy,
   IconArrowLeft,
@@ -73,16 +73,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     },
   });
 
-  const {
-    nodes,
-    connections,
-    setNodes,
-    setConnections,
-    undo,
-    redo,
-    current,
-    total,
-  } = useWorkflowState(workflow || null);
+  const { nodes, connections, set, undo, redo, current, total } =
+    useWorkflowState(workflow || null);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
@@ -118,8 +110,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           if (typeof draft.enabled === "boolean") {
             form.values.enabled = draft.enabled;
           }
-          setNodes(draft.nodes || []);
-          setConnections(draft.connections || []);
+          set(draft.nodes || [], draft.connections || []);
           console.debug("Loaded workflow draft from session storage");
         } catch (error) {
           console.warn(
@@ -199,26 +190,23 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   }, [hasUnsavedChanges, debouncedAutoSave, isDraft]);
 
-  useEffect(markAsChanged, [form.values, nodes, connections]);
+  useEffect(markAsChanged, [form.values, { nodes, connections }]);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
     if (workflow) {
-      const isNewWorkflow = currentWorkflowId !== workflow.id;
+      if (currentWorkflowId !== workflow.id) return;
 
       // Only update nodes if this is actually a new/different workflow
       // Don't reset nodes when just re-rendering the same workflow
-      if (isNewWorkflow) {
-        setCurrentWorkflowId(workflow.id || null);
-        setIsDraft(false); // If we have a workflow prop, it's not a draft
-        form.values.name = workflow.name || "";
-        form.values.description = workflow.description || "";
-        form.values.urlPattern = workflow.urlPattern || "https://*";
-        form.values.enabled = workflow.enabled ?? true;
-        setNodes(workflow.nodes || []);
-        setConnections(workflow.connections || []);
-        setSelectedNodeId(null);
-      }
+      setCurrentWorkflowId(workflow.id || null);
+      setIsDraft(false); // If we have a workflow prop, it's not a draft
+      form.values.name = workflow.name || "";
+      form.values.description = workflow.description || "";
+      form.values.urlPattern = workflow.urlPattern || "https://*";
+      form.values.enabled = workflow.enabled ?? true;
+      set(workflow.nodes || [], workflow.connections || []);
+      setSelectedNodeId(null);
     }
   }, [workflow, currentWorkflowId]); // Removed selectedNode and nodes from dependencies
 
@@ -239,12 +227,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     const updatedNodes = nodes.map((n) =>
       n.id === updatedNode.id
         ? {
-            ...updatedNode,
-            position: n.position, // keep original position
-          }
+          ...updatedNode,
+          position: n.position, // keep original position
+        }
         : n,
     );
-    setNodes(updatedNodes);
+    set(updatedNodes);
   };
 
   const handleSave = () => {
@@ -445,8 +433,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           <ReactFlowCanvas
             nodes={nodes}
             connections={connections}
-            onNodesChange={setNodes}
-            onConnectionsChange={setConnections}
+            onStateChange={set}
             selectedNode={selectedNode}
             onNodeSelect={setSelectedNodeId}
             errors={schemaErrors}
@@ -457,7 +444,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           />
           {/* Drawer  */}
           <Transition
-            mounted={selectedNode !== null}
+            mounted={selectedNodeId !== null}
             transition="slide-left"
             duration={200}
             timingFunction="ease"
