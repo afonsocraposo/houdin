@@ -1,18 +1,8 @@
-import {
-  Container,
-  Title,
-  Text,
-  Button,
-  Stack,
-  Divider,
-  Tabs,
-  Group,
-} from "@mantine/core";
+import { Container, Text, Button, Stack, Divider, Tabs } from "@mantine/core";
 import { IconPointer, IconHistory, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
-import iconSvg from "@/assets/icons/icon.svg";
 import Logo from "@/components/Logo";
 
 function App() {
