@@ -16,6 +16,7 @@ import { PressKeyAction } from "./actions/pressKeyAction";
 import { TypeTextAction } from "./actions/typeTextAction";
 import { InputAction } from "./actions/inputAction";
 import { FormAction } from "./actions/formAction";
+import { RemoveElementAction } from "./actions/removeElementAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -39,6 +40,7 @@ export function initializeActions(): void {
   registry.register(TypeTextAction);
   registry.register(InputAction);
   registry.register(FormAction);
+  registry.register(RemoveElementAction);
 }
 
 export function initializeBackgroundActions(): void {
