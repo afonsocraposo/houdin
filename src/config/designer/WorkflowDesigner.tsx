@@ -15,7 +15,7 @@ import {
   Text,
   Loader,
 } from "@mantine/core";
-import { useDebouncedCallback, useStateHistory } from "@mantine/hooks";
+import { useDebouncedCallback } from "@mantine/hooks";
 import {
   IconDeviceFloppy,
   IconArrowLeft,
@@ -31,7 +31,6 @@ import { ExportModal } from "@/config/workflows/ExportModal";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import {
   WorkflowNode,
-  WorkflowConnection,
   WorkflowDefinition,
   TriggerNodeData,
   ActionNodeData,
@@ -85,7 +84,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     total,
   } = useWorkflowState(workflow || null);
 
-  const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
 
   const [exportModalOpened, setExportModalOpened] = useState(false);
 
@@ -217,7 +217,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         form.values.enabled = workflow.enabled ?? true;
         setNodes(workflow.nodes || []);
         setConnections(workflow.connections || []);
-        setSelectedNode(null);
+        setSelectedNodeId(null);
       }
     }
   }, [workflow, currentWorkflowId]); // Removed selectedNode and nodes from dependencies
@@ -232,7 +232,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           return updated;
         });
       }
-      setSelectedNode(nodes.find((n) => n.id === selectedNode.id) || null);
     }
   }, [nodes]);
 
@@ -245,9 +244,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           }
         : n,
     );
-    console.log("handleNodeUpdate", updatedNode, updatedNodes);
     setNodes(updatedNodes);
-    setSelectedNode(updatedNode);
   };
 
   const handleSave = () => {
@@ -451,7 +448,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
             onNodesChange={setNodes}
             onConnectionsChange={setConnections}
             selectedNode={selectedNode}
-            onNodeSelect={setSelectedNode}
+            onNodeSelect={setSelectedNodeId}
             errors={schemaErrors}
             undo={undo}
             redo={redo}

@@ -51,7 +51,7 @@ interface ReactFlowCanvasProps {
   connections: WorkflowConnection[];
   onNodesChange: (nodes: WorkflowNode[]) => void;
   onConnectionsChange: (connections: WorkflowConnection[]) => void;
-  onNodeSelect: (node: WorkflowNode | null) => void;
+  onNodeSelect: (id: string | null) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
   undo: () => void;
@@ -257,8 +257,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Handle node selection
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      const workflowNode = workflowNodes.find((n) => n.id === node.id);
-      onNodeSelect(workflowNode || null);
+      onNodeSelect(node.id);
     },
     [workflowNodes, onNodeSelect],
   );
@@ -401,7 +400,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     onNodesChange(updatedNodes);
 
     // Select the new node immediately after creation
-    onNodeSelect(newNode);
+    onNodeSelect(newNode.id);
 
     panToShowNode(newPosition);
   };
@@ -478,7 +477,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             position: newPosition,
           };
           onNodesChange([...workflowNodes, newNode]);
-          onNodeSelect(newNode);
+          onNodeSelect(newNode.id);
           panToShowNode(newPosition);
         }
       })
