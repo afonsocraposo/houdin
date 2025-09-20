@@ -49,8 +49,10 @@ import { generateId } from "@/utils/helpers";
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
   connections: WorkflowConnection[];
-  onNodesChange: (nodes: WorkflowNode[]) => void;
-  onConnectionsChange: (connections: WorkflowConnection[]) => void;
+  onStateChange: (
+    nodes?: WorkflowNode[],
+    connections?: WorkflowConnection[],
+  ) => void;
   onNodeSelect: (id: string | null) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
@@ -76,8 +78,7 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
 const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   nodes: workflowNodes,
   connections: workflowConnections,
-  onNodesChange,
-  onConnectionsChange,
+  onStateChange,
   onNodeSelect,
   selectedNode,
   errors,
@@ -102,16 +103,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       const updatedConnections = workflowConnections.filter(
         (c) => c.source !== nodeId && c.target !== nodeId,
       );
-      onNodesChange(updatedNodes);
-      onConnectionsChange(updatedConnections);
+      onStateChange(updatedNodes, updatedConnections);
     },
-    [
-      workflowNodes,
-      workflowConnections,
-      onNodesChange,
-      onConnectionsChange,
-      onNodeSelect,
-    ],
+    [workflowNodes, workflowConnections, onStateChange, onNodeSelect],
   );
 
   // Convert workflow nodes to React Flow nodes
@@ -129,7 +123,12 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         },
         selected: selectedNode?.id === node.id,
       })),
-    [workflowNodes, selectedNode, handleNodeDeletion, errors],
+    [
+      workflowNodes.map((node) => node.id).join(","),
+      selectedNode,
+      handleNodeDeletion,
+      errors,
+    ],
   );
 
   // Convert workflow connections to React Flow edges
@@ -153,7 +152,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             style: { strokeWidth: 2 },
           }) as Edge,
       ),
-    [workflowConnections],
+    [workflowConnections.map((conn) => conn.id).join(",")],
   );
 
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState(reactFlowNodes);
@@ -162,7 +161,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [workflowNodes, setNodes, errors]);
+  }, [reactFlowNodes, setNodes, JSON.stringify(errors)]);
 
   // Handle selection changes separately to avoid re-render cycles
   useEffect(() => {
@@ -173,11 +172,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       })),
     );
     setOpened(false);
-  }, [selectedNode, setNodes]);
+  }, [selectedNode?.id, setNodes]);
 
   useEffect(() => {
     setEdges(reactFlowEdges);
-  }, [workflowConnections, setEdges]); // Update when connections change
+  }, [reactFlowEdges, setEdges]); // Update when connections change
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(
@@ -212,10 +211,10 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           return node;
         });
 
-        onNodesChange(updatedNodes);
+        onStateChange(updatedNodes, undefined);
       }
     },
-    [onNodesChangeFlow, workflowNodes, onNodesChange],
+    [onNodesChangeFlow, workflowNodes, onStateChange],
   );
 
   // Handle new connections
@@ -231,9 +230,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         targetHandle: params.targetHandle || "input",
       };
 
-      onConnectionsChange([...workflowConnections, newConnection]);
+      onStateChange(undefined, [...workflowConnections, newConnection]);
     },
-    [workflowConnections, onConnectionsChange],
+    [workflowConnections, onStateChange],
   );
 
   // Handle edge deletion
@@ -247,11 +246,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           const updatedConnections = workflowConnections.filter(
             (c) => c.id !== change.id,
           );
-          onConnectionsChange(updatedConnections);
+          onStateChange(undefined, updatedConnections);
         }
       });
     },
-    [onEdgesChangeFlow, workflowConnections, onConnectionsChange],
+    [onEdgesChangeFlow, workflowConnections, onStateChange],
   );
 
   // Handle node selection
@@ -354,8 +353,8 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       workflowNodes,
       workflowConnections,
     );
-    onNodesChange(layoutedNodes);
-  }, [workflowNodes, workflowConnections, onNodesChange, getLayoutedElements]);
+    onStateChange(layoutedNodes, undefined);
+  }, [workflowNodes, workflowConnections, onStateChange, getLayoutedElements]);
 
   const getNewNodePosition = () => {
     // Calculate position for new node (center-right of existing nodes)
@@ -397,7 +396,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     };
 
     const updatedNodes = [...workflowNodes, newNode];
-    onNodesChange(updatedNodes);
+    onStateChange(updatedNodes, undefined);
 
     // Select the new node immediately after creation
     onNodeSelect(newNode.id);
@@ -476,7 +475,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             id: generateId(node.type), // New unique ID
             position: newPosition,
           };
-          onNodesChange([...workflowNodes, newNode]);
+          onStateChange([...workflowNodes, newNode], undefined);
           onNodeSelect(newNode.id);
           panToShowNode(newPosition);
         }
@@ -484,7 +483,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       .catch((err) => {
         console.error("Failed to read clipboard contents: ", err);
       });
-  }, [workflowNodes, onNodesChange, onNodeSelect]);
+  }, [workflowNodes, onStateChange, onNodeSelect]);
 
   if (hasInitialized.current === false) {
     if (workflowNodes.length !== nodes.length) {
@@ -507,6 +506,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         edges={edges}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
+        onNodesDelete={(deleted) => {
+          handleNodeDeletion(deleted[0].id);
+        }}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
