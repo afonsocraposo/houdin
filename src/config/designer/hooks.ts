@@ -15,14 +15,11 @@ export const useWorkflowState = (workflow: WorkflowDefinition | null) => {
       connections: workflow?.connections || [],
     });
   const setNodes = (nodes: WorkflowNode[]) => {
-    console.log("setNodes", JSON.stringify(nodes), JSON.stringify(state.nodes));
     // check if nodes is same as state.nodes
     if (JSON.stringify(nodes) === JSON.stringify(state.nodes)) return;
-    console.log("setting nodes");
     setState({ nodes, connections: state.connections });
   };
   const setConnections = (connections: WorkflowConnection[]) => {
-    console.log("setConnections", connections, state.connections);
     // check if connections is same as state.connections
     if (JSON.stringify(connections) === JSON.stringify(state.connections))
       return;

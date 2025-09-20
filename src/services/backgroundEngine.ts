@@ -156,10 +156,12 @@ export class BackgroundWorkflowEngine {
     const url = _url.origin + _url.pathname + _url.hash;
     try {
       // Convert simple wildcard pattern to regex
-      const regexPattern = pattern
-        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special regex characters
-        .replace(/\\\*/g, ".*") // Convert * to .*
-        .replace(/\\\?/g, "."); // Convert ? to .
+      const regexPattern =
+        pattern
+          .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special regex characters
+          .replace(/\\\*/g, ".*") // Convert * to .*
+          .replace(/\\\?/g, ".") + // Convert ? to .
+        "\/?"; // Optional trailing slash
 
       const regex = new RegExp(`^${regexPattern}$`, "i");
       return regex.test(url);
