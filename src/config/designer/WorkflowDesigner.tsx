@@ -15,7 +15,7 @@ import {
   Text,
   Loader,
 } from "@mantine/core";
-import { useDebouncedCallback } from "@mantine/hooks";
+import { useDebouncedCallback, useStateHistory } from "@mantine/hooks";
 import {
   IconDeviceFloppy,
   IconArrowLeft,
@@ -39,6 +39,7 @@ import {
 import { hasLength, matches, useForm } from "@mantine/form";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionRegistry } from "@/services/actionRegistry";
+import { useWorkflowState } from "./hooks";
 
 interface WorkflowDesignerProps {
   workflow?: WorkflowDefinition;
@@ -72,10 +73,18 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       urlPattern: matches(/^https?:\/\/\S+$/, "Must be a valid URL pattern"),
     },
   });
-  const [nodes, setNodes] = useState<WorkflowNode[]>(workflow?.nodes || []);
-  const [connections, setConnections] = useState<WorkflowConnection[]>(
-    workflow?.connections || [],
-  );
+
+  const {
+    nodes,
+    connections,
+    setNodes,
+    setConnections,
+    undo,
+    redo,
+    current,
+    total,
+  } = useWorkflowState(workflow || null);
+
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
 
   const [exportModalOpened, setExportModalOpened] = useState(false);
@@ -440,6 +449,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
             selectedNode={selectedNode}
             onNodeSelect={setSelectedNode}
             errors={schemaErrors}
+            undo={undo}
+            redo={redo}
+            hasPrevious={current > 0}
+            hasNext={current < total - 1}
           />
           {/* Drawer  */}
           <Transition

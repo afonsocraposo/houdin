@@ -29,8 +29,13 @@ import {
   ActionIcon,
   Tooltip,
   useComputedColorScheme,
+  Group,
 } from "@mantine/core";
-import { IconLayoutGrid } from "@tabler/icons-react";
+import {
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconLayoutGrid,
+} from "@tabler/icons-react";
 import { WorkflowNode, WorkflowConnection, NodeType } from "@/types/workflow";
 import dagre from "@dagrejs/dagre";
 import { initializeTriggers } from "@/services/triggerInitializer";
@@ -49,6 +54,10 @@ interface ReactFlowCanvasProps {
   onNodeSelect: (node: WorkflowNode | null) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
+  undo: () => void;
+  redo: () => void;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
@@ -72,6 +81,10 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   onNodeSelect,
   selectedNode,
   errors,
+  undo,
+  redo,
+  hasNext,
+  hasPrevious,
 }) => {
   const colorScheme = useComputedColorScheme();
   const reactFlowInstance = useReactFlow();
@@ -437,6 +450,8 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   useHotkeys([
     ["mod + C", () => onNodeCopy()],
     ["mod + V", () => onNodePaste()],
+    ["mod + Z", () => hasPrevious && undo()],
+    ["mod + Shift + Z", () => hasNext && redo()],
   ]);
 
   const onNodeCopy = useCallback(() => {
@@ -517,16 +532,32 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         <MiniMap />
       </ReactFlow>
 
-      {/* Auto-arrange Button */}
-      <Tooltip label="Auto-arrange nodes">
+      <Group
+        style={{ position: "absolute", top: 16, left: 16, zIndex: 1000 }}
+        gap="xs"
+      >
+        <Tooltip label="Auto-arrange nodes">
+          <ActionIcon onClick={autoArrange} variant="subtle">
+            <IconLayoutGrid />
+          </ActionIcon>
+        </Tooltip>
         <ActionIcon
-          style={{ position: "absolute", top: 16, left: 16, zIndex: 1000 }}
-          onClick={autoArrange}
+          onClick={() => undo()}
           variant="subtle"
+          bg={hasPrevious ? undefined : "transparent"}
+          disabled={!hasPrevious}
         >
-          <IconLayoutGrid />
+          <IconArrowBackUp />
         </ActionIcon>
-      </Tooltip>
+        <ActionIcon
+          onClick={() => redo()}
+          variant="subtle"
+          bg={hasNext ? undefined : "transparent"}
+          disabled={!hasNext}
+        >
+          <IconArrowForwardUp />
+        </ActionIcon>
+      </Group>
 
       {/* Add Node Button */}
       <AddNodeList

@@ -89,7 +89,6 @@ export class ModalService {
           return;
         }
         window.removeEventListener("formModalResponse", handleResponse);
-        console.log(event.detail.values);
         if (!event.detail.values) {
           reject(new Error("Form modal was closed without submission"));
           return;
