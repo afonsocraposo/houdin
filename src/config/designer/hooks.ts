@@ -4,7 +4,7 @@ import {
   WorkflowNode,
 } from "@/types/workflow";
 import { useStateHistory } from "@mantine/hooks";
-import isEqual from "lodash/isequal";
+import isEqual from "lodash/isEqual";
 import cloneDeep from "lodash/cloneDeep";
 
 export const useWorkflowState = (workflow: WorkflowDefinition | null) => {
