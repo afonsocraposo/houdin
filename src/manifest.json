@@ -8,7 +8,6 @@
     }
   },
   "permissions": [
-    "activeTab",
     "scripting",
     "storage",
     "tabs",
@@ -34,17 +33,6 @@
       "js": [
         "src/content/content.ts",
         "src/content/elementSelector.ts"
-      ]
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "src/popup/index.html",
-        "src/config/index.html"
-      ],
-      "matches": [
-        "<all_urls>"
       ]
     }
   ],
