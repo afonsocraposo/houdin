@@ -15,7 +15,7 @@ import {
   Text,
   Loader,
 } from "@mantine/core";
-import { useDebouncedCallback, useThrottledCallback } from "@mantine/hooks";
+import { useDebouncedCallback } from "@mantine/hooks";
 import {
   IconDeviceFloppy,
   IconArrowLeft,
