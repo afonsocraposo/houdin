@@ -12,7 +12,7 @@ import {
   createHighlightJsAdapter,
 } from "@mantine/code-highlight";
 import hljs from "highlight.js/lib/core";
-import "./style.css";
+import "@/style.css";
 
 import jsonLang from "highlight.js/lib/languages/json";
 import { mantineTheme } from "@/theme";

@@ -28,7 +28,7 @@
   </defs>
 
   <!-- background fills full 48x48 with rounded corners -->
-  <rect width="48" height="48" fill="#242424" rx="12" ry="12" />
+  <!-- <rect width="48" height="48" fill="#1a1b1e" rx="12" ry="12" /> -->
 
   <!-- scaled + translated group to simulate padding (8px left/right, 10px top) -->
   <g transform="translate(8,10) scale(2)">

@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import iconSvg from "@/assets/icons/icon.svg";
+import Logo from "@/components/Logo";
 
 function App() {
   // Cross-browser API compatibility
@@ -95,19 +96,12 @@ function App() {
     <>
       <Container size="xs" p="md" style={{ width: "320px", height: "500px" }}>
         <Stack gap="sm">
-          <Group align="center">
-            <img
-              src={iconSvg}
-              alt="Houdin icon"
-              style={{ width: 48, height: 48 }}
-            />
-            <Stack gap={0}>
-              <Title order={2}>Houdin</Title>
-              <Text size="sm" c="dimmed">
-                Browser automation that feels like magic 🪄
-              </Text>
-            </Stack>
-          </Group>
+          <Stack gap={0}>
+            <Logo title size={32} />
+            <Text size="sm" c="dimmed">
+              Browser automation that feels like magic
+            </Text>
+          </Stack>
 
           <Tabs
             value={activeTab}

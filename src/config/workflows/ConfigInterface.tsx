@@ -14,7 +14,6 @@ import {
   Anchor,
   Space,
 } from "@mantine/core";
-import logoSvg from "@/assets/icons/icon.svg";
 import { initializeCredentials } from "@/services/credentialInitializer";
 import {
   IconInfoCircle,
@@ -34,6 +33,7 @@ import { WorkflowDefinition } from "@/types/workflow";
 import { APP_VERSION } from "@/utils/version";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { newWorkflowId } from "@/services/workflow";
+import Logo from "@/components/Logo";
 
 function ConfigInterface() {
   // Initialize credentials on app startup
@@ -182,17 +182,11 @@ function ConfigInterface() {
     <Container size="xl" py="xl">
       <Stack gap="lg">
         <div style={{ textAlign: "center" }}>
-          <img
-            src={logoSvg}
-            alt="Houdin logo"
-            style={{ width: 64, height: 64, marginBottom: 8 }}
-          />
-          <Title order={1} mt="sm">
-            Houdin
-          </Title>
+          <Group justify="center">
+            <Logo size={48} title />
+          </Group>
           <Text size="sm" c="dimmed">
-            Create visual workflows to inject components and automate tasks on
-            any website
+            Browser automation that feels like magic
           </Text>
         </div>
 
@@ -304,11 +298,10 @@ function ConfigInterface() {
 
         <Space h="xl" />
         <Text size="xs" c="dimmed" ta="center">
-          Houdin Extension v{APP_VERSION} - Browser automation that feels like
-          magic 🪄
+          Houdin Extension v{APP_VERSION}
         </Text>
         <Text size="xs" c="dimmed" ta="center">
-          Made with ❤️ by&nbsp;
+          Made with 🧡 by&nbsp;
           <Anchor target="_blank" href="https://afonsoraposo.com">
             Afonso Raposo
           </Anchor>

@@ -71,7 +71,6 @@ export default function ConfigWorkflowItem({
           </ActionIcon>
           <ActionIcon
             variant="subtle"
-            color="blue"
             onClick={() => navigate(`/executions?workflow=${workflow.id}`)}
             title="View execution history"
           >
