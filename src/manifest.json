@@ -17,8 +17,7 @@
     "webRequest"
   ],
   "host_permissions": [
-    "https://*/*",
-    "http://localhost/*"
+    "activeTab"
   ],
   "action": {
     "default_popup": "src/popup/index.html",
