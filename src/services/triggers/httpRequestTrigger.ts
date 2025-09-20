@@ -1,5 +1,7 @@
 import { BaseTrigger } from "@/types/triggers";
 import { textProperty, selectProperty } from "@/types/config-properties";
+import { sendMessageToBackground, CustomMessage } from "@/lib/messages";
+import { HttpTriggerFiredMessage } from "@/types/background-workflow";
 
 // HTTP Request Trigger Configuration
 export interface HttpRequestTriggerConfig {
@@ -66,9 +68,7 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig, Ht
       throw new Error("URL pattern is required for HTTP request trigger");
     }
 
-    // Send registration message to background script
-    chrome.runtime.sendMessage({
-      type: "REGISTER_HTTP_TRIGGER",
+    sendMessageToBackground("REGISTER_HTTP_TRIGGER", {
       workflowId: workflowId || "",
       triggerNodeId: nodeId,
       urlPattern,
@@ -76,16 +76,16 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig, Ht
     });
 
     // Listen for trigger events from background script
-    const messageListener = (message: any) => {
+    const messageListener = (message: CustomMessage<HttpTriggerFiredMessage>) => {
       if (
         message.type === "HTTP_TRIGGER_FIRED" &&
-        message.workflowId === workflowId &&
-        message.triggerNodeId === nodeId
+        message.data.workflowId === workflowId &&
+        message.data.triggerNodeId === nodeId
       ) {
         // Set the request data in context
         // context.setOutput(context.triggerNode.id, message.data);
         // Trigger the workflow
-        onTrigger(message.data);
+        onTrigger(message.data.data);
       }
       return false;
     };

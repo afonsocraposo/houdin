@@ -4,6 +4,12 @@ import TextFactory from "./factory/text";
 import InputFactory from "./factory/input";
 import FloatingActionButtonFactory from "./factory/floatingActionButton";
 
+export interface ComponentTriggerEventDetail {
+  workflowId: string;
+  nodeId: string;
+  data?: any;
+}
+
 export class ComponentFactory {
   static create(
     recipe: any,
@@ -49,9 +55,12 @@ export class ComponentFactory {
     data?: any,
   ): void {
     // Dispatch custom event that the workflow executor can listen to
-    const event = new CustomEvent("workflow-component-trigger", {
-      detail: { workflowId, nodeId, data },
-    });
+    const event = new CustomEvent<ComponentTriggerEventDetail>(
+      "workflow-component-trigger",
+      {
+        detail: { workflowId, nodeId, data },
+      },
+    );
     document.dispatchEvent(event);
   }
 }

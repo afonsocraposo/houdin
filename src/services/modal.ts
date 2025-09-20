@@ -3,6 +3,25 @@ import { generateId } from "@/utils/helpers";
 
 export const TIMEOUT_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
+export interface ModalEventBaseDetail {
+  id: string;
+}
+export interface ModalEventDetail extends ModalEventBaseDetail {
+  type: "customModal" | "inputModal" | "formModal";
+  data: any;
+  nonce: number;
+}
+
+export interface InputModalResponseDetail {
+  nonce: number;
+  input?: string;
+}
+
+export interface FormModalResponseDetail {
+  nonce: number;
+  values?: Record<string, any>;
+}
+
 export class ModalService {
   private static modalId = () => generateId("modal");
   public static showModal({
@@ -14,11 +33,12 @@ export class ModalService {
     callback?: (data: any) => void;
   }): string {
     const modalId = this.modalId();
-    const modalEvent = new CustomEvent("modalDispatch", {
+    const modalEvent = new CustomEvent<ModalEventDetail>("modalDispatch", {
       detail: {
         id: modalId,
         type: "customModal",
         data: { title, content },
+        nonce: 0, // Nonce not needed for custom modals
       },
     });
     window.dispatchEvent(modalEvent);
@@ -32,22 +52,25 @@ export class ModalService {
   }): Promise<any> {
     const nonce = Math.random();
     const modalId = this.modalId();
-    const modalEvent = new CustomEvent("modalDispatch", {
+    const modalEvent = new CustomEvent<ModalEventDetail>("modalDispatch", {
       detail: {
         id: modalId,
         type: "inputModal",
-        data: { nonce, title },
+        data: { title },
+        nonce,
       },
     });
     window.dispatchEvent(modalEvent);
     return new Promise((resolve, reject) => {
-      const handleResponse = (event: any) => {
+      const handleResponse = (
+        event: CustomEventInit<InputModalResponseDetail>,
+      ) => {
         // Ensure the response is for the correct modal instance
-        if (event.detail.nonce !== nonce) {
+        if (!event.detail || event.detail.nonce !== nonce) {
           return;
         }
         window.removeEventListener("inputModalResponse", handleResponse);
-        if (!event.details.input) {
+        if (!event.detail.input) {
           reject(new Error("Input modal was closed without submission"));
           return;
         }
@@ -74,18 +97,21 @@ export class ModalService {
   }): Promise<any> {
     const nonce = Math.random();
     const modalId = this.modalId();
-    const modalEvent = new CustomEvent("modalDispatch", {
+    const modalEvent = new CustomEvent<ModalEventDetail>("modalDispatch", {
       detail: {
         id: modalId,
         type: "formModal",
-        data: { nonce, fields, title },
+        data: { fields, title },
+        nonce,
       },
     });
     window.dispatchEvent(modalEvent);
     return new Promise((resolve, reject) => {
-      const handleResponse = (event: any) => {
+      const handleResponse = (
+        event: CustomEventInit<FormModalResponseDetail>,
+      ) => {
         // Ensure the response is for the correct modal instance
-        if (event.detail.nonce !== nonce) {
+        if (!event.detail || event.detail.nonce !== nonce) {
           return;
         }
         window.removeEventListener("formModalResponse", handleResponse);
@@ -105,7 +131,7 @@ export class ModalService {
   }
 
   public static closeModal(modalId: string): void {
-    const closeEvent = new CustomEvent("modalClose", {
+    const closeEvent = new CustomEvent<ModalEventBaseDetail>("modalClose", {
       detail: { id: modalId },
     });
     window.dispatchEvent(closeEvent);

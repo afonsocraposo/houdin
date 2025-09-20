@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import Logo from "@/components/Logo";
+import { sendMessageToContentScript } from "@/lib/messages";
 
 function App() {
   // Cross-browser API compatibility
@@ -70,9 +71,7 @@ function App() {
         { active: true, currentWindow: true },
         (tabs: any[]) => {
           if (tabs.length > 0 && tabs[0].id) {
-            browserAPI.tabs.sendMessage(tabs[0].id, {
-              type: "START_ELEMENT_SELECTION",
-            });
+            sendMessageToContentScript(tabs[0].id, "START_ELEMENT_SELECTION", {});
           }
         },
       );

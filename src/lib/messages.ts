@@ -1,18 +1,45 @@
 const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
 
-export const sendMessageToBackground = async (message: any): Promise<any> => {
+export const sendMessageToBackground = async <T>(
+  type: string,
+  data?: T,
+  responseCallback?: (response: any) => void,
+): Promise<any> => {
   try {
-    return await browserAPI.runtime.sendMessage(message);
+    return await browserAPI.runtime.sendMessage(
+      {
+        type,
+        data,
+      } as CustomMessage<T>,
+      responseCallback,
+    );
   } catch (error) {
     console.error(`Error sending message to background: ${error}`);
     return null;
   }
 };
 
-export const sendMessageToContentScript = async (
+export interface CustomMessage<T = any> {
+  type: string;
+  data: T;
+}
+
+export const sendMessageToContentScript = async <T>(
   tabId: number,
-  message: any,
+  type: string,
+  data?: T,
+  responseCallback?: (response: any) => void,
 ): Promise<any> => {
-  console.debug(`Sending message to content script in tab ${tabId}:`, message);
-  return await browserAPI.tabs.sendMessage(tabId, message);
+  console.debug(`Sending message to content script in tab ${tabId}:`, {
+    type,
+    data,
+  });
+  return await browserAPI.tabs.sendMessage(
+    tabId,
+    {
+      type,
+      data,
+    } as CustomMessage<T>,
+    responseCallback,
+  );
 };

@@ -8,13 +8,6 @@ import mantineNotificationsStyles from "@mantine/notifications/styles.css?inline
 import mantineCodeHighlightStyles from "@mantine/code-highlight/styles.css?inline";
 import { mantineTheme } from "@/theme";
 
-declare global {
-  interface WindowEventMap {
-    modalDispatch: CustomEvent;
-    notificationDispatch: CustomEvent;
-  }
-}
-
 export default function CustomMantineProvider({
   parent,
   children,

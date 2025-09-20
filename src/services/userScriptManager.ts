@@ -10,6 +10,13 @@ export interface UserScriptExecuteResponse {
   error?: string;
 }
 
+export interface WorkflowScriptMessage {
+  type: "workflow-script-response";
+  nodeId: string;
+  result?: any;
+  error?: string;
+}
+
 export class UserScriptManager {
   private static instance: UserScriptManager;
 
@@ -103,7 +110,7 @@ export class UserScriptManager {
   ): Promise<UserScriptExecuteResponse> {
     return new Promise((resolve) => {
       const messageListener = (
-        message: any,
+        message: WorkflowScriptMessage,
         sender: chrome.runtime.MessageSender,
       ) => {
         if (
@@ -180,7 +187,7 @@ export class UserScriptManager {
                           nodeId: nodeId,
                           result: null,
                           error: "CSP_VIOLATION: " + errorMessage,
-                        },
+                        } as WorkflowScriptMessage,
                         "*",
                       );
                     } else {
@@ -191,7 +198,7 @@ export class UserScriptManager {
                           nodeId: nodeId,
                           result: null,
                           error: errorMessage || "Unknown eval error",
-                        },
+                        } as WorkflowScriptMessage,
                         "*",
                       );
                     }
@@ -211,7 +218,7 @@ export class UserScriptManager {
                     nodeId: nodeId,
                     result: null,
                     error: "Script injection error: " + errorMsg,
-                  },
+                  } as WorkflowScriptMessage,
                   "*",
                 );
               }

@@ -40,9 +40,37 @@ export interface TriggerCommand extends WorkflowCommand {
   type: WorkflowCommandType.INIT_TRIGGER;
 }
 
+export interface TriggerFiredCommand {
+  type: WorkflowCommandType.TRIGGER_FIRED;
+  url: string;
+  workflowId: string;
+  triggerNodeId: string;
+  data: any;
+  duration: number;
+}
+
 export interface CommandResponse {
   commandId: string;
   success: boolean;
   data?: any;
   error?: string;
+}
+
+export interface StatusMessage {
+  success: boolean;
+  data?: any;
+  error?: string;
+}
+
+export interface HttpTriggerRegistration {
+  workflowId: string;
+  triggerNodeId: string;
+  urlPattern: string;
+  method: string;
+}
+
+export interface HttpTriggerFiredMessage {
+  workflowId: string;
+  triggerNodeId: string;
+  data: any;
 }

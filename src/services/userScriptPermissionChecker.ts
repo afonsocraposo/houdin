@@ -1,3 +1,5 @@
+import { sendMessageToBackground } from "@/lib/messages";
+
 export interface UserScriptPermissionStatus {
   available: boolean;
   enabled: boolean;
@@ -153,8 +155,9 @@ export class UserScriptPermissionChecker {
   // Method to request permission status via background script
   async requestPermissionStatusFromBackground(): Promise<UserScriptPermissionStatus> {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        { type: "CHECK_USERSCRIPT_PERMISSION" },
+      sendMessageToBackground(
+        "CHECK_USERSCRIPT_PERMISSION",
+        null,
         (response) => {
           if (chrome.runtime.lastError) {
             // If messaging fails, fall back to client-side check

@@ -197,7 +197,7 @@ export class WorkflowExecutor {
 
       const result = runBackground
         ? await this.executeActionInBackground(message)
-        : await sendMessageToContentScript(this.tabId, message);
+        : await sendMessageToContentScript(this.tabId, WorkflowCommandType.EXECUTE_ACTION, message);
 
       const duration = Date.now() - start;
       if (!result || !result.success) {

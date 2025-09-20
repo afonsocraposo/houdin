@@ -1,33 +1,37 @@
-import { TIMEOUT_DURATION } from "@/services/modal";
+import { InputModalResponseDetail, TIMEOUT_DURATION } from "@/services/modal";
 import { Modal, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useEffect, useState } from "react";
 
 interface InputModalProps {
   data: {
-    nonce: string;
     title: string;
   };
+  nonce: number;
   onClose?: () => void;
 }
 export default function InputModal({
-  data: { nonce, title },
+  data: { title },
+  nonce,
   onClose,
 }: InputModalProps) {
   const [opened, { close }] = useDisclosure(true);
   const [input, setInput] = useState("");
 
-  const sendResponse = (input: string | null = null) => {
-    const responseEvent = new CustomEvent("inputModalResponse", {
-      detail: {
-        nonce,
-        input,
+  const sendResponse = (input?: string) => {
+    const responseEvent = new CustomEvent<InputModalResponseDetail>(
+      "inputModalResponse",
+      {
+        detail: {
+          nonce,
+          input,
+        },
       },
-    });
+    );
     window.dispatchEvent(responseEvent);
   };
 
-  const handleClose = (input: string | null = null) => {
+  const handleClose = (input?: string) => {
     sendResponse(input);
     close();
     if (onClose) {

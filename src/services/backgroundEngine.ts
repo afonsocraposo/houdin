@@ -95,7 +95,11 @@ export class BackgroundWorkflowEngine {
       nodeId: node.id,
     };
     try {
-      await sendMessageToContentScript(tabId, message);
+      await sendMessageToContentScript(
+        tabId,
+        WorkflowCommandType.INIT_TRIGGER,
+        message,
+      );
     } catch (error) {
       console.error("Error sending trigger setup message:", error);
     }

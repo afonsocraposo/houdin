@@ -1,4 +1,16 @@
 // Element selector content script
+import { CustomMessage } from "@/lib/messages";
+
+interface ElementSelectedDetail {
+  selector: string;
+  element: {
+    tagName: string;
+    className: string;
+    id: string;
+    textContent: string | null;
+  };
+}
+
 let isSelecting = false;
 let highlightedElement: HTMLElement | null = null;
 let overlay: HTMLDivElement | null = null;
@@ -98,7 +110,10 @@ function handleClick(event: MouseEvent) {
 }
 
 function showSelectedElement(selector: string, element: HTMLElement) {
-  const event = new CustomEvent("modalDispatch", {
+  const event = new CustomEvent<{
+    type: string;
+    data: ElementSelectedDetail;
+  }>("modalDispatch", {
     detail: {
       type: "elementSelected",
       data: {
@@ -188,7 +203,7 @@ function initSelector() {
 }
 
 // Listen for messages from the extension
-chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: CustomMessage, _, sendResponse) => {
   if (message.type === "START_ELEMENT_SELECTION") {
     initSelector();
     sendResponse({ status: "selector_started" });

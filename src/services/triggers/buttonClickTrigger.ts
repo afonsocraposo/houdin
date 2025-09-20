@@ -1,5 +1,8 @@
 import React from "react";
-import { ComponentFactory } from "@/components/ComponentFactory";
+import {
+  ComponentFactory,
+  ComponentTriggerEventDetail,
+} from "@/components/ComponentFactory";
 import { BaseTrigger } from "@/types/triggers";
 import { getElement } from "@/utils/helpers";
 import { NotificationService } from "@/services/notification";
@@ -197,7 +200,9 @@ export class ButtonClickTrigger extends BaseTrigger<
 
     // Wait for user interaction before continuing workflow
     return new Promise<void>((resolve) => {
-      const handleComponentTrigger = (event: Event) => {
+      const handleComponentTrigger = (
+        event: CustomEventInit<ComponentTriggerEventDetail>,
+      ) => {
         const customEvent = event as CustomEvent;
         if (
           customEvent.detail?.workflowId === workflowId &&

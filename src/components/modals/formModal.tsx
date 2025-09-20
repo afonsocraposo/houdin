@@ -1,4 +1,4 @@
-import { TIMEOUT_DURATION } from "@/services/modal";
+import { FormModalResponseDetail, TIMEOUT_DURATION } from "@/services/modal";
 import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useEffect } from "react";
@@ -7,29 +7,33 @@ import FormRenderer from "../formAction/FormRenderer";
 
 interface FormModalProps {
   data: {
-    nonce: string;
     fields: FormFieldDefinition[];
     title: string;
   };
+  nonce: number;
   onClose?: () => void;
 }
 export default function FormModal({
-  data: { nonce, fields, title },
+  data: { fields, title },
+  nonce,
   onClose,
 }: FormModalProps) {
   const [opened, { close }] = useDisclosure(true);
 
-  const sendResponse = (values: Record<string, any> | null = null) => {
-    const responseEvent = new CustomEvent("formModalResponse", {
-      detail: {
-        nonce,
-        values,
+  const sendResponse = (values?: Record<string, any>) => {
+    const responseEvent = new CustomEvent<FormModalResponseDetail>(
+      "formModalResponse",
+      {
+        detail: {
+          nonce,
+          values,
+        },
       },
-    });
+    );
     window.dispatchEvent(responseEvent);
   };
 
-  const handleClose = (data?: any) => {
+  const handleClose = (data?: Record<string, any>) => {
     sendResponse(data);
     close();
     if (onClose) {

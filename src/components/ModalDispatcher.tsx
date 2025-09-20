@@ -4,29 +4,32 @@ import CustomModal from "@/components/modals/customModal";
 import InputModal from "./modals/inputModal";
 import FormModal from "./modals/formModal";
 import { generateId } from "@/utils/helpers";
+import { ModalEventBaseDetail, ModalEventDetail } from "@/services/modal";
 
 interface ModalInstance {
   id: string;
   type: string;
   data: any;
+  nonce: number;
 }
 
 export default function ModalDispatcher() {
   const [modals, setModals] = useState<ModalInstance[]>([]);
 
   useEffect(() => {
-    const handleModalDispatch = (event: Event) => {
+    const handleModalDispatch = (event: CustomEventInit<ModalEventDetail>) => {
       const customEvent = event as CustomEvent;
       const modal = customEvent.detail;
       const modalInstance: ModalInstance = {
         id: modal.id || generateId("modal"),
         type: modal.type,
         data: modal.data,
+        nonce: modal.nonce,
       };
       setModals((prev) => [...prev, modalInstance]);
     };
 
-    const handleModalClose = (event: Event) => {
+    const handleModalClose = (event: CustomEventInit<ModalEventBaseDetail>) => {
       const customEvent = event as CustomEvent;
       const modalId = customEvent.detail.id;
       setModals((prev) => prev.filter((modal) => modal.id !== modalId));
@@ -78,6 +81,7 @@ export default function ModalDispatcher() {
                 key={modal.id}
                 data={modal.data}
                 onClose={() => handleModalClose(modal.id)}
+                nonce={modal.nonce}
               />
             );
           case "formModal":
@@ -86,6 +90,7 @@ export default function ModalDispatcher() {
                 key={modal.id}
                 data={modal.data}
                 onClose={() => handleModalClose(modal.id)}
+                nonce={modal.nonce}
               />
             );
           default:
