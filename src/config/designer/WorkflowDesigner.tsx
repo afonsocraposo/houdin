@@ -190,7 +190,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   }, [hasUnsavedChanges, debouncedAutoSave, isDraft]);
 
-  useEffect(markAsChanged, [form.values, { nodes, connections }]);
+  useEffect(markAsChanged, [form.values, nodes, connections]);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
