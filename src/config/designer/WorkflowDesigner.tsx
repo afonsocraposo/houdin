@@ -224,12 +224,15 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   useEffect(() => {
     // clear selected node schema errors
-    if (selectedNode && schemaErrors[selectedNode.id]) {
-      setSchemaErrors((prev) => {
-        const updated = { ...prev };
-        delete updated[selectedNode.id];
-        return updated;
-      });
+    if (selectedNode) {
+      if (schemaErrors[selectedNode.id]) {
+        setSchemaErrors((prev) => {
+          const updated = { ...prev };
+          delete updated[selectedNode.id];
+          return updated;
+        });
+      }
+      setSelectedNode(nodes.find((n) => n.id === selectedNode.id) || null);
     }
   }, [nodes]);
 
@@ -242,6 +245,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           }
         : n,
     );
+    console.log("handleNodeUpdate", updatedNode, updatedNodes);
     setNodes(updatedNodes);
     setSelectedNode(updatedNode);
   };
