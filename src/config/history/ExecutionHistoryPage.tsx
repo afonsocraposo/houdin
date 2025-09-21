@@ -419,7 +419,7 @@ function ExecutionHistoryPage() {
                                 <Table>
                                   <Table.Thead>
                                     <Table.Tr>
-                                      <Table.Th>Node ID2</Table.Th>
+                                      <Table.Th>Node ID</Table.Th>
                                       <Table.Th>Node Type</Table.Th>
                                       <Table.Th>Status</Table.Th>
                                       <Table.Th>Duration</Table.Th>
