@@ -1,5 +1,5 @@
 import { Routes, Route, useParams } from "react-router-dom";
-import ConfigInterface from "./workflows/ConfigInterface";
+import ConfigInterface from "./ConfigInterface";
 import DesignerView from "./designer/DesignerView";
 import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
 
@@ -15,7 +15,10 @@ function ConfigApp() {
       <Route path="/designer" element={<DesignerView />} />
       <Route path="/designer/:workflowId" element={<DesignerWithParams />} />
       <Route path="/executions" element={<ExecutionHistoryPage />} />
-      <Route path="/executions/:workflowId" element={<ExecutionHistoryPage />} />
+      <Route
+        path="/executions/:workflowId"
+        element={<ExecutionHistoryPage />}
+      />
     </Routes>
   );
 }

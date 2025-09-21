@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Container,
   Title,
@@ -39,6 +39,7 @@ import { hasLength, matches, useForm } from "@mantine/form";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionRegistry } from "@/services/actionRegistry";
 import { useWorkflowState } from "./hooks";
+import { newWorkflowId } from "@/services/workflow";
 
 interface WorkflowDesignerProps {
   workflow?: WorkflowDefinition;
@@ -55,9 +56,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   const [schemaErrors, setSchemaErrors] = useState<
     Record<string, Record<string, string[]>>
   >({});
-  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(
-    null,
-  );
+  const [currentWorkflowId, setCurrentWorkflowId] =
+    useState<string>(newWorkflowId());
   const [isDraft, setIsDraft] = useState(!workflow); // Track if this is a new workflow draft
   const form = useForm({
     mode: "uncontrolled",
@@ -195,11 +195,11 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
     if (workflow) {
-      if (currentWorkflowId !== workflow.id) return;
+      if (currentWorkflowId === workflow.id) return;
 
       // Only update nodes if this is actually a new/different workflow
       // Don't reset nodes when just re-rendering the same workflow
-      setCurrentWorkflowId(workflow.id || null);
+      setCurrentWorkflowId(workflow.id);
       setIsDraft(false); // If we have a workflow prop, it's not a draft
       form.values.name = workflow.name || "";
       form.values.description = workflow.description || "";
@@ -207,8 +207,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       form.values.enabled = workflow.enabled ?? true;
       set(workflow.nodes || [], workflow.connections || []);
       setSelectedNodeId(null);
+    } else {
+      setCurrentWorkflowId(newWorkflowId());
     }
-  }, [workflow, currentWorkflowId]); // Removed selectedNode and nodes from dependencies
+  }, [workflow]); // Removed selectedNode and nodes from dependencies
 
   useEffect(() => {
     // clear selected node schema errors
@@ -298,7 +300,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const getCurrentWorkflowDefinition = (): WorkflowDefinition => {
     return {
-      id: workflow?.id || "draft-workflow",
+      id: workflow?.id || currentWorkflowId,
       nodes,
       connections,
       lastUpdated: Date.now(),

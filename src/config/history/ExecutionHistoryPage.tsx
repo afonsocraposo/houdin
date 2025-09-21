@@ -203,54 +203,48 @@ function ExecutionHistoryPage() {
     <Container size="xl" p="md">
       <Stack gap="lg">
         <Group justify="space-between">
-          <Title order={2}>Execution history</Title>
-          <Group>
-            <Button
-              variant="outline"
-              leftSection={<IconArrowLeft size={16} />}
-              onClick={() => navigate("/")}
-            >
-              Back to Workflows
-            </Button>
-
-            <Button
-              leftSection={<IconRefresh size={16} />}
-              variant="light"
-              onClick={loadExecutions}
-            >
-              Refresh
-            </Button>
-            <Button
-              leftSection={<IconTrash size={16} />}
-              color="red"
-              variant="light"
-              onClick={clearHistory}
-            >
-              Clear History
-            </Button>
-          </Group>
-        </Group>
-
-        <Text c="dimmed">
-          Execution tracking (only the last {MAX_EXECUTIONS_HISTORY} executions
-          are kept).
-        </Text>
-
-        {/* Statistics */}
-        <Group gap="xs">
-          <Badge color="blue" variant="light" size="lg">
-            {stats.total} total
-          </Badge>
-          {stats.completed > 0 && (
-            <Badge color="green" size="lg">
-              {stats.completed} completed
-            </Badge>
-          )}
-          {stats.failed > 0 && (
-            <Badge color="red" size="lg">
-              {stats.failed} failed
-            </Badge>
-          )}
+          <Stack>
+            <Title order={2}>Execution history</Title>
+            <Text c="dimmed">
+              Execution tracking - only the last {MAX_EXECUTIONS_HISTORY}{" "}
+              executions are kept.
+            </Text>
+          </Stack>
+          <Stack align="end" gap="lg">
+            <Group>
+              <Button
+                leftSection={<IconTrash size={16} />}
+                color="red"
+                variant="outline"
+                onClick={clearHistory}
+              >
+                Clear History
+              </Button>
+              <Button
+                leftSection={<IconRefresh size={16} />}
+                variant="light"
+                onClick={loadExecutions}
+              >
+                Refresh
+              </Button>
+            </Group>
+            {/* Statistics */}
+            <Group gap="xs">
+              <Badge color="blue" variant="light" size="lg">
+                {stats.total} total
+              </Badge>
+              {stats.completed > 0 && (
+                <Badge color="green" size="lg">
+                  {stats.completed} completed
+                </Badge>
+              )}
+              {stats.failed > 0 && (
+                <Badge color="red" size="lg">
+                  {stats.failed} failed
+                </Badge>
+              )}
+            </Group>
+          </Stack>
         </Group>
 
         {/* Filters */}
