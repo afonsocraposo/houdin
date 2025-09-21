@@ -121,7 +121,6 @@ function ExecutionHistory() {
   };
 
   const recentExecutions = executions.slice(0, stats.total);
-  console.log(recentExecutions);
   return (
     <Stack gap="sm" h={350}>
       <Group gap="xs">
