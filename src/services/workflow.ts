@@ -85,7 +85,7 @@ export class WorkflowExecutor {
     url: string,
     private onDone?: (executorId: string) => void,
   ) {
-    this.id = newWorkflowId();
+    this.id = generateId("exec", 12);
     this.workflowId = workflow.id;
     this.workflow = workflow;
     this.tabId = tabId;
@@ -202,7 +202,7 @@ export class WorkflowExecutor {
           this.tabId,
           WorkflowCommandType.EXECUTE_ACTION,
           message,
-        ); 
+        );
 
       const duration = Date.now() - start;
       if (!result || !result.success) {

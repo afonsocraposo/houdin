@@ -74,7 +74,7 @@ export default function ConfigWorkflowItem({
           </ActionIcon>
           <ActionIcon
             variant="subtle"
-            onClick={() => navigate(`/executions?workflow=${workflow.id}`)}
+            onClick={() => navigate(`/?tab=history&workflow=${workflow.id}`)}
             title="View execution history"
           >
             <IconHistory size={16} />

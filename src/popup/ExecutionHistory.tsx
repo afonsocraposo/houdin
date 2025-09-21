@@ -109,7 +109,14 @@ function ExecutionHistory() {
   const openFullHistory = () => {
     // Open config page with executions tab
     const configUrl =
-      browserAPI.runtime.getURL("src/config/index.html") + "#/executions";
+      browserAPI.runtime.getURL("src/config/index.html") + "#/?tab=history";
+    browserAPI.tabs.create({ url: configUrl });
+  };
+
+  const openExecutionDetails = (executionId: string) => {
+    const configUrl =
+      browserAPI.runtime.getURL("src/config/index.html") +
+      `#/?tab=history&execution=${executionId}`;
     browserAPI.tabs.create({ url: configUrl });
   };
 
@@ -147,7 +154,16 @@ function ExecutionHistory() {
             <ScrollArea>
               <Stack gap="xs">
                 {recentExecutions.map((execution) => (
-                  <Group key={execution.id} justify="space-between" gap="xs">
+                  <Group
+                    key={execution.id}
+                    justify="space-between"
+                    gap="xs"
+                    onClick={() => {
+                      openExecutionDetails(execution.id);
+                    }}
+                    style={{ cursor: "pointer" }}
+                    title="View details"
+                  >
                     <Stack gap={2} style={{ flex: 1 }}>
                       <Text size="xs" truncate>
                         {getWorkflowName(execution.workflowId)}
