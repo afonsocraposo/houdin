@@ -15,10 +15,6 @@ function ConfigApp() {
       <Route path="/designer" element={<DesignerView />} />
       <Route path="/designer/:workflowId" element={<DesignerWithParams />} />
       <Route path="/executions" element={<ExecutionHistoryPage />} />
-      <Route
-        path="/executions/:workflowId"
-        element={<ExecutionHistoryPage />}
-      />
     </Routes>
   );
 }

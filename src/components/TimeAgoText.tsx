@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Text, TextProps, Tooltip } from "@mantine/core";
+import { Text, TextProps } from "@mantine/core";
 import { formatTimeAgo } from "@/utils/time";
 
 interface TimeAgoTextProps extends Omit<TextProps, "children"> {
@@ -33,8 +33,8 @@ export const TimeAgoText: React.FC<TimeAgoTextProps> = ({
   }, [timestamp, prefix, refreshInterval]);
 
   return (
-    <Tooltip label={new Date(timestamp).toLocaleString()}>
-      <Text {...textProps}>{timeAgoText}</Text>
-    </Tooltip>
+    <Text {...textProps} title={new Date(timestamp).toLocaleString()}>
+      {timeAgoText}
+    </Text>
   );
 };

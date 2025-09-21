@@ -55,9 +55,9 @@ function ConfigInterface() {
   // Handle tab routing
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && (tabParam === "workflows" || tabParam === "credentials")) {
+    if (tabParam && Object.values(TabOption).includes(tabParam as TabOption)) {
       setActiveTab(tabParam);
-    } else if (!tabParam) {
+    } else {
       setActiveTab("workflows");
     }
   }, [searchParams]);

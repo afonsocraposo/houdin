@@ -25,7 +25,6 @@ import {
   IconRefresh,
   IconTrash,
   IconSearch,
-  IconArrowLeft,
 } from "@tabler/icons-react";
 import {
   WorkflowExecution,
@@ -37,23 +36,25 @@ import {
   ContentStorageClient,
   MAX_EXECUTIONS_HISTORY,
 } from "@/services/storage";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import { formatTimeAgo } from "@/utils/time";
 import { CodeHighlight } from "@mantine/code-highlight";
 
 function ExecutionHistoryPage() {
-  const navigate = useNavigate();
   const { workflowId: urlWorkflowId } = useParams<{ workflowId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
-  const [expanded, setExpanded] = useState<string[]>([]);
+  const executionId = searchParams.get("execution");
+  const [expanded, setExpanded] = useState<string[]>(
+    executionId ? [executionId] : [],
+  );
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [filteredExecutions, setFilteredExecutions] = useState<
     WorkflowExecution[]
   >([]);
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [searchFilter, setSearchFilter] = useState<string>("");
+  const [searchFilter, setSearchFilter] = useState<string>(executionId || "");
 
   const storageClient = new ContentStorageClient();
 
@@ -175,7 +176,7 @@ function ExecutionHistoryPage() {
 
   const getWorkflowName = (workflowId: string) => {
     const workflow = workflows.find((w) => w.id === workflowId);
-    return workflow?.name || `Workflow ${workflowId.slice(-6)}`;
+    return workflow?.name || `Workflow ${workflowId}`;
   };
 
   const getNodeType = (workflowId: string, nodeId: string): string => {
@@ -256,6 +257,18 @@ function ExecutionHistoryPage() {
               value={searchFilter}
               onChange={(event) => setSearchFilter(event.currentTarget.value)}
               style={{ flex: 1 }}
+              rightSection={
+                searchFilter && (
+                  <ActionIcon
+                    size="sm"
+                    onClick={() => setSearchFilter("")}
+                    title="Clear search"
+                    variant="subtle"
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                )
+              }
             />
             <Select
               placeholder="Filter by status"
@@ -317,7 +330,7 @@ function ExecutionHistoryPage() {
               <Table.Tbody>
                 {filteredExecutions.map((execution) => (
                   <React.Fragment key={execution.id}>
-                    <Table.Tr>
+                    <Table.Tr id={execution.id}>
                       <Table.Td>
                         <ActionIcon
                           variant="subtle"
@@ -333,7 +346,7 @@ function ExecutionHistoryPage() {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" ff="monospace">
-                          {execution.id.slice(-8)}
+                          {execution.id}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -426,7 +439,7 @@ function ExecutionHistoryPage() {
                                           <Table.Tr key={i}>
                                             <Table.Td>
                                               <Text size="xs" ff="monospace">
-                                                {node.nodeId.slice(-8)}
+                                                {node.nodeId}
                                               </Text>
                                             </Table.Td>
                                             <Table.Td>
