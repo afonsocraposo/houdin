@@ -31,6 +31,12 @@ jobs:
     - name: Run tests
       run: npm test
 
+    - name: Install Playwright browsers
+      run: npx playwright install chromium
+
+    - name: Run e2e tests
+      run: npm run test:e2e
+
     - name: Get version from package.json
       id: version
       run: |
