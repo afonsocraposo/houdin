@@ -229,9 +229,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     const updatedNodes = nodes.map((n) =>
       n.id === updatedNode.id
         ? {
-          ...updatedNode,
-          position: n.position, // keep original position
-        }
+            ...updatedNode,
+            position: n.position, // keep original position
+          }
         : n,
     );
     set(updatedNodes);
@@ -467,6 +467,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               >
                 <NodeProperties
                   node={selectedNode}
+                  onClose={() => setSelectedNodeId(null)}
                   onNodeUpdate={handleNodeUpdate}
                   errors={schemaErrors[selectedNode?.id || ""]}
                 />

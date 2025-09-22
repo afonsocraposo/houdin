@@ -8,6 +8,7 @@ import { NodeType } from "@/types/workflow";
 import {
   ActionIcon,
   Button,
+  Group,
   Paper,
   ScrollArea,
   Stack,
@@ -16,7 +17,12 @@ import {
   Transition,
 } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
-import { IconPlus, IconSearch, IconX } from "@tabler/icons-react";
+import {
+  IconArrowBarToRight,
+  IconPlus,
+  IconSearch,
+  IconX,
+} from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface NodeMetadata {
@@ -84,7 +90,7 @@ export default function AddNodeList({
     }
   }, [showNodePalette]);
 
-  useEffect(() => { }, []);
+  useEffect(() => {}, []);
 
   const handleSearch = useDebouncedCallback((value: string) => {
     const filteredCategories = {
@@ -123,6 +129,7 @@ export default function AddNodeList({
   return (
     <>
       <ActionIcon
+        id="add-node-button"
         style={{ position: "absolute", top: 16, right: 16 }}
         onClick={() => setShowNodePalette(true)}
       >
@@ -150,7 +157,17 @@ export default function AddNodeList({
             }}
           >
             <Stack h="100%">
-              <Text fw={500}>Add Node</Text>
+              <Group>
+                <ActionIcon
+                  onClick={() => setShowNodePalette(false)}
+                  variant="subtle"
+                  c="dimmed"
+                  aria-label="Close node palette"
+                >
+                  <IconArrowBarToRight />
+                </ActionIcon>
+                <Text fw={500}>Add Node</Text>
+              </Group>
               <TextInput
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

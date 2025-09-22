@@ -1,5 +1,13 @@
 import React from "react";
-import { Stack, Text, Card, Group, ScrollArea, Tooltip } from "@mantine/core";
+import {
+  Stack,
+  Text,
+  Card,
+  Group,
+  ScrollArea,
+  Tooltip,
+  ActionIcon,
+} from "@mantine/core";
 import {
   ActionNodeData,
   TriggerNodeData,
@@ -8,18 +16,20 @@ import {
 import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import { IconHelpCircle } from "@tabler/icons-react";
+import { IconArrowBarToRight, IconHelpCircle } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 
 interface NodePropertiesProps {
   node: WorkflowNode | null;
   onNodeUpdate: (updatedNode: WorkflowNode) => void;
   errors?: Record<string, string[]>;
+  onClose: () => void;
 }
 
 export const NodeProperties: React.FC<NodePropertiesProps> = ({
   node,
   onNodeUpdate,
+  onClose,
   errors,
 }) => {
   if (!node) {
@@ -205,9 +215,19 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   return (
     <>
       <Group mb="md" justify="space-between">
-        <Text fw={500} c={getNodeTypeColor(node.type)}>
-          {getNodeTitle(node)}
-        </Text>
+        <Group>
+          <ActionIcon
+            onClick={onClose}
+            variant="subtle"
+            c="dimmed"
+            aria-label="Close node properties"
+          >
+            <IconArrowBarToRight />
+          </ActionIcon>
+          <Text fw={500} c={getNodeTypeColor(node.type)}>
+            {getNodeTitle(node)}
+          </Text>
+        </Group>
         <Tooltip
           label={
             <Text size="sm">
