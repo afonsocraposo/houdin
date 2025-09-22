@@ -153,7 +153,7 @@ function ConfigInterface() {
 
         <Space h="xl" />
         <Text size="xs" c="dimmed" ta="center">
-          Houdin Extension v{APP_VERSION}
+          Houdin extension v{APP_VERSION}
         </Text>
         <Text size="xs" c="dimmed" ta="center">
           Made with 🧡 by&nbsp;
