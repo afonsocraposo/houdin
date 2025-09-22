@@ -63,7 +63,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     errors: Record<string, string[]> | undefined,
   ) => {
     const triggerRegistry = TriggerRegistry.getInstance();
-    const triggerType = data.triggerType;
+    const triggerType = data.type;
 
     if (!triggerType) {
       return <Text c="red">No trigger type found</Text>;
@@ -116,7 +116,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     errors: Record<string, string[]> | undefined,
   ) => {
     const actionRegistry = ActionRegistry.getInstance();
-    const actionType = data.actionType;
+    const actionType = data.type;
 
     if (!actionType) {
       return <Text c="red">No action type found</Text>;
@@ -192,7 +192,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   const getNodeTitle = (node: WorkflowNode): string => {
     if (node.type === "trigger") {
-      const triggerType = (node.data as TriggerNodeData).triggerType;
+      const triggerType = (node.data as TriggerNodeData).type;
       const triggerRegistry = TriggerRegistry.getInstance();
       const trigger = triggerRegistry.getTrigger(triggerType);
       return trigger
@@ -201,7 +201,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     }
 
     if (node.type === "action") {
-      const actionType = (node.data as ActionNodeData).actionType;
+      const actionType = (node.data as ActionNodeData).type;
       const actionRegistry = ActionRegistry.getInstance();
       const action = actionRegistry.getAction(actionType);
       return action

@@ -72,7 +72,7 @@ export class BackgroundWorkflowEngine {
     node: WorkflowNode,
   ): Promise<void> {
     // Access trigger type correctly - it's stored as triggerType, not type
-    const triggerType = (node.data as TriggerNodeData)?.triggerType;
+    const triggerType = (node.data as TriggerNodeData)?.type;
     const triggerConfig = node.data?.config || {};
 
     if (!triggerType) {

@@ -12,10 +12,10 @@ interface BaseNodeData {
   config: Record<string, any>;
 }
 export interface TriggerNodeData extends BaseNodeData {
-  triggerType: string;
+  type: string;
 }
 export interface ActionNodeData extends BaseNodeData {
-  actionType: string;
+  type: string;
 }
 
 export interface WorkflowConnection {

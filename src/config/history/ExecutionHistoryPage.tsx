@@ -187,11 +187,10 @@ function ExecutionHistoryPage() {
     if (!node) return "unknown";
 
     if (node.type === "action") {
-      const actionType = (node.data as ActionNodeData)?.actionType || "unknown";
+      const actionType = (node.data as ActionNodeData)?.type || "unknown";
       return `action:${actionType}`;
     } else if (node.type === "trigger") {
-      const triggerType =
-        (node.data as TriggerNodeData)?.triggerType || "unknown";
+      const triggerType = (node.data as TriggerNodeData)?.type || "unknown";
       return `trigger:${triggerType}`;
     }
 
@@ -498,12 +497,12 @@ function ExecutionHistoryPage() {
                                                         language="json"
                                                         code={
                                                           typeof node.data ===
-                                                            "object"
+                                                          "object"
                                                             ? JSON.stringify(
-                                                              node.data,
-                                                              null,
-                                                              2,
-                                                            )
+                                                                node.data,
+                                                                null,
+                                                                2,
+                                                              )
                                                             : String(node.data)
                                                         }
                                                       />

@@ -252,7 +252,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     nodes.forEach((node) => {
       if (node.type === "trigger") {
         const { valid, errors } = triggerRegistry.validateConfig(
-          (node.data as TriggerNodeData).triggerType,
+          (node.data as TriggerNodeData).type,
           node.data.config,
         );
         if (!valid) {
@@ -260,7 +260,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         }
       } else if (node.type === "action") {
         const { valid, errors } = actionRegistry.validateConfig(
-          (node.data as ActionNodeData).actionType,
+          (node.data as ActionNodeData).type,
           node.data.config,
         );
         if (!valid) {
