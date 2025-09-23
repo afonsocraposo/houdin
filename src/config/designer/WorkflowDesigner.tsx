@@ -294,7 +294,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const handleViewHistory = () => {
     if (workflow?.id) {
-      navigate(`/executions/${workflow.id}`);
+      navigate(`/?tab=history&workflow=${workflow.id}`);
     }
   };
 
