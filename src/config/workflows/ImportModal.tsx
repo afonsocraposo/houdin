@@ -124,6 +124,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
       onClose={handleClose}
       title="Import Workflow"
       size="lg"
+      id="import-modal"
     >
       <Stack gap="md">
         <Text size="sm" c="dimmed">
@@ -193,6 +194,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             leftSection={<IconUpload size={16} />}
             onClick={handleImport}
             disabled={!jsonContent.trim()}
+            id="confirm-import-workflow"
           >
             Import Workflow
           </Button>

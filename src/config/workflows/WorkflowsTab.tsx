@@ -129,6 +129,7 @@ export default function WorkflowsTab({
               variant="outline"
               leftSection={<IconUpload size={16} />}
               onClick={() => setImportModalOpened(true)}
+              id="open-import-workflow-modal"
             >
               Import Workflow
             </Button>
