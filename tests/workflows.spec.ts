@@ -4,6 +4,7 @@ import {
   TriggerNodeData,
   WorkflowDefinition,
 } from "../src/types/workflow";
+import { Page } from "@playwright/test";
 
 const DEMO_WORKFLOW = `{
   "connections": [
@@ -60,6 +61,25 @@ const DEMO_WORKFLOW = `{
   ],
   "urlPattern": "https://*"
 }`;
+
+const importDemoWorkflow = async (
+  page: Page,
+  workflowJson: string = DEMO_WORKFLOW,
+) => {
+  // click on Import Workflow button, id="open-import-workflow-modal"
+  await page.locator("#open-import-workflow-modal").click();
+
+  // Expect to see text "Import Workflow" in modal
+  await expect(page.getByText("Or paste JSON content")).toBeVisible();
+
+  // Paste the workflow JSON in the textArea, placeholder="Paste your workflow JSON here..."
+  await page
+    .locator('textarea[placeholder="Paste your workflow JSON here..."]')
+    .fill(workflowJson);
+
+  // Click on Import button element
+  await page.locator("#confirm-import-workflow").click();
+};
 
 test.describe("Workflows creation and design", () => {
   // always go to config page before each test
@@ -238,22 +258,6 @@ test.describe("Workflows creation and design", () => {
     // Expect to see description
     await expect(page.getByText("This is a test workflow")).toBeVisible();
   });
-
-  const importDemoWorkflow = async (page: any) => {
-    // click on Import Workflow button, id="open-import-workflow-modal"
-    await page.locator("#open-import-workflow-modal").click();
-
-    // Expect to see text "Import Workflow" in modal
-    await expect(page.getByText("Or paste JSON content")).toBeVisible();
-
-    // Paste the workflow JSON in the textArea, placeholder="Paste your workflow JSON here..."
-    await page
-      .locator('textarea[placeholder="Paste your workflow JSON here..."]')
-      .fill(DEMO_WORKFLOW);
-
-    // Click on Import button element
-    await page.locator("#confirm-import-workflow").click();
-  };
 
   test("can import a workflow", async ({ page }) => {
     await importDemoWorkflow(page);
