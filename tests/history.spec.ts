@@ -18,7 +18,11 @@ test.describe("Execution history", () => {
     await expect(page.getByText("No executions yet")).toBeVisible();
   });
 
-  test("different ways to go to executions", async ({ page, baseUrl }) => {
+  test("different ways to go to executions", async ({
+    page,
+    baseUrl,
+    popupUrl,
+  }) => {
     // import demo workflow
     await importWorkflow(baseUrl, page);
 
@@ -52,12 +56,27 @@ test.describe("Execution history", () => {
 
     // Check that URL has parameter workflow={workflowId}
     await expect(page).toHaveURL(new RegExp(`workflow=${workflowId}`));
+
+    // Open popup
+    await page.goto(popupUrl);
+
+    // Click on History tab
+    await page.getByRole("tab", { name: "History" }).click();
+
+    // Click on button "View Full History"
+    await page.getByRole("button", { name: "View Full History" }).click();
+
+    // Check that URL has changed to baseUrl with history tab
+    await expect(page).toHaveURL(
+      new RegExp(urlBuilder(baseUrl, Destinations.HISTORY)),
+    );
   });
 
   test("see execution history after running workflow", async ({
     page,
     context,
     baseUrl,
+    popupUrl,
   }) => {
     // import demo workflow
     await importWorkflow(baseUrl, page);
@@ -137,12 +156,29 @@ test.describe("Execution history", () => {
   "content": "Hello from Houdin workflow",
   "title": "Workflow Result"
 }`);
+
+    // Check that popup shows history as well
+    await page.goto(popupUrl);
+    await page.getByRole("tab", { name: "History" }).click();
+
+    // check for text "1 executed"
+    await expect(page.getByText("1 executed")).toBeVisible();
+
+    // check for text "1 completed"
+    await expect(page.getByText("1 completed")).toBeVisible();
+
+    // check for text "0 failed"
+    await expect(page.getByText("0 failed")).toBeVisible();
+
+    // check for text "Test Workflow"
+    await expect(page.getByText("Test Workflow")).toBeVisible();
   });
 
   test("see execution history with failing workflow", async ({
     page,
     baseUrl,
     context,
+    popupUrl,
   }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
@@ -226,5 +262,21 @@ test.describe("Execution history", () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       "Element not found for selector: #non-existent-element",
     );
+    //
+    // Check that popup shows history as well
+    await page.goto(popupUrl);
+    await page.getByRole("tab", { name: "History" }).click();
+
+    // check for text "1 executed"
+    await expect(page.getByText("1 executed")).toBeVisible();
+
+    // check for text "1 completed"
+    await expect(page.getByText("0 completed")).toBeVisible();
+
+    // check for text "0 failed"
+    await expect(page.getByText("1 failed")).toBeVisible();
+
+    // check for text "Test Workflow"
+    await expect(page.getByText("Test Workflow")).toBeVisible();
   });
 });

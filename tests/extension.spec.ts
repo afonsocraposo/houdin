@@ -28,9 +28,9 @@ test.describe("Load extension in chrome", () => {
     expect(title).toBe("Houdin");
   });
 
-  test("extension popup opens", async ({ page, extensionId }) => {
+  test("extension popup opens", async ({ page, popupUrl }) => {
     // Open extension popup page
-    await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
+    await page.goto(popupUrl);
 
     // Test popup page loads
     await expect(page.locator("body")).toBeVisible();
