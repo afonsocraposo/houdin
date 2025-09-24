@@ -4,7 +4,7 @@ import {
   TriggerNodeData,
   WorkflowDefinition,
 } from "../src/types/workflow";
-import { importDemoWorkflow } from "./utils";
+import { importWorkflow } from "./utils";
 
 test.describe("Workflows creation, design and execution", () => {
   // always go to config page before each test
@@ -185,7 +185,7 @@ test.describe("Workflows creation, design and execution", () => {
   });
 
   test("can import a workflow", async ({ page, extensionId }) => {
-    await importDemoWorkflow(extensionId, page);
+    await importWorkflow(extensionId, page);
 
     // Expect to see the new workflow in the list
     await expect(page.locator('text="Test Workflow"').first()).toBeVisible();
@@ -232,7 +232,7 @@ test.describe("Workflows creation, design and execution", () => {
   });
 
   test("can run a workflow", async ({ page, extensionId }) => {
-    await importDemoWorkflow(extensionId, page);
+    await importWorkflow(extensionId, page);
 
     // Go to example.com
     await page.goto("https://example.com");

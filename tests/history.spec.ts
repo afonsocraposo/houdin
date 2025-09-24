@@ -1,12 +1,10 @@
+import { DEMO_FAIILING_WORKFLOW } from "./demoWorkflows";
 import { test, expect } from "./test.base";
-import { importDemoWorkflow } from "./utils";
+import { importWorkflow } from "./utils";
 
 test.describe("Execution history", () => {
   // always go to config page before each test
   test.beforeEach(async ({ page, extensionId }) => {
-    // import demo workflow
-    await importDemoWorkflow(extensionId, page);
-
     await page.goto(
       `chrome-extension://${extensionId}/src/config/index.html#/?tab=history`,
     );
@@ -27,6 +25,9 @@ test.describe("Execution history", () => {
     extensionId,
     context,
   }) => {
+    // import demo workflow
+    await importWorkflow(extensionId, page);
+
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
     // Go to example.com to trigger the workflow
@@ -98,5 +99,82 @@ test.describe("Execution history", () => {
   "content": "Hello from Houdin workflow",
   "title": "Workflow Result"
 }`);
+  });
+
+  test("see execution history with failing workflow", async ({
+    page,
+    extensionId,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    // import demo failing workflow
+    await importWorkflow(extensionId, page, DEMO_FAIILING_WORKFLOW);
+
+    // Go to example.com to trigger the workflow
+    await page.goto("https://example.com");
+
+    // Wait to allow the workflow to execute
+    await page.waitForTimeout(1000);
+
+    // Go back to history page
+    page.goto(
+      `chrome-extension://${extensionId}/src/config/index.html#/?tab=history`,
+    );
+
+    // Check that execution is visible in history, search for text "exec-"
+    await expect(page.getByText(/exec-/)).toBeVisible();
+
+    // Check for workflow name "Test Workflow", get the visible one in case there are multiple
+    await expect(page.locator('text="Test Workflow"').last()).toBeVisible();
+
+    // Check for trigger type "page-load"
+    await expect(page.getByText("page-load")).toBeVisible();
+
+    // Check for example.com
+    await expect(page.getByText("https://example.com/")).toBeVisible();
+
+    // Check for status "Completed"
+    await expect(page.getByText("failed", { exact: true })).toBeVisible();
+
+    // Get first row of history table
+    const firstRow = page.locator("table tbody tr").first();
+
+    // Click on first row button to expand details
+    await firstRow.getByRole("button").click();
+
+    // Search for trigger-5rfUmu in details
+    await expect(page.getByText("trigger-5rfUmu")).toBeVisible();
+    // Search for action-P8n5PD in details
+    await expect(page.getByText("action-P8n5PD")).toBeVisible();
+
+    // Search for node type
+    await expect(page.getByText("trigger:page-load")).toBeVisible();
+    await expect(page.getByText("action:click-element")).toBeVisible();
+
+    // Expect to see one Success and one Error badge
+    await expect(page.getByText("success")).toHaveCount(1);
+    await expect(page.getByText("error")).toHaveCount(1);
+
+    // Click on "View Output" elements
+    const viewOutput = page.locator('text="View Output"');
+
+    await viewOutput.first().click();
+
+    // Click on copy button, label="Copy code"
+    await page.getByLabel("Copy code").first().click();
+
+    // Check clipboard content
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`{
+  "url": "https://example.com/"
+}`);
+
+    // Click on copy button
+    await page.getByLabel("Copy code").last().click();
+
+    // Check clipboard content
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      "Element not found for selector: #non-existent-element",
+    );
   });
 });
