@@ -19,7 +19,39 @@ test.describe("Execution history", () => {
   });
 
   test("different ways to go to executions", async ({ page, baseUrl }) => {
+    // import demo workflow
+    await importWorkflow(baseUrl, page);
+
+    // Click on button "View execution history"
+    await page.getByRole("button", { name: "View execution history" }).click();
+
+    // Check that URL has changed to history tab
+    await expect(page).toHaveURL(/tab=history/);
+    // Check that URL has parameter workflow=workflow-
+    await expect(page).toHaveURL(/workflow=workflow-/);
+
+    // Expect input with placeholder "Filter by workflow" to have value "Test Workflow"
+    await expect(
+      page.locator('input[placeholder="Filter by workflow"]'),
+    ).toHaveValue("Test Workflow");
+
+    // Go back to workflows tabs
     await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
+
+    // Click on edit workflow
+    await page.locator('button[title="Edit workflow"]').click();
+
+    // Get workflow id from URL
+    const workflowId = page.url().split("/designer/")[1];
+
+    // Click on View History button
+    await page.getByRole("button", { name: "View History" }).click();
+
+    // Check that URL has changed to history tab
+    await expect(page).toHaveURL(/tab=history/);
+
+    // Check that URL has parameter workflow={workflowId}
+    await expect(page).toHaveURL(new RegExp(`workflow=${workflowId}`));
   });
 
   test("see execution history after running workflow", async ({
@@ -43,6 +75,12 @@ test.describe("Execution history", () => {
 
     // Go back to history page
     page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
+
+    // Select option in select with placeholder o|filter by workflow"
+    await page.locator('input[placeholder="Filter by workflow"]').click();
+
+    // Select the option "Test Workflow" in the dropdown
+    await page.getByRole("option", { name: "Test Workflow" }).click();
 
     // Check that execution is visible in history, search for text "exec-"
     await expect(page.getByText(/exec-/)).toBeVisible();
@@ -119,6 +157,20 @@ test.describe("Execution history", () => {
 
     // Go back to history page
     page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
+
+    // Select option in select with placeholder Filter by status
+    await page.locator('input[placeholder="Filter by status"]').click();
+    // Select option Completed
+    await page.getByRole("option", { name: "Completed" }).click();
+
+    // Check that empty state is visible
+    await expect(
+      page.getByText("No executions match your filters"),
+    ).toBeVisible();
+
+    // Select Failed option
+    await page.locator('input[placeholder="Filter by status"]').click();
+    await page.getByRole("option", { name: "Failed" }).click();
 
     // Check that execution is visible in history, search for text "exec-"
     await expect(page.getByText(/exec-/)).toBeVisible();
