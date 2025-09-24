@@ -4,84 +4,9 @@ import {
   TriggerNodeData,
   WorkflowDefinition,
 } from "../src/types/workflow";
-import { Page } from "@playwright/test";
+import { importDemoWorkflow } from "./utils";
 
-const DEMO_WORKFLOW = `{
-  "connections": [
-    {
-      "id": "conn-mjibxe",
-      "source": "trigger-5rfUmu",
-      "sourceHandle": "output",
-      "target": "action-P8n5PD",
-      "targetHandle": "input"
-    }
-  ],
-  "description": "This is a test workflow",
-  "enabled": true,
-  "id": "workflow-mo1MFlsIZKh9",
-  "lastUpdated": 1758567088230,
-  "name": "Test Workflow",
-  "nodes": [
-    {
-      "data": {
-        "config": {},
-        "type": "page-load"
-      },
-      "id": "trigger-5rfUmu",
-      "inputs": [],
-      "outputs": [
-        "output"
-      ],
-      "position": {
-        "x": 300,
-        "y": 100
-      },
-      "type": "trigger"
-    },
-    {
-      "data": {
-        "config": {
-          "modalContent": "Hello from Houdin workflow"
-        },
-        "type": "show-modal"
-      },
-      "id": "action-P8n5PD",
-      "inputs": [
-        "input"
-      ],
-      "outputs": [
-        "output"
-      ],
-      "position": {
-        "x": 600,
-        "y": 100
-      },
-      "type": "action"
-    }
-  ],
-  "urlPattern": "https://*"
-}`;
-
-const importDemoWorkflow = async (
-  page: Page,
-  workflowJson: string = DEMO_WORKFLOW,
-) => {
-  // click on Import Workflow button, id="open-import-workflow-modal"
-  await page.locator("#open-import-workflow-modal").click();
-
-  // Expect to see text "Import Workflow" in modal
-  await expect(page.getByText("Or paste JSON content")).toBeVisible();
-
-  // Paste the workflow JSON in the textArea, placeholder="Paste your workflow JSON here..."
-  await page
-    .locator('textarea[placeholder="Paste your workflow JSON here..."]')
-    .fill(workflowJson);
-
-  // Click on Import button element
-  await page.locator("#confirm-import-workflow").click();
-};
-
-test.describe("Workflows creation and design", () => {
+test.describe("Workflows creation, design and execution", () => {
   // always go to config page before each test
   test.beforeEach(async ({ page, extensionId }) => {
     await page.goto(
@@ -259,8 +184,8 @@ test.describe("Workflows creation and design", () => {
     await expect(page.getByText("This is a test workflow")).toBeVisible();
   });
 
-  test("can import a workflow", async ({ page }) => {
-    await importDemoWorkflow(page);
+  test("can import a workflow", async ({ page, extensionId }) => {
+    await importDemoWorkflow(extensionId, page);
 
     // Expect to see the new workflow in the list
     await expect(page.locator('text="Test Workflow"').first()).toBeVisible();
@@ -306,8 +231,8 @@ test.describe("Workflows creation and design", () => {
     expect(actionNode).toBeVisible();
   });
 
-  test("can run a workflow", async ({ page }) => {
-    await importDemoWorkflow(page);
+  test("can run a workflow", async ({ page, extensionId }) => {
+    await importDemoWorkflow(extensionId, page);
 
     // Go to example.com
     await page.goto("https://example.com");

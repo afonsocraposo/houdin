@@ -307,7 +307,7 @@ function ExecutionHistoryPage() {
             <Card withBorder>
               <Text size="sm" c="dimmed" ta="center" p="xl">
                 {executions.length === 0
-                  ? "No workflow executions in this session"
+                  ? "No executions yet"
                   : "No executions match your filters"}
               </Text>
             </Card>
