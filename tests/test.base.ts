@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const test = base.extend<{
   context: BrowserContext;
   extensionId: string;
+  baseUrl: string;
 }>({
   context: async ({}, use) => {
     const pathToExtension = path.join(__dirname, "../dist");
@@ -31,6 +32,18 @@ export const test = base.extend<{
 
     const extensionId = background.url().split("/")[2];
     await use(extensionId);
+  },
+  baseUrl: async ({ context }, use) => {
+    // for manifest v3:
+    let [background] = context.serviceWorkers();
+    if (!background) {
+      background = await context.waitForEvent("serviceworker");
+    }
+
+    const extensionId = background.url().split("/")[2];
+
+    const baseUrl = `chrome-extension://${extensionId}/src/config/index.html#/`;
+    await use(baseUrl);
   },
 });
 

@@ -1,13 +1,11 @@
 import { DEMO_FAIILING_WORKFLOW } from "./demoWorkflows";
 import { test, expect } from "./test.base";
-import { importWorkflow } from "./utils";
+import { Destinations, importWorkflow, urlBuilder } from "./utils";
 
 test.describe("Execution history", () => {
   // always go to config page before each test
-  test.beforeEach(async ({ page, extensionId }) => {
-    await page.goto(
-      `chrome-extension://${extensionId}/src/config/index.html#/?tab=history`,
-    );
+  test.beforeEach(async ({ page, baseUrl }) => {
+    await page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
     await expect(page.locator("body")).toBeVisible();
     // Check that Workflows tab has h3 title
     await expect(
@@ -20,13 +18,17 @@ test.describe("Execution history", () => {
     await expect(page.getByText("No executions yet")).toBeVisible();
   });
 
+  test("different ways to go to executions", async ({ page, baseUrl }) => {
+    await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
+  });
+
   test("see execution history after running workflow", async ({
     page,
-    extensionId,
     context,
+    baseUrl,
   }) => {
     // import demo workflow
-    await importWorkflow(extensionId, page);
+    await importWorkflow(baseUrl, page);
 
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
@@ -40,9 +42,7 @@ test.describe("Execution history", () => {
     await expect(page.getByText("Hello from Houdin workflow")).toBeVisible();
 
     // Go back to history page
-    page.goto(
-      `chrome-extension://${extensionId}/src/config/index.html#/?tab=history`,
-    );
+    page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
 
     // Check that execution is visible in history, search for text "exec-"
     await expect(page.getByText(/exec-/)).toBeVisible();
@@ -103,13 +103,13 @@ test.describe("Execution history", () => {
 
   test("see execution history with failing workflow", async ({
     page,
-    extensionId,
+    baseUrl,
     context,
   }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
     // import demo failing workflow
-    await importWorkflow(extensionId, page, DEMO_FAIILING_WORKFLOW);
+    await importWorkflow(baseUrl, page, DEMO_FAIILING_WORKFLOW);
 
     // Go to example.com to trigger the workflow
     await page.goto("https://example.com");
@@ -118,9 +118,7 @@ test.describe("Execution history", () => {
     await page.waitForTimeout(1000);
 
     // Go back to history page
-    page.goto(
-      `chrome-extension://${extensionId}/src/config/index.html#/?tab=history`,
-    );
+    page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
 
     // Check that execution is visible in history, search for text "exec-"
     await expect(page.getByText(/exec-/)).toBeVisible();

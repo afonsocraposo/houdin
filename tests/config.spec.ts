@@ -1,9 +1,10 @@
 import { test, expect } from "./test.base";
+import { Destinations, urlBuilder } from "./utils";
 
 test.describe("Config page", () => {
   // always go to config page before each test
-  test.beforeEach(async ({ page, extensionId }) => {
-    await page.goto(`chrome-extension://${extensionId}/src/config/index.html`);
+  test.beforeEach(async ({ page, baseUrl }) => {
+    await page.goto(baseUrl);
     await expect(page.locator("body")).toBeVisible();
   });
 
@@ -47,14 +48,9 @@ test.describe("Config page", () => {
     ).toBeVisible();
   });
 
-  test("can open specific tabs via url param", async ({
-    page,
-    extensionId,
-  }) => {
+  test("can open specific tabs via url param", async ({ page, baseUrl }) => {
     // Go to config page with tab param
-    await page.goto(
-      `chrome-extension://${extensionId}/src/config/index.html#/?tab=history`,
-    );
+    await page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
     // Check that History tab is active
     await expect(page.getByRole("tab", { name: "History" })).toHaveAttribute(
       "data-active",
@@ -67,9 +63,7 @@ test.describe("Config page", () => {
     ).toBeVisible();
 
     // Go to config page with tab param
-    await page.goto(
-      `chrome-extension://${extensionId}/src/config/index.html#/?tab=credentials`,
-    );
+    await page.goto(urlBuilder(baseUrl, Destinations.CREDENTIALS));
     // Check that Credentials tab is active
     await expect(
       page.getByRole("tab", { name: "Credentials" }),
@@ -81,9 +75,7 @@ test.describe("Config page", () => {
     ).toBeVisible();
 
     // Go to config page with tab param
-    await page.goto(
-      `chrome-extension://${extensionId}/src/config/index.html#/?tab=workflows`,
-    );
+    await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
     // Check that Workflows tab is active
     await expect(page.getByRole("tab", { name: "Workflows" })).toHaveAttribute(
       "data-active",
@@ -96,9 +88,9 @@ test.describe("Config page", () => {
     ).toBeVisible();
   });
 
-  test("default tab is workflows", async ({ page, extensionId }) => {
+  test("default tab is workflows", async ({ page, baseUrl }) => {
     // Go to config page without tab param
-    await page.goto(`chrome-extension://${extensionId}/src/config/index.html`);
+    await page.goto(baseUrl);
     // Check that Workflows tab is active
     await expect(page.getByRole("tab", { name: "Workflows" })).toHaveAttribute(
       "data-active",

@@ -16,9 +16,9 @@ test.describe("Load extension in chrome", () => {
     expect(hasHoudinExtension).toBeTruthy();
   });
 
-  test("extension config page opens", async ({ page, extensionId }) => {
+  test("extension config page opens", async ({ page, baseUrl }) => {
     // Open extension config page
-    await page.goto(`chrome-extension://${extensionId}/src/config/index.html`);
+    await page.goto(baseUrl);
 
     // Test config page loads
     await expect(page.locator("body")).toBeVisible();

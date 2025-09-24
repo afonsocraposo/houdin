@@ -4,14 +4,12 @@ import {
   TriggerNodeData,
   WorkflowDefinition,
 } from "../src/types/workflow";
-import { importWorkflow } from "./utils";
+import { Destinations, importWorkflow, urlBuilder } from "./utils";
 
 test.describe("Workflows creation, design and execution", () => {
   // always go to config page before each test
-  test.beforeEach(async ({ page, extensionId }) => {
-    await page.goto(
-      `chrome-extension://${extensionId}/src/config/index.html#/?tab=workflows`,
-    );
+  test.beforeEach(async ({ page, baseUrl }) => {
+    await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
     await expect(page.locator("body")).toBeVisible();
     // Check that Workflows tab has h3 title
     await expect(
@@ -184,8 +182,8 @@ test.describe("Workflows creation, design and execution", () => {
     await expect(page.getByText("This is a test workflow")).toBeVisible();
   });
 
-  test("can import a workflow", async ({ page, extensionId }) => {
-    await importWorkflow(extensionId, page);
+  test("can import a workflow", async ({ page, baseUrl }) => {
+    await importWorkflow(baseUrl, page);
 
     // Expect to see the new workflow in the list
     await expect(page.locator('text="Test Workflow"').first()).toBeVisible();
@@ -231,8 +229,8 @@ test.describe("Workflows creation, design and execution", () => {
     expect(actionNode).toBeVisible();
   });
 
-  test("can run a workflow", async ({ page, extensionId }) => {
-    await importWorkflow(extensionId, page);
+  test("can run a workflow", async ({ page, baseUrl }) => {
+    await importWorkflow(baseUrl, page);
 
     // Go to example.com
     await page.goto("https://example.com");

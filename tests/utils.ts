@@ -2,13 +2,11 @@ import { expect, Page } from "@playwright/test";
 import { DEMO_WORKFLOW } from "./demoWorkflows";
 
 export const importWorkflow = async (
-  extensionId: string,
+  baseUrl: string,
   page: Page,
   workflowJson: string = DEMO_WORKFLOW,
 ) => {
-  await page.goto(
-    `chrome-extension://${extensionId}/src/config/index.html#/?tab=workflows`,
-  );
+  await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
   // click on Import Workflow button, id="open-import-workflow-modal"
   await page.locator("#open-import-workflow-modal").click();
 
@@ -22,4 +20,14 @@ export const importWorkflow = async (
 
   // Click on Import button element
   await page.locator("#confirm-import-workflow").click();
+};
+
+export enum Destinations {
+  WORKFLOWS = "?tab=workflows",
+  HISTORY = "?tab=history",
+  CREDENTIALS = "?tab=credentials",
+}
+
+export const urlBuilder = (baseUrl: string, path: Destinations) => {
+  return `${baseUrl}${path}`;
 };
