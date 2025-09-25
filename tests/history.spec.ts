@@ -1,4 +1,4 @@
-import { DEMO_FAIILING_WORKFLOW } from "./demoWorkflows";
+import { DEMO_FAIILING_WORKFLOW as DEMO_FAILING_WORKFLOW } from "./demoWorkflows";
 import { test, expect } from "./test.base";
 import { Destinations, importWorkflow, urlBuilder } from "./utils";
 
@@ -183,7 +183,7 @@ test.describe("Execution history", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
     // import demo failing workflow
-    await importWorkflow(baseUrl, page, DEMO_FAIILING_WORKFLOW);
+    await importWorkflow(baseUrl, page, DEMO_FAILING_WORKFLOW);
 
     // Go to example.com to trigger the workflow
     await page.goto("https://example.com");

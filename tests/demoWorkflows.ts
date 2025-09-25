@@ -54,7 +54,7 @@ export const DEMO_WORKFLOW = `{
   "urlPattern": "https://*"
 }`;
 
-export const DEMO_FAIILING_WORKFLOW = `{
+export const DEMO_FAILING_WORKFLOW = `{
   "connections": [
     {
       "id": "conn-mjibxe",
