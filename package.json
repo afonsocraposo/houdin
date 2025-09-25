@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "test": "npm run type-check",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:headless": "CI=1 npm run test:e2e"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

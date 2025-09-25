@@ -1,51 +1,57 @@
-import { defineConfig, devices } from "@playwright/test";
-import path from "path";
+import { PlaywrightTestConfig, devices } from "@playwright/test";
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+export const timeouts = {
+  actionTimeout: 5_000,
+  testTimeout: 20_000,
+};
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-export default defineConfig({
+const config: PlaywrightTestConfig = {
   testDir: "./tests",
+  testMatch: /(.+\.)?(test|spec|e2e)\.[jt]s/,
+  /* Maximum time one test can run for. */
+  timeout: timeouts.testTimeout,
+  expect: {
+    /**
+     * Maximum time expect() should wait for the condition to be met.
+     * For example in `await expect(locator).toHaveText();`
+     */
+    timeout: timeouts.actionTimeout,
+  },
+  /* Number of workers to run tests on. */
+  workers: 2,
   /* Run tests in files in parallel */
-  fullyParallel: false, // Extensions don't work well with parallel tests
+  fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: 1, // Extensions require single worker
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: "html",
+  reporter: [
+    ["html", { open: "never" }],
+    process.env.CI ? ["github", "junit"] : ["line"],
+  ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    // baseURL: 'http://localhost:3000',
+    /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
+    actionTimeout: timeouts.actionTimeout,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
   },
 
-  /* Configure projects for major browsers */
+  /* Folder for test artifacts such as screenshots, videos, traces, etc. */
+  outputDir: "playwright-output/",
+
+  /* Extensions only work in Chrome / Chromium. */
   projects: [
     {
-      name: "chromium-extension",
+      name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
       },
     },
   ],
+};
 
-  /* Build extension before running tests */
-  webServer: {
-    command: "npm run build",
-    port: 0, // No server needed, just build
-    reuseExistingServer: !process.env.CI,
-  },
-});
+export default config;
