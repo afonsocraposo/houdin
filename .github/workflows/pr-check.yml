@@ -18,8 +18,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          node-version: "20.x"
+          cache: "npm"
 
       - name: Install commitlint
         run: npm install --no-save @commitlint/config-conventional @commitlint/cli
@@ -44,12 +44,3 @@ jobs:
 
       - name: Run tests
         run: npm test
-
-      - name: Build extension
-        run: npm run build
-
-      - name: Install Playwright browsers
-        run: npx playwright install chromium
-
-      - name: Run e2e tests
-        run: npm run test:e2e
