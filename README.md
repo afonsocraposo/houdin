@@ -1,5 +1,7 @@
 # Houdin
 
+[![Release](https://github.com/afonsocraposo/houdin/actions/workflows/release.yml/badge.svg)](https://github.com/afonsocraposo/houdin/actions/workflows/release.yml)
+
 > Browser automation that feels like magic ✨
 
 Houdin is a powerful browser extension that enables visual workflow automation for web browsers. Create sophisticated automation workflows using a drag-and-drop interface, inject custom code, and automate repetitive tasks across any website.
@@ -7,6 +9,7 @@ Houdin is a powerful browser extension that enables visual workflow automation f
 ## 🚀 Features
 
 ### Core Automation
+
 - **Visual Workflow Designer**: Drag-and-drop interface for creating complex automation workflows
 - **Element Interaction**: Click, type, and interact with web page elements
 - **Smart Element Selection**: Built-in element selector with CSS/XPath support
@@ -14,6 +17,7 @@ Houdin is a powerful browser extension that enables visual workflow automation f
 - **HTTP Requests**: Make API calls and handle responses within workflows
 
 ### Advanced Capabilities
+
 - **Custom Scripts**: Execute JavaScript code with full page context
 - **LLM Integration**: OpenAI integration for AI-powered automation
 - **Modal & Notifications**: Display custom UI components on web pages
@@ -21,6 +25,7 @@ Houdin is a powerful browser extension that enables visual workflow automation f
 - **Wait Conditions**: Smart waiting for page changes and elements
 
 ### Developer Experience
+
 - **TypeScript**: Full type safety and IntelliSense support
 - **React + Mantine**: Modern UI components and design system
 - **Hot Reload**: Fast development with Vite
@@ -32,17 +37,20 @@ Houdin is a powerful browser extension that enables visual workflow automation f
 ### Development Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd houdin
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -109,6 +117,7 @@ src/
 ## 🔑 Credentials & Security
 
 Houdin supports secure credential storage for:
+
 - **HTTP Authentication**: Store API keys and authentication tokens
 - **OpenAI Integration**: Securely store OpenAI API keys
 - **Custom Secrets**: Store any sensitive configuration data
@@ -120,6 +129,7 @@ All credentials are encrypted and stored locally in the browser's extension stor
 This project is licensed under the **PolyForm Noncommercial License 1.0.0**.
 
 ### License Summary
+
 - ✅ **Free for noncommercial use**: Personal projects, research, education, nonprofits, government
 - ✅ **Modify and share**: You can make changes and derivatives (must include license)
 - ❌ **No commercial use**: Cannot sell, use in paid products/services, or for profit
@@ -147,11 +157,12 @@ For commercial licensing options, please contact the project maintainers.
 ## 🐛 Issues & Support
 
 If you encounter any issues or have questions:
+
 1. Check existing issues in the repository
 2. Create a new issue with detailed reproduction steps
 3. Include browser version and extension logs if applicable
 
 ---
 
-**Version**: 3.3.0  
+**Version**: 3.3.0
 **Browser Compatibility**: Chrome, Firefox, Edge (Manifest V3)
