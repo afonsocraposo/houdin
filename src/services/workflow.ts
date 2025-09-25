@@ -14,6 +14,7 @@ import {
   WorkflowCommandType,
 } from "@/types/background-workflow";
 import { ActionRegistry } from "./actionRegistry";
+import { NotificationService } from "./notification";
 
 export function newWorkflowId(): string {
   return generateId("workflow", 12);
@@ -247,7 +248,13 @@ export class WorkflowExecutor {
           this.tabId,
         )
         .then((result) => resolve({ success: true, data: result }))
-        .catch((error) => resolve({ success: false, error: error.message }));
+        .catch((error) => {
+          NotificationService.showErrorNotificationFromBackground({
+            title: `Error executing ${executeActionCommand.nodeId}`,
+            message: error.message,
+          });
+          return resolve({ success: false, error: error.message });
+        });
     });
   }
 
