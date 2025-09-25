@@ -1,16 +1,21 @@
 name: PR Check
 
 on:
-  pull_request:
-    branches: [main, dev]
+  workflow_run:
+    workflows: ["Auto Version Bump"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.head_ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
