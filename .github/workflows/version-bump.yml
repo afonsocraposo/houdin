@@ -28,14 +28,16 @@ jobs:
             const commit = context.payload.head_commit;
             const message = commit.message;
             
-            // Check if this is a merge commit from a PR
-            const prMatch = message.match(/Merge pull request #(\d+)/);
-            if (!prMatch) {
+            // Check if this is a merge commit from a PR (supports both merge commits and squash merges)
+            const mergeMatch = message.match(/Merge pull request #(\d+)/);
+            const squashMatch = message.match(/.*\(#(\d+)\)$/);
+            
+            if (!mergeMatch && !squashMatch) {
               console.log('Not a PR merge commit, skipping version bump');
               return { shouldBump: false };
             }
             
-            const prNumber = prMatch[1];
+            const prNumber = mergeMatch ? mergeMatch[1] : squashMatch[1];
             console.log('Found PR merge:', prNumber);
             
             // Get PR details to check labels
