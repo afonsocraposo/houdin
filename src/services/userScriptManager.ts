@@ -1,3 +1,5 @@
+import { CustomMessage } from "@/lib/messages";
+
 export interface UserScriptExecuteRequest {
   scriptCode: string;
   nodeId: string;
@@ -110,34 +112,35 @@ export class UserScriptManager {
   ): Promise<UserScriptExecuteResponse> {
     return new Promise((resolve) => {
       const messageListener = (
-        message: WorkflowScriptMessage,
+        message: CustomMessage<WorkflowScriptMessage>,
         sender: chrome.runtime.MessageSender,
       ) => {
         if (
           message.type === "workflow-script-response" &&
-          message.nodeId === nodeId &&
+          message.data.nodeId === nodeId &&
           sender.tab?.id === tabId
         ) {
           chrome.runtime.onMessage.removeListener(messageListener);
+          const data = message.data;
 
           // Check if the error indicates a CSP violation
-          if (message.error && message.error.includes("CSP_VIOLATION:")) {
+          if (data.error && data.error.includes("CSP_VIOLATION:")) {
             resolve({
               success: false,
-              error: message.error,
+              error: data.error,
             });
             return;
           }
 
-          if (message.error) {
+          if (data.error) {
             resolve({
               success: false,
-              error: message.error,
+              error: data.error,
             });
           } else {
             resolve({
               success: true,
-              result: message.result,
+              result: data.result,
             });
           }
         }
@@ -208,8 +211,8 @@ export class UserScriptManager {
                 console.error("Outer script error:", outerError);
                 const errorMsg =
                   outerError &&
-                    typeof outerError === "object" &&
-                    "message" in outerError
+                  typeof outerError === "object" &&
+                  "message" in outerError
                     ? outerError.message
                     : outerError?.toString() || "Unknown error";
                 window.postMessage(

@@ -81,11 +81,11 @@ export default function CanvasNode({
     const triggerRegistry = TriggerRegistry.getInstance();
 
     if (node.type === "action") {
-      const nodeType = (node.data as ActionNodeData).actionType;
+      const nodeType = (node.data as ActionNodeData).type;
       const action = actionRegistry.getAction(nodeType);
       return action?.metadata.icon || "❓";
     } else if (node.type === "trigger") {
-      const nodeType = (node.data as TriggerNodeData).triggerType;
+      const nodeType = (node.data as TriggerNodeData).type;
       const trigger = triggerRegistry.getTrigger(nodeType);
       return trigger?.metadata.icon || "❓";
     }
@@ -98,11 +98,11 @@ export default function CanvasNode({
     const triggerRegistry = TriggerRegistry.getInstance();
 
     if (node.type === "action") {
-      const nodeType = (node.data as ActionNodeData).actionType;
+      const nodeType = (node.data as ActionNodeData).type;
       const action = actionRegistry.getAction(nodeType);
       return action?.metadata.label || "Unknown";
     } else if (node.type === "trigger") {
-      const nodeType = (node.data as TriggerNodeData).triggerType;
+      const nodeType = (node.data as TriggerNodeData).type;
       const trigger = triggerRegistry.getTrigger(nodeType);
       return trigger?.metadata.label || "Unknown";
     }

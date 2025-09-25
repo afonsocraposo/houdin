@@ -2,120 +2,65 @@ name: Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: write
-  pull-requests: read
+  issues: write
+  pull-requests: write
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Run tests
-      run: npm test
+      - name: Run tests
+        run: npm test
 
-    - name: Get version from package.json
-      id: version
-      run: |
-        VERSION=$(node -p "require('./package.json').version")
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-        echo "Current version: $VERSION"
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
 
-    - name: Check if tag already exists
-      id: check-tag
-      run: |
-        if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-          echo "tag-exists=true" >> $GITHUB_OUTPUT
-          echo "Tag v${{ steps.version.outputs.version }} already exists"
-        else
-          echo "tag-exists=false" >> $GITHUB_OUTPUT
-          echo "Tag v${{ steps.version.outputs.version }} does not exist"
-        fi
+      - name: Run e2e tests
+        run: npm run test:e2e
 
-    - name: Create and push tag
-      if: steps.check-tag.outputs.tag-exists == 'false'
-      run: |
-        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git tag ${{ steps.version.outputs.tag }}
-        git push origin ${{ steps.version.outputs.tag }}
+      - name: Build Chrome extension
+        run: |
+          npm run build
+          mv dist dist-chrome
 
-    - name: Build Chrome extension
-      if: steps.check-tag.outputs.tag-exists == 'false'
-      run: |
-        npm run build
-        mv dist dist-chrome
+      - name: Build Firefox extension  
+        run: |
+          TARGET=firefox npm run build
+          mv dist dist-firefox
 
-    - name: Build Firefox extension
-      if: steps.check-tag.outputs.tag-exists == 'false'
-      run: |
-        TARGET=firefox npm run build
-        mv dist dist-firefox
+      - name: Create extension archives
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          cd dist-chrome
+          zip -r ../extension-chrome-v${VERSION}.zip .
+          cd ../dist-firefox  
+          zip -r ../extension-firefox-v${VERSION}.zip .
+          cd ..
 
-    - name: Create extension archives
-      if: steps.check-tag.outputs.tag-exists == 'false'
-      run: |
-        cd dist-chrome
-        zip -r ../extension-chrome-${{ steps.version.outputs.tag }}.zip .
-        cd ../dist-firefox
-        zip -r ../extension-firefox-${{ steps.version.outputs.tag }}.zip .
-        cd ..
+      - name: Install semantic-release
+        run: npm install --no-save semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github
 
-    - name: Create Release
-      if: steps.check-tag.outputs.tag-exists == 'false'
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ steps.version.outputs.tag }}
-        name: Extension ${{ steps.version.outputs.tag }}
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-        files: |
-          extension-chrome-${{ steps.version.outputs.tag }}.zip
-          extension-firefox-${{ steps.version.outputs.tag }}.zip
-        body: |
-          🚀 **Browser Extension Release ${{ steps.version.outputs.tag }}**
-          
-          ## Installation
-          
-          ### Chrome/Edge
-          1. Download the `extension-chrome-${{ steps.version.outputs.tag }}.zip` file below
-          2. Extract the contents to a folder
-          3. Open Chrome/Edge and navigate to `chrome://extensions/` or `edge://extensions/`
-          4. Enable "Developer mode"
-          5. Click "Load unpacked" and select the extracted folder
-          
-          ### Firefox
-          1. Download the `extension-firefox-${{ steps.version.outputs.tag }}.zip` file below
-          2. Extract the contents to a folder
-          3. Open Firefox and navigate to `about:debugging`
-          4. Click "This Firefox"
-          5. Click "Load Temporary Add-on" and select the extracted folder
-          
-          ## What's Changed
-          This release includes all changes merged since the previous version.
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Skip release (tag exists)
-      if: steps.check-tag.outputs.tag-exists == 'true'
-      run: |
-        echo "⚠️ Tag ${{ steps.version.outputs.tag }} already exists. Skipping release creation."
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

@@ -390,7 +390,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       id: generateId(nodeType),
       type: nodeType,
       position: newPosition,
-      data: { [nodeType + "Type"]: type, config: defaultConfig },
+      data: { type, config: defaultConfig },
       inputs: nodeType === "trigger" ? [] : ["input"],
       outputs: nodeType === "condition" ? ["true", "false"] : ["output"],
     };

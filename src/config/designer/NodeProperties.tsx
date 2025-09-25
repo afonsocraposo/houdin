@@ -1,5 +1,13 @@
 import React from "react";
-import { Stack, Text, Card, Group, ScrollArea, Tooltip } from "@mantine/core";
+import {
+  Stack,
+  Text,
+  Card,
+  Group,
+  ScrollArea,
+  Tooltip,
+  ActionIcon,
+} from "@mantine/core";
 import {
   ActionNodeData,
   TriggerNodeData,
@@ -8,18 +16,20 @@ import {
 import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import { IconHelpCircle } from "@tabler/icons-react";
+import { IconArrowBarToRight, IconHelpCircle } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 
 interface NodePropertiesProps {
   node: WorkflowNode | null;
   onNodeUpdate: (updatedNode: WorkflowNode) => void;
   errors?: Record<string, string[]>;
+  onClose: () => void;
 }
 
 export const NodeProperties: React.FC<NodePropertiesProps> = ({
   node,
   onNodeUpdate,
+  onClose,
   errors,
 }) => {
   if (!node) {
@@ -53,7 +63,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     errors: Record<string, string[]> | undefined,
   ) => {
     const triggerRegistry = TriggerRegistry.getInstance();
-    const triggerType = data.triggerType;
+    const triggerType = data.type;
 
     if (!triggerType) {
       return <Text c="red">No trigger type found</Text>;
@@ -106,7 +116,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     errors: Record<string, string[]> | undefined,
   ) => {
     const actionRegistry = ActionRegistry.getInstance();
-    const actionType = data.actionType;
+    const actionType = data.type;
 
     if (!actionType) {
       return <Text c="red">No action type found</Text>;
@@ -182,7 +192,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
   const getNodeTitle = (node: WorkflowNode): string => {
     if (node.type === "trigger") {
-      const triggerType = (node.data as TriggerNodeData).triggerType;
+      const triggerType = (node.data as TriggerNodeData).type;
       const triggerRegistry = TriggerRegistry.getInstance();
       const trigger = triggerRegistry.getTrigger(triggerType);
       return trigger
@@ -191,7 +201,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     }
 
     if (node.type === "action") {
-      const actionType = (node.data as ActionNodeData).actionType;
+      const actionType = (node.data as ActionNodeData).type;
       const actionRegistry = ActionRegistry.getInstance();
       const action = actionRegistry.getAction(actionType);
       return action
@@ -205,9 +215,19 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   return (
     <>
       <Group mb="md" justify="space-between">
-        <Text fw={500} c={getNodeTypeColor(node.type)}>
-          {getNodeTitle(node)}
-        </Text>
+        <Group>
+          <ActionIcon
+            onClick={onClose}
+            variant="subtle"
+            c="dimmed"
+            aria-label="Close node properties"
+          >
+            <IconArrowBarToRight />
+          </ActionIcon>
+          <Text fw={500} c={getNodeTypeColor(node.type)}>
+            {getNodeTitle(node)}
+          </Text>
+        </Group>
         <Tooltip
           label={
             <Text size="sm">

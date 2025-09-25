@@ -55,39 +55,49 @@ export default function PermissionButton() {
     );
   }
 
+  if (
+    permissionStatus.enabled ||
+    (!permissionStatus.available && permissionStatus.fallbackAvailable)
+  ) {
+    return <Text size="sm">✅ Custom scripts can be executed</Text>;
+  }
+
+  if (!permissionStatus.available && !permissionStatus.fallbackAvailable) {
+    return (
+      <Alert color="red" variant="light">
+        <Text size="sm">
+          ❌ UserScript permission is not available, and no fallback method is
+          available
+        </Text>
+      </Alert>
+    );
+  }
+
   return (
     <div>
-      {permissionStatus.enabled ? (
-        <Alert color="green" variant="light">
-          <Text size="sm">✅ UserScript permission is enabled</Text>
-        </Alert>
-      ) : (
-        <div>
-          <Alert color="orange" variant="light" mb="sm">
-            <Text size="sm">⚠️ UserScript permission is not enabled</Text>
-            {permissionStatus.toggleInstructions && (
-              <Text size="xs" mt="xs" style={{ whiteSpace: "pre-line" }}>
-                {permissionStatus.toggleInstructions}
-              </Text>
-            )}
-          </Alert>
-          <Group>
-            {permissionStatus.browser !== "chrome" && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={requestPermission}
-                loading={isRequesting}
-              >
-                Request Permission
-              </Button>
-            )}
-            <Button size="sm" variant="subtle" onClick={checkPermission}>
-              Refresh Status
-            </Button>
-          </Group>
-        </div>
-      )}
+      <Alert color="orange" variant="light" mb="sm">
+        <Text size="sm">⚠️ UserScript permission is not enabled</Text>
+        {permissionStatus.toggleInstructions && (
+          <Text size="xs" mt="xs" style={{ whiteSpace: "pre-line" }}>
+            {permissionStatus.toggleInstructions}
+          </Text>
+        )}
+      </Alert>
+      <Group>
+        {permissionStatus.browser !== "chrome" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={requestPermission}
+            loading={isRequesting}
+          >
+            Request Permission
+          </Button>
+        )}
+        <Button size="sm" variant="subtle" onClick={checkPermission}>
+          Refresh Status
+        </Button>
+      </Group>
     </div>
   );
 }

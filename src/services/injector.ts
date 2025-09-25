@@ -29,7 +29,7 @@ export class ContentInjector {
       container.setAttribute("data-workflow-injected", "true");
 
       // Attach a Shadow Root
-      const shadowRoot = container.attachShadow({ mode: "closed" });
+      const shadowRoot = container.attachShadow({ mode: "open" });
 
       // Append the container to the body
       target.append(container);

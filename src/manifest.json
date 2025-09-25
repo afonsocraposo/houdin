@@ -16,6 +16,9 @@
     "webNavigation",
     "webRequest"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "action": {
     "default_popup": "src/popup/index.html",
     "default_title": "Houdin"

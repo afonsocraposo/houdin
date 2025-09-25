@@ -1,7 +1,4 @@
-import {
-  BaseAction,
-  ActionMetadata,
-} from "@/types/actions";
+import { BaseAction, ActionMetadata } from "@/types/actions";
 import {
   UserScriptPermissionChecker,
   UserScriptPermissionStatus,
@@ -36,7 +33,7 @@ export class CustomScriptAction extends BaseAction<
   readonly configSchema = {
     properties: {
       permissionCheck: customProperty({
-        label: "UserScript Permission",
+        label: "Permission Status",
         render: () => PermissionButton(),
       }),
       customScript: codeProperty({
@@ -84,7 +81,11 @@ export class CustomScriptAction extends BaseAction<
         );
       }
 
-      if (!permissionStatus.enabled && permissionStatus.requiresToggle) {
+      if (
+        !permissionStatus.enabled &&
+        permissionStatus.available &&
+        permissionStatus.requiresToggle
+      ) {
         console.warn(
           "Permission instructions:",
           permissionStatus.toggleInstructions,

@@ -2,12 +2,33 @@ name: PR Check
 
 on:
   pull_request:
-    branches: [main, dev]
+    types: [opened, synchronize]
+    branches:
+      - main
 
 jobs:
+  validate-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install commitlint
+        run: npm install --no-save @commitlint/config-conventional @commitlint/cli
+
+      - name: Validate commit messages
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
   test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,3 +47,9 @@ jobs:
 
       - name: Build extension
         run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Run e2e tests
+        run: npm run test:e2e

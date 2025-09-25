@@ -12,6 +12,7 @@ import { TriggerRegistry } from "@/services/triggerRegistry";
 import { WorkflowScriptMessage } from "@/services/userScriptManager";
 import {
   ActionCommand,
+  ReadinessResponse,
   StatusMessage,
   TriggerCommand,
   TriggerFiredCommand,
@@ -28,21 +29,55 @@ if ((window as any).houdinExtensionInitialized) {
   (window as any).houdinExtensionInitialized = true;
 
   let contentInjector: ContentInjector;
+  let isFullyInitialized = false;
 
-  const initContentScript = () => {
-    console.debug("Houdin extension content script initialized");
+  const initMinimalContentScript = () => {
+    console.debug("Houdin extension minimal initialization");
+
+    // Set up readiness check listener
+    setupReadinessCheckListener();
+  };
+
+  const initFullContentScript = () => {
+    if (isFullyInitialized) return;
+
+    console.debug("Houdin extension full initialization");
+    isFullyInitialized = true;
 
     // Initialize content injector
     contentInjector = new ContentInjector();
     contentInjector.initialize();
 
-    // Set up bridge for workflow script responses
-    setupWorkflowScriptBridge();
-
     // Set up notification message listener
     setupNotificationBridge();
 
+    // Set up workflow script bridge (only needed when workflows are active)
+    setupWorkflowScriptBridge();
+
+    // Set up workflow engine bridge
     setupBackgroundEngineBridge();
+  };
+
+  const setupReadinessCheckListener = () => {
+    chrome.runtime.onMessage.addListener(
+      (
+        message: CustomMessage<any>,
+        _sender,
+        sendResponse: (response: ReadinessResponse) => void,
+      ) => {
+        if (message.type === WorkflowCommandType.CHECK_READINESS) {
+          console.debug("Content: Received readiness check");
+
+          if (!isFullyInitialized) {
+            initFullContentScript();
+          }
+
+          sendResponse({ ready: true });
+          return true; // Indicate async response
+        }
+        return false; // Let other listeners handle other messages
+      },
+    );
   };
 
   const setupWorkflowScriptBridge = () => {
@@ -173,11 +208,11 @@ if ((window as any).houdinExtensionInitialized) {
     );
   };
 
-  // Initialize when DOM is ready
+  // Initialize minimal content script when DOM is ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initContentScript);
+    document.addEventListener("DOMContentLoaded", initMinimalContentScript);
   } else {
-    initContentScript();
+    initMinimalContentScript();
   }
 
   const cleanUpHttpTriggers = () => {

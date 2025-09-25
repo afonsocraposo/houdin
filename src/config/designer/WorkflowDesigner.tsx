@@ -229,9 +229,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     const updatedNodes = nodes.map((n) =>
       n.id === updatedNode.id
         ? {
-          ...updatedNode,
-          position: n.position, // keep original position
-        }
+            ...updatedNode,
+            position: n.position, // keep original position
+          }
         : n,
     );
     set(updatedNodes);
@@ -252,7 +252,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     nodes.forEach((node) => {
       if (node.type === "trigger") {
         const { valid, errors } = triggerRegistry.validateConfig(
-          (node.data as TriggerNodeData).triggerType,
+          (node.data as TriggerNodeData).type,
           node.data.config,
         );
         if (!valid) {
@@ -260,7 +260,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         }
       } else if (node.type === "action") {
         const { valid, errors } = actionRegistry.validateConfig(
-          (node.data as ActionNodeData).actionType,
+          (node.data as ActionNodeData).type,
           node.data.config,
         );
         if (!valid) {
@@ -294,7 +294,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const handleViewHistory = () => {
     if (workflow?.id) {
-      navigate(`/executions/${workflow.id}`);
+      navigate(`/?tab=history&workflow=${workflow.id}`);
     }
   };
 
@@ -467,6 +467,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               >
                 <NodeProperties
                   node={selectedNode}
+                  onClose={() => setSelectedNodeId(null)}
                   onNodeUpdate={handleNodeUpdate}
                   errors={schemaErrors[selectedNode?.id || ""]}
                 />

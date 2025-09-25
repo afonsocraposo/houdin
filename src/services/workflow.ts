@@ -94,7 +94,7 @@ export class WorkflowExecutor {
       workflow.id,
       this.id,
       url,
-      (triggerNode.data as TriggerNodeData)?.triggerType,
+      (triggerNode.data as TriggerNodeData)?.type,
     );
   }
 
@@ -110,8 +110,7 @@ export class WorkflowExecutor {
     this.executionTracker.addNodeResult({
       nodeId: this.triggerNode.id,
       nodeType: "trigger",
-      nodeName:
-        (this.triggerNode.data as TriggerNodeData)?.triggerType || "unknown",
+      nodeName: (this.triggerNode.data as TriggerNodeData)?.type || "unknown",
       nodeConfig: this.triggerNode.data?.config || {},
       data: triggerData,
       status: "success",
@@ -165,7 +164,7 @@ export class WorkflowExecutor {
     this.nodesProcessing.add(node.id);
     const actionRegistry = ActionRegistry.getInstance();
     // Access trigger type correctly - it's stored as triggerType, not type
-    const actionType = (node.data as ActionNodeData)?.actionType;
+    const actionType = (node.data as ActionNodeData)?.type;
     const actionConfig = cloneDeep(node.data?.config || {});
 
     // iterate object properties and interpolate variables
@@ -199,10 +198,10 @@ export class WorkflowExecutor {
       const result = runBackground
         ? await this.executeActionInBackground(message)
         : await sendMessageToContentScript(
-          this.tabId,
-          WorkflowCommandType.EXECUTE_ACTION,
-          message,
-        );
+            this.tabId,
+            WorkflowCommandType.EXECUTE_ACTION,
+            message,
+          );
 
       const duration = Date.now() - start;
       if (!result || !result.success) {
