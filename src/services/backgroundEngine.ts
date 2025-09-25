@@ -1,6 +1,7 @@
 import { sendMessageToContentScript } from "@/lib/messages";
 import { BackgroundStorageClient } from "@/services/storage";
 import {
+  ReadinessResponse,
   TriggerCommand,
   WorkflowCommandType,
 } from "@/types/background-workflow";
@@ -85,23 +86,37 @@ export class BackgroundWorkflowEngine {
       return;
     }
 
-    // Send command to content script to set up the trigger
-    const message: TriggerCommand = {
-      type: WorkflowCommandType.INIT_TRIGGER,
-      workflowId: workflow.id,
-      tabId: tabId,
-      nodeType: triggerType,
-      nodeConfig: triggerConfig,
-      nodeId: node.id,
-    };
+    // First, check if content script is ready and initialize it if needed
     try {
+      const readinessResponse = (await sendMessageToContentScript(
+        tabId,
+        WorkflowCommandType.CHECK_READINESS,
+      )) as ReadinessResponse;
+
+      if (!readinessResponse?.ready) {
+        console.error("Content script not ready for tab:", tabId);
+        return;
+      }
+
+      console.debug("Content script ready, setting up trigger:", triggerType);
+
+      // Now send command to content script to set up the trigger
+      const message: TriggerCommand = {
+        type: WorkflowCommandType.INIT_TRIGGER,
+        workflowId: workflow.id,
+        tabId: tabId,
+        nodeType: triggerType,
+        nodeConfig: triggerConfig,
+        nodeId: node.id,
+      };
+
       await sendMessageToContentScript(
         tabId,
         WorkflowCommandType.INIT_TRIGGER,
         message,
       );
     } catch (error) {
-      console.error("Error sending trigger setup message:", error);
+      console.error("Error setting up trigger:", error);
     }
   }
 
