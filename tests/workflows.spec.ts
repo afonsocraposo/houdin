@@ -208,20 +208,6 @@ test.describe("Workflows creation, design and execution", () => {
     // Expect to see 2 nodes in the designer
     await expect(page.locator(".react-flow__node")).toHaveCount(2);
 
-    // Get trigger id
-    const triggerId = await page
-      .locator(".react-flow__node")
-      .filter({ hasText: "Page Load" })
-      .getAttribute("data-id");
-    expect(triggerId).toEqual("trigger-5rfUmu");
-
-    // Get action id
-    const actionId = await page
-      .locator(".react-flow__node")
-      .filter({ hasText: "Show Modal" })
-      .getAttribute("data-id");
-    expect(actionId).toEqual("action-P8n5PD");
-
     // Search for "Page Load" in nodes
     const triggerNode = page
       .locator(".react-flow__node")
@@ -233,6 +219,14 @@ test.describe("Workflows creation, design and execution", () => {
       .locator(".react-flow__node")
       .filter({ hasText: "Show Modal" });
     expect(actionNode).toBeVisible();
+
+    // Get trigger id
+    const triggerId = await triggerNode.getAttribute("data-id");
+    expect(triggerId).toEqual("trigger-5rfUmu");
+
+    // Get action id
+    const actionId = await actionNode.getAttribute("data-id");
+    expect(actionId).toEqual("action-P8n5PD");
   });
 
   test("can run a workflow", async ({ page, baseUrl }) => {
