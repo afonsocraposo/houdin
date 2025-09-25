@@ -51,6 +51,9 @@ test.describe("Workflows creation, design and execution", () => {
     // Click on "Page Load" item
     await page.getByText("Page Load").click();
 
+    // wait 200ms for the node to be added
+    await page.waitForTimeout(200);
+
     // Expect to see node properties drawer with description of Page Load
     await expect(
       page.getByText("Trigger when page finishes loading"),
@@ -70,6 +73,9 @@ test.describe("Workflows creation, design and execution", () => {
     await page.locator("#add-node-button").click();
     // Click on "Show Modal" item
     await page.getByText("Show Modal").click();
+
+    // wait 200ms for the node to be added
+    await page.waitForTimeout(200);
 
     // Expect to see node properties drawer with description of Show Modal
     await expect(page.getByText("Display modal with content")).toBeVisible();
