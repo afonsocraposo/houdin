@@ -33,9 +33,7 @@ jobs:
         run: npm test
 
       - name: Build Chrome extension
-        run: |
-          npm run build
-          mv dist dist-chrome
+        run: npm run build
 
       - name: Install Playwright browsers
         run: npx playwright install chromium
@@ -43,8 +41,9 @@ jobs:
       - name: Run e2e tests
         run: npm run test:e2e:headless
 
-      - name: Build Firefox extension
+      - name: Prepare extension builds
         run: |
+          mv dist dist-chrome
           TARGET=firefox npm run build
           mv dist dist-firefox
 
