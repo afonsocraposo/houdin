@@ -1,16 +1,11 @@
 name: PR Check
 
 on:
-  workflow_run:
-    workflows: ["Auto Version Bump"]
-    types: [completed]
+  pull_request:
     branches: [main]
-
 jobs:
   test:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
