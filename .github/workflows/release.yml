@@ -32,16 +32,16 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Build Chrome extension
+        run: |
+          npm run build
+          mv dist dist-chrome
+
       - name: Install Playwright browsers
         run: npx playwright install chromium
 
       - name: Run e2e tests
         run: npm run test:e2e:headless
-
-      - name: Build Chrome extension
-        run: |
-          npm run build
-          mv dist dist-chrome
 
       - name: Build Firefox extension
         run: |
