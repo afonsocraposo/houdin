@@ -4,6 +4,7 @@ import {
   selectProperty,
   textareaProperty,
   numberProperty,
+  textProperty,
 } from "@/types/config-properties";
 import { OpenAIService } from "@/services/openai";
 import { NotificationService } from "@/services/notification";
@@ -11,6 +12,7 @@ import { NotificationService } from "@/services/notification";
 interface LLMOpenAIActionConfig {
   credentialId: string;
   model: string;
+  customModel?: string; // Made optional
   prompt: string;
   maxTokens?: number; // Made optional
   temperature?: number; // Made optional
@@ -50,8 +52,18 @@ export class LLMOpenAIAction extends BaseAction<
           { label: "gpt-4o", value: "gpt-4o" },
           { label: "gpt-3.5-turbo", value: "gpt-3.5-turbo" },
           { label: "gpt-3.5-turbo-16k", value: "gpt-3.5-turbo-16k" },
+          { label: "Other", value: "custom" },
         ],
         defaultValue: "gpt-4o-mini",
+      }),
+      customModel: textProperty({
+        label: "Other Model",
+        placeholder: "e.g., gpt-4-turbo",
+        description: "Specify the model name",
+        showWhen: {
+          field: "model",
+          value: "custom",
+        },
       }),
       prompt: textareaProperty({
         label: "Prompt",
@@ -95,7 +107,8 @@ export class LLMOpenAIAction extends BaseAction<
     onSuccess: (data: LLMOpenAIActionOutput) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
-    const { credentialId, model, prompt, maxTokens, temperature } = config;
+    const { credentialId, model, customModel, prompt, maxTokens, temperature } =
+      config;
 
     if (!credentialId) {
       NotificationService.showErrorNotification({
@@ -120,10 +133,12 @@ export class LLMOpenAIAction extends BaseAction<
         timeout: 1000,
       });
 
+      const selectedModel = model === "custom" ? (customModel ?? "") : model;
+
       // Call OpenAI API
       const response = await OpenAIService.callChatCompletion(
         credentialId,
-        model,
+        selectedModel,
         prompt,
         maxTokens,
         temperature,
@@ -132,7 +147,7 @@ export class LLMOpenAIAction extends BaseAction<
       // Store the response in the execution context
       onSuccess({
         response,
-        model,
+        model: selectedModel,
         tokensUsed: undefined, // OpenAI service doesn't return token count currently
       });
     } catch (error: any) {
