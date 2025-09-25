@@ -3,22 +3,57 @@ name: Release
 on:
   push:
     branches: [main]
+    paths: ['package.json']
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
-  id-token: write
 
 jobs:
-  release:
+  check-version-change:
     runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.check.outputs.changed }}
+      current-version: ${{ steps.check.outputs.current-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: check
+        run: |
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Get previous version (from parent commit)
+          git checkout HEAD~1 -- package.json 2>/dev/null || echo "No previous package.json"
+          if [ -f package.json ]; then
+            PREVIOUS_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
+            git checkout HEAD -- package.json
+          else
+            PREVIOUS_VERSION="unknown"
+          fi
+          echo "Previous version: $PREVIOUS_VERSION"
+          
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version unchanged"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+  release:
+    needs: check-version-change
+    if: needs.check-version-change.outputs.version-changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -43,23 +78,46 @@ jobs:
 
       - name: Prepare extension builds
         run: |
-          mv dist dist-chrome
+          cp -r dist dist-chrome
           TARGET=firefox npm run build
           mv dist dist-firefox
 
       - name: Create extension archives
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION="${{ needs.check-version-change.outputs.current-version }}"
           cd dist-chrome
           zip -r ../extension-chrome-v${VERSION}.zip .
           cd ../dist-firefox
           zip -r ../extension-firefox-v${VERSION}.zip .
           cd ..
 
-      - name: Install semantic-release
-        run: npm install --no-save semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github
-
-      - name: Release
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        with:
+          tag_name: "v${{ needs.check-version-change.outputs.current-version }}"
+          release_name: "Release v${{ needs.check-version-change.outputs.current-version }}"
+          draft: false
+          prerelease: false
+
+      - name: Upload Chrome Extension
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./extension-chrome-v${{ needs.check-version-change.outputs.current-version }}.zip
+          asset_name: extension-chrome-v${{ needs.check-version-change.outputs.current-version }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload Firefox Extension
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./extension-firefox-v${{ needs.check-version-change.outputs.current-version }}.zip
+          asset_name: extension-firefox-v${{ needs.check-version-change.outputs.current-version }}.zip
+          asset_content_type: application/zip

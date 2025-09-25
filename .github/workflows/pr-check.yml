@@ -2,30 +2,28 @@ name: PR Check
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, labeled, unlabeled]
     branches:
       - main
 
 jobs:
-  validate-commits:
+  check-label:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Check for version label
+        uses: actions/github-script@v7
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-          cache: "npm"
-
-      - name: Install commitlint
-        run: npm install --no-save @commitlint/config-conventional @commitlint/cli
-
-      - name: Validate commit messages
-        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+          script: |
+            const labels = context.payload.pull_request.labels.map(label => label.name);
+            const versionLabels = labels.filter(label => ['major', 'minor', 'patch'].includes(label));
+            
+            if (versionLabels.length === 0) {
+              core.setFailed('PR must have exactly one version label: major, minor, or patch');
+            } else if (versionLabels.length > 1) {
+              core.setFailed('PR must have exactly one version label, found: ' + versionLabels.join(', '));
+            } else {
+              console.log('✅ Found valid version label:', versionLabels[0]);
+            }
 
   test:
     runs-on: ubuntu-latest

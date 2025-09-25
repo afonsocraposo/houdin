@@ -1,0 +1,91 @@
+name: Version Bump
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Check if commit is from PR merge
+        id: check-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commit = context.payload.head_commit;
+            const message = commit.message;
+            
+            // Check if this is a merge commit from a PR
+            const prMatch = message.match(/Merge pull request #(\d+)/);
+            if (!prMatch) {
+              console.log('Not a PR merge commit, skipping version bump');
+              return { shouldBump: false };
+            }
+            
+            const prNumber = prMatch[1];
+            console.log('Found PR merge:', prNumber);
+            
+            // Get PR details to check labels
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const labels = pr.labels.map(label => label.name);
+            const versionLabels = labels.filter(label => ['major', 'minor', 'patch'].includes(label));
+            
+            if (versionLabels.length !== 1) {
+              core.setFailed(`PR #${prNumber} should have exactly one version label, found: ${versionLabels.join(', ')}`);
+              return;
+            }
+            
+            const versionType = versionLabels[0];
+            console.log('Version bump type:', versionType);
+            
+            return { 
+              shouldBump: true, 
+              versionType: versionType,
+              prNumber: prNumber 
+            };
+
+      - name: Bump version
+        if: fromJson(steps.check-pr.outputs.result).shouldBump
+        id: bump
+        run: |
+          VERSION_TYPE="${{ fromJson(steps.check-pr.outputs.result).versionType }}"
+          PR_NUMBER="${{ fromJson(steps.check-pr.outputs.result).prNumber }}"
+          
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Bump version using npm
+          npm version $VERSION_TYPE --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+          
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Commit version bump
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to $NEW_VERSION (from PR #$PR_NUMBER)"
+          git push
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "previous_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
