@@ -10,8 +10,8 @@ module.exports = {
     // Update CHANGELOG.md
     '@semantic-release/changelog',
     
-    // Update package.json version
-    '@semantic-release/npm',
+    // Update package.json version (but don't publish to npm)
+    ['@semantic-release/npm', { npmPublish: false }],
     
     // Create git tag and push changes
     [
