@@ -1,5 +1,5 @@
 import { test, expect } from "./test.base";
-import { Destinations, urlBuilder } from "./utils";
+import { Destinations, UrlBuilder } from "./utils";
 
 test.describe("Config page", () => {
   // always go to config page before each test
@@ -50,7 +50,7 @@ test.describe("Config page", () => {
 
   test("can open specific tabs via url param", async ({ page, baseUrl }) => {
     // Go to config page with tab param
-    await page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
+    await page.goto(UrlBuilder(baseUrl, Destinations.HISTORY));
     // Check that History tab is active
     await expect(page.getByRole("tab", { name: "History" })).toHaveAttribute(
       "data-active",
@@ -63,7 +63,7 @@ test.describe("Config page", () => {
     ).toBeVisible();
 
     // Go to config page with tab param
-    await page.goto(urlBuilder(baseUrl, Destinations.CREDENTIALS));
+    await page.goto(UrlBuilder(baseUrl, Destinations.CREDENTIALS));
     // Check that Credentials tab is active
     await expect(
       page.getByRole("tab", { name: "Credentials" }),
@@ -75,7 +75,7 @@ test.describe("Config page", () => {
     ).toBeVisible();
 
     // Go to config page with tab param
-    await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
+    await page.goto(UrlBuilder(baseUrl, Destinations.WORKFLOWS));
     // Check that Workflows tab is active
     await expect(page.getByRole("tab", { name: "Workflows" })).toHaveAttribute(
       "data-active",

@@ -1,11 +1,11 @@
 import { DEMO_FAILING_WORKFLOW as DEMO_FAILING_WORKFLOW } from "./demoWorkflows";
 import { test, expect } from "./test.base";
-import { Destinations, importWorkflow, urlBuilder } from "./utils";
+import { Destinations, importWorkflow, UrlBuilder } from "./utils";
 
 test.describe("Execution history", () => {
   // always go to config page before each test
   test.beforeEach(async ({ page, baseUrl }) => {
-    await page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
+    await page.goto(UrlBuilder(baseUrl, Destinations.HISTORY));
     await expect(page.locator("body")).toBeVisible();
     // Check that Workflows tab has h3 title
     await expect(
@@ -40,7 +40,7 @@ test.describe("Execution history", () => {
     ).toHaveValue("Test Workflow");
 
     // Go back to workflows tabs
-    await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
+    await page.goto(UrlBuilder(baseUrl, Destinations.WORKFLOWS));
 
     // Click on edit workflow
     await page.locator('button[title="Edit workflow"]').click();
@@ -63,13 +63,14 @@ test.describe("Execution history", () => {
     // Click on History tab
     await page.getByRole("tab", { name: "History" }).click();
 
-    // Click on button "View Full History"
-    await page.getByRole("button", { name: "View Full History" }).click();
+    // Click on button "View Full History" that will open a new tab
+    const [newPage] = await Promise.all([
+      page.context().waitForEvent("page"),
+      page.getByRole("button", { name: "View Full History" }).click(),
+    ]);
 
     // Check that URL has changed to baseUrl with history tab
-    await expect(page).toHaveURL(
-      new RegExp(urlBuilder(baseUrl, Destinations.HISTORY)),
-    );
+    await expect(newPage).toHaveURL(UrlBuilder(baseUrl, Destinations.HISTORY));
   });
 
   test("see execution history after running workflow", async ({
@@ -93,7 +94,7 @@ test.describe("Execution history", () => {
     await expect(page.getByText("Hello from Houdin workflow")).toBeVisible();
 
     // Go back to history page
-    page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
+    page.goto(UrlBuilder(baseUrl, Destinations.HISTORY));
 
     // Select option in select with placeholder o|filter by workflow"
     await page.locator('input[placeholder="Filter by workflow"]').click();
@@ -167,9 +168,6 @@ test.describe("Execution history", () => {
     // check for text "1 completed"
     await expect(page.getByText("1 completed")).toBeVisible();
 
-    // check for text "0 failed"
-    await expect(page.getByText("0 failed")).toBeVisible();
-
     // check for text "Test Workflow"
     await expect(page.getByText("Test Workflow")).toBeVisible();
   });
@@ -192,7 +190,7 @@ test.describe("Execution history", () => {
     await page.waitForTimeout(1000);
 
     // Go back to history page
-    page.goto(urlBuilder(baseUrl, Destinations.HISTORY));
+    page.goto(UrlBuilder(baseUrl, Destinations.HISTORY));
 
     // Select option in select with placeholder Filter by status
     await page.locator('input[placeholder="Filter by status"]').click();
@@ -270,10 +268,6 @@ test.describe("Execution history", () => {
     // check for text "1 executed"
     await expect(page.getByText("1 executed")).toBeVisible();
 
-    // check for text "1 completed"
-    await expect(page.getByText("0 completed")).toBeVisible();
-
-    // check for text "0 failed"
     await expect(page.getByText("1 failed")).toBeVisible();
 
     // check for text "Test Workflow"

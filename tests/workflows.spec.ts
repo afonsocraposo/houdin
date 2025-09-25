@@ -4,12 +4,12 @@ import {
   TriggerNodeData,
   WorkflowDefinition,
 } from "../src/types/workflow";
-import { Destinations, importWorkflow, urlBuilder } from "./utils";
+import { Destinations, importWorkflow, UrlBuilder } from "./utils";
 
 test.describe("Workflows creation, design and execution", () => {
   // always go to config page before each test
   test.beforeEach(async ({ page, baseUrl }) => {
-    await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
+    await page.goto(UrlBuilder(baseUrl, Destinations.WORKFLOWS));
     await expect(page.locator("body")).toBeVisible();
     // Check that Workflows tab has h3 title
     await expect(

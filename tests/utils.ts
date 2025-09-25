@@ -6,7 +6,7 @@ export const importWorkflow = async (
   page: Page,
   workflowJson: string = DEMO_WORKFLOW,
 ) => {
-  await page.goto(urlBuilder(baseUrl, Destinations.WORKFLOWS));
+  await page.goto(UrlBuilder(baseUrl, Destinations.WORKFLOWS));
   // click on Import Workflow button, id="open-import-workflow-modal"
   await page.locator("#open-import-workflow-modal").click();
 
@@ -28,6 +28,6 @@ export enum Destinations {
   CREDENTIALS = "?tab=credentials",
 }
 
-export const urlBuilder = (baseUrl: string, path: Destinations) => {
+export const UrlBuilder = (baseUrl: string, path: Destinations) => {
   return `${baseUrl}${path}`;
 };
