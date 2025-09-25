@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths: ['package.json']
+    paths: ["package.json"]
 
 permissions:
   contents: write
@@ -26,7 +26,7 @@ jobs:
           # Get current version
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "Current version: $CURRENT_VERSION"
-          
+
           # Get previous version (from parent commit)
           git checkout HEAD~1 -- package.json 2>/dev/null || echo "No previous package.json"
           if [ -f package.json ]; then
@@ -36,7 +36,7 @@ jobs:
             PREVIOUS_VERSION="unknown"
           fi
           echo "Previous version: $PREVIOUS_VERSION"
-          
+
           if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
             echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -44,7 +44,7 @@ jobs:
             echo "Version unchanged"
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
-          
+
           echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
   release:
@@ -91,33 +91,54 @@ jobs:
           zip -r ../extension-firefox-v${VERSION}.zip .
           cd ..
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check if tag exists
+        id: check-tag
+        run: |
+          VERSION="v${{ needs.check-version-change.outputs.current-version }}"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "tag-exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "tag-exists=false" >> $GITHUB_OUTPUT
+          fi
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        if: steps.check-tag.outputs.tag-exists == 'false'
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v${{ needs.check-version-change.outputs.current-version }}"
-          release_name: "Release v${{ needs.check-version-change.outputs.current-version }}"
+          tag_name: ${{ steps.check-tag.outputs.tag }}
+          name: Extension ${{ steps.check-tag.outputs.tag }}
           draft: false
           prerelease: false
+          generate_release_notes: true
+          files: |
+            extension-chrome-${{ steps.check-tag.outputs.tag }}.zip
+            extension-firefox-${{ steps.check-tag.outputs.tag }}.zip
+          body: |
+            🚀 **Browser Extension Release ${{ steps.check-tag.outputs.tag }}**
 
-      - name: Upload Chrome Extension
-        uses: actions/upload-release-asset@v1
+            ## Installation
+
+            ### Chrome/Edge
+            1. Download the `extension-chrome-${{ steps.check-tag.outputs.tag }}.zip` file below
+            2. Extract the contents to a folder
+            3. Open Chrome/Edge and navigate to `chrome://extensions/` or `edge://extensions/`
+            4. Enable "Developer mode"
+            5. Click "Load unpacked" and select the extracted folder
+
+            ### Firefox
+            1. Download the `extension-firefox-${{ steps.check-tag.outputs.tag }}.zip` file below
+            2. Extract the contents to a folder
+            3. Open Firefox and navigate to `about:debugging`
+            4. Click "This Firefox"
+            5. Click "Load Temporary Add-on" and select the extracted folder
+
+            ## What's Changed
+            This release includes all changes merged since the previous version.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./extension-chrome-v${{ needs.check-version-change.outputs.current-version }}.zip
-          asset_name: extension-chrome-v${{ needs.check-version-change.outputs.current-version }}.zip
-          asset_content_type: application/zip
 
-      - name: Upload Firefox Extension
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./extension-firefox-v${{ needs.check-version-change.outputs.current-version }}.zip
-          asset_name: extension-firefox-v${{ needs.check-version-change.outputs.current-version }}.zip
-          asset_content_type: application/zip
+      - name: Skip release (tag exists)
+        if: steps.check-tag.outputs.tag-exists == 'true'
+        run: |
+          echo "⚠️ Tag ${{ steps.check-tag.outputs.tag }} already exists. Skipping release creation."
