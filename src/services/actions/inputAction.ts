@@ -11,7 +11,10 @@ interface InputActionOutput {
   input: string;
 }
 
-export class InputAction extends BaseAction<InputActionConfig, InputActionOutput> {
+export class InputAction extends BaseAction<
+  InputActionConfig,
+  InputActionOutput
+> {
   readonly metadata: ActionMetadata = {
     type: "input",
     label: "Input",
@@ -26,7 +29,6 @@ export class InputAction extends BaseAction<InputActionConfig, InputActionOutput
         label: "Prompt",
         placeholder: "Please provide your input",
         description: "The message to display in the input modal",
-        required: true,
       }),
     },
   };
