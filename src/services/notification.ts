@@ -13,15 +13,18 @@ export class NotificationService {
   public static showNotification({
     title,
     message = "",
+    color,
     timeout = 3000,
   }: {
     title?: string;
     message?: string;
     timeout?: number;
+    color?: string;
   }): void {
     this.sendNotification({
       title,
       message,
+      color,
       autoClose: timeout,
     });
   }
@@ -56,6 +59,26 @@ export class NotificationService {
       {
         title,
         message,
+        autoClose: timeout,
+      },
+      true,
+    );
+  }
+
+  public static showErrorNotificationFromBackground({
+    title = "Error",
+    message = "",
+    timeout = 3000,
+  }: {
+    title?: string;
+    message?: string;
+    timeout?: number;
+  }): void {
+    this.sendNotification(
+      {
+        title,
+        message,
+        color: "red",
         autoClose: timeout,
       },
       true,
