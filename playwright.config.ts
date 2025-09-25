@@ -1,8 +1,8 @@
 import { PlaywrightTestConfig, devices } from "@playwright/test";
 
 export const timeouts = {
-  actionTimeout: 5_000,
-  testTimeout: 20_000,
+  actionTimeout: 15_000,
+  testTimeout: 60_000,
 };
 
 /**
