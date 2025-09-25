@@ -23,8 +23,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          node-version: "20.x"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -36,14 +36,14 @@ jobs:
         run: npx playwright install chromium
 
       - name: Run e2e tests
-        run: npm run test:e2e
+        run: npm run test:e2e:headless
 
       - name: Build Chrome extension
         run: |
           npm run build
           mv dist dist-chrome
 
-      - name: Build Firefox extension  
+      - name: Build Firefox extension
         run: |
           TARGET=firefox npm run build
           mv dist dist-firefox
@@ -53,7 +53,7 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           cd dist-chrome
           zip -r ../extension-chrome-v${VERSION}.zip .
-          cd ../dist-firefox  
+          cd ../dist-firefox
           zip -r ../extension-firefox-v${VERSION}.zip .
           cd ..
 
