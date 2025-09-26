@@ -515,11 +515,7 @@ function ExecutionHistoryPage() {
                                               )}
                                             </Table.Td>
                                             <Table.Td ta="center">
-                                              <Popover
-                                                position="bottom"
-                                                withArrow
-                                                shadow="md"
-                                              >
+                                              <Popover withArrow shadow="md">
                                                 <Popover.Target>
                                                   <ActionIcon variant="subtle">
                                                     <IconSettings size="20" />
