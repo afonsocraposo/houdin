@@ -1,9 +1,22 @@
 @import url("./assets/fonts/poppins.css");
-@import url("highlight.js/styles/github-dark.css") screen and (prefers-color-scheme: dark);
-@import url("highlight.js/styles/github.css") screen and (prefers-color-scheme: light);
+@import url("highlight.js/styles/github-dark.css") screen and
+  (prefers-color-scheme: dark);
+@import url("highlight.js/styles/github.css") screen and
+  (prefers-color-scheme: light);
+
+.mantine-CodeHighlight-codeHighlight {
+  .mantine-CodeHighlight-controls {
+    visibility: hidden;
+  }
+}
+.mantine-CodeHighlight-codeHighlight:hover {
+  .mantine-CodeHighlight-controls {
+    visibility: visible;
+  }
+}
 
 .mantine-CodeHighlight-controls {
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .mantine-CodeHighlight-controls:hover {
