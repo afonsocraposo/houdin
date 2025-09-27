@@ -35,14 +35,18 @@ import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionRegistry } from "@/services/actionRegistry";
 import { useWorkflowState } from "./hooks";
 import { newWorkflowId } from "@/services/workflow";
+import { useThrottledCallback } from "@mantine/hooks";
 
+export const SESSION_STORAGE_KEY = "workflow-draft";
 interface WorkflowDesignerProps {
+  autoSave?: boolean;
   workflow?: WorkflowDefinition;
   onSave: (workflow: WorkflowDefinition) => void;
   onCancel: () => void;
 }
 
 export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
+  autoSave = false,
   workflow,
   onSave,
   onCancel,
@@ -246,6 +250,20 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       ...form.getValues(),
     };
   };
+
+  const handleAutoSave = useThrottledCallback(
+    useCallback(() => {
+      if (autoSave && nodes.length > 0) {
+        const draft = getCurrentWorkflowDefinition();
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(draft));
+      }
+    }, [getCurrentWorkflowDefinition, autoSave]),
+    1000,
+  );
+
+  useEffect(() => {
+    handleAutoSave();
+  }, [nodes, connections, form.values, handleAutoSave]);
 
   return (
     <Container fluid pt="xl" px="0" h="100vh">

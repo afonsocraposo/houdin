@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { WorkflowDesigner } from "./WorkflowDesigner";
+import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
 import { ContentStorageClient } from "@/services/storage";
 import { WorkflowDefinition } from "@/types/workflow";
 
@@ -40,9 +40,19 @@ function DesignerView({ workflowId }: DesignerViewProps) {
       loadWorkflow(workflowId);
       setNewWorkflow(false);
     } else if (!workflowId) {
-      setEditingWorkflow(null);
+      restoreAutoSaveWorkflow();
     }
   }, [workflowId, location.state]);
+
+  const restoreAutoSaveWorkflow = () => {
+    const autoSaved = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (autoSaved) {
+      const workflow = JSON.parse(autoSaved) as WorkflowDefinition;
+      setEditingWorkflow(workflow);
+    } else {
+      setEditingWorkflow(null);
+    }
+  };
 
   const handleWorkflowSave = async (workflow: WorkflowDefinition) => {
     try {
@@ -79,6 +89,7 @@ function DesignerView({ workflowId }: DesignerViewProps) {
 
   return (
     <WorkflowDesigner
+      autoSave={newWorkflow}
       workflow={editingWorkflow || undefined}
       onSave={handleWorkflowSave}
       onCancel={handleCancel}
