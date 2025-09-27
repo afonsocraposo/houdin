@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { WorkflowDesigner } from "./WorkflowDesigner";
 import { ContentStorageClient } from "@/services/storage";
 import { WorkflowDefinition } from "@/types/workflow";
@@ -9,46 +9,48 @@ interface DesignerViewProps {
 }
 
 function DesignerView({ workflowId }: DesignerViewProps) {
-  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [editingWorkflow, setEditingWorkflow] =
     useState<WorkflowDefinition | null>(null);
+  const [newWorkflow, setNewWorkflow] = useState<boolean>(true);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   const storageClient = new ContentStorageClient();
 
-  useEffect(() => {
-    // Load existing workflows from storage
-    const loadData = async () => {
-      try {
-        const loadedWorkflows = await storageClient.getWorkflows();
-        setWorkflows(loadedWorkflows);
-      } catch (error) {
-        console.error("Failed to load workflows:", error);
-      }
-    };
-
-    loadData();
+  const loadWorkflow = useCallback(async (id: string) => {
+    const workflows = await storageClient.getWorkflows();
+    const workflow = workflows.find((w) => w.id === id);
+    setEditingWorkflow(workflow || null);
   }, []);
 
-  // Set editing workflow based on URL parameter
+  // Set editing workflow based on URL parameter or example from navigation state
   useEffect(() => {
-    if (workflowId && workflows.length > 0) {
-      const workflow = workflows.find((w) => w.id === workflowId);
-      setEditingWorkflow(workflow || null);
+    // Check if we have an example workflow from navigation state
+    const exampleWorkflow = location.state?.exampleWorkflow as
+      | WorkflowDefinition
+      | undefined;
+
+    setNewWorkflow(true);
+    if (exampleWorkflow) {
+      setEditingWorkflow(exampleWorkflow);
+      // Clear the state to prevent re-use on subsequent navigations
+      window.history.replaceState({}, "");
+    } else if (workflowId) {
+      loadWorkflow(workflowId);
+      setNewWorkflow(false);
     } else if (!workflowId) {
       setEditingWorkflow(null);
     }
-  }, [workflowId, workflows]);
+  }, [workflowId, location.state]);
 
   const handleWorkflowSave = async (workflow: WorkflowDefinition) => {
     try {
-      const updatedWorkflows = editingWorkflow
-        ? workflows.map((w) => (w.id === workflow.id ? workflow : w))
-        : [...workflows, workflow];
-
-      await storageClient.saveWorkflows(updatedWorkflows);
-      setWorkflows(updatedWorkflows);
+      if (newWorkflow) {
+        await storageClient.createWorkflow(workflow);
+      } else {
+        await storageClient.updateWorkflow(workflow);
+      }
 
       // Sync HTTP triggers in background script when explicitly saving
       const runtime = (

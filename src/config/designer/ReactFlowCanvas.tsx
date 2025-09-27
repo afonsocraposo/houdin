@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useMemo,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useMemo, useEffect, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -20,8 +14,6 @@ import {
   NodeChange,
   EdgeChange,
   useReactFlow,
-  getNodesBounds,
-  getViewportForBounds,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
@@ -37,23 +29,30 @@ import {
   IconLayoutGrid,
 } from "@tabler/icons-react";
 import { WorkflowNode, WorkflowConnection, NodeType } from "@/types/workflow";
-import dagre from "@dagrejs/dagre";
 import { initializeTriggers } from "@/services/triggerInitializer";
 import { initializeActions } from "@/services/actionInitializer";
 import CanvasNode from "./CanvasNode";
 import { useHotkeys } from "@mantine/hooks";
-import { NotificationService } from "@/services/notification";
 import AddNodeList from "./AddNodeList";
 import { generateId } from "@/utils/helpers";
+import {
+  getLayoutedElementsCallback,
+  getNewNodePosition,
+  onNodeCopyCallback,
+  onNodePasteCallback,
+  panToShowNodeCallback,
+} from "./ReactFlowCanvasCallbacks";
 
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
   connections: WorkflowConnection[];
-  onStateChange: (
-    nodes?: WorkflowNode[],
-    connections?: WorkflowConnection[],
-  ) => void;
+  setNodes: (nodes: WorkflowNode[]) => void;
   onNodeSelect: (id: string | null) => void;
+  onNodeDelete: (id: string) => void;
+  onNodeMove: (id: string, position: { x: number; y: number }) => void;
+  onConnectionCreate: (connection: WorkflowConnection) => void;
+  onConnectionDelete: (id: string) => void;
+  onNodeCreate: (node: WorkflowNode) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
   undo: () => void;
@@ -78,8 +77,13 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
 const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   nodes: workflowNodes,
   connections: workflowConnections,
-  onStateChange,
+  setNodes: setWorkflowNodes,
   onNodeSelect,
+  onNodeDelete,
+  onNodeMove,
+  onConnectionCreate,
+  onConnectionDelete,
+  onNodeCreate,
   selectedNode,
   errors,
   undo,
@@ -89,24 +93,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 }) => {
   const colorScheme = useComputedColorScheme();
   const reactFlowInstance = useReactFlow();
-  const hasInitialized = useRef(false);
   const [opened, setOpened] = useState(false);
-
-  // Handle node deletion directly
-  const handleNodeDeletion = useCallback(
-    (nodeId: string) => {
-      // Always clear selection first, regardless of which node is being deleted
-      onNodeSelect(null);
-
-      // Then update nodes and connections
-      const updatedNodes = workflowNodes.filter((n) => n.id !== nodeId);
-      const updatedConnections = workflowConnections.filter(
-        (c) => c.source !== nodeId && c.target !== nodeId,
-      );
-      onStateChange(updatedNodes, updatedConnections);
-    },
-    [workflowNodes, workflowConnections, onStateChange, onNodeSelect],
-  );
 
   // Convert workflow nodes to React Flow nodes
   const reactFlowNodes: Node[] = useMemo(
@@ -118,17 +105,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         data: {
           ...node.data,
           ...node,
-          onDeleteNode: handleNodeDeletion,
+          onDeleteNode: onNodeDelete,
           error: errors[node.id] !== undefined,
         },
-        selected: selectedNode?.id === node.id,
       })),
-    [
-      workflowNodes.map((node) => node.id).join(","),
-      selectedNode,
-      handleNodeDeletion,
-      errors,
-    ],
+    [workflowNodes, errors, onNodeDelete],
   );
 
   // Convert workflow connections to React Flow edges
@@ -152,7 +133,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             style: { strokeWidth: 2 },
           }) as Edge,
       ),
-    [workflowConnections.map((conn) => conn.id).join(",")],
+    [workflowConnections],
   );
 
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState(reactFlowNodes);
@@ -161,7 +142,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [reactFlowNodes, setNodes, JSON.stringify(errors)]);
+  }, [reactFlowNodes, errors]);
+
+  useEffect(() => {
+    setEdges(reactFlowEdges);
+  }, [reactFlowEdges]); // Update when connections change
 
   // Handle selection changes separately to avoid re-render cycles
   useEffect(() => {
@@ -172,11 +157,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       })),
     );
     setOpened(false);
-  }, [selectedNode?.id, setNodes]);
-
-  useEffect(() => {
-    setEdges(reactFlowEdges);
-  }, [reactFlowEdges, setEdges]); // Update when connections change
+  }, [selectedNode?.id, setNodes, setOpened]);
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(
@@ -201,20 +182,12 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       // Only process position changes - don't let React Flow's internal state management
       // interfere with our workflow node array
       if (positionChanges.length > 0) {
-        const updatedNodes = workflowNodes.map((node) => {
-          const positionChange = positionChanges.find(
-            (change) => change.id === node.id,
-          );
-          if (positionChange) {
-            return { ...node, position: positionChange.position };
-          }
-          return node;
+        positionChanges.forEach((change) => {
+          onNodeMove(change.id, change.position);
         });
-
-        onStateChange(updatedNodes, undefined);
       }
     },
-    [onNodesChangeFlow, workflowNodes, onStateChange],
+    [onNodesChangeFlow, onNodeMove],
   );
 
   // Handle new connections
@@ -230,9 +203,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         targetHandle: params.targetHandle || "input",
       };
 
-      onStateChange(undefined, [...workflowConnections, newConnection]);
+      onConnectionCreate(newConnection);
     },
-    [workflowConnections, onStateChange],
+    [workflowConnections, onConnectionCreate],
   );
 
   // Handle edge deletion
@@ -241,16 +214,15 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       onEdgesChangeFlow(changes);
 
       // Handle edge removals
-      changes.forEach((change) => {
-        if (change.type === "remove") {
-          const updatedConnections = workflowConnections.filter(
-            (c) => c.id !== change.id,
-          );
-          onStateChange(undefined, updatedConnections);
-        }
-      });
+      if (changes.length > 0) {
+        changes.forEach((change) => {
+          if (change.type === "remove") {
+            onConnectionDelete(change.id);
+          }
+        });
+      }
     },
-    [onEdgesChangeFlow, workflowConnections, onStateChange],
+    [onEdgesChangeFlow, onConnectionDelete],
   );
 
   // Handle node selection
@@ -267,183 +239,49 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     // do nothing if no change
     if (selectedNode === null) return;
     onNodeSelect(null);
-  }, [selectedNode]);
+  }, [selectedNode, onNodeSelect]);
 
-  const getLayoutedElements = useCallback(
-    (nodes: WorkflowNode[], edges: WorkflowConnection[]) => {
-      // Separate connected and disconnected nodes
-      const connectedNodeIds = new Set();
-      edges.forEach((edge) => {
-        connectedNodeIds.add(edge.source);
-        connectedNodeIds.add(edge.target);
-      });
-
-      const connectedNodes = nodes.filter((node) =>
-        connectedNodeIds.has(node.id),
-      );
-      const disconnectedNodes = nodes.filter(
-        (node) => !connectedNodeIds.has(node.id),
-      );
-
-      let layoutedConnectedNodes: WorkflowNode[] = [];
-      let rightmostX = 0;
-
-      // Layout connected nodes using dagre if there are any
-      if (connectedNodes.length > 0) {
-        const dagreGraph = new dagre.graphlib.Graph();
-        dagreGraph.setDefaultEdgeLabel(() => ({}));
-        dagreGraph.setGraph({
-          rankdir: "LR", // Left to right layout
-          nodesep: 100, // Horizontal spacing between nodes
-          ranksep: 100, // Vertical spacing between ranks/levels
-        });
-
-        connectedNodes.forEach((node) => {
-          dagreGraph.setNode(node.id, { width: 200, height: 150 });
-        });
-
-        edges.forEach((edge) => {
-          if (
-            connectedNodeIds.has(edge.source) &&
-            connectedNodeIds.has(edge.target)
-          ) {
-            dagreGraph.setEdge(edge.source, edge.target);
-          }
-        });
-
-        dagre.layout(dagreGraph);
-
-        // Apply dagre positions to connected nodes
-        layoutedConnectedNodes = connectedNodes.map((node) => {
-          const nodeWithPosition = dagreGraph.node(node.id);
-          const newX = nodeWithPosition.x - 100; // Center the node (width/2)
-          rightmostX = Math.max(rightmostX, newX);
-          return {
-            ...node,
-            position: {
-              x: newX,
-              y: nodeWithPosition.y - 75, // Center the node (height/2)
-            },
-          };
-        });
-      }
-
-      // Position disconnected nodes to the right of connected nodes
-      const layoutedDisconnectedNodes = disconnectedNodes.map((node, index) => {
-        return {
-          ...node,
-          position: {
-            x: rightmostX + 300 + index * 300, // Start 300px to the right, then space by 300px
-            y: 0, // Vertical spacing for multiple disconnected nodes
-          },
-        };
-      });
-
-      const allLayoutedNodes = [
-        ...layoutedConnectedNodes,
-        ...layoutedDisconnectedNodes,
-      ];
-      return { nodes: allLayoutedNodes, edges };
-    },
-    [],
-  );
+  const getLayoutedElements = getLayoutedElementsCallback();
 
   const autoArrange = useCallback(() => {
     const { nodes: layoutedNodes } = getLayoutedElements(
       workflowNodes,
       workflowConnections,
     );
-    onStateChange(layoutedNodes, undefined);
-  }, [workflowNodes, workflowConnections, onStateChange, getLayoutedElements]);
+    setWorkflowNodes(layoutedNodes);
+  }, [workflowNodes, workflowConnections, getLayoutedElements]);
 
-  const getNewNodePosition = () => {
-    // Calculate position for new node (center-right of existing nodes)
-    let newPosition = { x: 300, y: 100 }; // Default position for first node
+  const createNode = useCallback(
+    (type: string, nodeType: NodeType) => {
+      let defaultConfig = {};
 
-    if (workflowNodes.length > 0) {
-      // Find the rightmost node
-      const rightmostNode = workflowNodes.reduce((rightmost, node) =>
-        node.position.x > rightmost.position.x ? node : rightmost,
-      );
+      const newPosition = getNewNodePosition(workflowNodes);
 
-      // Find the center Y position of all nodes
-      const totalY = workflowNodes.reduce(
-        (sum, node) => sum + node.position.y,
-        0,
-      );
-      const centerY = totalY / workflowNodes.length;
-
-      // Position new node to the right with some spacing (300px)
-      newPosition = {
-        x: rightmostNode.position.x + 300,
-        y: centerY,
+      const newNode: WorkflowNode = {
+        id: generateId(nodeType),
+        type: nodeType,
+        position: newPosition,
+        data: { type, config: defaultConfig },
+        inputs: nodeType === "trigger" ? [] : ["input"],
+        outputs: nodeType === "condition" ? ["true", "false"] : ["output"],
       };
-    }
-    return newPosition;
-  };
-  const createNode = (type: string, nodeType: NodeType) => {
-    let defaultConfig = {};
 
-    const newPosition = getNewNodePosition();
+      onNodeCreate(newNode);
 
-    const newNode: WorkflowNode = {
-      id: generateId(nodeType),
-      type: nodeType,
-      position: newPosition,
-      data: { type, config: defaultConfig },
-      inputs: nodeType === "trigger" ? [] : ["input"],
-      outputs: nodeType === "condition" ? ["true", "false"] : ["output"],
-    };
-
-    const updatedNodes = [...workflowNodes, newNode];
-    onStateChange(updatedNodes, undefined);
-
-    // Select the new node immediately after creation
-    onNodeSelect(newNode.id);
-
-    panToShowNode(newPosition);
-  };
-  const panToShowNode = (nodePosition: { x: number; y: number }) => {
-    // Get the current viewport dimensions
-    const canvasElement = document.querySelector(".react-flow__viewport");
-    if (!canvasElement) return;
-
-    const canvasRect = canvasElement.getBoundingClientRect();
-    const canvasWidth = canvasRect.width;
-    const canvasHeight = canvasRect.height;
-
-    const node = {
-      id: "temp",
-      position: nodePosition,
-      data: {},
-      width: 200,
-      height: 150,
-    };
-    const bounds = getNodesBounds([node]);
-    const viewport = reactFlowInstance.getViewport();
-    const zoom = viewport.zoom;
-
-    const newViewport = getViewportForBounds(
-      bounds,
-      canvasWidth / zoom,
-      canvasHeight / zoom,
-      zoom, // min zoom level
-      1, // max zoom level
-      10, // padding
-    );
-    reactFlowInstance.setViewport(newViewport, {
-      duration: 300,
-      interpolate: "linear",
-    });
-  };
-
-  // Define custom node types
-  const nodeTypes = useMemo(
-    () => ({
-      custom: CanvasNode,
-    }),
-    [],
+      panToShowNode(newPosition);
+    },
+    [workflowNodes, onNodeCreate],
   );
+
+  const panToShowNode = panToShowNodeCallback(reactFlowInstance);
+
+  const onNodeCopy = onNodeCopyCallback(selectedNode);
+
+  const onNodePaste = onNodePasteCallback({
+    workflowNodes,
+    onNodeCreate,
+    panToShowNode,
+  });
 
   useHotkeys([
     ["mod + C", () => onNodeCopy()],
@@ -451,46 +289,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     ["mod + Z", () => hasPrevious && undo()],
     ["mod + Shift + Z", () => hasNext && redo()],
   ]);
-
-  const onNodeCopy = useCallback(() => {
-    if (selectedNode) {
-      navigator.clipboard.writeText(JSON.stringify(selectedNode));
-      NotificationService.showNotification({
-        message: `Node copied to clipboard`,
-        timeout: 1000,
-      });
-    }
-  }, [selectedNode]);
-
-  const onNodePaste = useCallback(() => {
-    navigator.clipboard
-      .readText()
-      .then((text) => {
-        const node: WorkflowNode = JSON.parse(text);
-        if (node && node.id && node.type) {
-          const newPosition = getNewNodePosition();
-
-          const newNode = {
-            ...node,
-            id: generateId(node.type), // New unique ID
-            position: newPosition,
-          };
-          onStateChange([...workflowNodes, newNode], undefined);
-          onNodeSelect(newNode.id);
-          panToShowNode(newPosition);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to read clipboard contents: ", err);
-      });
-  }, [workflowNodes, onStateChange, onNodeSelect]);
-
-  if (hasInitialized.current === false) {
-    if (workflowNodes.length !== nodes.length) {
-      return null; // Prevent rendering until initial fitView is done
-    }
-    hasInitialized.current = true;
-  }
 
   return (
     <Box
@@ -507,12 +305,14 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onNodesDelete={(deleted) => {
-          handleNodeDeletion(deleted[0].id);
+          onNodeDelete(deleted[0].id);
         }}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
-        nodeTypes={nodeTypes}
+        nodeTypes={{
+          custom: CanvasNode,
+        }}
         connectionLineType={ConnectionLineType.SmoothStep}
         defaultEdgeOptions={{
           type: "smoothstep",

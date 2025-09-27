@@ -328,6 +328,26 @@ abstract class StorageClientBase implements IStorageClient {
     }
   }
 
+  async createWorkflow(workflow: WorkflowDefinition): Promise<void> {
+    const workflows = await this.getWorkflows();
+    const exists = workflows.some((w) => w.id === workflow.id);
+    if (exists) {
+      throw new Error(`Workflow with id ${workflow.id} already exists`);
+    }
+    workflows.push(workflow);
+    await this.saveWorkflows(workflows);
+  }
+
+  async updateWorkflow(workflow: WorkflowDefinition): Promise<void> {
+    const workflows = await this.getWorkflows();
+    const index = workflows.findIndex((w) => w.id === workflow.id);
+    if (index === -1) {
+      throw new Error(`Workflow with id ${workflow.id} does not exist`);
+    }
+    workflows[index] = workflow;
+    await this.saveWorkflows(workflows);
+  }
+
   async getCredentials(): Promise<Credential[]> {
     try {
       return (await this.get(StorageKeys.CREDENTIALS)) || [];
