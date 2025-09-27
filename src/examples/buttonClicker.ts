@@ -32,7 +32,7 @@ export const buttonClicker: WorkflowDefinition = {
       data: {
         type: "wait",
         config: {
-          delay: 2000,
+          duration: 2,
         },
       },
       inputs: ["input"],
@@ -45,6 +45,7 @@ export const buttonClicker: WorkflowDefinition = {
       data: {
         type: "click-element",
         config: {
+          selectorType: "css",
           elementSelector: "button.accept, button.continue, .btn-primary",
         },
       },

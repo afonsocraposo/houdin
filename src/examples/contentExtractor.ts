@@ -10,7 +10,7 @@ const conn2Id = generateId("conn");
 export const contentExtractor: WorkflowDefinition = {
   id: "example-content-extractor",
   name: "Content Extractor",
-  description: "Extract text from an element and show it in a notification",
+  description: "Extract text from an element and show it in a modal",
   urlPattern: "https://*",
   enabled: true,
   nodes: [
@@ -33,7 +33,7 @@ export const contentExtractor: WorkflowDefinition = {
         type: "get-element-content",
         config: {
           elementSelector: "h1",
-          contentType: "text",
+          selectorType: "css",
         },
       },
       inputs: ["input"],
@@ -44,10 +44,9 @@ export const contentExtractor: WorkflowDefinition = {
       type: "action",
       position: { x: 800, y: 100 },
       data: {
-        type: "show-notification",
+        type: "show-modal",
         config: {
-          message: "Page title: {{get-element-content.output}}",
-          type: "info",
+          modalContent: `Extracted Content:\n{{${getContentActionId}}}`,
         },
       },
       inputs: ["input"],

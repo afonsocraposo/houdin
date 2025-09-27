@@ -26,11 +26,6 @@ export class TypeTextAction extends BaseAction<
 
   readonly configSchema = {
     properties: {
-      text: textProperty({
-        label: "Text to Type",
-        description: "The text that will be typed when this action is executed",
-        required: true,
-      }),
       selectorType: selectProperty({
         label: "Selector Type. (Optional, defaults to focused input)",
         options: [
@@ -53,6 +48,11 @@ export class TypeTextAction extends BaseAction<
           field: "selectorType",
           value: ["css", "xpath", "text"],
         },
+      }),
+      text: textProperty({
+        label: "Text to Type",
+        description: "The text that will be typed when this action is executed",
+        required: true,
       }),
     },
   };

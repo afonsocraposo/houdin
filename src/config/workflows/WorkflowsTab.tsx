@@ -185,6 +185,10 @@ export default function WorkflowsTab({
               </Menu.Target>
 
               <Menu.Dropdown>
+                <Menu.Item onClick={handleCreateBlankWorkflow}>
+                  Create Blank Workflow
+                </Menu.Item>
+                <Menu.Divider />
                 <Menu.Label>Start from Example</Menu.Label>
                 {exampleService.getExamples().map((example) => (
                   <Menu.Item
@@ -194,10 +198,6 @@ export default function WorkflowsTab({
                     {example.name}
                   </Menu.Item>
                 ))}
-                <Menu.Divider />
-                <Menu.Item onClick={handleCreateBlankWorkflow}>
-                  Create Blank Workflow
-                </Menu.Item>
               </Menu.Dropdown>
             </Menu>
           </Group>

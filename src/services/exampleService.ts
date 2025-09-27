@@ -9,12 +9,13 @@ export class ExampleService {
       examples.welcomeMessage,
       examples.formFiller,
       examples.contentExtractor,
-      examples.buttonClicker,
+      examples.askChatGPT,
+      examples.summarizeNews,
     ];
   }
 
   getExamples(): WorkflowDefinition[] {
-    return this.examples;
+    return this.examples.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   getExampleById(id: string): WorkflowDefinition | undefined {

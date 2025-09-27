@@ -2,7 +2,7 @@ import { WorkflowDefinition } from "@/types/workflow";
 import { generateId } from "@/utils/helpers";
 
 const triggerId = generateId("trigger");
-const fillActionId = generateId("action");
+const textInputActionId = generateId("action");
 const submitActionId = generateId("action");
 const conn1Id = generateId("conn");
 const conn2Id = generateId("conn");
@@ -26,14 +26,15 @@ export const formFiller: WorkflowDefinition = {
       outputs: ["output"],
     },
     {
-      id: fillActionId,
+      id: textInputActionId,
       type: "action",
       position: { x: 500, y: 100 },
       data: {
-        type: "input",
+        type: "type-text",
         config: {
+          selectorType: "css",
           elementSelector: "input[name='email']",
-          inputValue: "user@example.com",
+          text: "user@example.com",
         },
       },
       inputs: ["input"],
@@ -58,12 +59,12 @@ export const formFiller: WorkflowDefinition = {
       id: conn1Id,
       source: triggerId,
       sourceHandle: "output",
-      target: fillActionId,
+      target: textInputActionId,
       targetHandle: "input",
     },
     {
       id: conn2Id,
-      source: fillActionId,
+      source: textInputActionId,
       sourceHandle: "output",
       target: submitActionId,
       targetHandle: "input",
