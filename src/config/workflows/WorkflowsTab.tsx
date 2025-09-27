@@ -82,6 +82,10 @@ export default function WorkflowsTab({
     // Pass the example as state to the designer
     navigate("/designer", { state: { exampleWorkflow: newWorkflow } });
   };
+  const handleCreateBlankWorkflow = () => {
+    // Pass the example as state to the designer
+    navigate("/designer", { state: { blank: true } });
+  };
 
   const handleEditWorkflow = (workflow: WorkflowDefinition) => {
     navigate(`/designer/${workflow.id}`); // Navigate to designer with workflow ID
@@ -191,7 +195,7 @@ export default function WorkflowsTab({
                   </Menu.Item>
                 ))}
                 <Menu.Divider />
-                <Menu.Item onClick={handleCreateWorkflow}>
+                <Menu.Item onClick={handleCreateBlankWorkflow}>
                   Create Blank Workflow
                 </Menu.Item>
               </Menu.Dropdown>

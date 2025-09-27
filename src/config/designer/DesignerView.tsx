@@ -30,19 +30,29 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     const exampleWorkflow = location.state?.exampleWorkflow as
       | WorkflowDefinition
       | undefined;
+    const blankWorkflow = location.state?.blank as boolean | undefined;
+    window.history.replaceState({}, "");
 
     setNewWorkflow(true);
     if (exampleWorkflow) {
       setEditingWorkflow(exampleWorkflow);
       // Clear the state to prevent re-use on subsequent navigations
-      window.history.replaceState({}, "");
     } else if (workflowId) {
       loadWorkflow(workflowId);
       setNewWorkflow(false);
     } else if (!workflowId) {
-      restoreAutoSaveWorkflow();
+      if (blankWorkflow) {
+        setEditingWorkflow(null);
+        clearAutoSave();
+      } else {
+        restoreAutoSaveWorkflow();
+      }
     }
   }, [workflowId, location.state]);
+
+  const clearAutoSave = () => {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  };
 
   const restoreAutoSaveWorkflow = () => {
     const autoSaved = sessionStorage.getItem(SESSION_STORAGE_KEY);
