@@ -5,12 +5,13 @@ import {
   applyDefaults,
   generateDefaultConfig,
 } from "./config-properties";
+import { ComponentType } from "react";
 
 // Common metadata interface that all registrable types share
 export interface BaseMetadata {
   type: string;
   label: string;
-  icon: string;
+  icon: string | ComponentType<any>;
   description: string;
 }
 

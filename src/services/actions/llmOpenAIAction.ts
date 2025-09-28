@@ -8,6 +8,7 @@ import {
 } from "@/types/config-properties";
 import { OpenAIService } from "@/services/openai";
 import { NotificationService } from "@/services/notification";
+import { IconBrandOpenai } from "@tabler/icons-react";
 
 interface LLMOpenAIActionConfig {
   credentialId: string;
@@ -30,8 +31,8 @@ export class LLMOpenAIAction extends BaseAction<
 > {
   readonly metadata: ActionMetadata = {
     type: "llm-openai",
-    label: "LLM OpenAI",
-    icon: "🤖",
+    label: "OpenAI",
+    icon: IconBrandOpenai,
     description: "Send prompt to OpenAI and get response",
   };
 

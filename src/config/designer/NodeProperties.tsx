@@ -190,23 +190,51 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     }
   };
 
-  const getNodeTitle = (node: WorkflowNode): string => {
+  const getNodeTitle = (node: WorkflowNode): React.ReactNode => {
     if (node.type === "trigger") {
       const triggerType = (node.data as TriggerNodeData).type;
       const triggerRegistry = TriggerRegistry.getInstance();
       const trigger = triggerRegistry.getTrigger(triggerType);
-      return trigger
-        ? `${trigger.metadata.icon} ${trigger.metadata.label}`
-        : "Trigger";
+      if (trigger) {
+        const icon =
+          typeof trigger.metadata.icon === "string"
+            ? trigger.metadata.icon
+            : (() => {
+                const IconComponent = trigger.metadata
+                  .icon as React.ComponentType<any>;
+                return <IconComponent size={22} />;
+              })();
+        return (
+          <Group gap="xs">
+            {icon}
+            {trigger.metadata.label}
+          </Group>
+        );
+      }
+      return "Trigger";
     }
 
     if (node.type === "action") {
       const actionType = (node.data as ActionNodeData).type;
       const actionRegistry = ActionRegistry.getInstance();
       const action = actionRegistry.getAction(actionType);
-      return action
-        ? `${action.metadata.icon} ${action.metadata.label}`
-        : "Action";
+      if (action) {
+        const icon =
+          typeof action.metadata.icon === "string"
+            ? action.metadata.icon
+            : (() => {
+                const IconComponent = action.metadata
+                  .icon as React.ComponentType<any>;
+                return <IconComponent size={22} />;
+              })();
+        return (
+          <Group gap="xs">
+            {icon}
+            {action.metadata.label}
+          </Group>
+        );
+      }
+      return "Action";
     }
 
     return "Unknown";

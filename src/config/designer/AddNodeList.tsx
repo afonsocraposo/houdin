@@ -15,6 +15,7 @@ import {
   Text,
   TextInput,
   Transition,
+  useComputedColorScheme,
 } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
 import {
@@ -28,7 +29,7 @@ import { useEffect, useMemo, useState } from "react";
 interface NodeMetadata {
   type: string;
   label: string;
-  icon: React.ReactNode;
+  icon: string | React.ComponentType<any>;
   description: string;
 }
 
@@ -91,6 +92,8 @@ export default function AddNodeList({
   }, [showNodePalette]);
 
   useEffect(() => {}, []);
+
+  const colorScheme = useComputedColorScheme();
 
   const handleSearch = useDebouncedCallback((value: string) => {
     const filteredCategories = {
@@ -208,7 +211,26 @@ export default function AddNodeList({
                             variant="subtle"
                             fullWidth
                             justify="start"
-                            leftSection={<Text size="lg">{item.icon}</Text>}
+                            leftSection={
+                              typeof item.icon === "string" ? (
+                                <Text size="lg">{item.icon}</Text>
+                              ) : (
+                                (() => {
+                                  const IconComponent =
+                                    item.icon as React.ComponentType<any>;
+                                  return (
+                                    <IconComponent
+                                      size={22}
+                                      color={
+                                        colorScheme === "dark"
+                                          ? "white"
+                                          : "black"
+                                      }
+                                    />
+                                  );
+                                })()
+                              )
+                            }
                             mb="xs"
                             onClick={() =>
                               createNode(item.type, category as NodeType)
