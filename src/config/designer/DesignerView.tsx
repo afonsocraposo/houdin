@@ -82,6 +82,7 @@ function DesignerView({ workflowId }: DesignerViewProps) {
       const currentTab = searchParams.get("tab") || "workflows";
       navigate(`/?tab=${currentTab}`);
       setEditingWorkflow(null);
+      clearAutoSave();
     } catch (error) {
       console.error("Failed to save workflow:", error);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Container,
   Title,
@@ -52,6 +52,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   onCancel,
 }) => {
   const navigate = useNavigate();
+  const readyToSave = useRef(autoSave);
   const [schemaErrors, setSchemaErrors] = useState<
     Record<string, Record<string, string[]>>
   >({});
@@ -191,9 +192,11 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   );
 
   const handleSave = useCallback(() => {
+    readyToSave.current = false;
     const result = form.validate();
     if (result.hasErrors) {
       form.setErrors(result.errors);
+      readyToSave.current = true;
       return;
     }
 
@@ -223,6 +226,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     });
     if (Object.keys(schemaErrors).length > 0) {
       setSchemaErrors(schemaErrors);
+      readyToSave.current = true;
       return;
     }
 
@@ -253,6 +257,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const handleAutoSave = useThrottledCallback(
     useCallback(() => {
+      if (!readyToSave.current) return;
       if (autoSave && nodes.length > 0) {
         const draft = getCurrentWorkflowDefinition();
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(draft));
