@@ -8,9 +8,10 @@ export class ExampleService {
     this.examples = [
       examples.welcomeMessage,
       examples.formFiller,
-      examples.contentExtractor,
       examples.askChatGPT,
+      examples.apiRequestIP,
       examples.summarizeNews,
+      examples.apiTriggerYoutube,
     ];
   }
 

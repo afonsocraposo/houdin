@@ -36,7 +36,7 @@ export const summarizeNews: WorkflowDefinition = {
   enabled: true,
   id: "workflow-Wdf7eudQPW0r",
   lastUpdated: 1758988717106,
-  name: "Summarize News :rticle",
+  name: "Summarize News",
   nodes: [
     {
       data: {

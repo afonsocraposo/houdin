@@ -48,6 +48,8 @@ export const askChatGPT: WorkflowDefinition = {
               placeholder: "Ask something",
               required: true,
               type: "text",
+              defaultValue:
+                "Summarize the following content in a few sentences",
             },
             {
               defaultValue: "gpt-5",
