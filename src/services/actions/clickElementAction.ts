@@ -1,6 +1,7 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
 import { selectProperty, textProperty } from "@/types/config-properties";
 import { getElement } from "@/utils/helpers";
+import { IconClick } from "@tabler/icons-react";
 
 interface ClickElementActionConfig {
   elementSelector: string;
@@ -18,7 +19,7 @@ export class ClickElementAction extends BaseAction<
   readonly metadata: ActionMetadata = {
     type: "click-element",
     label: "Click Element",
-    icon: "🖱️",
+    icon: IconClick,
     description: "Click on a page element",
   };
 
