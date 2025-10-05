@@ -355,9 +355,16 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     <Grid.Col span={6}>
                       <TextInput
                         {...form.getInputProps("urlPattern")}
-                        label="URL Pattern"
+                        label={
+                          <Group gap="0">
+                            <Text size="sm">URL Pattern.</Text>
+                            &nbsp;
+                            <Text size="sm" c="dimmed">
+                              Use * as wildcard
+                            </Text>
+                          </Group>
+                        }
                         placeholder="https://example.com/*"
-                        description="Use * for wildcards"
                       />
                     </Grid.Col>
 
