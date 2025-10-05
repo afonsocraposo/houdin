@@ -12,12 +12,16 @@ import {
   Box,
   Transition,
   Paper,
+  Tabs,
+  Text,
 } from "@mantine/core";
 import {
   IconDeviceFloppy,
   IconArrowLeft,
   IconDownload,
   IconHistory,
+  IconVariable,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
@@ -273,6 +277,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     handleAutoSave();
   }, [nodes, connections, form.values, handleAutoSave]);
 
+  const variablesCount = Object.keys(form.values.variables || {}).length;
+
   return (
     <Container fluid pt="xl" px="0" h="100vh">
       <Stack h="100%">
@@ -315,51 +321,74 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               </Button>
             </Group>
           </Group>
-          <Card withBorder padding="lg">
-            <form>
-              <Grid>
-                <Grid.Col span={6}>
-                  <TextInput
-                    mt="lg"
-                    {...form.getInputProps("name")}
-                    label="Workflow Name"
-                    placeholder="Enter workflow name"
-                  />
-                </Grid.Col>
+          <Card withBorder padding="md" pt="xs">
+            <Tabs defaultValue="basic">
+              <Tabs.List>
+                <Tabs.Tab value="basic">
+                  <Group gap="xs">
+                    <IconInfoCircle size={16} />
+                    <Text>Basic Info</Text>
+                  </Group>
+                </Tabs.Tab>
+                <Tabs.Tab value="variables">
+                  <Group gap="xs">
+                    <IconVariable size={16} />
+                    <Text>
+                      Variables
+                      {variablesCount > 0 ? ` (${variablesCount})` : ""}
+                    </Text>
+                  </Group>
+                </Tabs.Tab>
+              </Tabs.List>
 
-                <Grid.Col span={6}>
-                  <TextInput
-                    {...form.getInputProps("urlPattern")}
-                    label="URL Pattern"
-                    placeholder="https://afonsoraposo.com/*"
-                    description="Use * for wildcards. The workflow will only run on matching URLs."
-                  />
-                </Grid.Col>
+              <Tabs.Panel value="basic" pt="md">
+                <form>
+                  <Grid gutter="sm">
+                    <Grid.Col span={6}>
+                      <TextInput
+                        {...form.getInputProps("name")}
+                        label="Workflow Name"
+                        placeholder="Enter workflow name"
+                      />
+                    </Grid.Col>
 
-                <Grid.Col span={8}>
-                  <TextInput
-                    {...form.getInputProps("description")}
-                    label="Description (Optional)"
-                    placeholder="Describe what this workflow does"
-                  />
-                </Grid.Col>
+                    <Grid.Col span={6}>
+                      <TextInput
+                        {...form.getInputProps("urlPattern")}
+                        label="URL Pattern"
+                        placeholder="https://example.com/*"
+                        description="Use * for wildcards"
+                      />
+                    </Grid.Col>
 
-                <Grid.Col span={4}>
-                  <Switch
-                    {...form.getInputProps("enabled", { type: "checkbox" })}
-                    label={form.values.enabled ? "Active" : "Inactive"}
-                    mt="xl"
-                  />
-                </Grid.Col>
+                    <Grid.Col span={8}>
+                      <TextInput
+                        {...form.getInputProps("description")}
+                        label="Description (Optional)"
+                        placeholder="Describe what this workflow does"
+                      />
+                    </Grid.Col>
 
-                <Grid.Col span={12}>
-                  <EnvironmentVariables
-                    variables={form.values.variables}
-                    onChange={(vars) => form.setFieldValue("variables", vars)}
-                  />
-                </Grid.Col>
-              </Grid>
-            </form>
+                    <Grid.Col span={4}>
+                      <Switch
+                        {...form.getInputProps("enabled", { type: "checkbox" })}
+                        label={form.values.enabled ? "Active" : "Inactive"}
+                        mt="xl"
+                      />
+                    </Grid.Col>
+                  </Grid>
+                </form>
+              </Tabs.Panel>
+
+              <Tabs.Panel value="variables" pt="md">
+                <EnvironmentVariables
+                  variables={form.values.variables}
+                  onChange={(variables) =>
+                    form.setFieldValue("variables", variables)
+                  }
+                />
+              </Tabs.Panel>
+            </Tabs>
           </Card>{" "}
         </Stack>
 
