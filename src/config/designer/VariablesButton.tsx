@@ -109,7 +109,7 @@ export default function VariablesButton({
                     {Object.keys(value).map((subKey) => (
                       <Tooltip
                         key={subKey}
-                        label={<Text size="xs">{value}</Text>}
+                        label={<Text size="xs">{String(value)}</Text>}
                         withArrow
                         position="left"
                         color="dark"
@@ -132,7 +132,7 @@ export default function VariablesButton({
               return (
                 <Tooltip
                   key={key}
-                  label={<Text size="xs">{value}</Text>}
+                  label={<Text size="xs">{String(value)}</Text>}
                   withArrow
                   position="left"
                   color="dark"
@@ -178,7 +178,7 @@ export default function VariablesButton({
         {Object.entries(workflowVars).map(([key, value]) => (
           <Tooltip
             key={key}
-            label={<Text size="xs">{value}</Text>}
+            label={<Text size="xs">{String(value)}</Text>}
             withArrow
             position="left"
             color="dark"
