@@ -11,7 +11,7 @@ import {
 } from "@/types/workflow";
 import { copyToClipboard, insertAtCursor } from "@/utils/helpers";
 import { useLastFocusedInput } from "@/utils/hooks";
-import { ActionIcon, Code, Menu, Text, Tooltip } from "@mantine/core";
+import { ActionIcon, Code, Group, Menu, Text, Tooltip } from "@mantine/core";
 import { IconVariable } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -150,6 +150,13 @@ export default function VariablesButton({ nodes }: VariablesButtonProps) {
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown mah={300} style={{ overflowY: "auto" }}>
+        <Menu.Label>
+          <Group gap="xs" wrap="nowrap">
+            <IconVariable size={20} />
+            Variables
+          </Group>
+        </Menu.Label>
+        <Menu.Divider />
         <Menu.Label>Nodes Outputs</Menu.Label>
         {nodeOutputs.map((node) => (
           <div key={node.nodeId}>{getOutputMenu(node)}</div>

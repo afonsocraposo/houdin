@@ -251,18 +251,6 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
         </Group>
         <Group>
           <VariablesButton nodes={nodes} />
-          <Tooltip
-            label={
-              <Text size="sm">
-                You can reference node data on any field using the syntax:&nbsp;
-                <code>{"{{action-qjORtw}}"}</code> or&nbsp;
-                <code>{"{{action-qjORtw.property}}"}</code>
-              </Text>
-            }
-            withArrow
-          >
-            <IconHelpCircle color="gray" />
-          </Tooltip>
         </Group>
       </Group>
       <ScrollArea h="95%" style={{ overflowY: "auto" }}>
