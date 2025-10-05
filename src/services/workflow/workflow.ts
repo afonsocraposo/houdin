@@ -125,10 +125,8 @@ export class WorkflowExecutor {
     // iterate object properties and interpolate variables
     for (const key in actionConfig) {
       if (actionConfig.hasOwnProperty(key)) {
-        //@ts-ignore
         const value = actionConfig[key];
         if (typeof value === "string") {
-          //@ts-ignore
           actionConfig[key] = this.context.interpolateVariables(value);
         }
       }
