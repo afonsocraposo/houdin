@@ -327,13 +327,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 <Tabs.Tab value="basic">
                   <Group gap="xs">
                     <IconInfoCircle size={16} />
-                    <Text>Basic Info</Text>
+                    <Text size="sm">Basic Info</Text>
                   </Group>
                 </Tabs.Tab>
                 <Tabs.Tab value="variables">
                   <Group gap="xs">
                     <IconVariable size={16} />
-                    <Text>
+                    <Text size="sm">
                       Variables
                       {variablesCount > 0 ? ` (${variablesCount})` : ""}
                     </Text>
