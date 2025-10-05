@@ -80,9 +80,35 @@ export function insertAtCursor(
   const start = input.selectionStart ?? 0;
   const end = input.selectionEnd ?? 0;
   const value = input.value;
-  input.value = value.slice(0, start) + text + value.slice(end);
-  const newPos = start + text.length;
+  const newValue = value.slice(0, start) + text + value.slice(end);
+  
+  // React 16+ method to properly update controlled inputs
+  // Get React's internal value setter
+  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    "value"
+  )?.set;
+  const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(
+    window.HTMLTextAreaElement.prototype,
+    "value"
+  )?.set;
 
+  // Use the appropriate setter based on element type
+  if (input instanceof HTMLInputElement && nativeInputValueSetter) {
+    nativeInputValueSetter.call(input, newValue);
+  } else if (input instanceof HTMLTextAreaElement && nativeTextAreaValueSetter) {
+    nativeTextAreaValueSetter.call(input, newValue);
+  } else {
+    // Fallback for edge cases
+    input.value = newValue;
+  }
+
+  const newPos = start + text.length;
   input.setSelectionRange(newPos, newPos);
   input.focus();
+
+  // Trigger input event to notify React of the value change
+  // Using 'input' event with bubbles: true is what React listens for
+  const inputEvent = new Event('input', { bubbles: true });
+  input.dispatchEvent(inputEvent);
 }
