@@ -57,8 +57,8 @@ export class ExecutionContext implements WorkflowExecutionContext {
     let i = 0;
     while (
       i < properties.length &&
-      typeof output === "object" &&
-      output !== null
+      typeof result === "object" &&
+      result !== null
     ) {
       const property = properties[i];
       if (!(property in result)) {
