@@ -252,15 +252,16 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   };
 
-  const getCurrentWorkflowDefinition = (): WorkflowDefinition => {
-    return {
+  const getCurrentWorkflowDefinition = useCallback(
+    (): WorkflowDefinition => ({
       id: currentWorkflowId,
       nodes,
       connections,
       lastUpdated: Date.now(),
       ...form.getValues(),
-    };
-  };
+    }),
+    [nodes, connections, form.values, currentWorkflowId],
+  );
 
   const handleAutoSave = useThrottledCallback(
     useCallback(() => {
