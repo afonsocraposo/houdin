@@ -1,70 +1,21 @@
 import {
   WorkflowDefinition,
   WorkflowNode,
-  WorkflowExecutionContext,
   TriggerNodeData,
   ActionNodeData,
+  ExecutionMetadata,
 } from "@/types/workflow";
-import { ExecutionTracker } from "../executionTracker";
-import { generateId, newExecutionId } from "@/utils/helpers";
+import { ExecutionTracker } from "./executionTracker";
+import { ExecutionContext } from "./workflow/executionContext";
+import { newExecutionId } from "@/utils/helpers";
 import { sendMessageToContentScript } from "@/lib/messages";
 import cloneDeep from "lodash/cloneDeep";
 import {
   ActionCommand,
   WorkflowCommandType,
 } from "@/types/background-workflow";
-import { ActionRegistry } from "../actionRegistry";
-import { NotificationService } from "../notification";
-
-export class ExecutionContext implements WorkflowExecutionContext {
-  public outputs: Record<string, any>;
-  constructor() {
-    this.outputs = {};
-  }
-
-  setOutput(nodeId: string, value: any): void {
-    this.outputs[nodeId] = value;
-  }
-
-  getOutput(nodeId: string): any {
-    return this.outputs[nodeId];
-  }
-
-  interpolateVariables(text: string): string {
-    if (!text) return text;
-
-    // Replace variables in format {{nodeId}} or {{nodeId.property}}
-    return text.replace(/\{\{([^}]+)\}\}/g, (match, expression) => {
-      const parts = expression.trim().split(".");
-      const nodeId = parts[0];
-      const properties = parts.slice(1);
-
-      const output = this.getOutput(nodeId);
-      if (output === undefined) return match; // Keep original if not found
-
-      let result = output;
-      let i = 0;
-      while (
-        i < properties.length &&
-        typeof output === "object" &&
-        output !== null
-      ) {
-        const property = properties[i];
-        if (!(property in result)) {
-          break;
-        }
-        result = result[property];
-        i++;
-      }
-
-      if (result && typeof result === "object") {
-        // If result is an object, convert to JSON string for display
-        return JSON.stringify(result, null, 2);
-      }
-      return String(result);
-    });
-  }
-}
+import { ActionRegistry } from "./actionRegistry";
+import { NotificationService } from "./notification";
 
 export class WorkflowExecutor {
   public readonly id: string;
@@ -86,7 +37,13 @@ export class WorkflowExecutor {
     this.workflowId = workflow.id;
     this.workflow = workflow;
     this.tabId = tabId;
-    this.context = new ExecutionContext();
+    const metadata: ExecutionMetadata = {
+      workflowId: workflow.id,
+      executionId: this.id,
+      url,
+      startedAt: Date.now(),
+    };
+    this.context = new ExecutionContext(metadata, workflow.variables || {});
     this.executionTracker = new ExecutionTracker(
       workflow.id,
       this.id,

@@ -1,11 +1,10 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   Stack,
   Text,
   Card,
   Group,
   ScrollArea,
-  Tooltip,
   ActionIcon,
 } from "@mantine/core";
 import {
@@ -16,15 +15,16 @@ import {
 import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import { IconArrowBarToRight, IconHelpCircle } from "@tabler/icons-react";
+import { IconArrowBarToRight } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 import VariablesButton from "./VariablesButton";
 import NodeIcon from "@/components/NodeIcon";
-import { BaseConfigurable, BaseMetadata } from "@/types/base";
+import { BaseMetadata } from "@/types/base";
 import { FormAction, FormActionConfig } from "@/services/actions/formAction";
 
 interface NodePropertiesProps {
   nodes: WorkflowNode[];
+  workflowVars: Record<string, any>;
   node: WorkflowNode | null;
   onNodeUpdate: (updatedNode: WorkflowNode) => void;
   errors?: Record<string, string[]>;
@@ -33,6 +33,7 @@ interface NodePropertiesProps {
 
 export const NodeProperties: React.FC<NodePropertiesProps> = ({
   nodes,
+  workflowVars,
   node,
   onNodeUpdate,
   onClose,
@@ -250,7 +251,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
           </Text>
         </Group>
         <Group>
-          <VariablesButton nodes={nodes} />
+          <VariablesButton nodes={nodes} workflowVars={workflowVars} />
         </Group>
       </Group>
       <ScrollArea h="95%" style={{ overflowY: "auto" }}>

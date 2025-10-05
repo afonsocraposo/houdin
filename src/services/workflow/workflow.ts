@@ -36,12 +36,15 @@ export class WorkflowExecutor {
     this.workflowId = workflow.id;
     this.workflow = workflow;
     this.tabId = tabId;
-    this.context = new ExecutionContext({
-      workflowId: this.workflowId,
-      executionId: this.id,
-      url: url,
-      startedAt: Date.now(),
-    });
+    this.context = new ExecutionContext(
+      {
+        workflowId: this.workflowId,
+        executionId: this.id,
+        url: url,
+        startedAt: Date.now(),
+      },
+      workflow.variables || {},
+    );
     this.executionTracker = new ExecutionTracker(
       workflow.id,
       this.id,

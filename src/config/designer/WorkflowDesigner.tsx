@@ -22,6 +22,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
+import { EnvironmentVariables } from "./EnvironmentVariables";
 import { ExportModal } from "@/config/workflows/ExportModal";
 import {
   WorkflowNode,
@@ -66,6 +67,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       description: workflow?.description || "",
       urlPattern: workflow?.urlPattern || "https://*",
       enabled: workflow?.enabled ?? true,
+      variables: workflow?.variables || {},
     },
     validate: {
       name: hasLength({ min: 2 }, "Name must be at least 2 characters long"),
@@ -95,6 +97,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       form.values.description = workflow.description || "";
       form.values.urlPattern = workflow.urlPattern || "https://*";
       form.values.enabled = workflow.enabled ?? true;
+      form.values.variables = workflow.variables || {};
       set(workflow.nodes || [], workflow.connections || []);
       setSelectedNodeId(null);
     } else {
@@ -312,7 +315,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               </Button>
             </Group>
           </Group>
-
           <Card withBorder padding="lg">
             <form>
               <Grid>
@@ -349,9 +351,16 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     mt="xl"
                   />
                 </Grid.Col>
+
+                <Grid.Col span={12}>
+                  <EnvironmentVariables
+                    variables={form.values.variables}
+                    onChange={(vars) => form.setFieldValue("variables", vars)}
+                  />
+                </Grid.Col>
               </Grid>
             </form>
-          </Card>
+          </Card>{" "}
         </Stack>
 
         <ExportModal
@@ -401,6 +410,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               >
                 <NodeProperties
                   nodes={nodes}
+                  workflowVars={form.values.variables}
                   node={selectedNode}
                   onClose={() => setSelectedNodeId(null)}
                   onNodeUpdate={handleNodeUpdate}

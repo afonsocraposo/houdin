@@ -23,8 +23,12 @@ interface NodeOutputs {
 
 interface VariablesButtonProps {
   nodes: WorkflowNode[];
+  workflowVars: Record<string, any>;
 }
-export default function VariablesButton({ nodes }: VariablesButtonProps) {
+export default function VariablesButton({
+  nodes,
+  workflowVars,
+}: VariablesButtonProps) {
   const lastFocusedInput = useLastFocusedInput();
   const nodeOutputs = useMemo(() => {
     const triggerRegistry = TriggerRegistry.getInstance();
@@ -164,7 +168,19 @@ export default function VariablesButton({ nodes }: VariablesButtonProps) {
 
         <Menu.Divider />
         <Menu.Label>Workflow Vars</Menu.Label>
-
+        {Object.entries(workflowVars).map(([key, value]) => (
+          <Tooltip
+            key={key}
+            label={<Text size="xs">{value}</Text>}
+            withArrow
+            position="left"
+            color="dark"
+          >
+            <Menu.Item onClick={() => handleVariableClick(`{{env.${key}}}`)}>
+              <Code>{key}</Code>
+            </Menu.Item>
+          </Tooltip>
+        ))}
         <Menu.Divider />
         <Menu.Label>Execution Details</Menu.Label>
         {Object.entries(ExecutionMetadataExamples).map(([key, example]) => (
