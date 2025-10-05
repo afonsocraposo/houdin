@@ -11,7 +11,7 @@ import {
   WorkflowNode,
 } from "@/types/workflow";
 import { initializeBackgroundActions } from "./actionInitializer";
-import { WorkflowExecutor } from "./workflow";
+import { WorkflowExecutor } from "./workflow/workflow";
 
 // const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 

@@ -36,6 +36,12 @@ export const generateId = (prefix: string = "", len: number = 6): string => {
 
   return makeId();
 };
+export function newWorkflowId(): string {
+  return generateId("workflow", 12);
+}
+export function newExecutionId(): string {
+  return generateId("exec", 12);
+}
 
 export const getElement = (
   selector: string,

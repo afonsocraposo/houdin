@@ -1,5 +1,4 @@
 import { ContentStorageClient } from "@/services/storage";
-import { newWorkflowId } from "@/services/workflow";
 import { ExampleService } from "@/services/exampleService";
 import { WorkflowDefinition } from "@/types/workflow";
 import {
@@ -23,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { ImportModal } from "./ImportModal";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
+import { newWorkflowId } from "@/utils/helpers";
 
 export default function WorkflowsTab({
   setSaved,

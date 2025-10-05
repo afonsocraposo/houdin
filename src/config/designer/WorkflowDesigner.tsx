@@ -34,8 +34,8 @@ import { hasLength, matches, useForm } from "@mantine/form";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionRegistry } from "@/services/actionRegistry";
 import { useWorkflowState } from "./hooks";
-import { newWorkflowId } from "@/services/workflow";
 import { useThrottledCallback } from "@mantine/hooks";
+import { newWorkflowId } from "@/utils/helpers";
 
 export const SESSION_STORAGE_KEY = "workflow-draft";
 interface WorkflowDesignerProps {

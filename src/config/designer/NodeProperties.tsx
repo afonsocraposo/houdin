@@ -7,16 +7,23 @@ import {
   ScrollArea,
   Tooltip,
   ActionIcon,
+  Menu,
 } from "@mantine/core";
 import {
   ActionNodeData,
+  ExecutionMetadataExamples,
+  ExecutionMetadataKeys,
   TriggerNodeData,
   WorkflowNode,
 } from "@/types/workflow";
 import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import { IconArrowBarToRight, IconHelpCircle } from "@tabler/icons-react";
+import {
+  IconArrowBarToRight,
+  IconHelpCircle,
+  IconVariable,
+} from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 
 interface NodePropertiesProps {
@@ -256,18 +263,51 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
             {getNodeTitle(node)}
           </Text>
         </Group>
-        <Tooltip
-          label={
-            <Text size="sm">
-              You can reference node data on any field using the syntax:&nbsp;
-              <code>{"{{action-1758059334040}}"}</code> or&nbsp;
-              <code>{"{{action-1758059334040.property}}"}</code>
-            </Text>
-          }
-          withArrow
-        >
-          <IconHelpCircle color="gray" />
-        </Tooltip>
+        <Group>
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon variant="light">
+                <IconVariable />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown mah={300} style={{ overflowY: "auto" }}>
+              <Menu.Label>Nodes Outputs</Menu.Label>
+
+              <Menu.Divider />
+              <Menu.Label>Workflow Vars</Menu.Label>
+
+              <Menu.Divider />
+              <Menu.Label>Execution Details</Menu.Label>
+              {Object.entries(ExecutionMetadataExamples).map(
+                ([key, example]) => (
+                  <Tooltip
+                    key={key}
+                    label={<Text size="xs">{example}</Text>}
+                    withArrow
+                    position="left"
+                    color="gray"
+                  >
+                    <Menu.Item>
+                      <code>{`meta.${key}`}</code>
+                    </Menu.Item>
+                  </Tooltip>
+                ),
+              )}
+            </Menu.Dropdown>
+          </Menu>
+          <Tooltip
+            label={
+              <Text size="sm">
+                You can reference node data on any field using the syntax:&nbsp;
+                <code>{"{{action-qjORtw}}"}</code> or&nbsp;
+                <code>{"{{action-qjORtw.property}}"}</code>
+              </Text>
+            }
+            withArrow
+          >
+            <IconHelpCircle color="gray" />
+          </Tooltip>
+        </Group>
       </Group>
       <ScrollArea h="95%" style={{ overflowY: "auto" }}>
         <Stack gap="md">
