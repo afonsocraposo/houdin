@@ -84,7 +84,10 @@ export default function VariablesButton({
     return (
       <Menu key={node.nodeId} trigger="hover" position="left">
         <Menu.Target>
-          <Menu.Item leftSection={node.icon}>
+          <Menu.Item
+            leftSection={node.icon}
+            onClick={() => handleVariableClick(`{{${node.nodeId}}}`)}
+          >
             <Code>{node.nodeId}</Code>
           </Menu.Item>
         </Menu.Target>
@@ -94,7 +97,11 @@ export default function VariablesButton({
               return (
                 <Menu key={key} trigger="hover" position="left">
                   <Menu.Target>
-                    <Menu.Item>
+                    <Menu.Item
+                      onClick={() =>
+                        handleVariableClick(`{{${node.nodeId}.${key}}}`)
+                      }
+                    >
                       <Code>{key}</Code>
                     </Menu.Item>
                   </Menu.Target>
