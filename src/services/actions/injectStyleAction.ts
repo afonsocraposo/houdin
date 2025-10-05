@@ -14,7 +14,7 @@ export class InjectStyleAction extends BaseAction<
   InjectStyleActionConfig,
   InjectStyleActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "inject-style",
     label: "Inject Style",
     icon: "🎨",

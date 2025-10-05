@@ -11,6 +11,7 @@ import {
   selectProperty,
   textProperty,
 } from "@/types/config-properties";
+import { IconWorld } from "@tabler/icons-react";
 
 interface HttpRequestActionConfig {
   url: string;
@@ -40,10 +41,10 @@ export class HttpRequestAction extends BaseAction<
   HttpRequestActionConfig,
   HttpResponse
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "http-request",
     label: "HTTP Request",
-    icon: "🌐",
+    icon: IconWorld,
     description: "Make HTTP request to any URL with custom headers and body",
     disableTimeout: true,
   };

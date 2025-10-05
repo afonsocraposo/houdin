@@ -13,7 +13,7 @@ interface ComponentLoadTriggerOutput {
 }
 
 export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig, ComponentLoadTriggerOutput> {
-  readonly metadata = {
+  static readonly metadata = {
     type: "component-load",
     label: "Component Load",
     icon: "🎯",

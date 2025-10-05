@@ -1,5 +1,6 @@
 import { Checkbox, NativeSelect, NumberInput, TextInput } from "@mantine/core";
 import { FormFieldDefinition } from "./FormBuilder";
+import PasswordInput from "../PasswordInput";
 
 export default function FormItem({
   field,
@@ -21,8 +22,7 @@ export default function FormItem({
       );
     case "password":
       return (
-        <TextInput
-          type="password"
+        <PasswordInput
           label={field.label}
           placeholder={field.placeholder}
           autoComplete="current-password"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Container,
   Title,
@@ -12,53 +12,58 @@ import {
   Box,
   Transition,
   Paper,
+  Tabs,
   Text,
-  Loader,
 } from "@mantine/core";
-import { useDebouncedCallback } from "@mantine/hooks";
 import {
   IconDeviceFloppy,
   IconArrowLeft,
   IconDownload,
   IconHistory,
-  IconCheck,
-  IconExclamationMark,
+  IconVariable,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
+import { EnvironmentVariables } from "./EnvironmentVariables";
 import { ExportModal } from "@/config/workflows/ExportModal";
-import { TimeAgoText } from "@/components/TimeAgoText";
 import {
   WorkflowNode,
   WorkflowDefinition,
   TriggerNodeData,
   ActionNodeData,
+  WorkflowConnection,
 } from "@/types/workflow";
 import { hasLength, matches, useForm } from "@mantine/form";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionRegistry } from "@/services/actionRegistry";
 import { useWorkflowState } from "./hooks";
-import { newWorkflowId } from "@/services/workflow";
+import { useThrottledCallback } from "@mantine/hooks";
+import { newWorkflowId } from "@/utils/helpers";
 
+export const SESSION_STORAGE_KEY = "workflow-draft";
 interface WorkflowDesignerProps {
+  autoSave?: boolean;
   workflow?: WorkflowDefinition;
   onSave: (workflow: WorkflowDefinition) => void;
   onCancel: () => void;
 }
 
 export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
+  autoSave = false,
   workflow,
   onSave,
   onCancel,
 }) => {
   const navigate = useNavigate();
+  const readyToSave = useRef(autoSave);
   const [schemaErrors, setSchemaErrors] = useState<
     Record<string, Record<string, string[]>>
   >({});
-  const [currentWorkflowId, setCurrentWorkflowId] =
-    useState<string>(newWorkflowId());
-  const [isDraft, setIsDraft] = useState(!workflow); // Track if this is a new workflow draft
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string>(
+    workflow?.id || newWorkflowId(),
+  );
   const form = useForm({
     mode: "uncontrolled",
     initialValues: {
@@ -66,6 +71,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       description: workflow?.description || "",
       urlPattern: workflow?.urlPattern || "https://*",
       enabled: workflow?.enabled ?? true,
+      variables: workflow?.variables || {},
     },
     validate: {
       name: hasLength({ min: 2 }, "Name must be at least 2 characters long"),
@@ -77,120 +83,11 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     useWorkflowState(workflow || null);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
+  const selectedNode =
+    (selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null) ||
+    null;
 
   const [exportModalOpened, setExportModalOpened] = useState(false);
-
-  // Auto-save state
-  const [autoSaveStatus, setAutoSaveStatus] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
-
-  // Draft storage key
-  const DRAFT_STORAGE_KEY = "workflow-draft";
-
-  // Load draft from session storage if no workflow is provided
-  useEffect(() => {
-    if (!workflow) {
-      const storedDraft = sessionStorage.getItem(DRAFT_STORAGE_KEY);
-      if (storedDraft) {
-        try {
-          const draft = JSON.parse(storedDraft);
-          if (draft.name) {
-            form.values.name = draft.name;
-          }
-          if (draft.description) {
-            form.values.description = draft.description;
-          }
-          if (draft.urlPattern) {
-            form.values.urlPattern = draft.urlPattern;
-          }
-          if (typeof draft.enabled === "boolean") {
-            form.values.enabled = draft.enabled;
-          }
-          set(draft.nodes || [], draft.connections || []);
-          console.debug("Loaded workflow draft from session storage");
-        } catch (error) {
-          console.warn(
-            "Failed to load workflow draft from session storage:",
-            error,
-          );
-          sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-        }
-      }
-    }
-  }, [workflow]);
-
-  // Save draft to session storage
-  const saveDraft = useCallback(() => {
-    if (!isDraft) return; // Only save drafts for new workflows
-
-    const draftWorkflow = {
-      name: form.values.name,
-      description: form.values.description,
-      urlPattern: form.values.urlPattern,
-      nodes,
-      connections,
-      enabled: form.values.enabled,
-      lastUpdated: Date.now(),
-    };
-
-    try {
-      sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftWorkflow));
-      console.debug("Saved workflow draft to session storage");
-    } catch (error) {
-      console.warn("Failed to save workflow draft to session storage:", error);
-    }
-  }, [isDraft, form.values, nodes, connections]);
-
-  // Clear draft from session storage
-  const clearDraft = useCallback(() => {
-    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-    console.debug("Cleared workflow draft from session storage");
-  }, []);
-
-  // Track changes to mark as unsaved
-  const markAsChanged = useCallback(() => {
-    setHasUnsavedChanges(true);
-    setAutoSaveStatus("idle");
-  }, []);
-
-  // Auto-save function
-  const performAutoSave = useCallback(async () => {
-    // Only auto-save for new workflows (drafts), not existing workflows
-    if (!isDraft) {
-      return;
-    }
-
-    // For new workflows (drafts), save to session storage
-    saveDraft();
-    setAutoSaveStatus("saved");
-    setHasUnsavedChanges(false);
-    setLastAutoSaveTime(Date.now());
-
-    // Reset to idle after 2 seconds
-    setTimeout(() => setAutoSaveStatus("idle"), 2000);
-  }, [isDraft, saveDraft]);
-
-  // Debounced auto-save function
-  const debouncedAutoSave = useDebouncedCallback(() => {
-    // Only auto-save for new workflows (drafts)
-    if (!hasUnsavedChanges) {
-      return;
-    }
-    performAutoSave();
-  }, 3000);
-
-  // Trigger auto-save when changes occur (only for new workflows)
-  useEffect(() => {
-    if (isDraft && hasUnsavedChanges) {
-      debouncedAutoSave();
-    }
-  }, [hasUnsavedChanges, debouncedAutoSave, isDraft]);
-
-  useEffect(markAsChanged, [form.values, nodes, connections]);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
@@ -200,11 +97,11 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       // Only update nodes if this is actually a new/different workflow
       // Don't reset nodes when just re-rendering the same workflow
       setCurrentWorkflowId(workflow.id);
-      setIsDraft(false); // If we have a workflow prop, it's not a draft
       form.values.name = workflow.name || "";
       form.values.description = workflow.description || "";
       form.values.urlPattern = workflow.urlPattern || "https://*";
       form.values.enabled = workflow.enabled ?? true;
+      form.values.variables = workflow.variables || {};
       set(workflow.nodes || [], workflow.connections || []);
       setSelectedNodeId(null);
     } else {
@@ -237,10 +134,76 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     set(updatedNodes);
   };
 
-  const handleSave = () => {
+  const handleNodeCreation = useCallback(
+    (newNode: WorkflowNode) => {
+      const updatedNodes = [...nodes, newNode];
+      set(updatedNodes);
+      setSelectedNodeId(newNode.id);
+    },
+    [nodes],
+  );
+
+  const handleNodeMovement = useCallback(
+    (id: string, position: { x: number; y: number }) => {
+      const updatedNodes = nodes.map((n) =>
+        n.id === id
+          ? {
+              ...n,
+              position, // update position
+            }
+          : n,
+      );
+      set(updatedNodes, undefined);
+    },
+    [nodes],
+  );
+
+  const handleNodeDeletion = useCallback(
+    (nodeId: string) => {
+      const updatedNodes = nodes.filter((n) => n.id !== nodeId);
+      const updatedConnections = connections.filter(
+        (c) => c.source !== nodeId && c.target !== nodeId,
+      );
+      set(updatedNodes, updatedConnections);
+      if (selectedNodeId === nodeId) {
+        setSelectedNodeId(null);
+      }
+      // remove any schema errors for the deleted node
+      if (schemaErrors[nodeId]) {
+        setSchemaErrors((prev) => {
+          const updated = { ...prev };
+          delete updated[nodeId];
+          return updated;
+        });
+      }
+    },
+    [nodes, connections, selectedNodeId, schemaErrors],
+  );
+
+  const handleConnectionCreation = useCallback(
+    (newConnection: WorkflowConnection) => {
+      const updatedConnections = [...connections, newConnection];
+      set(undefined, updatedConnections);
+    },
+    [connections],
+  );
+
+  const handleConnectionDeletion = useCallback(
+    (connectionId: string) => {
+      const updatedConnections = connections.filter(
+        (c) => c.id !== connectionId,
+      );
+      set(undefined, updatedConnections);
+    },
+    [connections],
+  );
+
+  const handleSave = useCallback(() => {
+    readyToSave.current = false;
     const result = form.validate();
     if (result.hasErrors) {
       form.setErrors(result.errors);
+      readyToSave.current = true;
       return;
     }
 
@@ -270,23 +233,14 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     });
     if (Object.keys(schemaErrors).length > 0) {
       setSchemaErrors(schemaErrors);
+      readyToSave.current = true;
       return;
     }
 
     const workflowDefinition = getCurrentWorkflowDefinition();
 
     onSave(workflowDefinition);
-    setHasUnsavedChanges(false);
-    setAutoSaveStatus("idle");
-    setLastAutoSaveTime(Date.now());
-
-    // If this was a draft, clear it and mark as no longer a draft
-    if (isDraft) {
-      clearDraft();
-      setIsDraft(false);
-      setCurrentWorkflowId(workflowDefinition.id);
-    }
-  };
+  }, [nodes, connections, form]);
 
   const handleExport = () => {
     setExportModalOpened(true);
@@ -298,15 +252,33 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   };
 
-  const getCurrentWorkflowDefinition = (): WorkflowDefinition => {
-    return {
-      id: workflow?.id || currentWorkflowId,
+  const getCurrentWorkflowDefinition = useCallback(
+    (): WorkflowDefinition => ({
+      id: currentWorkflowId,
       nodes,
       connections,
       lastUpdated: Date.now(),
       ...form.getValues(),
-    };
-  };
+    }),
+    [nodes, connections, form.values, currentWorkflowId],
+  );
+
+  const handleAutoSave = useThrottledCallback(
+    useCallback(() => {
+      if (!readyToSave.current) return;
+      if (autoSave && nodes.length > 0) {
+        const draft = getCurrentWorkflowDefinition();
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(draft));
+      }
+    }, [getCurrentWorkflowDefinition, autoSave]),
+    1000,
+  );
+
+  useEffect(() => {
+    handleAutoSave();
+  }, [nodes, connections, form.values, handleAutoSave]);
+
+  const variablesCount = Object.keys(form.values.variables || {}).length;
 
   return (
     <Container fluid pt="xl" px="0" h="100vh">
@@ -317,39 +289,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               <Title order={2}>
                 {workflow ? "Edit Workflow" : "Create New Workflow"}
               </Title>
-              {/* Auto-save status indicator */}
-              {autoSaveStatus === "saving" && (
-                <Group gap="xs">
-                  <Loader size="xs" />
-                  <Text size="sm" c="dimmed">
-                    {isDraft ? "Saving draft..." : "Saving..."}
-                  </Text>
-                </Group>
-              )}
-              {autoSaveStatus === "saved" && (
-                <Group gap="xs">
-                  <IconCheck size={16} color="green" />
-                  <Text size="sm" c="green">
-                    {isDraft ? "Draft saved" : "Saved"}
-                  </Text>
-                </Group>
-              )}
-              {autoSaveStatus === "error" && (
-                <Group gap="xs">
-                  <IconExclamationMark size={16} color="red" />
-                  <Text size="sm" c="red">
-                    {isDraft ? "Draft save failed" : "Save failed"}
-                  </Text>
-                </Group>
-              )}
-              {autoSaveStatus === "idle" && lastAutoSaveTime && (
-                <TimeAgoText
-                  timestamp={lastAutoSaveTime}
-                  prefix={isDraft ? "Draft saved" : "Auto-saved"}
-                  size="sm"
-                  c="dimmed"
-                />
-              )}
             </Group>
             <Group>
               <Button
@@ -383,46 +322,82 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               </Button>
             </Group>
           </Group>
+          <Card withBorder padding="md" pt="xs">
+            <Tabs defaultValue="basic">
+              <Tabs.List>
+                <Tabs.Tab value="basic">
+                  <Group gap="xs">
+                    <IconInfoCircle size={16} />
+                    <Text size="sm">Basic Info</Text>
+                  </Group>
+                </Tabs.Tab>
+                <Tabs.Tab value="variables">
+                  <Group gap="xs">
+                    <IconVariable size={16} />
+                    <Text size="sm">
+                      Variables
+                      {variablesCount > 0 ? ` (${variablesCount})` : ""}
+                    </Text>
+                  </Group>
+                </Tabs.Tab>
+              </Tabs.List>
 
-          <Card withBorder padding="lg">
-            <form>
-              <Grid>
-                <Grid.Col span={6}>
-                  <TextInput
-                    mt="lg"
-                    {...form.getInputProps("name")}
-                    label="Workflow Name"
-                    placeholder="Enter workflow name"
-                  />
-                </Grid.Col>
+              <Tabs.Panel value="basic" pt="md">
+                <form>
+                  <Grid gutter="sm">
+                    <Grid.Col span={6}>
+                      <TextInput
+                        {...form.getInputProps("name")}
+                        label="Workflow Name"
+                        placeholder="Enter workflow name"
+                      />
+                    </Grid.Col>
 
-                <Grid.Col span={6}>
-                  <TextInput
-                    {...form.getInputProps("urlPattern")}
-                    label="URL Pattern"
-                    placeholder="https://afonsoraposo.com/*"
-                    description="Use * for wildcards. The workflow will only run on matching URLs."
-                  />
-                </Grid.Col>
+                    <Grid.Col span={6}>
+                      <TextInput
+                        {...form.getInputProps("urlPattern")}
+                        label={
+                          <Group gap="0">
+                            <Text size="sm">URL Pattern.</Text>
+                            &nbsp;
+                            <Text size="sm" c="dimmed">
+                              Use * as wildcard
+                            </Text>
+                          </Group>
+                        }
+                        placeholder="https://example.com/*"
+                      />
+                    </Grid.Col>
 
-                <Grid.Col span={8}>
-                  <TextInput
-                    {...form.getInputProps("description")}
-                    label="Description (Optional)"
-                    placeholder="Describe what this workflow does"
-                  />
-                </Grid.Col>
+                    <Grid.Col span={8}>
+                      <TextInput
+                        {...form.getInputProps("description")}
+                        label="Description (Optional)"
+                        placeholder="Describe what this workflow does"
+                      />
+                    </Grid.Col>
 
-                <Grid.Col span={4}>
-                  <Switch
-                    {...form.getInputProps("enabled", { type: "checkbox" })}
-                    label={form.values.enabled ? "Active" : "Inactive"}
-                    mt="xl"
-                  />
-                </Grid.Col>
-              </Grid>
-            </form>
-          </Card>
+                    <Grid.Col span={4}>
+                      <Switch
+                        {...form.getInputProps("enabled", { type: "checkbox" })}
+                        label={form.values.enabled ? "Active" : "Inactive"}
+                        mt="xl"
+                      />
+                    </Grid.Col>
+                  </Grid>
+                </form>
+              </Tabs.Panel>
+
+              <Tabs.Panel value="variables" pt="md">
+                <EnvironmentVariables
+                  variables={form.values.variables}
+                  onChange={(variables) =>
+                    form.setFieldValue("variables", variables)
+                  }
+                />
+              </Tabs.Panel>
+            </Tabs>
+          </Card>{" "}
         </Stack>
 
         <ExportModal
@@ -435,9 +410,14 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           <ReactFlowCanvas
             nodes={nodes}
             connections={connections}
-            onStateChange={set}
+            setNodes={(n: WorkflowNode[]) => set(n, undefined)}
             selectedNode={selectedNode}
             onNodeSelect={setSelectedNodeId}
+            onNodeCreate={handleNodeCreation}
+            onNodeMove={handleNodeMovement}
+            onNodeDelete={handleNodeDeletion}
+            onConnectionCreate={handleConnectionCreation}
+            onConnectionDelete={handleConnectionDeletion}
             errors={schemaErrors}
             undo={undo}
             redo={redo}
@@ -466,6 +446,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 }}
               >
                 <NodeProperties
+                  nodes={nodes}
+                  workflowVars={form.values.variables}
                   node={selectedNode}
                   onClose={() => setSelectedNodeId(null)}
                   onNodeUpdate={handleNodeUpdate}

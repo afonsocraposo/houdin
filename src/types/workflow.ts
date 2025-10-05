@@ -1,3 +1,5 @@
+import { newExecutionId, newWorkflowId } from "@/utils/helpers";
+
 export type NodeType = "trigger" | "action" | "condition";
 export interface WorkflowNode {
   id: string;
@@ -65,6 +67,7 @@ export interface WorkflowDefinition {
   nodes: WorkflowNode[];
   connections: WorkflowConnection[];
   enabled: boolean;
+  variables?: Record<string, string>;
   lastUpdated?: number;
   lastExecuted?: number;
   executionCount?: number;
@@ -89,3 +92,22 @@ export interface WorkflowExecutionStats {
   successful: number;
   failed: number;
 }
+
+export interface ExecutionMetadata {
+  workflowId: string;
+  executionId: string;
+  url: string;
+  startedAt: number;
+}
+export const ExecutionMetadataKeys = [
+  "executionId",
+  "startedAt",
+  "url",
+  "workflowId",
+] as const;
+export const ExecutionMetadataExamples = {
+  workflowId: newWorkflowId(),
+  executionId: newExecutionId(),
+  url: "https://example.com",
+  startedAt: Date.now(),
+};

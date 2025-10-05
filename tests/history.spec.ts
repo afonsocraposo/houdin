@@ -136,7 +136,9 @@ test.describe("Execution history", () => {
     const viewOutput = page.locator('text="View Output"');
     await viewOutput.nth(0).click();
 
-    // Click on copy button, label="Copy code"
+    // Hover the element .mantine-CodeHighlight-codeHighlight
+    await page.locator(".mantine-CodeHighlight-codeHighlight").first().hover();
+    // Click on copy button
     await page.getByLabel("Copy code").first().click();
 
     // Check clipboard content
@@ -149,6 +151,8 @@ test.describe("Execution history", () => {
 
     // Open the second node output
     await viewOutput.nth(1).click();
+    // Hover the element .mantine-CodeHighlight-codeHighlight
+    await page.locator(".mantine-CodeHighlight-codeHighlight").last().hover();
     // Click on copy button
     await page.getByLabel("Copy code").last().click();
 
@@ -245,7 +249,9 @@ test.describe("Execution history", () => {
 
     await viewOutput.first().click();
 
-    // Click on copy button, label="Copy code"
+    // Hover the element .mantine-CodeHighlight-codeHighlight
+    await page.locator(".mantine-CodeHighlight-codeHighlight").first().hover();
+    // Click on copy button
     await page.getByLabel("Copy code").first().click();
 
     // Check clipboard content
@@ -253,6 +259,8 @@ test.describe("Execution history", () => {
   "url": "https://example.com/"
 }`);
 
+    // Hover the element .mantine-CodeHighlight-codeHighlight
+    await page.locator(".mantine-CodeHighlight-codeHighlight").last().hover();
     // Click on copy button
     await page.getByLabel("Copy code").last().click();
 

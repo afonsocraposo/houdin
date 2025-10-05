@@ -1,11 +1,19 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
-import { credentialsProperty, selectProperty, textareaProperty, numberProperty } from "@/types/config-properties";
+import {
+  credentialsProperty,
+  selectProperty,
+  textareaProperty,
+  numberProperty,
+  textProperty,
+} from "@/types/config-properties";
 import { OpenAIService } from "@/services/openai";
 import { NotificationService } from "@/services/notification";
+import { IconBrandOpenai } from "@tabler/icons-react";
 
 interface LLMOpenAIActionConfig {
   credentialId: string;
   model: string;
+  customModel?: string; // Made optional
   prompt: string;
   maxTokens?: number; // Made optional
   temperature?: number; // Made optional
@@ -17,12 +25,16 @@ interface LLMOpenAIActionOutput {
   tokensUsed?: number;
 }
 
-export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig, LLMOpenAIActionOutput> {
-  readonly metadata: ActionMetadata = {
+export class LLMOpenAIAction extends BaseAction<
+  LLMOpenAIActionConfig,
+  LLMOpenAIActionOutput
+> {
+  static readonly metadata: ActionMetadata = {
     type: "llm-openai",
-    label: "LLM OpenAI",
-    icon: "🤖",
+    label: "OpenAI",
+    icon: IconBrandOpenai,
     description: "Send prompt to OpenAI and get response",
+    disableTimeout: true,
   };
 
   readonly configSchema = {
@@ -37,20 +49,29 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig, LLMOpenAI
       model: selectProperty({
         label: "Model",
         options: [
-          { label: "GPT-4o (Omni)", value: "gpt-4o" },
-          { label: "GPT-4 Turbo", value: "gpt-4-turbo" },
-          { label: "GPT-4o Mini", value: "gpt-4o-mini" },
-          { label: "GPT-3.5 Turbo", value: "gpt-3.5-turbo" },
-          { label: "GPT-3.5 Turbo (16k)", value: "gpt-3.5-turbo-16k" },
+          { label: "gpt-5", value: "gpt-5" },
+          { label: "gpt-4o-mini", value: "gpt-4o-mini" },
+          { label: "gpt-4o", value: "gpt-4o" },
+          { label: "gpt-3.5-turbo", value: "gpt-3.5-turbo" },
+          { label: "gpt-3.5-turbo-16k", value: "gpt-3.5-turbo-16k" },
+          { label: "Other", value: "custom" },
         ],
         defaultValue: "gpt-4o-mini",
+      }),
+      customModel: textProperty({
+        label: "Other Model",
+        placeholder: "e.g., gpt-4-turbo",
+        description: "Specify the model name",
+        showWhen: {
+          field: "model",
+          value: "custom",
+        },
       }),
       prompt: textareaProperty({
         label: "Prompt",
         placeholder:
           "You are a helpful assistant. User input: {{get-content-node}}",
-        description:
-          "Use {{node-id}} to reference outputs from other actions",
+        description: "Use {{node-id}} to reference outputs from other actions",
         rows: 4,
         required: true,
       }),
@@ -88,7 +109,8 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig, LLMOpenAI
     onSuccess: (data: LLMOpenAIActionOutput) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
-    const { credentialId, model, prompt, maxTokens, temperature } = config;
+    const { credentialId, model, customModel, prompt, maxTokens, temperature } =
+      config;
 
     if (!credentialId) {
       NotificationService.showErrorNotification({
@@ -113,10 +135,12 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig, LLMOpenAI
         timeout: 1000,
       });
 
+      const selectedModel = model === "custom" ? (customModel ?? "") : model;
+
       // Call OpenAI API
       const response = await OpenAIService.callChatCompletion(
         credentialId,
-        model,
+        selectedModel,
         prompt,
         maxTokens,
         temperature,
@@ -125,7 +149,7 @@ export class LLMOpenAIAction extends BaseAction<LLMOpenAIActionConfig, LLMOpenAI
       // Store the response in the execution context
       onSuccess({
         response,
-        model,
+        model: selectedModel,
         tokensUsed: undefined, // OpenAI service doesn't return token count currently
       });
     } catch (error: any) {

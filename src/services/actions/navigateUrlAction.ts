@@ -1,5 +1,6 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
 import { textProperty } from "@/types/config-properties";
+import { IconExternalLink } from "@tabler/icons-react";
 
 const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
 
@@ -12,10 +13,10 @@ interface NavigateActionOutput {
 }
 
 export class NavigateUrlAction extends BaseAction<NavigateActionConfig, NavigateActionOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "navigate-url",
     label: "Navigate to URL",
-    icon: "🌐",
+    icon: IconExternalLink,
     description: "Navigate to a specific URL",
   };
 

@@ -12,7 +12,7 @@ interface PressKeyActionOutput {
 }
 
 export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyActionOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "press-key",
     label: "Press Key",
     icon: "⌨️",

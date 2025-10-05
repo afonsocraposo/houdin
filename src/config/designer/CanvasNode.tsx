@@ -93,6 +93,15 @@ export default function CanvasNode({
     return "❓";
   };
 
+  const renderNodeIcon = (icon: string | React.ComponentType<any>) => {
+    if (typeof icon === "string") {
+      return <Text size="lg">{icon}</Text>;
+    } else {
+      const IconComponent = icon;
+      return <IconComponent size={22} />;
+    }
+  };
+
   const getNodeLabel = (node: WorkflowNode) => {
     const actionRegistry = ActionRegistry.getInstance();
     const triggerRegistry = TriggerRegistry.getInstance();
@@ -158,7 +167,7 @@ export default function CanvasNode({
       <Stack>
         <Stack gap="xs">
           <Group justify="space-between">
-            <Text size="lg">{getNodeIcon(nodeData)}</Text>
+            {renderNodeIcon(getNodeIcon(nodeData))}
             {nodeData.error && <IconAlertCircle color="red" />}
           </Group>
           <div>

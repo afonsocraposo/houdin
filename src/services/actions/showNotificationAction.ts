@@ -13,7 +13,7 @@ interface ShowNotificationActionOutput {
 }
 
 export class ShowNotificationAction extends BaseAction<ShowNotificationActionConfig, ShowNotificationActionOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "show-notification",
     label: "Show Notification",
     icon: "🔔",

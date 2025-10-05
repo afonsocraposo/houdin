@@ -1,5 +1,6 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
 import { numberProperty } from "@/types/config-properties";
+import { IconClock } from "@tabler/icons-react";
 
 interface WaitActionConfig {
   duration: number; // Duration in milliseconds
@@ -11,10 +12,10 @@ interface WaitActionOutput {
 }
 
 export class WaitAction extends BaseAction<WaitActionConfig, WaitActionOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "wait",
     label: "Wait",
-    icon: "⏳",
+    icon: IconClock,
     description: "Wait for a specified duration before proceeding (delay)",
     disableTimeout: true,
   };

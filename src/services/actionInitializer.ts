@@ -17,6 +17,7 @@ import { TypeTextAction } from "./actions/typeTextAction";
 import { InputAction } from "./actions/inputAction";
 import { FormAction } from "./actions/formAction";
 import { RemoveElementAction } from "./actions/removeElementAction";
+import { WriteClipboardAction } from "./actions/writeClipboardAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -41,6 +42,7 @@ export function initializeActions(): void {
   registry.register(InputAction);
   registry.register(FormAction);
   registry.register(RemoveElementAction);
+  registry.register(WriteClipboardAction);
 }
 
 export function initializeBackgroundActions(): void {

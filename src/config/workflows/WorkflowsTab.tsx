@@ -1,13 +1,28 @@
 import { ContentStorageClient } from "@/services/storage";
-import { newWorkflowId } from "@/services/workflow";
+import { ExampleService } from "@/services/exampleService";
 import { WorkflowDefinition } from "@/types/workflow";
-import { Button, Card, Group, Stack, Table, Text, Title } from "@mantine/core";
-import { IconNetwork, IconPlus, IconUpload } from "@tabler/icons-react";
+import {
+  Button,
+  Card,
+  Group,
+  Stack,
+  Table,
+  Text,
+  Title,
+  Menu,
+} from "@mantine/core";
+import {
+  IconNetwork,
+  IconPlus,
+  IconUpload,
+  IconChevronDown,
+} from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ImportModal } from "./ImportModal";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
+import { newWorkflowId } from "@/utils/helpers";
 
 export default function WorkflowsTab({
   setSaved,
@@ -21,6 +36,7 @@ export default function WorkflowsTab({
     useState<WorkflowDefinition | null>(null);
 
   const storageClient = useMemo(() => new ContentStorageClient(), []);
+  const exampleService = useMemo(() => new ExampleService(), []);
 
   const navigate = useNavigate();
 
@@ -52,6 +68,23 @@ export default function WorkflowsTab({
 
   const handleCreateWorkflow = () => {
     navigate("/designer"); // Navigate to designer without workflow ID
+  };
+
+  const handleCreateFromExample = (example: WorkflowDefinition) => {
+    const newWorkflow = {
+      ...example,
+      id: newWorkflowId(),
+      lastUpdated: Date.now(),
+      executionCount: 0,
+      lastExecuted: undefined,
+    };
+
+    // Pass the example as state to the designer
+    navigate("/designer", { state: { exampleWorkflow: newWorkflow } });
+  };
+  const handleCreateBlankWorkflow = () => {
+    // Pass the example as state to the designer
+    navigate("/designer", { state: { blank: true } });
   };
 
   const handleEditWorkflow = (workflow: WorkflowDefinition) => {
@@ -133,12 +166,40 @@ export default function WorkflowsTab({
             >
               Import Workflow
             </Button>
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={handleCreateWorkflow}
-            >
-              Create Workflow
-            </Button>
+            <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <Group gap="xs">
+                  <Button
+                    leftSection={<IconPlus size={16} />}
+                    onClick={handleCreateWorkflow}
+                  >
+                    Create Workflow
+                  </Button>
+                  <Button
+                    variant="light"
+                    style={{ paddingLeft: 8, paddingRight: 8 }}
+                  >
+                    <IconChevronDown size={16} />
+                  </Button>
+                </Group>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Item onClick={handleCreateBlankWorkflow}>
+                  Create Blank Workflow
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Label>Start from Example</Menu.Label>
+                {exampleService.getExamples().map((example) => (
+                  <Menu.Item
+                    key={example.id}
+                    onClick={() => handleCreateFromExample(example)}
+                  >
+                    {example.name}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Group>
 

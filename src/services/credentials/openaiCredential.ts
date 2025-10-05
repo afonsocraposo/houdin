@@ -12,7 +12,7 @@ interface OpenAIAuth {
 }
 
 export class OpenAICredential extends BaseCredential<OpenAIConfig, OpenAIAuth> {
-  readonly metadata: CredentialMetadata = {
+  static readonly metadata: CredentialMetadata = {
     type: "openai",
     label: "OpenAI API Key",
     icon: "IconBrain",

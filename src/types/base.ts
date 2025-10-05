@@ -5,18 +5,22 @@ import {
   applyDefaults,
   generateDefaultConfig,
 } from "./config-properties";
+import { ComponentType } from "react";
 
 // Common metadata interface that all registrable types share
 export interface BaseMetadata {
   type: string;
   label: string;
-  icon: string;
+  icon: string | ComponentType<any>;
   description: string;
 }
 
 // Abstract base class for all configurable types (actions, triggers, credentials)
 export abstract class BaseConfigurable<TConfig = Record<string, any>> {
-  abstract readonly metadata: BaseMetadata;
+  static readonly metadata: BaseMetadata;
+  public get metadata(): BaseMetadata {
+    return (this.constructor as typeof BaseConfigurable).metadata;
+  }
 
   // Get the configuration schema
   abstract readonly configSchema: ConfigSchema<TConfig>;

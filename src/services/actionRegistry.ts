@@ -18,7 +18,7 @@ export class ActionRegistry {
   // Register a new action
   register(actionClass: any): void {
     try {
-      const action = new actionClass();
+      const action = new actionClass() as BaseAction;
       this.actions.set(action.metadata.type, action);
     } catch (error) {
       console.error("Error registering action:", error);

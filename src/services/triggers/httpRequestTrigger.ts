@@ -2,6 +2,7 @@ import { BaseTrigger } from "@/types/triggers";
 import { textProperty, selectProperty } from "@/types/config-properties";
 import { sendMessageToBackground, CustomMessage } from "@/lib/messages";
 import { HttpTriggerFiredMessage } from "@/types/background-workflow";
+import { IconApi } from "@tabler/icons-react";
 
 // HTTP Request Trigger Configuration
 export interface HttpRequestTriggerConfig {
@@ -17,10 +18,10 @@ interface HttpRequestTriggerOutput {
 }
 
 export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig, HttpRequestTriggerOutput> {
-  readonly metadata = {
+  static readonly metadata = {
     type: "http-request",
     label: "HTTP Request",
-    icon: "🌐",
+    icon: IconApi,
     description:
       "Trigger when an HTTP request matches the specified URL pattern",
   };

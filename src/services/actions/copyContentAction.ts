@@ -16,7 +16,7 @@ export class CopyContentAction extends BaseAction<
   CopyContentActionConfig,
   CopyContentActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "copy-content",
     label: "Copy Content",
     icon: "📋",

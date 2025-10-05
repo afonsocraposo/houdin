@@ -14,6 +14,7 @@ import {
   Select,
   TextInput,
   Box,
+  Popover,
 } from "@mantine/core";
 import {
   IconChevronDown,
@@ -25,6 +26,7 @@ import {
   IconRefresh,
   IconTrash,
   IconSearch,
+  IconSettings,
 } from "@tabler/icons-react";
 import {
   WorkflowExecution,
@@ -420,9 +422,10 @@ function ExecutionHistoryPage() {
                                     <Table.Tr>
                                       <Table.Th>Node ID</Table.Th>
                                       <Table.Th>Node Type</Table.Th>
-                                      <Table.Th>Status</Table.Th>
-                                      <Table.Th>Duration</Table.Th>
+                                      <Table.Th ta="center">Status</Table.Th>
+                                      <Table.Th ta="center">Duration</Table.Th>
                                       <Table.Th>Output</Table.Th>
+                                      <Table.Th>Config</Table.Th>
                                     </Table.Tr>
                                   </Table.Thead>
                                   <Table.Tbody>
@@ -449,7 +452,7 @@ function ExecutionHistoryPage() {
                                                 )}
                                               </Text>
                                             </Table.Td>
-                                            <Table.Td>
+                                            <Table.Td ta="center">
                                               <Badge
                                                 size="xs"
                                                 color={getStatusColor(
@@ -459,7 +462,7 @@ function ExecutionHistoryPage() {
                                                 {node.status}
                                               </Badge>
                                             </Table.Td>
-                                            <Table.Td>
+                                            <Table.Td ta="center">
                                               <Text size="xs">
                                                 {node.duration
                                                   ? `${node.duration}ms`
@@ -510,6 +513,25 @@ function ExecutionHistoryPage() {
                                                   </Box>
                                                 </details>
                                               )}
+                                            </Table.Td>
+                                            <Table.Td ta="center">
+                                              <Popover withArrow shadow="md">
+                                                <Popover.Target>
+                                                  <ActionIcon variant="subtle">
+                                                    <IconSettings size="20" />
+                                                  </ActionIcon>
+                                                </Popover.Target>
+                                                <Popover.Dropdown maw={400}>
+                                                  <CodeHighlight
+                                                    language="json"
+                                                    code={JSON.stringify(
+                                                      node.nodeConfig,
+                                                      null,
+                                                      2,
+                                                    )}
+                                                  />
+                                                </Popover.Dropdown>
+                                              </Popover>
                                             </Table.Td>
                                           </Table.Tr>
                                         );

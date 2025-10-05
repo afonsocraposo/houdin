@@ -18,7 +18,7 @@ export abstract class BaseCredential<
   TConfig = Record<string, any>,
   TAuth = Record<string, any>,
 > extends BaseConfigurable<TConfig> {
-  abstract readonly metadata: CredentialMetadata;
+  static readonly metadata: CredentialMetadata;
 
   // Get authentication object from configuration
   abstract getAuth(config: TConfig): TAuth;

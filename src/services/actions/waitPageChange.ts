@@ -9,7 +9,7 @@ interface WaitPageChangeOutput {
 }
 
 export class WaitPageChangeAction extends BaseAction<WaitPageChangeConfig, WaitPageChangeOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "wait-page-change",
     label: "Wait page change",
     icon: "⏳",
