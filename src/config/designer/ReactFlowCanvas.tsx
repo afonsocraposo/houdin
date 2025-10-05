@@ -142,7 +142,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   useEffect(() => {
     setNodes(reactFlowNodes);
-  }, [reactFlowNodes, errors]);
+  }, [reactFlowNodes]);
 
   useEffect(() => {
     setEdges(reactFlowEdges);
