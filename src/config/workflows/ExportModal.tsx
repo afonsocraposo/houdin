@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Modal,
   Stack,
@@ -21,10 +21,25 @@ interface ExportModalProps {
 export const ExportModal: React.FC<ExportModalProps> = ({
   opened,
   onClose,
-  workflow,
+  workflow: rawWorkflow,
 }) => {
   const [copied, setCopied] = useState(false);
-  const jsonContent = JSON.stringify(workflow, null, 2);
+  const workflow = useMemo(
+    () => ({
+      ...rawWorkflow,
+      // remove sensitive data
+      variables: rawWorkflow.variables
+        ? Object.fromEntries(
+            Object.entries(rawWorkflow.variables).map(([key]) => [key, ""]),
+          )
+        : undefined,
+    }),
+    [rawWorkflow],
+  );
+  const jsonContent = useMemo(
+    () => JSON.stringify(workflow, null, 2),
+    [workflow],
+  );
 
   const handleCopy = async () => {
     try {
