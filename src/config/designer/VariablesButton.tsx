@@ -77,22 +77,6 @@ export default function VariablesButton({ nodes }: VariablesButtonProps) {
   };
 
   const getOutputMenu = (node: NodeOutputs) => {
-    // A node output can have the folowing outputs:
-    // {
-    //   "status": 200,
-    //   "statusText": "OK",
-    //   "headers": {
-    //     "content-type": "application/json",
-    //     "x-custom-header": "value"
-    //   },
-    //   "data": {
-    //     "id": 123,
-    //     "name": "Sample Data"
-    //   },
-    //   "url": "https://api.example.com/data"
-    // }
-    // I want to have a menu item for the node Id which when hovered, opens a submenu for the various outputs
-    // when hovering data, it will open another submenu for the keys in data
     return (
       <Menu key={node.nodeId} trigger="hover" position="left">
         <Menu.Target>
@@ -112,30 +96,44 @@ export default function VariablesButton({ nodes }: VariablesButtonProps) {
                   </Menu.Target>
                   <Menu.Dropdown>
                     {Object.keys(value).map((subKey) => (
-                      <Menu.Item
+                      <Tooltip
                         key={subKey}
-                        onClick={() =>
-                          handleVariableClick(
-                            `{{${node.nodeId}.${key}.${subKey}}}`,
-                          )
-                        }
+                        label={<Text size="xs">{value}</Text>}
+                        withArrow
+                        position="left"
+                        color="dark"
                       >
-                        <Code>{subKey}</Code>
-                      </Menu.Item>
+                        <Menu.Item
+                          onClick={() =>
+                            handleVariableClick(
+                              `{{${node.nodeId}.${key}.${subKey}}}`,
+                            )
+                          }
+                        >
+                          <Code>{subKey}</Code>
+                        </Menu.Item>
+                      </Tooltip>
                     ))}
                   </Menu.Dropdown>
                 </Menu>
               );
             } else {
               return (
-                <Menu.Item
+                <Tooltip
                   key={key}
-                  onClick={() =>
-                    handleVariableClick(`{{${node.nodeId}.${key}}}`)
-                  }
+                  label={<Text size="xs">{value}</Text>}
+                  withArrow
+                  position="left"
+                  color="dark"
                 >
-                  <Code>{key}</Code>
-                </Menu.Item>
+                  <Menu.Item
+                    onClick={() =>
+                      handleVariableClick(`{{${node.nodeId}.${key}}}`)
+                    }
+                  >
+                    <Code>{key}</Code>
+                  </Menu.Item>
+                </Tooltip>
               );
             }
           })}
@@ -168,7 +166,7 @@ export default function VariablesButton({ nodes }: VariablesButtonProps) {
             label={<Text size="xs">{example}</Text>}
             withArrow
             position="left"
-            color="gray"
+            color="dark"
           >
             <Menu.Item onClick={() => handleVariableClick(`{{meta.${key}}}`)}>
               <Code>{key}</Code>
