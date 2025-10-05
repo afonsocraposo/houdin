@@ -9,7 +9,7 @@ interface PageLoadTriggerOutput {
 }
 
 export class PageLoadTrigger extends BaseTrigger<PageLoadTriggerConfig, PageLoadTriggerOutput> {
-  readonly metadata = {
+  static readonly metadata = {
     type: "page-load",
     label: "Page Load",
     icon: "📄",

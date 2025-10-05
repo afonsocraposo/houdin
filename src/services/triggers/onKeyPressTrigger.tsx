@@ -12,7 +12,7 @@ interface KeyPressTriggerOutput {
 }
 
 export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig, KeyPressTriggerOutput> {
-  readonly metadata = {
+  static readonly metadata = {
     type: "key-press",
     label: "Key Press",
     icon: "⌨️",

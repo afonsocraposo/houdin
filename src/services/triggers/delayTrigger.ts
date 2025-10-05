@@ -11,7 +11,7 @@ interface DelayTriggerOutput {
 }
 
 export class DelayTrigger extends BaseTrigger<DelayTriggerConfig, DelayTriggerOutput> {
-  readonly metadata = {
+  static readonly metadata = {
     type: "delay",
     label: "Delay",
     icon: "⏱️",

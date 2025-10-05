@@ -35,7 +35,7 @@ export class ButtonClickTrigger extends BaseTrigger<
   ButtonClickTriggerConfig,
   ButtonClickTriggerOutput
 > {
-  readonly metadata = {
+  static readonly metadata = {
     type: "button-click",
     label: "Button Click",
     icon: "🔘",

@@ -18,7 +18,7 @@ interface HttpRequestTriggerOutput {
 }
 
 export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig, HttpRequestTriggerOutput> {
-  readonly metadata = {
+  static readonly metadata = {
     type: "http-request",
     label: "HTTP Request",
     icon: IconApi,
