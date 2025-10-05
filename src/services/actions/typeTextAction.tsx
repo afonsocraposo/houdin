@@ -17,7 +17,7 @@ export class TypeTextAction extends BaseAction<
   TypeTextActionConfig,
   TypeTextActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "type-text",
     label: "Type Text",
     icon: "⌨️",

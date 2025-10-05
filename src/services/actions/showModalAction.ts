@@ -13,7 +13,7 @@ interface ShowModalActionOutput {
 }
 
 export class ShowModalAction extends BaseAction<ShowModalActionConfig, ShowModalActionOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "show-modal",
     label: "Show Modal",
     icon: "💬",

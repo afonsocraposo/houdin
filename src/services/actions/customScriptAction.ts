@@ -23,7 +23,7 @@ export class CustomScriptAction extends BaseAction<
   CustomScriptActionConfig,
   CustomScriptActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "custom-script",
     label: "Custom Script",
     icon: "⚡",

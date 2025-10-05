@@ -400,6 +400,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 }}
               >
                 <NodeProperties
+                  nodes={nodes}
                   node={selectedNode}
                   onClose={() => setSelectedNodeId(null)}
                   onNodeUpdate={handleNodeUpdate}

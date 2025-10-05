@@ -6,3 +6,4 @@ export { askChatGPT } from "./askChatGPT";
 export { summarizeNews } from "./summarizeNews";
 export { apiRequestIP } from "./apiRequestIP";
 export { apiTriggerYoutube } from "./apiTriggerYoutube";
+export { copyUrlClipboard } from "./copyUrlClipboard";

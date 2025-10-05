@@ -15,7 +15,7 @@ export class InputAction extends BaseAction<
   InputActionConfig,
   InputActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "input",
     label: "Input",
     icon: "💬",

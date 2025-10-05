@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Stack,
   Text,
@@ -7,26 +7,24 @@ import {
   ScrollArea,
   Tooltip,
   ActionIcon,
-  Menu,
 } from "@mantine/core";
 import {
   ActionNodeData,
-  ExecutionMetadataExamples,
-  ExecutionMetadataKeys,
   TriggerNodeData,
   WorkflowNode,
 } from "@/types/workflow";
 import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import {
-  IconArrowBarToRight,
-  IconHelpCircle,
-  IconVariable,
-} from "@tabler/icons-react";
+import { IconArrowBarToRight, IconHelpCircle } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
+import VariablesButton from "./VariablesButton";
+import NodeIcon from "@/components/NodeIcon";
+import { BaseConfigurable, BaseMetadata } from "@/types/base";
+import { FormAction, FormActionConfig } from "@/services/actions/formAction";
 
 interface NodePropertiesProps {
+  nodes: WorkflowNode[];
   node: WorkflowNode | null;
   onNodeUpdate: (updatedNode: WorkflowNode) => void;
   errors?: Record<string, string[]>;
@@ -34,6 +32,7 @@ interface NodePropertiesProps {
 }
 
 export const NodeProperties: React.FC<NodePropertiesProps> = ({
+  nodes,
   node,
   onNodeUpdate,
   onClose,
@@ -135,6 +134,12 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       const schema = actionRegistry.getConfigSchema(actionType);
 
       if (action && schema) {
+        let outputExample = action.outputExample;
+        if (action.metadata.type === FormAction.metadata.type) {
+          outputExample = FormAction.getRichOutputExample(
+            data.config as FormActionConfig,
+          );
+        }
         return (
           <Stack gap="md">
             {/* Action description */}
@@ -152,14 +157,14 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
             />
 
             {/* Example output */}
-            {action.outputExample && (
+            {outputExample && (
               <Stack gap="xs" mt="md">
                 <Text size="sm" c="dimmed">
                   Example output:
                 </Text>
                 <CodeHighlight
                   language="json"
-                  code={JSON.stringify(action.outputExample, null, 2)}
+                  code={JSON.stringify(outputExample, null, 2)}
                 />
               </Stack>
             )}
@@ -198,53 +203,34 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   };
 
   const getNodeTitle = (node: WorkflowNode): React.ReactNode => {
+    let metadata: BaseMetadata;
     if (node.type === "trigger") {
       const triggerType = (node.data as TriggerNodeData).type;
       const triggerRegistry = TriggerRegistry.getInstance();
       const trigger = triggerRegistry.getTrigger(triggerType);
       if (trigger) {
-        const icon =
-          typeof trigger.metadata.icon === "string"
-            ? trigger.metadata.icon
-            : (() => {
-                const IconComponent = trigger.metadata
-                  .icon as React.ComponentType<any>;
-                return <IconComponent size={22} />;
-              })();
-        return (
-          <Group gap="xs">
-            {icon}
-            {trigger.metadata.label}
-          </Group>
-        );
+        metadata = trigger.metadata;
+      } else {
+        return "Trigger";
       }
-      return "Trigger";
-    }
-
-    if (node.type === "action") {
+    } else if (node.type === "action") {
       const actionType = (node.data as ActionNodeData).type;
       const actionRegistry = ActionRegistry.getInstance();
       const action = actionRegistry.getAction(actionType);
       if (action) {
-        const icon =
-          typeof action.metadata.icon === "string"
-            ? action.metadata.icon
-            : (() => {
-                const IconComponent = action.metadata
-                  .icon as React.ComponentType<any>;
-                return <IconComponent size={22} />;
-              })();
-        return (
-          <Group gap="xs">
-            {icon}
-            {action.metadata.label}
-          </Group>
-        );
+        metadata = action.metadata;
+      } else {
+        return "Action";
       }
-      return "Action";
+    } else {
+      return "Unknown";
     }
-
-    return "Unknown";
+    return (
+      <Group gap="xs" wrap="nowrap">
+        <NodeIcon icon={metadata.icon} size={16} />
+        <Text>{metadata.label}</Text>
+      </Group>
+    );
   };
 
   return (
@@ -264,37 +250,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
           </Text>
         </Group>
         <Group>
-          <Menu shadow="md" width={200}>
-            <Menu.Target>
-              <ActionIcon variant="light">
-                <IconVariable />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown mah={300} style={{ overflowY: "auto" }}>
-              <Menu.Label>Nodes Outputs</Menu.Label>
-
-              <Menu.Divider />
-              <Menu.Label>Workflow Vars</Menu.Label>
-
-              <Menu.Divider />
-              <Menu.Label>Execution Details</Menu.Label>
-              {Object.entries(ExecutionMetadataExamples).map(
-                ([key, example]) => (
-                  <Tooltip
-                    key={key}
-                    label={<Text size="xs">{example}</Text>}
-                    withArrow
-                    position="left"
-                    color="gray"
-                  >
-                    <Menu.Item>
-                      <code>{`meta.${key}`}</code>
-                    </Menu.Item>
-                  </Tooltip>
-                ),
-              )}
-            </Menu.Dropdown>
-          </Menu>
+          <VariablesButton nodes={nodes} />
           <Tooltip
             label={
               <Text size="sm">

@@ -24,7 +24,7 @@ interface HTTPAuth {
 }
 
 export class HTTPCredential extends BaseCredential<HTTPConfig, HTTPAuth> {
-  readonly metadata: CredentialMetadata = {
+  static readonly metadata: CredentialMetadata = {
     type: "http",
     label: "HTTP Authentication",
     icon: "IconWorld",

@@ -12,7 +12,7 @@ interface WaitActionOutput {
 }
 
 export class WaitAction extends BaseAction<WaitActionConfig, WaitActionOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "wait",
     label: "Wait",
     icon: IconClock,

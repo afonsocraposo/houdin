@@ -15,7 +15,7 @@ export class RemoveElementAction extends BaseAction<
   RemoveElementActionConfig,
   RemoveElementActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "remove-element",
     label: "Remove Element",
     icon: "❌",

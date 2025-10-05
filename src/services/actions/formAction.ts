@@ -6,7 +6,7 @@ import React from "react";
 import { ModalService } from "../modal";
 import { customProperty, textProperty } from "@/types/config-properties";
 
-interface FormActionConfig {
+export interface FormActionConfig {
   title: string;
   fields: FormFieldDefinition[];
 }
@@ -17,7 +17,7 @@ interface FormActionOutput {
 }
 
 export class FormAction extends BaseAction<FormActionConfig, FormActionOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "form",
     label: "Form",
     icon: "📝",
@@ -56,6 +56,20 @@ export class FormAction extends BaseAction<FormActionConfig, FormActionOutput> {
     password: "password123",
     _timestamp: Date.now(),
   };
+
+  static getRichOutputExample(config: FormActionConfig): FormActionOutput {
+    const fieldsExample =
+      config.fields?.map((field) => {
+        return {
+          [field.name]:
+            field.defaultValue || field.placeholder || field.label || "",
+        };
+      }) ?? [];
+    return {
+      _timestamp: Date.now(),
+      ...Object.assign({}, ...fieldsExample),
+    };
+  }
 
   async execute(
     config: FormActionConfig,

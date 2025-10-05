@@ -23,7 +23,10 @@ export abstract class BaseTrigger<
   TConfig = Record<string, any>,
   TOutput = Record<string, any>,
 > extends BaseConfigurable<TConfig> {
-  abstract readonly metadata: TriggerMetadata;
+  static readonly _metadata: TriggerMetadata;
+  public get metadata(): TriggerMetadata {
+    return (this.constructor as typeof BaseTrigger)._metadata;
+  }
   abstract readonly outputExample: TOutput;
 
   // Setup the trigger and return cleanup function

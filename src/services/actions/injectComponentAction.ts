@@ -36,7 +36,7 @@ export class InjectComponentAction extends BaseAction<
   InjectComponentActionConfig,
   InjectComponentActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "inject-component",
     label: "Inject Component",
     icon: "💉",

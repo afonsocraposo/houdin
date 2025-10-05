@@ -72,3 +72,17 @@ export const getElement = (
   }
   return null;
 };
+
+export function insertAtCursor(
+  input: HTMLInputElement | HTMLTextAreaElement,
+  text: string,
+) {
+  const start = input.selectionStart ?? 0;
+  const end = input.selectionEnd ?? 0;
+  const value = input.value;
+  input.value = value.slice(0, start) + text + value.slice(end);
+  const newPos = start + text.length;
+
+  input.setSelectionRange(newPos, newPos);
+  input.focus();
+}

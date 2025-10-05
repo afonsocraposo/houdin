@@ -10,7 +10,7 @@ interface SecretAuth {
 }
 
 export class SecretCredential extends BaseCredential<SecretConfig, SecretAuth> {
-  readonly metadata: CredentialMetadata = {
+  static readonly metadata: CredentialMetadata = {
     type: "secret",
     label: "Secret/Token",
     icon: "IconKey",

@@ -17,7 +17,10 @@ export interface BaseMetadata {
 
 // Abstract base class for all configurable types (actions, triggers, credentials)
 export abstract class BaseConfigurable<TConfig = Record<string, any>> {
-  abstract readonly metadata: BaseMetadata;
+  static readonly _metadata: BaseMetadata;
+  public get metadata(): BaseMetadata {
+    return (this.constructor as typeof BaseConfigurable)._metadata;
+  }
 
   // Get the configuration schema
   abstract readonly configSchema: ConfigSchema<TConfig>;

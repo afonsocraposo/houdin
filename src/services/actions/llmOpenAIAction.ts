@@ -29,7 +29,7 @@ export class LLMOpenAIAction extends BaseAction<
   LLMOpenAIActionConfig,
   LLMOpenAIActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "llm-openai",
     label: "OpenAI",
     icon: IconBrandOpenai,

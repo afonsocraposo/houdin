@@ -41,7 +41,7 @@ export class HttpRequestAction extends BaseAction<
   HttpRequestActionConfig,
   HttpResponse
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "http-request",
     label: "HTTP Request",
     icon: IconWorld,

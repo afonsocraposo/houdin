@@ -16,7 +16,7 @@ export class ClickElementAction extends BaseAction<
   ClickElementActionConfig,
   ClickElementActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "click-element",
     label: "Click Element",
     icon: IconClick,

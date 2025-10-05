@@ -13,7 +13,7 @@ interface NavigateActionOutput {
 }
 
 export class NavigateUrlAction extends BaseAction<NavigateActionConfig, NavigateActionOutput> {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "navigate-url",
     label: "Navigate to URL",
     icon: IconExternalLink,

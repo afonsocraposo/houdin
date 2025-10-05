@@ -20,7 +20,11 @@ export abstract class BaseAction<
   TConfig = Record<string, any>,
   TOutput = Record<string, any>,
 > extends BaseConfigurable<TConfig> {
-  abstract readonly metadata: ActionMetadata;
+  static readonly metadata: ActionMetadata;
+  public get metadata(): ActionMetadata {
+    return (this.constructor as typeof BaseAction).metadata;
+  }
+
   abstract readonly outputExample: TOutput;
 
   // Execute the action

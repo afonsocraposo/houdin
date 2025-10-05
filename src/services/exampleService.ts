@@ -12,6 +12,7 @@ export class ExampleService {
       examples.apiRequestIP,
       examples.summarizeNews,
       examples.apiTriggerYoutube,
+      examples.copyUrlClipboard,
     ];
   }
 

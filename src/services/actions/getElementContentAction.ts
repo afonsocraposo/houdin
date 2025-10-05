@@ -16,7 +16,7 @@ export class GetElementContentAction extends BaseAction<
   GetElementContentActionConfig,
   GetElementContentActionOutput
 > {
-  readonly metadata: ActionMetadata = {
+  static readonly metadata: ActionMetadata = {
     type: "get-element-content",
     label: "Get Element Content",
     icon: "📖",
