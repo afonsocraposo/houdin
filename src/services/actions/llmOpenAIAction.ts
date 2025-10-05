@@ -34,6 +34,7 @@ export class LLMOpenAIAction extends BaseAction<
     label: "OpenAI",
     icon: IconBrandOpenai,
     description: "Send prompt to OpenAI and get response",
+    disableTimeout: true,
   };
 
   readonly configSchema = {
