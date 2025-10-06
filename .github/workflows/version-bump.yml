@@ -83,13 +83,22 @@ jobs:
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "New version: $NEW_VERSION"
           
+          # Install dependencies and generate screenshots
+          npm ci
+          
+          # Install Playwright browsers for screenshot generation
+          npx playwright install chromium
+          
+          # Generate updated screenshots
+          npm run screenshots
+          
           # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          # Commit version bump
-          git add package.json package-lock.json
-          git commit -m "chore: bump version to $NEW_VERSION (from PR #$PR_NUMBER)"
+          # Commit version bump and updated screenshots
+          git add package.json package-lock.json screenshots/
+          git commit -m "chore: bump version to $NEW_VERSION and update screenshots (from PR #$PR_NUMBER)"
           git push
           
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT

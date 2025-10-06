@@ -31,7 +31,7 @@ test.describe("Workflows creation, design and execution", () => {
 
     // Expect to see workflow designer
     await expect(
-      page.getByRole("heading", { name: "Create New Workflow", level: 2 }),
+      page.getByRole("heading", { name: "Create Workflow", level: 2 }),
     ).toBeVisible();
 
     // Fill in workflow name

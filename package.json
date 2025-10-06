@@ -12,7 +12,9 @@
     "test": "npm run type-check",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headless": "CI=1 npm run test:e2e"
+    "test:e2e:headless": "CI=1 npm run test:e2e",
+    "screenshots": "npm run build && HEADLESS=true node scripts/capture-screenshots.js",
+    "screenshots:dev": "npm run build && HEADLESS=false node scripts/capture-screenshots.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
