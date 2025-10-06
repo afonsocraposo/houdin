@@ -166,40 +166,41 @@ export default function WorkflowsTab({
             >
               Import Workflow
             </Button>
-            <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <Group gap="xs">
-                  <Button
-                    leftSection={<IconPlus size={16} />}
-                    onClick={handleCreateWorkflow}
-                  >
-                    Create Workflow
-                  </Button>
+            <Group gap="xs">
+              <Button
+                leftSection={<IconPlus size={16} />}
+                onClick={handleCreateWorkflow}
+              >
+                Create Workflow
+              </Button>
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
                   <Button
                     variant="light"
                     style={{ paddingLeft: 8, paddingRight: 8 }}
+                    aria-label="Create workflow from example"
                   >
                     <IconChevronDown size={16} />
                   </Button>
-                </Group>
-              </Menu.Target>
+                </Menu.Target>
 
-              <Menu.Dropdown>
-                <Menu.Item onClick={handleCreateBlankWorkflow}>
-                  Create Blank Workflow
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Label>Start from Example</Menu.Label>
-                {exampleService.getExamples().map((example) => (
-                  <Menu.Item
-                    key={example.id}
-                    onClick={() => handleCreateFromExample(example)}
-                  >
-                    {example.name}
+                <Menu.Dropdown>
+                  <Menu.Item onClick={handleCreateBlankWorkflow}>
+                    Create Blank Workflow
                   </Menu.Item>
-                ))}
-              </Menu.Dropdown>
-            </Menu>
+                  <Menu.Divider />
+                  <Menu.Label>Start from Example</Menu.Label>
+                  {exampleService.getExamples().map((example) => (
+                    <Menu.Item
+                      key={example.id}
+                      onClick={() => handleCreateFromExample(example)}
+                    >
+                      {example.name}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
           </Group>
         </Group>
 

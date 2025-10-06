@@ -24,14 +24,16 @@ test.describe("Workflows creation, design and execution", () => {
     await expect(page.getByText("No workflows created yet.")).toBeVisible();
 
     // Click on Create workflow button
-    await page.getByRole("button", { name: "Create Workflow" }).click();
+    await page
+      .getByRole("button", { name: "Create Workflow", exact: true })
+      .click();
 
     // Check that URL has changed to #/designer
     await expect(page).toHaveURL(/#\/designer/);
 
     // Expect to see workflow designer
     await expect(
-      page.getByRole("heading", { name: "Create New Workflow", level: 2 }),
+      page.getByRole("heading", { name: "Create Workflow", level: 2 }),
     ).toBeVisible();
 
     // Fill in workflow name

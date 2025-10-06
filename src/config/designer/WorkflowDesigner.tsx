@@ -287,7 +287,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           <Group justify="space-between" align="center">
             <Group>
               <Title order={2}>
-                {workflow ? "Edit Workflow" : "Create New Workflow"}
+                {!autoSave ? "Edit Workflow" : "Create Workflow"}
               </Title>
             </Group>
             <Group>
