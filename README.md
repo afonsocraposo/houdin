@@ -6,6 +6,31 @@
 
 Houdin is a powerful browser extension that enables visual workflow automation for web browsers. Create sophisticated automation workflows using a drag-and-drop interface, inject custom code, and automate repetitive tasks across any website.
 
+## 📸 Screenshots
+
+### Workflow Management
+
+![Workflow Configuration Interface](screenshots/1-config-interface-workflows.png)
+_Manage your automation workflows with an intuitive interface_
+
+### Visual Workflow Designer
+
+![Workflow Designer - Node Selection](screenshots/2a-workflow-designer-drawer.png)
+_Drag-and-drop workflow designer with extensive action library_
+
+![Workflow Designer - Action Properties](screenshots/2b-workflow-designer-properties.png)
+_Configure action parameters with type-safe property editors_
+
+### Execution History & Monitoring
+
+![Execution History](screenshots/3-history-execution-output.png)
+_Monitor workflow execution with detailed logs and outputs_
+
+### Live Automation
+
+![Workflow Execution](screenshots/4-workflow-execution-example.png)
+_Workflows execute seamlessly on any website_
+
 ## 🚀 Features
 
 ### Core Automation
