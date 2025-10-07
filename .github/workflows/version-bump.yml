@@ -30,28 +30,28 @@ jobs:
           script: |
             const commit = context.payload.head_commit;
             const message = commit.message;
-            
+
             console.log('Commit message:', message);
             console.log('Context payload:', JSON.stringify(context.payload, null, 2));
-            
+
             // Check if this is a merge commit from a PR (supports both merge commits and squash merges)
             const mergeMatch = message.match(/Merge pull request #(\d+)/);
             // Match (#PR_NUMBER) in the first line of commit message
             const firstLine = message.split('\n')[0];
             const squashMatch = firstLine.match(/.*\(#(\d+)\)$/);
-            
+
             console.log('First line of commit:', firstLine);
             console.log('Merge match:', mergeMatch);
             console.log('Squash match:', squashMatch);
-            
+
             if (!mergeMatch && !squashMatch) {
               console.log('Not a PR merge commit, skipping version bump');
               return { shouldBump: false };
             }
-            
+
             const prNumber = mergeMatch ? mergeMatch[1] : squashMatch[1];
             console.log('Found PR merge:', prNumber);
-            
+
             try {
               // Get PR details to check labels
               console.log('Attempting to fetch PR details...');
@@ -60,79 +60,79 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: prNumber
               });
-              
+
               console.log('PR data retrieved successfully');
               console.log('PR state:', pr.state);
               console.log('PR merged:', pr.merged);
               console.log('PR labels:', JSON.stringify(pr.labels, null, 2));
-              
+
               const labels = pr.labels.map(label => label.name);
               const versionLabels = labels.filter(label => ['major', 'minor', 'patch'].includes(label));
-              
+
               console.log('All labels:', labels);
               console.log('Version labels:', versionLabels);
-              
+
               if (versionLabels.length !== 1) {
                 const error = `PR #${prNumber} should have exactly one version label, found: ${versionLabels.join(', ')}`;
                 console.log('ERROR:', error);
                 core.setFailed(error);
                 return { shouldBump: false, error: error };
               }
-              
+
               const versionType = versionLabels[0];
               console.log('Version bump type:', versionType);
-              
-              return { 
-                shouldBump: true, 
+
+              return {
+                shouldBump: true,
                 versionType: versionType,
-                prNumber: prNumber 
+                prNumber: prNumber
               };
-              
+
             } catch (error) {
               console.log('Error fetching PR details:', error.message);
               console.log('Error status:', error.status);
               console.log('Full error:', JSON.stringify(error, null, 2));
-              
+
               // If we can't access the PR, don't fail the workflow, just skip the bump
-              return { 
-                shouldBump: false, 
-                error: `Could not access PR #${prNumber}: ${error.message}` 
+              return {
+                shouldBump: false,
+                error: `Could not access PR #${prNumber}: ${error.message}`
               };
             }
 
-      - name: Bump version
+      - name: Bump version and generate screenshots
         if: fromJson(steps.check-pr.outputs.result).shouldBump
         id: bump
         run: |
           VERSION_TYPE="${{ fromJson(steps.check-pr.outputs.result).versionType }}"
           PR_NUMBER="${{ fromJson(steps.check-pr.outputs.result).prNumber }}"
-          
+
           # Get current version
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "Current version: $CURRENT_VERSION"
-          
+
           # Bump version using npm
           npm version $VERSION_TYPE --no-git-tag-version
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "New version: $NEW_VERSION"
-          
+
           # Install dependencies and generate screenshots
           npm ci
-          
+
           # Install Playwright browsers for screenshot generation
           npx playwright install chromium
-          
+
           # Generate updated screenshots
           npm run screenshots
-          
+
           # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
           # Commit version bump and updated screenshots
           git add package.json package-lock.json screenshots/
           git commit -m "chore: bump version to $NEW_VERSION and update screenshots (from PR #$PR_NUMBER)"
           git push
-          
+
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "previous_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
