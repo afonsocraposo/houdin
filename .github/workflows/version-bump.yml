@@ -36,7 +36,13 @@ jobs:
             
             // Check if this is a merge commit from a PR (supports both merge commits and squash merges)
             const mergeMatch = message.match(/Merge pull request #(\d+)/);
-            const squashMatch = message.match(/.*\(#(\d+)\)$/);
+            // Match (#PR_NUMBER) in the first line of commit message
+            const firstLine = message.split('\n')[0];
+            const squashMatch = firstLine.match(/.*\(#(\d+)\)$/);
+            
+            console.log('First line of commit:', firstLine);
+            console.log('Merge match:', mergeMatch);
+            console.log('Squash match:', squashMatch);
             
             if (!mergeMatch && !squashMatch) {
               console.log('Not a PR merge commit, skipping version bump');
