@@ -21,7 +21,7 @@ const config: PlaywrightTestConfig = {
     timeout: timeouts.actionTimeout,
   },
   /* Number of workers to run tests on. */
-  workers: 2,
+  workers: process.env.CI ? 2 : 1,
   /* Run tests in files in parallel */
   fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
