@@ -29,7 +29,7 @@ export interface TextareaConfigProperty extends BaseConfigProperty {
 
 export interface SelectConfigProperty extends BaseConfigProperty {
   type: "select";
-  options: { value: string; label: string }[];
+  options: { value: string; label: string }[] | string[];
 }
 
 export interface NumberConfigProperty extends BaseConfigProperty {
@@ -156,7 +156,11 @@ export function validateConfig(
         propertyErrors.push(`${property.label} must be a boolean value`);
       }
     } else if (isSelectProperty(property)) {
-      if (!property.options.some((opt) => opt.value === value)) {
+      if (
+        !property.options.some((opt) =>
+          opt instanceof Object ? opt.value === value : opt === value,
+        )
+      ) {
         propertyErrors.push(
           `${property.label} must be one of the available options`,
         );
@@ -196,9 +200,11 @@ export function getTypeBasedDefault(property: ConfigProperty): any {
     case "boolean":
       return false;
     case "select":
-      return property.options && property.options.length > 0
-        ? property.options[0].value
-        : "";
+      if (!property.options || property.options.length === 0) return "";
+      if (property.options[0] instanceof Object) {
+        return property.options[0].value;
+      }
+      return property.options[0];
     case "color":
       return "#000000";
     default:
