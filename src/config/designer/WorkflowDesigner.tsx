@@ -120,7 +120,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         });
       }
     }
-  }, [schemaErrors, selectedNode]);
+  }, [schemaErrors, selectedNode, setSchemaErrors]);
 
   const handleNodeUpdate = (updatedNode: WorkflowNode) => {
     const updatedNodes = nodes.map((n) =>

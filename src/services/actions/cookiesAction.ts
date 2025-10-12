@@ -156,6 +156,7 @@ export class CookiesAction extends BaseAction<
             return;
           }
           await cookieStore.delete(key);
+          onSuccess({ key, operation });
           return;
         case "clear":
           const items = await cookieStore.getAll();
@@ -177,7 +178,6 @@ export class CookiesAction extends BaseAction<
             },
             {} as Record<string, any>,
           );
-          console.log("Cookies data2:", data);
           onSuccess({ data, operation });
       }
     } catch (error) {
