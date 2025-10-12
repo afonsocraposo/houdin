@@ -16,10 +16,21 @@ import "@/style.css";
 
 import jsonLang from "highlight.js/lib/languages/json";
 import { mantineTheme } from "@/theme";
+import mixpanel from "mixpanel-browser";
 
 hljs.registerLanguage("json", jsonLang);
 
 const highlightJsAdapter = createHighlightJsAdapter(hljs);
+
+// Initialize Mixpanel only in production
+if (!import.meta.env.DEV) {
+  // Create an instance of the Mixpanel object, your token is already added to this snippet
+  mixpanel.init("98532deeb11a56194f96dca708d52821", {
+    autocapture: true,
+    record_sessions_percent: 100,
+    api_host: "https://api-eu.mixpanel.com",
+  });
+}
 
 const container = document.getElementById("root");
 if (container) {
