@@ -114,12 +114,7 @@ function ConfigInterface() {
           </Alert>
         )}
 
-        <Tabs
-          keepMounted={false}
-          value={activeTab}
-          onChange={handleTabChange}
-          mt="md"
-        >
+        <Tabs value={activeTab} onChange={handleTabChange} mt="md">
           <Tabs.List>
             <Tabs.Tab
               value={TabOption.Workflows}

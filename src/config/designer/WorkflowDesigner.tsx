@@ -109,7 +109,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   }, [workflow]); // Removed selectedNode and nodes from dependencies
 
-  useEffect(() => {
+  const clearSelectedNodeErrors = useCallback(() => {
     // clear selected node schema errors
     if (selectedNode) {
       if (schemaErrors[selectedNode.id]) {
@@ -120,7 +120,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         });
       }
     }
-  }, [nodes]);
+  }, [schemaErrors, selectedNode, setSchemaErrors]);
 
   const handleNodeUpdate = (updatedNode: WorkflowNode) => {
     const updatedNodes = nodes.map((n) =>
@@ -132,6 +132,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         : n,
     );
     set(updatedNodes);
+    clearSelectedNodeErrors();
   };
 
   const handleNodeCreation = useCallback(
@@ -406,7 +407,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           workflow={getCurrentWorkflowDefinition()}
         />
 
-        <Box flex={1} style={{ position: "relative" }}>
+        <Box flex={1} style={{ position: "relative", overflow: "hidden" }}>
           <ReactFlowCanvas
             nodes={nodes}
             connections={connections}

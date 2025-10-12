@@ -123,7 +123,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             target: conn.target,
             sourceHandle: conn.sourceHandle,
             targetHandle: conn.targetHandle,
-            type: "smoothstep",
             animated: false,
             markerEnd: {
               type: "arrow",
@@ -313,11 +312,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         nodeTypes={{
           custom: CanvasNode,
         }}
-        connectionLineType={ConnectionLineType.SmoothStep}
-        defaultEdgeOptions={{
-          type: "smoothstep",
-          animated: false,
-        }}
+        connectionLineType={ConnectionLineType.Bezier}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         fitView
         fitViewOptions={{

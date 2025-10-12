@@ -48,7 +48,7 @@ export default function CustomMantineProvider({
     <>
       <style type="text/css">
         {`
-    :host, #app, * {
+    :host, #app {
         --mantine-scale: ${mantineScale} !important;
       }
 

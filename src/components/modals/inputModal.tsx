@@ -1,7 +1,7 @@
 import { InputModalResponseDetail, TIMEOUT_DURATION } from "@/services/modal";
-import { Modal, TextInput } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { TextInput } from "@mantine/core";
 import { useEffect, useState } from "react";
+import ModalBase from "./modalBase";
 
 interface InputModalProps {
   data: {
@@ -15,7 +15,6 @@ export default function InputModal({
   nonce,
   onClose,
 }: InputModalProps) {
-  const [opened, { close }] = useDisclosure(true);
   const [input, setInput] = useState("");
 
   const sendResponse = (input?: string) => {
@@ -33,7 +32,6 @@ export default function InputModal({
 
   const handleClose = (input?: string) => {
     sendResponse(input);
-    close();
     if (onClose) {
       onClose();
     }
@@ -45,13 +43,7 @@ export default function InputModal({
   }, []);
 
   return (
-    <Modal
-      opened={opened}
-      onClose={handleClose}
-      title={title}
-      trapFocus={false}
-      zIndex={1000000} // Ensure modal is on top
-    >
+    <ModalBase onClose={handleClose} title={title}>
       <TextInput
         value={input}
         onChange={(e) => setInput(e.currentTarget.value)}
@@ -61,6 +53,6 @@ export default function InputModal({
           }
         }}
       />
-    </Modal>
+    </ModalBase>
   );
 }

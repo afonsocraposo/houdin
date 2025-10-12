@@ -38,16 +38,16 @@ import {
   ContentStorageClient,
   MAX_EXECUTIONS_HISTORY,
 } from "@/services/storage";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import { formatTimeAgo } from "@/utils/time";
 import { CodeHighlight } from "@mantine/code-highlight";
 
 function ExecutionHistoryPage() {
-  const { workflowId: urlWorkflowId } = useParams<{ workflowId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const executionId = searchParams.get("execution");
+  const workflowId = searchParams.get("workflow");
   const [expanded, setExpanded] = useState<string[]>(
     executionId ? [executionId] : [],
   );
@@ -59,9 +59,6 @@ function ExecutionHistoryPage() {
   const [searchFilter, setSearchFilter] = useState<string>(executionId || "");
 
   const storageClient = new ContentStorageClient();
-
-  // Get workflowId from URL params or query params
-  const workflowId = urlWorkflowId || searchParams.get("workflow") || "";
 
   const loadExecutions = async () => {
     try {
@@ -89,7 +86,7 @@ function ExecutionHistoryPage() {
     // Set up periodic refresh
     const interval = setInterval(loadExecutions, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [executionId, workflowId]);
 
   useEffect(() => {
     let filtered = executions;
@@ -337,6 +334,7 @@ function ExecutionHistoryPage() {
                           variant="subtle"
                           size="sm"
                           onClick={() => toggleExpanded(execution.id)}
+                          className="expander"
                         >
                           {expanded.includes(execution.id) ? (
                             <IconChevronDown size={16} />

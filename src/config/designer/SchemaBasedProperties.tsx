@@ -221,7 +221,6 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
         return (
           <div>
             <InputLabel mb="xs">{property.label}</InputLabel>
-            <br />
             {property.render(values, onChange)}
             {errorMessage && (
               <Text size="xs" c="red" mt="xs">

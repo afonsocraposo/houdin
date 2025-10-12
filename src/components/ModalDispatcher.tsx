@@ -5,6 +5,7 @@ import InputModal from "./modals/inputModal";
 import FormModal from "./modals/formModal";
 import { generateId } from "@/utils/helpers";
 import { ModalEventBaseDetail, ModalEventDetail } from "@/services/modal";
+import { useScrollLock } from "@/utils/useScrollLock";
 
 interface ModalInstance {
   id: string;
@@ -15,6 +16,7 @@ interface ModalInstance {
 
 export default function ModalDispatcher() {
   const [modals, setModals] = useState<ModalInstance[]>([]);
+  useScrollLock(modals.length > 0);
 
   useEffect(() => {
     const handleModalDispatch = (event: CustomEventInit<ModalEventDetail>) => {
