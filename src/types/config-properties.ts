@@ -118,6 +118,20 @@ export function validateConfig(
     const value = config[key];
     const propertyErrors: string[] = [];
 
+    const visible = property.showWhen
+      ? (() => {
+          const { field, value: conditionValue } = property.showWhen!;
+          const fieldValue = config[field];
+          if (Array.isArray(conditionValue)) {
+            return conditionValue.includes(fieldValue);
+          }
+          return fieldValue === conditionValue;
+        })()
+      : true;
+    if (!visible) {
+      return; // Skip validation for hidden fields
+    }
+
     // Check required properties
     if (
       property.required &&

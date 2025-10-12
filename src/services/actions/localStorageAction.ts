@@ -50,6 +50,7 @@ export class LocalStorageAction extends BaseAction<
           field: "operation",
           value: ["create", "read", "update", "delete"],
         },
+        required: true,
       }),
       value: textProperty({
         label: "Value",
@@ -59,6 +60,7 @@ export class LocalStorageAction extends BaseAction<
           field: "operation",
           value: ["create", "update"],
         },
+        required: true,
       }),
     },
   };
