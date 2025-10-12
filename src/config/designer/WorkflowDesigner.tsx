@@ -407,7 +407,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           workflow={getCurrentWorkflowDefinition()}
         />
 
-        <Box flex={1} style={{ position: "relative" }}>
+        <Box flex={1} style={{ position: "relative", overflow: "hidden" }}>
           <ReactFlowCanvas
             nodes={nodes}
             connections={connections}
