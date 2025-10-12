@@ -117,11 +117,8 @@ test.describe("Execution history", () => {
     // Check for status "Completed"
     await expect(page.getByText("completed", { exact: true })).toBeVisible();
 
-    // Get first row of history table
-    const firstRow = page.locator("table tbody tr").first();
-
-    // Click on first row button to expand details
-    await firstRow.getByRole("button").click();
+    // Click on button with class .expander
+    page.locator(".expander").first().click();
 
     // Search for trigger-5rfUmu in details
     await expect(page.getByText("trigger-5rfUmu")).toBeVisible();
@@ -225,11 +222,8 @@ test.describe("Execution history", () => {
     // Check for status "Completed"
     await expect(page.getByText("failed", { exact: true })).toBeVisible();
 
-    // Get first row of history table
-    const firstRow = page.locator("table tbody tr").first();
-
-    // Click on first row button to expand details
-    await firstRow.getByRole("button").click();
+    // Click on button with class .expander
+    page.locator(".expander").first().click();
 
     // Search for trigger-5rfUmu in details
     await expect(page.getByText("trigger-5rfUmu")).toBeVisible();
