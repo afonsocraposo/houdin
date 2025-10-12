@@ -100,7 +100,7 @@ jobs:
               };
             }
 
-      - name: Bump version and generate screenshots
+      - name: Bump version
         if: fromJson(steps.check-pr.outputs.result).shouldBump
         id: bump
         run: |
@@ -116,6 +116,11 @@ jobs:
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "New version: $NEW_VERSION"
 
+      - name: Update screenshots
+        if: fromJson(steps.check-pr.outputs.result).shouldBump
+        id: screenshots
+        continue-on-error: true
+        run: |
           # Install dependencies and generate screenshots
           npm ci
 
@@ -125,6 +130,10 @@ jobs:
           # Generate updated screenshots
           npm run screenshots
 
+      - name: Commit version bump and screenshots
+        if: fromJson(steps.check-pr.outputs.result).shouldBump
+        id: commit
+        run: |
           # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
