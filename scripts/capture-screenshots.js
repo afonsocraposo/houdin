@@ -40,7 +40,7 @@ async function captureScreenshots() {
   }
 
   // Setup browser context with extension loaded (like e2e tests)
-  const isHeadless = process.env.HEADLESS !== 'false';
+  const isHeadless = process.env.HEADLESS !== "false";
   const context = await chromium.launchPersistentContext("", {
     headless: false,
     args: [
@@ -54,11 +54,11 @@ async function captureScreenshots() {
     // Wait for service worker like in the e2e tests
     let background = context.serviceWorkers()[0];
     if (!background) {
-      console.log('Waiting for service worker...');
-      background = await context.waitForEvent('serviceworker');
+      console.log("Waiting for service worker...");
+      background = await context.waitForEvent("serviceworker");
     }
 
-    const extensionId = background.url().split('/')[2];
+    const extensionId = background.url().split("/")[2];
     const baseUrl = `chrome-extension://${extensionId}/src/config/index.html#/`;
 
     console.log(`📱 Extension loaded with ID: ${extensionId}`);
@@ -157,9 +157,8 @@ async function captureScreenshots() {
       .waitFor();
     await page.waitForTimeout(2000);
 
-    // Expand first execution
-    const firstRow = page.locator("table tbody tr").first();
-    await firstRow.getByRole("button").click();
+    // Click on button with class .expander
+    page.locator(".expander").first().click();
     await page.waitForTimeout(1000);
 
     // Click on "View Output" for one of the nodes to show the modal
