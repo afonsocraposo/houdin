@@ -18,6 +18,7 @@ import { InputAction } from "./actions/inputAction";
 import { FormAction } from "./actions/formAction";
 import { RemoveElementAction } from "./actions/removeElementAction";
 import { WriteClipboardAction } from "./actions/writeClipboardAction";
+import { LocalStorageAction } from "./actions/localStorageAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -43,6 +44,7 @@ export function initializeActions(): void {
   registry.register(FormAction);
   registry.register(RemoveElementAction);
   registry.register(WriteClipboardAction);
+  registry.register(LocalStorageAction);
 }
 
 export function initializeBackgroundActions(): void {
