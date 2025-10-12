@@ -23,7 +23,7 @@ hljs.registerLanguage("json", jsonLang);
 const highlightJsAdapter = createHighlightJsAdapter(hljs);
 
 // Initialize Mixpanel only in production
-if (!import.meta.env.DEV) {
+if (import.meta.env.PROD) {
   // Create an instance of the Mixpanel object, your token is already added to this snippet
   mixpanel.init("98532deeb11a56194f96dca708d52821", {
     autocapture: true,
