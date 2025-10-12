@@ -69,8 +69,8 @@ export class LocalStorageAction extends BaseAction<
     key: "foo",
     value: "bar",
     operation: "read",
-    data: undefined,
-    cleared: undefined,
+    data: { foo: "bar", baz: "qux" },
+    cleared: 2,
   };
 
   async execute(

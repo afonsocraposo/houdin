@@ -1,37 +1,53 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
-import { selectProperty, textProperty } from "@/types/config-properties";
+import {
+  numberProperty,
+  selectProperty,
+  textProperty,
+} from "@/types/config-properties";
 
-interface SessionStorageActionConfig {
+interface CookiesActionConfig {
   operation: "create" | "read" | "update" | "delete" | "list" | "clear";
   key?: string; // Key for create, read, update, delete operations
   value?: string; // Value for create and update operations
+  ttl?: number; // Time to live in seconds
 }
 
-interface SessionStorageActionOutput {
+interface CookieValue {
+  domain: string | null;
+  expires: number | null;
+  partitioned: boolean;
+  path: string;
+  sameSite: string;
+  secure: boolean;
+  value: string;
+}
+
+interface CookiesActionOutput {
   key?: string;
-  value?: string | null;
+  value?: CookieValue | null;
   operation: string;
-  data?: Record<string, string>;
+  data?: Record<string, CookieValue>;
   cleared?: number;
+  ttl?: number;
 }
 
-export class SessionStorageAction extends BaseAction<
-  SessionStorageActionConfig,
-  SessionStorageActionOutput
+export class CookiesAction extends BaseAction<
+  CookiesActionConfig,
+  CookiesActionOutput
 > {
   static readonly metadata: ActionMetadata = {
-    type: "session-storage",
-    label: "Session Storage",
-    icon: "🗄️",
+    type: "cookies",
+    label: "Cookies",
+    icon: "🍪",
     description:
-      "Create, read, update, and delete items in the browser's session storage",
+      "Create, read, update, and delete items in the browser's cookies",
   };
 
   configSchema = {
     properties: {
       operation: selectProperty({
         label: "Operation",
-        description: "The operation to perform on session storage",
+        description: "The operation to perform on cookies",
         options: [
           { label: "List", value: "list" },
           { label: "Create", value: "create" },
@@ -44,7 +60,7 @@ export class SessionStorageAction extends BaseAction<
       }),
       key: textProperty({
         label: "Key",
-        description: "The key of the item in session storage",
+        description: "The key of the item in cookies",
         placeholder: "foo",
         showWhen: {
           field: "operation",
@@ -54,7 +70,7 @@ export class SessionStorageAction extends BaseAction<
       }),
       value: textProperty({
         label: "Value",
-        description: "The value to store in session storage",
+        description: "The value to store in cookies",
         placeholder: "bar",
         showWhen: {
           field: "operation",
@@ -62,19 +78,49 @@ export class SessionStorageAction extends BaseAction<
         },
         required: true,
       }),
+      ttl: numberProperty({
+        label: "TTL",
+        description:
+          "Time to live in seconds. If set, the cookie will expire after this time.",
+        placeholder: "3600",
+        showWhen: {
+          field: "operation",
+          value: ["create", "update"],
+        },
+        required: false,
+      }),
     },
   };
 
   readonly outputExample = {
     key: "foo",
-    value: "bar",
+    value: {
+      domain: null,
+      expires: 1775846367000,
+      partitioned: false,
+      path: "/",
+      sameSite: "lax",
+      secure: false,
+      value: "bar",
+    },
     operation: "read",
-    data: { foo: "bar", baz: "qux" },
+    data: {
+      foo: {
+        domain: null,
+        expires: 1775846367000,
+        partitioned: false,
+        path: "/",
+        sameSite: "lax",
+        secure: false,
+        value: "bar",
+      },
+    },
     cleared: 3,
+    ttl: 3600,
   };
 
   async execute(
-    config: SessionStorageActionConfig,
+    config: CookiesActionConfig,
     _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: any) => void,
@@ -89,7 +135,11 @@ export class SessionStorageAction extends BaseAction<
             onError(new Error("Key and value are required for operation."));
             return;
           }
-          sessionStorage.setItem(key, value);
+          await cookieStore.set({
+            name: key,
+            value: value,
+            expires: config.ttl ? Date.now() + config.ttl * 1000 : null,
+          });
           onSuccess({ key, value, operation });
           return;
         case "read":
@@ -97,7 +147,7 @@ export class SessionStorageAction extends BaseAction<
             onError(new Error("Key is required for read operation."));
             return;
           }
-          const readValue = sessionStorage.getItem(key);
+          const readValue = await cookieStore.get(key);
           onSuccess({ key, value: readValue, operation });
           return;
         case "delete":
@@ -105,16 +155,29 @@ export class SessionStorageAction extends BaseAction<
             onError(new Error("Key is required for delete operation."));
             return;
           }
-          sessionStorage.removeItem(key);
-          onSuccess({ key, operation });
+          await cookieStore.delete(key);
           return;
         case "clear":
-          const l = sessionStorage.length;
-          sessionStorage.clear();
+          const items = await cookieStore.getAll();
+          const l = items.length;
+          await Promise.all(
+            items.map((item) => item.name && cookieStore.delete(item.name)),
+          );
           onSuccess({ operation, cleared: l });
           return;
         case "list":
-          const data = Object.assign({}, sessionStorage);
+          const allItems = await cookieStore.getAll();
+          const data = allItems.reduce(
+            (acc, item) => {
+              if (item.name && item.value) {
+                const { name, ...value } = item;
+                acc[name] = value;
+              }
+              return acc;
+            },
+            {} as Record<string, any>,
+          );
+          console.log("Cookies data2:", data);
           onSuccess({ data, operation });
       }
     } catch (error) {
