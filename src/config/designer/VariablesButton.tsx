@@ -34,38 +34,40 @@ export default function VariablesButton({
     const triggerRegistry = TriggerRegistry.getInstance();
     const actionRegistry = ActionRegistry.getInstance();
 
-    return nodes.map((node) => {
-      const nodeId = node.id;
-      let outputs: Record<string, any> = {};
-      let icon: React.ReactNode = null;
-      if (node.type === "trigger") {
-        const data = node.data as TriggerNodeData;
-        if (triggerRegistry.hasTrigger(data.type)) {
-          const trigger = triggerRegistry.getTrigger(data.type);
-          outputs = trigger!.outputExample;
-          icon = <NodeIcon icon={trigger!.metadata.icon} />;
-        }
-      } else if (node.type === "action") {
-        const data = node.data as ActionNodeData;
-        if (actionRegistry.hasAction(data.type)) {
-          const action = actionRegistry.getAction(data.type);
-          if (action?.metadata.type === FormAction.metadata.type) {
-            outputs = FormAction.getRichOutputExample(
-              data.config as FormActionConfig,
-            );
-          } else {
-            outputs = action!.outputExample;
+    return nodes
+      .sort((a, b) => (a.position.x > b.position.x ? 1 : -1))
+      .map((node) => {
+        const nodeId = node.id;
+        let outputs: Record<string, any> = {};
+        let icon: React.ReactNode = null;
+        if (node.type === "trigger") {
+          const data = node.data as TriggerNodeData;
+          if (triggerRegistry.hasTrigger(data.type)) {
+            const trigger = triggerRegistry.getTrigger(data.type);
+            outputs = trigger!.outputExample;
+            icon = <NodeIcon icon={trigger!.metadata.icon} />;
           }
-          icon = <NodeIcon icon={action!.metadata.icon} />;
+        } else if (node.type === "action") {
+          const data = node.data as ActionNodeData;
+          if (actionRegistry.hasAction(data.type)) {
+            const action = actionRegistry.getAction(data.type);
+            if (action?.metadata.type === FormAction.metadata.type) {
+              outputs = FormAction.getRichOutputExample(
+                data.config as FormActionConfig,
+              );
+            } else {
+              outputs = action!.outputExample;
+            }
+            icon = <NodeIcon icon={action!.metadata.icon} />;
+          }
         }
-      }
-      return {
-        nodeId,
-        outputs,
-        icon,
-      };
-    });
-  }, [nodes]);
+        return {
+          nodeId,
+          outputs,
+          icon,
+        };
+      });
+  }, [nodes.map((n) => n.id).join(",")]);
 
   const handleVariableClick = (label: string) => {
     const target = lastFocusedInput.current;
