@@ -1,6 +1,6 @@
-import { Container, Modal } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Container } from "@mantine/core";
 import MarkdownText from "@/components/MarkdownText";
+import ModalBase from "./modalBase";
 
 interface CustomModalProps {
   data: {
@@ -13,28 +13,13 @@ export default function CustomModal({
   data: { title, content },
   onClose,
 }: CustomModalProps) {
-  const [opened, { close }] = useDisclosure(true);
-
-  const handleClose = () => {
-    close();
-    if (onClose) {
-      onClose();
-    }
-  };
-
   return (
-    <Modal
-      opened={opened}
-      onClose={handleClose}
-      title={title}
-      trapFocus={false}
-      zIndex={1000000} // Ensure modal is on top
-    >
+    <ModalBase title={title} onClose={onClose}>
       <Container fluid>
         <MarkdownText style={{ overflowWrap: "break-word" }}>
           {content}
         </MarkdownText>
       </Container>
-    </Modal>
+    </ModalBase>
   );
 }

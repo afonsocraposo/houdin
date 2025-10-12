@@ -1,6 +1,6 @@
-import { Modal, Stack, Textarea, TextInput } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Stack, Textarea, TextInput } from "@mantine/core";
 import CopyToClipboardButton from "@/components/CopyToClibooardButton";
+import ModalBase from "./modalBase";
 
 interface ElementSelectedModalProps {
   data: {
@@ -18,23 +18,8 @@ export default function ElementSelectedModal({
   data: { selector, element },
   onClose,
 }: ElementSelectedModalProps) {
-  const [opened, { close }] = useDisclosure(true);
-
-  const handleClose = () => {
-    close();
-    if (onClose) {
-      onClose();
-    }
-  };
-
   return (
-    <Modal
-      opened={opened}
-      onClose={handleClose}
-      title="Element Inspector"
-      trapFocus={false}
-      zIndex={1000000} // Ensure modal is on top
-    >
+    <ModalBase onClose={onClose} title="Element Inspector">
       <Stack justify="stretch">
         <InfoRow label="Selector" value={selector} />
         <InfoRow label="Tag Name" value={element.tagName} />
@@ -46,7 +31,7 @@ export default function ElementSelectedModal({
           textArea
         />
       </Stack>
-    </Modal>
+    </ModalBase>
   );
 }
 
