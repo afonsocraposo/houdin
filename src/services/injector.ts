@@ -24,9 +24,19 @@ export class ContentInjector {
         return { root: null, hostDiv: null };
       }
 
-      const container = document.createElement("span");
+      const container = document.createElement("div");
       container.id = rootId;
       container.setAttribute("data-workflow-injected", "true");
+      if (rootId === MANTINE_INJECTOR_ROOT_ID) {
+        container.style.position = "fixed";
+        container.style.top = "0";
+        container.style.left = "0";
+        container.style.width = "0";
+        container.style.height = "0";
+        container.style.overflow = "visible";
+        container.style.pointerEvents = "none";
+        container.style.zIndex = "2147483647"; // Maximum z-index to ensure it's on top
+      }
 
       // Attach a Shadow Root
       const shadowRoot = container.attachShadow({ mode: "open" });
@@ -35,8 +45,9 @@ export class ContentInjector {
       target.append(container);
 
       // Create a container for React to mount
-      const hostDiv = document.createElement("span");
+      const hostDiv = document.createElement("div");
       hostDiv.setAttribute("id", "app");
+      hostDiv.style.pointerEvents = "auto";
       shadowRoot.appendChild(hostDiv);
 
       // Create a React root and render the app
