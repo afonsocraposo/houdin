@@ -135,6 +135,7 @@ export class CookiesAction extends BaseAction<
       // get url of tabId
       const tab = await runtime.tabs.get(tabId);
       const url = tab.url;
+      const storeId = tab.cookieStoreId;
 
       if (!url) {
         onError(new Error("Could not get URL from tab"));
@@ -163,6 +164,7 @@ export class CookiesAction extends BaseAction<
             expirationDate: config.ttl
               ? Math.floor(Date.now() / 1000) + config.ttl
               : undefined,
+            storeId,
           });
           onSuccess({ key, value, operation });
           return;
@@ -174,6 +176,7 @@ export class CookiesAction extends BaseAction<
           const readValue = await runtime.cookies.get({
             url: url,
             name: key,
+            storeId,
           });
           onSuccess({ key, value: readValue, operation });
           return;
@@ -182,11 +185,18 @@ export class CookiesAction extends BaseAction<
             onError(new Error("Key is required for delete operation."));
             return;
           }
-          await runtime.cookies.remove({ url, name: key });
+          await runtime.cookies.remove({
+            url,
+            name: key,
+            storeId,
+          });
           onSuccess({ key, operation });
           return;
         case "clear":
-          const items = await runtime.cookies.getAll({ url });
+          const items = await runtime.cookies.getAll({
+            url,
+            storeId,
+          });
           const l = items.length;
           await Promise.all(
             items.map((item: any) =>
@@ -196,7 +206,7 @@ export class CookiesAction extends BaseAction<
           onSuccess({ operation, cleared: l });
           return;
         case "list":
-          const allItems = await runtime.cookies.getAll({ url });
+          const allItems = await runtime.cookies.getAll({ url, storeId });
           const data = allItems.reduce(
             (acc: Record<string, any>, item: any) => {
               if (item.name && item.value) {
