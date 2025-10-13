@@ -72,17 +72,42 @@ export class BackgroundWorkflowEngine {
   }
 
   private async initializeContentScript(tabId: number): Promise<boolean> {
-    const readinessResponse = (await sendMessageToContentScript(
-      tabId,
-      WorkflowCommandType.CHECK_READINESS,
-    )) as ReadinessResponse;
+    return BackgroundWorkflowEngine.waitForContentScriptReady(tabId);
+  }
 
-    if (!readinessResponse?.ready) {
-      console.error("Content script not ready for tab:", tabId);
-      return false;
+  static async waitForContentScriptReady(
+    tabId: number,
+    timeoutMs: number = 10000,
+    retryIntervalMs: number = 500,
+  ): Promise<boolean> {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const readinessResponse = (await sendMessageToContentScript(
+          tabId,
+          WorkflowCommandType.CHECK_READINESS,
+        )) as ReadinessResponse;
+
+        if (readinessResponse?.ready) {
+          console.debug("Content script ready for tab:", tabId);
+          return true;
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        console.debug(
+          "Content script not yet ready for tab:",
+          tabId,
+          errorMessage,
+        );
+      }
+
+      // Wait before retrying
+      await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
     }
-    console.debug("Content script ready for tab:", tabId);
-    return true;
+
+    return false;
   }
 
   private async setupTrigger(

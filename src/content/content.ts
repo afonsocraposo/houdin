@@ -30,6 +30,7 @@ if ((window as any).houdinExtensionInitialized) {
 
   let contentInjector: ContentInjector;
   let isFullyInitialized = false;
+  let isInitializing = false;
 
   const initMinimalContentScript = () => {
     console.debug("Houdin extension minimal initialization");
@@ -39,10 +40,10 @@ if ((window as any).houdinExtensionInitialized) {
   };
 
   const initFullContentScript = () => {
-    if (isFullyInitialized) return;
+    if (isFullyInitialized || isInitializing) return;
+    isInitializing = true;
 
     console.debug("Houdin extension full initialization");
-    isFullyInitialized = true;
 
     // Initialize content injector
     contentInjector = new ContentInjector();
@@ -56,6 +57,9 @@ if ((window as any).houdinExtensionInitialized) {
 
     // Set up workflow engine bridge
     setupBackgroundEngineBridge();
+
+    isFullyInitialized = true;
+    isInitializing = false;
   };
 
   const setupReadinessCheckListener = () => {
