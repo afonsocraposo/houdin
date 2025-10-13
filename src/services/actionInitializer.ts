@@ -10,7 +10,6 @@ import { ClickElementAction } from "./actions/clickElementAction";
 import { ShowNotificationAction } from "./actions/showNotificationAction";
 import { HttpRequestAction } from "./actions/httpRequestAction";
 import { WaitAction } from "./actions/waitAction";
-import { WaitPageChangeAction } from "./actions/waitPageChange";
 import { NavigateUrlAction } from "./actions/navigateUrlAction";
 import { PressKeyAction } from "./actions/pressKeyAction";
 import { TypeTextAction } from "./actions/typeTextAction";
@@ -38,7 +37,6 @@ export function initializeActions(): void {
   registry.register(LLMOpenAIAction);
   registry.register(HttpRequestAction);
   registry.register(WaitAction);
-  registry.register(WaitPageChangeAction);
   registry.register(NavigateUrlAction);
   registry.register(PressKeyAction);
   registry.register(TypeTextAction);
@@ -56,9 +54,9 @@ export function initializeBackgroundActions(): void {
 
   // Actions to run in background
   registry.register(WaitAction);
-  registry.register(WaitPageChangeAction);
   registry.register(CustomScriptAction);
   registry.register(NavigateUrlAction);
+  registry.register(CookiesAction);
 }
 
 // Export registry instance for convenience

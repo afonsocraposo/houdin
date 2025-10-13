@@ -44,7 +44,7 @@ export class BackgroundWorkflowEngine {
 
   async onNewUrl(tabId: number, url: string): Promise<void> {
     // Get the active workflow IDs for this tab
-    const activeWorkflowIds = Array.from(this.activeExecutors.values())
+    const runningWorkflowIds = Array.from(this.activeExecutors.values())
       .filter((executor) => executor.tabId === tabId)
       .map((executor) => executor.workflowId);
     // Find workflows that match the URL pattern
@@ -53,10 +53,14 @@ export class BackgroundWorkflowEngine {
         (workflow) =>
           workflow.enabled && this.matchesUrlPattern(workflow.urlPattern, url),
       )
-      .filter((workflow) => !activeWorkflowIds.includes(workflow.id));
+      .filter((workflow) => !runningWorkflowIds.includes(workflow.id));
 
-    if (matchingWorkflows.length === 0) {
-      console.debug("No matching workflows for URL:", url);
+    if (matchingWorkflows.length == 0 && runningWorkflowIds.length == 0) {
+      return;
+    }
+
+    const success = await this.initializeContentScript(tabId);
+    if (!success) {
       return;
     }
 
@@ -65,6 +69,45 @@ export class BackgroundWorkflowEngine {
         this.setupTrigger(tabId, workflow, triggerNode);
       });
     });
+  }
+
+  private async initializeContentScript(tabId: number): Promise<boolean> {
+    return BackgroundWorkflowEngine.waitForContentScriptReady(tabId);
+  }
+
+  static async waitForContentScriptReady(
+    tabId: number,
+    timeoutMs: number = 10000,
+    retryIntervalMs: number = 500,
+  ): Promise<boolean> {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const readinessResponse = (await sendMessageToContentScript(
+          tabId,
+          WorkflowCommandType.CHECK_READINESS,
+        )) as ReadinessResponse;
+
+        if (readinessResponse?.ready) {
+          console.debug("Content script ready for tab:", tabId);
+          return true;
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        console.debug(
+          "Content script not yet ready for tab:",
+          tabId,
+          errorMessage,
+        );
+      }
+
+      // Wait before retrying
+      await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
+    }
+
+    return false;
   }
 
   private async setupTrigger(
@@ -88,17 +131,7 @@ export class BackgroundWorkflowEngine {
 
     // First, check if content script is ready and initialize it if needed
     try {
-      const readinessResponse = (await sendMessageToContentScript(
-        tabId,
-        WorkflowCommandType.CHECK_READINESS,
-      )) as ReadinessResponse;
-
-      if (!readinessResponse?.ready) {
-        console.error("Content script not ready for tab:", tabId);
-        return;
-      }
-
-      console.debug("Content script ready, setting up trigger:", triggerType);
+      console.debug("Setting up trigger:", triggerType);
 
       // Now send command to content script to set up the trigger
       const message: TriggerCommand = {
