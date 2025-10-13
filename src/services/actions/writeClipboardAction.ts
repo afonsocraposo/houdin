@@ -48,6 +48,7 @@ export class WriteClipboardAction extends BaseAction<
     if (!success) {
       console.error("Failed to write to clipboard");
       onError(new Error("Failed to write to clipboard"));
+      return;
     }
     onSuccess({ text });
   }
