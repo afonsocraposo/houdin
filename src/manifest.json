@@ -11,6 +11,7 @@
     "scripting",
     "storage",
     "tabs",
+    "cookies",
     "unlimitedStorage",
     "userScripts",
     "webNavigation",

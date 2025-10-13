@@ -56,6 +56,7 @@ export function initializeBackgroundActions(): void {
   registry.register(WaitAction);
   registry.register(CustomScriptAction);
   registry.register(NavigateUrlAction);
+  registry.register(CookiesAction);
 }
 
 // Export registry instance for convenience

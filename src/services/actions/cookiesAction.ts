@@ -5,6 +5,8 @@ import {
   textProperty,
 } from "@/types/config-properties";
 
+const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
+
 interface CookiesActionConfig {
   operation: "create" | "read" | "update" | "delete" | "list" | "clear";
   key?: string; // Key for create, read, update, delete operations
@@ -125,9 +127,28 @@ export class CookiesAction extends BaseAction<
     _nodeId: string,
     onSuccess: (data?: any) => void,
     onError: (error: Error) => void,
+    tabId: number,
   ): Promise<void> {
     const { operation, key, value } = config;
+
     try {
+      // get url of tabId
+      const tab = await runtime.tabs.get(tabId);
+      const url = tab.url;
+
+      if (!url) {
+        onError(new Error("Could not get URL from tab"));
+        return;
+      }
+
+      if (
+        url.startsWith("chrome-extension://") ||
+        url.startsWith("moz-extension://")
+      ) {
+        onError(new Error("Cannot access cookies for extension pages"));
+        return;
+      }
+
       switch (operation) {
         case "create":
         case "update":
@@ -135,10 +156,13 @@ export class CookiesAction extends BaseAction<
             onError(new Error("Key and value are required for operation."));
             return;
           }
-          await cookieStore.set({
+          await runtime.cookies.set({
+            url,
             name: key,
             value: value,
-            expires: config.ttl ? Date.now() + config.ttl * 1000 : null,
+            expirationDate: config.ttl
+              ? Math.floor(Date.now() / 1000) + config.ttl
+              : undefined,
           });
           onSuccess({ key, value, operation });
           return;
@@ -147,7 +171,10 @@ export class CookiesAction extends BaseAction<
             onError(new Error("Key is required for read operation."));
             return;
           }
-          const readValue = await cookieStore.get(key);
+          const readValue = await runtime.cookies.get({
+            url: url,
+            name: key,
+          });
           onSuccess({ key, value: readValue, operation });
           return;
         case "delete":
@@ -155,21 +182,23 @@ export class CookiesAction extends BaseAction<
             onError(new Error("Key is required for delete operation."));
             return;
           }
-          await cookieStore.delete(key);
+          await runtime.cookies.remove({ url, name: key });
           onSuccess({ key, operation });
           return;
         case "clear":
-          const items = await cookieStore.getAll();
+          const items = await runtime.cookies.getAll({ url });
           const l = items.length;
           await Promise.all(
-            items.map((item) => item.name && cookieStore.delete(item.name)),
+            items.map((item: any) =>
+              runtime.cookies.remove({ url, name: item.name }),
+            ),
           );
           onSuccess({ operation, cleared: l });
           return;
         case "list":
-          const allItems = await cookieStore.getAll();
+          const allItems = await runtime.cookies.getAll({ url });
           const data = allItems.reduce(
-            (acc, item) => {
+            (acc: Record<string, any>, item: any) => {
               if (item.name && item.value) {
                 const { name, ...value } = item;
                 acc[name] = value;
