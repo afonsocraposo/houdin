@@ -18,7 +18,7 @@ export class WriteClipboardAction extends BaseAction<
     type: "write-clipboard",
     label: "Write to Clipboard",
     icon: "📋",
-    description: "Write text to clipboard",
+    description: "Copy text to clipboard",
   };
 
   readonly configSchema = {
@@ -40,11 +40,15 @@ export class WriteClipboardAction extends BaseAction<
     _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: WriteClipboardActionOutput) => void,
-    _onError: (error: Error) => void,
+    onError: (error: Error) => void,
   ): Promise<void> {
     const { text } = config;
 
-    await copyToClipboard(text);
+    const success = await copyToClipboard(text);
+    if (!success) {
+      console.error("Failed to write to clipboard");
+      onError(new Error("Failed to write to clipboard"));
+    }
     onSuccess({ text });
   }
 }

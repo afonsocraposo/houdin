@@ -61,7 +61,11 @@ export class CopyContentAction extends BaseAction<
     const sourceElement = getElement(selector, selectorType);
     if (sourceElement) {
       const textContent = sourceElement.textContent || "";
-      await copyToClipboard(textContent);
+      const success = await copyToClipboard(textContent);
+      if (!success) {
+        onError(new Error("Failed to write to clipboard"));
+        return;
+      }
       onSuccess({ content: textContent });
       NotificationService.showNotification({
         title: "Content copied to clipboard!",

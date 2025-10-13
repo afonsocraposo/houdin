@@ -8,10 +8,11 @@
     }
   },
   "permissions": [
+    "clipboardWrite",
+    "cookies",
     "scripting",
     "storage",
     "tabs",
-    "cookies",
     "unlimitedStorage",
     "userScripts",
     "webNavigation",
