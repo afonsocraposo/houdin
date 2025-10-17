@@ -26,7 +26,6 @@ export default function ModalBase({
       title={title}
       trapFocus={false}
       lockScroll={false}
-      zIndex={1000000} // Ensure modal is on top
     >
       {children}
     </Modal>
