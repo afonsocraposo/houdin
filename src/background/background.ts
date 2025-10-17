@@ -23,7 +23,7 @@ if (browser.webRequest.onBeforeRequest) {
     );
   }
 } else {
-  console.error("Background: chrome.webRequest.onBeforeRequest not available");
+  console.error("Background: webRequest.onBeforeRequest not available");
 }
 
 browser.runtime.onInstalled.addListener(() => {
