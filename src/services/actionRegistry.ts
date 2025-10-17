@@ -1,6 +1,5 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
 import { ValidationResult } from "@/types/config-properties";
-import { NotificationService } from "./notification";
 
 export class ActionRegistry {
   private static instance: ActionRegistry;
@@ -58,10 +57,9 @@ export class ActionRegistry {
     // Validate configuration before execution
     const validation = action.validate(config);
     if (!validation.valid) {
-      NotificationService.showErrorNotification({
-        title: `Error executing action ${nodeId}`,
-        message: `Action configuration invalid: ${JSON.stringify(validation.errors)}`,
-      });
+      throw new Error(
+        `Invalid configuration for action type '${type}': ${JSON.stringify(validation.errors)}`,
+      );
     }
 
     // Execute with defaults applied
