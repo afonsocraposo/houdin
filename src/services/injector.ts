@@ -24,7 +24,7 @@ export class ContentInjector {
         return { root: null, hostDiv: null };
       }
 
-      const container = document.createElement("div");
+      const container = document.createElement("span");
       container.id = rootId;
       container.setAttribute("data-workflow-injected", "true");
       if (rootId === MANTINE_INJECTOR_ROOT_ID) {
