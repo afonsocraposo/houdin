@@ -21,6 +21,7 @@ import {
 } from "@/types/workflow";
 import { ContentStorageClient } from "@/services/storage";
 import { TimeAgoText } from "@/components/TimeAgoText";
+import browser from "@/services/browser";
 
 function ExecutionHistory() {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
@@ -31,8 +32,6 @@ function ExecutionHistory() {
     failed: 0,
   });
 
-  // Cross-browser API compatibility
-  const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
   const storageClient = new ContentStorageClient();
 
   const loadExecutions = async () => {
@@ -109,15 +108,15 @@ function ExecutionHistory() {
   const openFullHistory = () => {
     // Open config page with executions tab
     const configUrl =
-      browserAPI.runtime.getURL("src/config/index.html") + "#/?tab=history";
-    browserAPI.tabs.create({ url: configUrl });
+      browser.runtime.getURL("src/config/index.html") + "#/?tab=history";
+    browser.tabs.create({ url: configUrl });
   };
 
   const openExecutionDetails = (executionId: string) => {
     const configUrl =
-      browserAPI.runtime.getURL("src/config/index.html") +
+      browser.runtime.getURL("src/config/index.html") +
       `#/?tab=history&execution=${executionId}`;
-    browserAPI.tabs.create({ url: configUrl });
+    browser.tabs.create({ url: configUrl });
   };
 
   const recentExecutions = executions.slice(0, stats.total);

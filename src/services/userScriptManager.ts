@@ -1,4 +1,6 @@
 import { CustomMessage } from "@/lib/messages";
+import { Runtime } from "webextension-polyfill";
+import browser from "@/services/browser";
 
 export interface UserScriptExecuteRequest {
   scriptCode: string;
@@ -113,14 +115,14 @@ export class UserScriptManager {
     return new Promise((resolve) => {
       const messageListener = (
         message: CustomMessage<WorkflowScriptMessage>,
-        sender: chrome.runtime.MessageSender,
+        sender: Runtime.MessageSender,
       ) => {
         if (
           message.type === "workflow-script-response" &&
           message.data.nodeId === nodeId &&
           sender.tab?.id === tabId
         ) {
-          chrome.runtime.onMessage.removeListener(messageListener);
+          browser.runtime.onMessage.removeListener(messageListener);
           const data = message.data;
 
           // Check if the error indicates a CSP violation
@@ -146,7 +148,7 @@ export class UserScriptManager {
         }
       };
 
-      chrome.runtime.onMessage.addListener(messageListener);
+      browser.runtime.onMessage.addListener(messageListener);
 
       // Execute script using chrome.scripting.executeScript (Manifest V3)
       if (
@@ -211,8 +213,8 @@ export class UserScriptManager {
                 console.error("Outer script error:", outerError);
                 const errorMsg =
                   outerError &&
-                  typeof outerError === "object" &&
-                  "message" in outerError
+                    typeof outerError === "object" &&
+                    "message" in outerError
                     ? outerError.message
                     : outerError?.toString() || "Unknown error";
                 window.postMessage(
@@ -228,7 +230,7 @@ export class UserScriptManager {
             },
           })
           .catch((error) => {
-            chrome.runtime.onMessage.removeListener(messageListener);
+            browser.runtime.onMessage.removeListener(messageListener);
             resolve({
               success: false,
               error: `Script injection failed: ${error.message}`,
@@ -236,7 +238,7 @@ export class UserScriptManager {
           });
       } else {
         // If chrome.scripting is not available, fall back to code injection
-        chrome.runtime.onMessage.removeListener(messageListener);
+        browser.runtime.onMessage.removeListener(messageListener);
         resolve({
           success: false,
           error: "Script injection API not available in this browser",

@@ -13,8 +13,6 @@ import {
 import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow/workflow";
 
-// const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
-
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();
   private workflows: WorkflowDefinition[] = [];

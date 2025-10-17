@@ -1,4 +1,5 @@
 import { sendMessageToContentScript } from "@/lib/messages";
+import browser from "@/services/browser";
 
 export interface NotificationProps {
   title?: string;
@@ -6,8 +7,6 @@ export interface NotificationProps {
   color?: string;
   autoClose?: number;
 }
-
-const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
 
 export class NotificationService {
   public static showNotification({
@@ -92,7 +91,7 @@ export class NotificationService {
     if (background) {
       // Background script: send message to active tab's content script
       try {
-        const tabs = await browserAPI.tabs.query({
+        const tabs = await browser.tabs.query({
           active: true,
           currentWindow: true,
         });

@@ -2,6 +2,7 @@ import { Text, Badge, Group, Card, Stack, ScrollArea } from "@mantine/core";
 import { useState, useEffect } from "react";
 import { ContentStorageClient } from "@/services/storage";
 import { WorkflowDefinition } from "@/types/workflow";
+import browser from "@/services/browser";
 
 interface ActiveWorkflowsProps {
   currentUrl: string;
@@ -12,7 +13,6 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const [loading, setLoading] = useState(true);
 
   // Cross-browser API compatibility
-  const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
   const storageClient = new ContentStorageClient();
 
   useEffect(() => {
@@ -62,10 +62,10 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
 
   const handleWorkflowClick = (workflow: WorkflowDefinition) => {
     // Open workflow designer in new tab
-    const designerUrl = browserAPI.runtime.getURL(
+    const designerUrl = browser.runtime.getURL(
       `src/config/index.html#/designer/${workflow.id}`,
     );
-    browserAPI.tabs.create({ url: designerUrl });
+    browser.tabs.create({ url: designerUrl });
     window.close();
   };
 

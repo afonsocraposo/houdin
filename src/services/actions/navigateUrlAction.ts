@@ -2,7 +2,7 @@ import { BaseAction, ActionMetadata } from "@/types/actions";
 import { textProperty } from "@/types/config-properties";
 import { IconExternalLink } from "@tabler/icons-react";
 
-const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
+import browser from "@/services/browser";
 
 interface NavigateActionConfig {
   url: string;
@@ -12,7 +12,10 @@ interface NavigateActionOutput {
   url: string;
 }
 
-export class NavigateUrlAction extends BaseAction<NavigateActionConfig, NavigateActionOutput> {
+export class NavigateUrlAction extends BaseAction<
+  NavigateActionConfig,
+  NavigateActionOutput
+> {
   static readonly metadata: ActionMetadata = {
     type: "navigate-url",
     label: "Navigate to URL",
@@ -46,7 +49,7 @@ export class NavigateUrlAction extends BaseAction<NavigateActionConfig, Navigate
     const { url } = config;
 
     try {
-      await runtime.tabs.update(tabId, { url });
+      await browser.tabs.update(tabId, { url });
       const newUrl = await new Promise<any>((resolve) => {
         const onNavigationCompleted = (details: {
           tabId: number;
@@ -54,11 +57,11 @@ export class NavigateUrlAction extends BaseAction<NavigateActionConfig, Navigate
         }) => {
           if (details.tabId !== tabId || details.frameId !== 0) return; // Ensure we only resolve for the correct tab
           resolve(url);
-          runtime.webNavigation.onCompleted.removeListener(
+          browser.webNavigation.onCompleted.removeListener(
             onNavigationCompleted,
           );
         };
-        runtime.webNavigation.onCompleted.addListener(onNavigationCompleted, {
+        browser.webNavigation.onCompleted.addListener(onNavigationCompleted, {
           url: [{ schemes: ["http", "https"], urlPrefix: url }],
         });
       });

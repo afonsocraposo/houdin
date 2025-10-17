@@ -1,4 +1,5 @@
-// Manifest V3 compatible HTTP trigger system using chrome.webRequest API
+import browser from "@/services/browser";
+import { WebRequest } from "webextension-polyfill";
 
 interface HttpTrigger {
   tabId: number; // Tab ID for specific tab triggers
@@ -86,44 +87,13 @@ export class HttpListenerWebRequest {
   private startListening(): void {
     if (this.isListening) return;
 
-    // Try direct chrome API access first
-    if (chrome?.webRequest?.onBeforeRequest) {
-      this.isListening = true;
-
-      chrome.webRequest.onBeforeRequest.addListener(this.onBeforeRequest, {
-        urls: ["<all_urls>"],
-      });
-
-      chrome.webRequest.onHeadersReceived.addListener(
-        this.onHeadersReceived,
-        { urls: ["<all_urls>"] },
-        ["responseHeaders"],
-      );
-      return;
-    }
-
-    // Fallback to runtime detection
-    const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
-    if (!runtime?.webRequest?.onBeforeRequest) {
-      console.error(
-        "HttpListenerWebRequest: chrome.webRequest API not available. Make sure 'webRequest' permission is declared in manifest.json",
-      );
-      console.error(
-        "HttpListenerWebRequest: Available APIs:",
-        Object.keys(chrome || {}),
-      );
-      return;
-    }
-
     this.isListening = true;
 
-    // Listen for all requests
-    runtime.webRequest.onBeforeRequest.addListener(this.onBeforeRequest, {
+    browser.webRequest.onBeforeRequest.addListener(this.onBeforeRequest, {
       urls: ["<all_urls>"],
     });
 
-    // Listen for responses
-    runtime.webRequest.onHeadersReceived.addListener(
+    browser.webRequest.onHeadersReceived.addListener(
       this.onHeadersReceived,
       { urls: ["<all_urls>"] },
       ["responseHeaders"],
@@ -134,27 +104,12 @@ export class HttpListenerWebRequest {
     if (!this.isListening) return;
     this.isListening = false;
 
-    // Try direct chrome API first
-    if (chrome?.webRequest?.onBeforeRequest) {
-      chrome.webRequest.onBeforeRequest.removeListener(this.onBeforeRequest);
-      chrome.webRequest.onHeadersReceived.removeListener(
-        this.onHeadersReceived,
-      );
-      return;
-    }
-
-    // Fallback to runtime detection
-    const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
-    if (runtime?.webRequest?.onBeforeRequest) {
-      runtime.webRequest.onBeforeRequest.removeListener(this.onBeforeRequest);
-      runtime.webRequest.onHeadersReceived.removeListener(
-        this.onHeadersReceived,
-      );
-    }
+    browser.webRequest.onBeforeRequest.removeListener(this.onBeforeRequest);
+    browser.webRequest.onHeadersReceived.removeListener(this.onHeadersReceived);
   }
 
   private onBeforeRequest = (
-    details: chrome.webRequest.WebRequestBodyDetails,
+    details: WebRequest.OnBeforeRequestDetailsType,
   ) => {
     const requestData: RequestData = {
       url: details.url,
@@ -174,7 +129,7 @@ export class HttpListenerWebRequest {
   };
 
   private onHeadersReceived = (
-    details: chrome.webRequest.WebResponseHeadersDetails,
+    details: WebRequest.OnHeadersReceivedDetailsType,
   ) => {
     // Clean up request data after response is received
     setTimeout(() => {

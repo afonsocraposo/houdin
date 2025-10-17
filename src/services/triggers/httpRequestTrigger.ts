@@ -3,6 +3,7 @@ import { textProperty, selectProperty } from "@/types/config-properties";
 import { sendMessageToBackground, CustomMessage } from "@/lib/messages";
 import { HttpTriggerFiredMessage } from "@/types/background-workflow";
 import { IconApi } from "@tabler/icons-react";
+import browser from "@/services/browser";
 
 // HTTP Request Trigger Configuration
 export interface HttpRequestTriggerConfig {
@@ -17,7 +18,10 @@ interface HttpRequestTriggerOutput {
   body?: any;
 }
 
-export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig, HttpRequestTriggerOutput> {
+export class HttpRequestTrigger extends BaseTrigger<
+  HttpRequestTriggerConfig,
+  HttpRequestTriggerOutput
+> {
   static readonly metadata = {
     type: "http-request",
     label: "HTTP Request",
@@ -77,7 +81,9 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig, Ht
     });
 
     // Listen for trigger events from background script
-    const messageListener = (message: CustomMessage<HttpTriggerFiredMessage>) => {
+    const messageListener = (
+      message: CustomMessage<HttpTriggerFiredMessage>,
+    ) => {
       if (
         message.type === "HTTP_TRIGGER_FIRED" &&
         message.data.workflowId === workflowId &&
@@ -88,10 +94,10 @@ export class HttpRequestTrigger extends BaseTrigger<HttpRequestTriggerConfig, Ht
         // Trigger the workflow
         onTrigger(message.data.data);
       }
-      return false;
+      return;
     };
 
-    chrome.runtime.onMessage.addListener(messageListener);
+    browser.runtime.onMessage.addListener(messageListener);
 
     console.debug("HTTP Request Trigger registered with background script", {
       workflowId,
