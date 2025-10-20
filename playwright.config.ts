@@ -46,9 +46,15 @@ const config: PlaywrightTestConfig = {
   /* Extensions only work in Chrome / Chromium. */
   projects: [
     {
-      name: "chromium",
+      name: "chrome",
       use: {
         ...devices["Desktop Chrome"],
+      },
+    },
+    {
+      name: "firefox",
+      use: {
+        ...devices["Desktop Firefox"],
       },
     },
   ],
