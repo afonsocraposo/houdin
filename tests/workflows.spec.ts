@@ -5,6 +5,7 @@ import {
   WorkflowDefinition,
 } from "../src/types/workflow";
 import { Destinations, importWorkflow, UrlBuilder } from "./utils";
+import { DEMO_META_VARIABLES_WORKFLOW } from "./demoWorkflows/metaVariables";
 
 test.describe("Workflows creation, design and execution", () => {
   // always go to config page before each test
@@ -242,5 +243,15 @@ test.describe("Workflows creation, design and execution", () => {
 
     // Expect to see the modal with text
     await expect(page.getByText("Hello from Houdin workflow")).toBeVisible();
+  });
+
+  test("can access workflow meta variables", async ({ page, baseUrl }) => {
+    await importWorkflow(baseUrl, page, DEMO_META_VARIABLES_WORKFLOW);
+
+    // Go to example.com
+    await page.goto("https://example.com");
+
+    await expect(page.locator('text="meta.url"')).toBeVisible();
+    await expect(page.locator('text="https://example.com/"')).toBeVisible();
   });
 });
