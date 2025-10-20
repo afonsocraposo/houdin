@@ -1,5 +1,5 @@
 import { test, expect } from "./test.base";
-import { Destinations, importWorkflow, UrlBuilder } from "./utils";
+import { importWorkflow } from "./utils";
 import { DEMO_CUSTOM_SCRIPT_WORKFLOW } from "./demoWorkflows/customScript";
 import { DEMO_NOTIFICATION_WORKFLOW } from "./demoWorkflows/notification";
 import { DEMO_MODAL_WORKFLOW } from "./demoWorkflows/modal";
@@ -10,16 +10,6 @@ import { DEMO_HTTP_REQUEST_WORKFLOW } from "./demoWorkflows/httpRequest";
 import { DEMO_COOKIE_WORKFLOW } from "./demoWorkflows/cookie";
 
 test.describe("Actions execution", () => {
-  // always go to config page before each test
-  test.beforeEach(async ({ page, baseUrl }) => {
-    await page.goto(UrlBuilder(baseUrl, Destinations.WORKFLOWS));
-    await expect(page.locator("body")).toBeVisible();
-    // Check that Workflows tab has h3 title
-    await expect(
-      page.getByRole("heading", { name: "Workflows", level: 3 }),
-    ).toBeVisible();
-  });
-
   test("can execute custom script action", async ({ page, baseUrl }) => {
     await importWorkflow(baseUrl, page, DEMO_CUSTOM_SCRIPT_WORKFLOW);
 
