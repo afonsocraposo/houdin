@@ -151,7 +151,7 @@ export class HttpListenerWebRequest {
         try {
           // Execute workflow directly via callback
           await trigger.onTrigger({
-            request: requestData,
+            ...requestData,
           });
         } catch (error) {
           console.error(

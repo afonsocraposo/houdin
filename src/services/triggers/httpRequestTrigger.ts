@@ -92,7 +92,7 @@ export class HttpRequestTrigger extends BaseTrigger<
         // Set the request data in context
         // context.setOutput(context.triggerNode.id, message.data);
         // Trigger the workflow
-        onTrigger(message.data.data);
+        onTrigger(message.data.data.request);
       }
       return;
     };
