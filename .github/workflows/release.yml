@@ -67,11 +67,11 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Install Playwright browsers
-        run: npx playwright install chromium firefox
-
       - name: Build Chrome extension
         run: npm run build
+
+      - name: Install Playwright chromium
+        run: npx playwright install chromium
 
       - name: Run e2e tests (chrome)
         run: npm run test:e2e:headless
@@ -81,6 +81,9 @@ jobs:
 
       - name: Build Firefox extension
         run: npm run build:firefox
+
+      - name: Install Playwright firefox
+        run: npx playwright install firefox
 
       - name: Run e2e tests (firefox)
         run: npm run test:e2e:headless:firefox
