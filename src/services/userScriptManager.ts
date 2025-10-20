@@ -38,8 +38,9 @@ export class UserScriptManager {
       const userScript = request.scriptCode;
       // Check if userScripts.execute is available (Chrome/Chromium-based browsers)
       if (
-        browser.userScripts &&
-        typeof browser.userScripts.execute === "function"
+        typeof chrome !== "undefined" &&
+        chrome.userScripts &&
+        typeof chrome.userScripts.execute === "function"
       ) {
         return await this.executeWithUserScripts(userScript, request.tabId);
       } else {
@@ -65,7 +66,7 @@ export class UserScriptManager {
   ): Promise<UserScriptExecuteResponse> {
     const wrappedScript = this.createWrappedScript(userScript);
     try {
-      const results = await browser.userScripts.execute({
+      const results = await chrome.userScripts.execute({
         target: {
           tabId: tabId,
           allFrames: false, // Execute only in main frame
@@ -213,8 +214,8 @@ export class UserScriptManager {
                 console.error("Outer script error:", outerError);
                 const errorMsg =
                   outerError &&
-                  typeof outerError === "object" &&
-                  "message" in outerError
+                    typeof outerError === "object" &&
+                    "message" in outerError
                     ? outerError.message
                     : outerError?.toString() || "Unknown error";
                 window.postMessage(
