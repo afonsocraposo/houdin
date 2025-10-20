@@ -1,4 +1,5 @@
 import browser from "@/services/browser";
+import { matchesUrlPattern } from "@/utils/helpers";
 import { WebRequest } from "webextension-polyfill";
 
 interface HttpTrigger {
@@ -144,8 +145,8 @@ export class HttpListenerWebRequest {
     for (const trigger of this.triggers) {
       if (
         trigger.tabId === tabId &&
-        this.matchesPattern(requestData.url, trigger.urlPattern) &&
-        this.matchesMethod(requestData.method, trigger.method)
+        this.matchesMethod(requestData.method, trigger.method) &&
+        matchesUrlPattern(requestData.url, trigger.urlPattern)
       ) {
         try {
           // Execute workflow directly via callback
@@ -159,20 +160,6 @@ export class HttpListenerWebRequest {
           );
         }
       }
-    }
-  }
-
-  private matchesPattern(url: string, pattern: string): boolean {
-    try {
-      const regexPattern = pattern
-        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-        .replace(/\\\*/g, ".*");
-
-      const regex = new RegExp(`^${regexPattern}$`, "i");
-      return regex.test(url);
-    } catch (error) {
-      console.error("Invalid URL pattern:", pattern, error);
-      return false;
     }
   }
 

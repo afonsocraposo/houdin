@@ -115,3 +115,29 @@ export function insertAtCursor(
   const inputEvent = new Event("input", { bubbles: true });
   input.dispatchEvent(inputEvent);
 }
+
+export function matchesUrlPattern(
+  fullUrl: string,
+  pattern: string,
+  ignoreQuery: boolean = false,
+): boolean {
+  const _url = new URL(fullUrl);
+  // ignore query params but include hash
+  const url =
+    _url.origin + _url.pathname + _url.hash + (ignoreQuery ? "" : _url.search);
+  try {
+    // Convert simple wildcard pattern to regex
+    const regexPattern =
+      pattern
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special regex characters
+        .replace(/\\\*/g, ".*") // Convert * to .*
+        .replace(/\\\?/g, ".") + // Convert ? to .
+      "\\/?"; // Optional trailing slash
+
+    const regex = new RegExp(`^${regexPattern}$`, "i");
+    return regex.test(url);
+  } catch (error) {
+    console.error("Invalid URL pattern:", pattern, error);
+    return false;
+  }
+}
