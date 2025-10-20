@@ -18,7 +18,7 @@ Thank you for your interest in contributing to Houdin! This guide will help you 
 
    ```bash
    npm run dev # chrome
-   npm run dev-firefox # firefox
+   npm run dev:firefox # firefox
    ```
 
 3. **Load Extension**

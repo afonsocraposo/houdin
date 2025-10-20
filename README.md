@@ -117,8 +117,9 @@ The built extension will be in the `dist/` directory.
 ## 🛠 Development Scripts
 
 - `npm run dev` - Start development server with hot reload
-- `npm run dev-firefox` - Build for Firefox with watch mode
+- `npm run dev:firefox` - Build for Firefox with watch mode
 - `npm run build` - Build for production (TypeScript + Vite)
+- `npm run build:firefox` - Build for Firefox
 - `npm run type-check` - Run TypeScript type checking
 - `npm run preview` - Preview production build locally
 
