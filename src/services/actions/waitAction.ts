@@ -43,7 +43,7 @@ export class WaitAction extends BaseAction<WaitActionConfig, WaitActionOutput> {
     onSuccess: (data: WaitActionOutput) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, config.duration));
+    await new Promise((resolve) => setTimeout(resolve, config.duration * 1000));
     onSuccess({ duration: config.duration, timestamp: Date.now() });
   }
 }
