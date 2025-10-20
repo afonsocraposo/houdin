@@ -5,7 +5,7 @@ import { DEMO_NOTIFICATION_WORKFLOW } from "./demoWorkflows/notification";
 import { DEMO_MODAL_WORKFLOW } from "./demoWorkflows/modal";
 import { DEMO_NAVIGATE_URL_WORKFLOW } from "./demoWorkflows/navigateUrl";
 import { DEMO_CLIPBOARD_WORKFLOW } from "./demoWorkflows/clipboard";
-import { DEMO_INJECT_COMPONENT_WORKFLOW } from "./demoWorkflows/injectCompoment";
+import { DEMO_INJECT_COMPONENT_WORKFLOW } from "./demoWorkflows/injectComponent";
 import { DEMO_HTTP_REQUEST_WORKFLOW } from "./demoWorkflows/httpRequest";
 import { DEMO_COOKIE_WORKFLOW } from "./demoWorkflows/cookie";
 
