@@ -5,10 +5,9 @@ import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import Logo from "@/components/Logo";
 import { sendMessageToContentScript } from "@/lib/messages";
+import browser from "@/services/browser";
 
 function App() {
-  // Cross-browser API compatibility
-  const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
   const [currentUrl, setCurrentUrl] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("workflows");
 
@@ -20,9 +19,7 @@ function App() {
 
   const loadSavedTab = async () => {
     try {
-      const result = await new Promise<any>((resolve) => {
-        browserAPI.storage.local.get(["popup-active-tab"], resolve);
-      });
+      const result = await browser.storage.local.get(["popup-active-tab"]);
       if (result["popup-active-tab"]) {
         setActiveTab(result["popup-active-tab"]);
       }
@@ -36,7 +33,7 @@ function App() {
     if (value) {
       setActiveTab(value);
       try {
-        browserAPI.storage.local.set({ "popup-active-tab": value });
+        browser.storage.local.set({ "popup-active-tab": value });
       } catch (error) {
         console.error("Error saving to browser storage:", error);
       }
@@ -46,9 +43,7 @@ function App() {
   const loadCurrentUrl = async () => {
     try {
       // Get current tab URL
-      const tabs = await new Promise<any[]>((resolve) => {
-        browserAPI.tabs.query({ active: true, currentWindow: true }, resolve);
-      });
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
 
       if (tabs.length > 0) {
         setCurrentUrl(tabs[0].url || "");
@@ -60,21 +55,17 @@ function App() {
 
   const handleClick = () => {
     // open a new tab with a specific URL
-    browserAPI.tabs.create({ url: "https://houdin.config" });
+    browser.tabs.create({ url: "https://houdin.config" });
     window.close();
   };
 
   const handleSelectElement = async () => {
     try {
       // send message to content script
-      browserAPI.tabs.query(
-        { active: true, currentWindow: true },
-        (tabs: any[]) => {
-          if (tabs.length > 0 && tabs[0].id) {
-            sendMessageToContentScript(tabs[0].id, "START_ELEMENT_SELECTION", {});
-          }
-        },
-      );
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      if (tabs.length > 0 && tabs[0].id) {
+        sendMessageToContentScript(tabs[0].id, "START_ELEMENT_SELECTION", {});
+      }
       window.close();
     } catch (error) {
       console.error("Error in handleSelectElement:", error);

@@ -1,4 +1,4 @@
-const browserAPI = (typeof browser !== "undefined" ? browser : chrome) as any;
+import browser from "@/services/browser";
 
 export const sendMessageToBackground = async <T>(
   type: string,
@@ -6,13 +6,12 @@ export const sendMessageToBackground = async <T>(
   responseCallback?: (response: any) => void,
 ): Promise<any> => {
   try {
-    return await browserAPI.runtime.sendMessage(
-      {
+    return await browser.runtime
+      .sendMessage({
         type,
         data,
-      } as CustomMessage<T>,
-      responseCallback,
-    );
+      } as CustomMessage<T>)
+      .then(responseCallback);
   } catch (error) {
     console.error(`Error sending message to background: ${error}`);
     return null;
@@ -34,12 +33,10 @@ export const sendMessageToContentScript = async <T>(
     type,
     data,
   });
-  return await browserAPI.tabs.sendMessage(
-    tabId,
-    {
+  return await browser.tabs
+    .sendMessage(tabId, {
       type,
       data,
-    } as CustomMessage<T>,
-    responseCallback,
-  );
+    } as CustomMessage<T>)
+    .then(responseCallback);
 };

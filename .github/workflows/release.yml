@@ -70,17 +70,26 @@ jobs:
       - name: Build Chrome extension
         run: npm run build
 
-      - name: Install Playwright browsers
+      - name: Install Playwright chromium
         run: npx playwright install chromium
 
-      - name: Run e2e tests
+      - name: Run e2e tests (chrome)
         run: npm run test:e2e:headless
 
-      - name: Prepare extension builds
-        run: |
-          cp -r dist dist-chrome
-          TARGET=firefox npm run build
-          mv dist dist-firefox
+      - name: Prepare Chrome build
+        run: mv dist dist-chrome
+
+      - name: Build Firefox extension
+        run: npm run build:firefox
+
+      - name: Install Playwright firefox
+        run: npx playwright install firefox
+
+      - name: Run e2e tests (firefox)
+        run: npm run test:e2e:headless:firefox
+
+      - name: Prepare Firefox build
+        run: mv dist dist-firefox
 
       - name: Create extension archives
         run: |

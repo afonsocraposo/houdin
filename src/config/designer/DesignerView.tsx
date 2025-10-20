@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
 import { ContentStorageClient } from "@/services/storage";
 import { WorkflowDefinition } from "@/types/workflow";
+import browser from "@/services/browser";
 
 interface DesignerViewProps {
   workflowId?: string;
@@ -73,10 +74,7 @@ function DesignerView({ workflowId }: DesignerViewProps) {
       }
 
       // Sync HTTP triggers in background script when explicitly saving
-      const runtime = (
-        typeof browser !== "undefined" ? browser : chrome
-      ) as any;
-      runtime.runtime.sendMessage({ type: "SYNC_HTTP_TRIGGERS" });
+      browser.runtime.sendMessage({ type: "SYNC_HTTP_TRIGGERS" });
 
       // Navigate back to workflows list, preserving the current tab
       const currentTab = searchParams.get("tab") || "workflows";

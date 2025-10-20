@@ -1,6 +1,8 @@
 // Element selector content script
 import { CustomMessage } from "@/lib/messages";
 
+import browser from "@/services/browser";
+
 interface ElementSelectedDetail {
   selector: string;
   element: {
@@ -203,9 +205,11 @@ function initSelector() {
 }
 
 // Listen for messages from the extension
-chrome.runtime.onMessage.addListener((message: CustomMessage, _, sendResponse) => {
-  if (message.type === "START_ELEMENT_SELECTION") {
-    initSelector();
-    sendResponse({ status: "selector_started" });
-  }
-});
+browser.runtime.onMessage.addListener(
+  (message: CustomMessage, _, sendResponse: (a: any) => void) => {
+    if (message.type === "START_ELEMENT_SELECTION") {
+      initSelector();
+      sendResponse({ status: "selector_started" });
+    }
+  },
+);

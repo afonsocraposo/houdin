@@ -7,10 +7,10 @@ import {
 import { StorageServer } from "@/services/storage";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
-const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
+import browser from "@/services/browser";
 
 let httpListener: HttpListenerWebRequest | null = null;
-if (runtime?.webRequest?.onBeforeRequest) {
+if (browser.webRequest.onBeforeRequest) {
   try {
     httpListener = HttpListenerWebRequest.getInstance();
     console.debug(
@@ -23,34 +23,34 @@ if (runtime?.webRequest?.onBeforeRequest) {
     );
   }
 } else {
-  console.error("Background: chrome.webRequest.onBeforeRequest not available");
+  console.error("Background: webRequest.onBeforeRequest not available");
 }
 
-runtime.runtime.onInstalled.addListener(() => {
+browser.runtime.onInstalled.addListener(() => {
   console.debug("Extension installed");
 });
 
-if (runtime.action) {
-  runtime.action.onClicked.addListener((_tab: any) => {
+if (browser.action) {
+  browser.action.onClicked.addListener((_tab: any) => {
     // Extension icon clicked
   });
 }
 
 // Handle navigation to houdin.config
-runtime.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
+browser.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
   if (changeInfo.url && changeInfo.url.includes("houdin.config")) {
     // Redirect to the config page
-    const configUrl = runtime.runtime.getURL("src/config/index.html");
-    runtime.tabs.update(tabId, { url: configUrl });
+    const configUrl = browser.runtime.getURL("src/config/index.html");
+    browser.tabs.update(tabId, { url: configUrl });
   }
 });
 
 // Note: webNavigation API requires additional permission in manifest v3
-if (runtime.webNavigation) {
-  runtime.webNavigation.onBeforeNavigate.addListener((details: any) => {
+if (browser.webNavigation) {
+  browser.webNavigation.onBeforeNavigate.addListener((details: any) => {
     if (details.url.includes("houdin.config")) {
-      const configUrl = runtime.runtime.getURL("src/config/index.html");
-      runtime.tabs.update(details.tabId, { url: configUrl });
+      const configUrl = browser.runtime.getURL("src/config/index.html");
+      browser.tabs.update(details.tabId, { url: configUrl });
     }
   });
 }
@@ -61,7 +61,7 @@ const storageServer = StorageServer.getInstance();
 
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
-  runtime.webNavigation.onCompleted.addListener(
+  browser.webNavigation.onCompleted.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
       if (details.frameId === 0) {
         workflowEngine.onNewUrl(details.tabId, details.url);
@@ -70,7 +70,7 @@ workflowEngine.initialize().then(() => {
     { url: [{ schemes: ["http", "https"] }] },
   );
 
-  runtime.runtime.onMessage.addListener(
+  browser.runtime.onMessage.addListener(
     (
       message: CustomMessage,
       sender: any,
@@ -112,13 +112,13 @@ workflowEngine.initialize().then(() => {
           message.data.method,
           triggerCallback,
         );
-        return false;
+        return;
       } else if (message.type === WorkflowCommandType.CLEAN_HTTP_TRIGGERS) {
         // Unregister HTTP triggers
         if (httpListener) {
           httpListener.unregisterTriggers(sender.tab.id);
         }
-        return false;
+        return;
       } else if (message.type === WorkflowCommandType.TRIGGER_FIRED) {
         const tabId = sender.tab.id;
 
@@ -136,7 +136,7 @@ workflowEngine.initialize().then(() => {
           data,
           duration,
         );
-        return false;
+        return;
       }
     },
   );

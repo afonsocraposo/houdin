@@ -3,8 +3,8 @@ import type { Credential } from "@/types/credentials";
 import { WorkflowExecution } from "@/types/workflow";
 import { StorageAction } from "@/types/storage";
 import { StorageKeys } from "./storage-keys";
-
-const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
+import browser from "./browser";
+import type { Runtime } from "webextension-polyfill";
 
 export const MAX_EXECUTIONS_HISTORY = 50; // Limit for workflow executions
 
@@ -15,13 +15,13 @@ interface getWorkflowExecutionsOptions {
 
 export class StorageServer {
   private static instance: StorageServer | null = null;
-  private subscribers: Map<string, Set<chrome.runtime.Port>> = new Map();
-  private portConnections: Set<chrome.runtime.Port> = new Set();
+  private subscribers: Map<string, Set<Runtime.Port>> = new Map();
+  private portConnections: Set<Runtime.Port> = new Set();
   private localListeners: Map<string, Set<(value: any) => void>> = new Map();
 
   private constructor() {
     // Handle long-lived connections for listeners
-    runtime.runtime.onConnect.addListener((port: chrome.runtime.Port) => {
+    browser.runtime.onConnect.addListener((port: Runtime.Port) => {
       if (port.name === "storage-listener") {
         this.portConnections.add(port);
 
@@ -31,7 +31,7 @@ export class StorageServer {
           this.subscribers.forEach((ports) => ports.delete(port));
         });
 
-        port.onMessage.addListener((message) => {
+        port.onMessage.addListener((message: any) => {
           switch (message.type) {
             case StorageAction.SUBSCRIBE:
               this.subscribe(port, message.key);
@@ -44,50 +44,34 @@ export class StorageServer {
       }
     });
 
-    runtime.runtime.onMessage.addListener(
-      (message: any, _sender: any, sendResponse: (response: any) => void) => {
-        switch (message.type) {
-          case StorageAction.GET:
-            this.get(message.key)
-              .then((value: any) => {
-                sendResponse({ success: true, value });
-              })
-              .catch((error: any) => {
-                sendResponse({ success: false, error: error.message });
-              });
-            break;
-          case StorageAction.SET:
-            this.set(message.key, message.value)
-              .then(() => {
-                sendResponse({ success: true });
-                // Notify subscribers of the change
-                this.notifySubscribers(message.key, message.value);
-                this.notifyLocalListeners(message.key, message.value);
-              })
-              .catch((error: any) => {
-                sendResponse({ success: false, error: error.message });
-              });
-            break;
-          case StorageAction.REMOVE:
-            this.remove(message.key)
-              .then(() => {
-                sendResponse({ success: true });
-                // Notify subscribers of the removal
-                this.notifySubscribers(message.key, null);
-                this.notifyLocalListeners(message.key, null);
-              })
-              .catch((error: any) => {
-                sendResponse({ success: false, error: error.message });
-              });
-            break;
-          case "ping":
-            // Handle ping for connection testing
-            sendResponse({ success: true });
-            break;
-          default:
-            return false;
+    browser.runtime.onMessage.addListener(
+      async (message: any, _sender: any) => {
+        try {
+          switch (message.type) {
+            case StorageAction.GET:
+              const value = await this.get(message.key);
+              return { success: true, value };
+            case StorageAction.SET:
+              await this.set(message.key, message.value);
+              // Notify subscribers of the change
+              this.notifySubscribers(message.key, message.value);
+              this.notifyLocalListeners(message.key, message.value);
+              return { success: true };
+            case StorageAction.REMOVE:
+              await this.remove(message.key);
+              // Notify subscribers of the removal
+              this.notifySubscribers(message.key, null);
+              this.notifyLocalListeners(message.key, null);
+              return { success: true };
+            case "ping":
+              // Handle ping for connection testing
+              return { success: true };
+            default:
+              return undefined;
+          }
+        } catch (error: any) {
+          return { success: false, error: error.message };
         }
-        return true; // Indicates that we will send a response asynchronously
       },
     );
   }
@@ -102,14 +86,14 @@ export class StorageServer {
     return StorageServer.instance;
   }
 
-  private subscribe(port: chrome.runtime.Port, key: string) {
+  private subscribe(port: Runtime.Port, key: string) {
     if (!this.subscribers.has(key)) {
       this.subscribers.set(key, new Set());
     }
     this.subscribers.get(key)!.add(port);
   }
 
-  private unsubscribe(port: chrome.runtime.Port, key: string) {
+  private unsubscribe(port: Runtime.Port, key: string) {
     const subscribers = this.subscribers.get(key);
     if (subscribers) {
       subscribers.delete(port);
@@ -155,72 +139,15 @@ export class StorageServer {
     }
   }
 
-  private getStorageAPI() {
-    // Firefox uses 'browser' namespace, Chrome uses 'chrome'
-    if (typeof browser !== "undefined" && browser.storage) {
-      return { api: browser.storage.local, isFirefox: true };
-    } else if (typeof chrome !== "undefined" && chrome.storage) {
-      return { api: chrome.storage.local, isFirefox: false };
-    }
-    console.error("No storage API available");
-    return null;
-  }
-
   // Generic storage methods - only these should be public
   public async get(key: string): Promise<any> {
-    const storage = this.getStorageAPI();
-    if (!storage) return null;
-
-    let result: any;
-
-    if (storage.isFirefox) {
-      result = await storage.api.get([key]);
-    } else {
-      // Chrome storage API uses promises in newer versions
-      try {
-        result = await storage.api.get(key);
-      } catch (error) {
-        // Fallback to callback pattern for older Chrome versions
-        result = await new Promise((resolve, reject) => {
-          (storage.api as any).get(key, (result: any) => {
-            if (chrome?.runtime?.lastError) {
-              reject(chrome.runtime.lastError);
-            } else {
-              resolve(result);
-            }
-          });
-        });
-      }
-    }
-
+    const result = await browser.storage.local.get([key]);
     return result[key] || null;
   }
 
   public async set(key: string, value: any): Promise<void> {
-    const storage = this.getStorageAPI();
-    if (!storage) return;
-
     const data = { [key]: value };
-
-    if (storage.isFirefox) {
-      await storage.api.set(data);
-    } else {
-      // Chrome storage API uses promises in newer versions
-      try {
-        await storage.api.set(data);
-      } catch (error) {
-        // Fallback to callback pattern for older Chrome versions
-        await new Promise<void>((resolve, reject) => {
-          (storage.api as any).set(data, () => {
-            if (chrome?.runtime?.lastError) {
-              reject(chrome.runtime.lastError);
-            } else {
-              resolve();
-            }
-          });
-        });
-      }
-    }
+    await browser.storage.local.set(data);
 
     // Notify listeners after successful set
     this.notifySubscribers(key, value);
@@ -228,28 +155,7 @@ export class StorageServer {
   }
 
   public async remove(key: string): Promise<void> {
-    const storage = this.getStorageAPI();
-    if (!storage) return;
-
-    if (storage.isFirefox) {
-      await storage.api.remove([key]);
-    } else {
-      // Chrome storage API uses promises in newer versions
-      try {
-        await storage.api.remove(key);
-      } catch (error) {
-        // Fallback to callback pattern for older Chrome versions
-        await new Promise<void>((resolve, reject) => {
-          (storage.api as any).remove(key, () => {
-            if (chrome?.runtime?.lastError) {
-              reject(chrome.runtime.lastError);
-            } else {
-              resolve();
-            }
-          });
-        });
-      }
-    }
+    await browser.storage.local.remove([key]);
 
     // Notify listeners after successful removal
     this.notifySubscribers(key, null);
@@ -517,13 +423,13 @@ export class BackgroundStorageClient extends StorageClientBase {
 // Content storage client - communicates via messages
 export class ContentStorageClient extends StorageClientBase {
   private listeners: Map<string, Set<(value: any) => void>> = new Map();
-  private port: chrome.runtime.Port | null = null;
+  private port: Runtime.Port | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private isConnecting = false;
 
   protected async get(key: string): Promise<any> {
-    const result = await runtime.runtime.sendMessage({
+    const result = await browser.runtime.sendMessage({
       type: StorageAction.GET,
       key,
     });
@@ -536,7 +442,7 @@ export class ContentStorageClient extends StorageClientBase {
   }
 
   protected async set(key: string, value: any): Promise<void> {
-    const result = await runtime.runtime.sendMessage({
+    const result = await browser.runtime.sendMessage({
       type: StorageAction.SET,
       key,
       value,
@@ -549,7 +455,7 @@ export class ContentStorageClient extends StorageClientBase {
   }
 
   protected async remove(key: string): Promise<void> {
-    const result = await runtime.runtime.sendMessage({
+    const result = await browser.runtime.sendMessage({
       type: StorageAction.REMOVE,
       key,
     });
@@ -610,7 +516,7 @@ export class ContentStorageClient extends StorageClientBase {
       // Check if background script is available
       await this.pingBackgroundScript();
 
-      this.port = runtime.runtime.connect({ name: "storage-listener" });
+      this.port = browser.runtime.connect({ name: "storage-listener" });
 
       if (this.port) {
         this.port.onMessage.addListener((message) => {
@@ -656,15 +562,11 @@ export class ContentStorageClient extends StorageClientBase {
   }
 
   private async pingBackgroundScript(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      runtime.runtime.sendMessage({ type: "ping" }, (_response: any) => {
-        if (runtime.runtime.lastError) {
-          reject(new Error(runtime.runtime.lastError.message));
-        } else {
-          resolve();
-        }
-      });
-    });
+    try {
+      await browser.runtime.sendMessage({ type: "ping" });
+    } catch (error) {
+      throw new Error("Failed to ping background script");
+    }
   }
 
   private scheduleReconnect(): void {

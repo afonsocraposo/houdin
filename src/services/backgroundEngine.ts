@@ -12,8 +12,7 @@ import {
 } from "@/types/workflow";
 import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow/workflow";
-
-// const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
+import { matchesUrlPattern } from "@/utils/helpers";
 
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();
@@ -51,7 +50,7 @@ export class BackgroundWorkflowEngine {
     const matchingWorkflows = this.workflows
       .filter(
         (workflow) =>
-          workflow.enabled && this.matchesUrlPattern(workflow.urlPattern, url),
+          workflow.enabled && matchesUrlPattern(url, workflow.urlPattern, true),
       )
       .filter((workflow) => !runningWorkflowIds.includes(workflow.id));
 
@@ -200,26 +199,5 @@ export class BackgroundWorkflowEngine {
 
   private getWorkflowTriggers(workflow: WorkflowDefinition): WorkflowNode[] {
     return workflow.nodes.filter((node) => node.type === "trigger");
-  }
-
-  private matchesUrlPattern(pattern: string, fullUrl: string): boolean {
-    const _url = new URL(fullUrl);
-    // ignore query params but include hash
-    const url = _url.origin + _url.pathname + _url.hash;
-    try {
-      // Convert simple wildcard pattern to regex
-      const regexPattern =
-        pattern
-          .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special regex characters
-          .replace(/\\\*/g, ".*") // Convert * to .*
-          .replace(/\\\?/g, ".") + // Convert ? to .
-        "\\/?"; // Optional trailing slash
-
-      const regex = new RegExp(`^${regexPattern}$`, "i");
-      return regex.test(url);
-    } catch (error) {
-      console.error("Invalid URL pattern:", pattern, error);
-      return false;
-    }
   }
 }

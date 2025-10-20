@@ -1,4 +1,5 @@
 import { sendMessageToBackground } from "@/lib/messages";
+import browser from "./browser";
 
 export interface UserScriptPermissionStatus {
   available: boolean;
@@ -32,17 +33,22 @@ export class UserScriptPermissionChecker {
   }
 
   private detectBrowser(): "chrome" | "firefox" | "other" {
-    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id) {
-      return "chrome";
-    } else if (typeof browser !== "undefined" && browser.runtime) {
-      return "firefox";
+    try {
+      const userAgent = navigator.userAgent.toLowerCase();
+      if (userAgent.includes('chrome') && !userAgent.includes('firefox')) {
+        return "chrome";
+      } else if (userAgent.includes('firefox')) {
+        return "firefox";
+      }
+    } catch (error) {
+      console.debug("Error detecting browser:", error);
     }
     return "other";
   }
 
   private async checkChromeUserScriptsPermission(): Promise<UserScriptPermissionStatus> {
     // Check if userScripts API exists
-    if (typeof chrome === "undefined" || !chrome.userScripts) {
+    if (!browser.userScripts) {
       return {
         available: false,
         enabled: false,
@@ -53,10 +59,10 @@ export class UserScriptPermissionChecker {
       };
     }
 
-    // Check if userScripts permission is granted using chrome.permissions API
+    // Check if userScripts permission is granted using browser.permissions API
     try {
-      const hasPermission = await chrome.permissions.contains({
-        permissions: ["userScripts"],
+      const hasPermission = await browser.permissions.contains({
+        permissions: ["userScripts" as any],
       });
 
       if (hasPermission) {
@@ -142,8 +148,8 @@ export class UserScriptPermissionChecker {
   // Method to request userScripts permission
   async requestUserScriptsPermission(): Promise<boolean> {
     try {
-      const granted = await chrome.permissions.request({
-        permissions: ["userScripts"],
+      const granted = await browser.permissions.request({
+        permissions: ["userScripts" as any],
       });
       return granted;
     } catch (error) {
@@ -154,27 +160,18 @@ export class UserScriptPermissionChecker {
 
   // Method to request permission status via background script
   async requestPermissionStatusFromBackground(): Promise<UserScriptPermissionStatus> {
-    return new Promise((resolve) => {
-      sendMessageToBackground(
-        "CHECK_USERSCRIPT_PERMISSION",
-        null,
-        (response) => {
-          if (chrome.runtime.lastError) {
-            // If messaging fails, fall back to client-side check
-            this.checkPermissionStatus().then(resolve);
-          } else {
-            resolve(
-              response || {
-                available: false,
-                enabled: false,
-                browser: "chrome",
-                requiresToggle: true,
-                fallbackAvailable: true,
-              },
-            );
-          }
-        },
-      );
-    });
+    try {
+      const response = await sendMessageToBackground("CHECK_USERSCRIPT_PERMISSION", null);
+      return response || {
+        available: false,
+        enabled: false,
+        browser: "chrome",
+        requiresToggle: true,
+        fallbackAvailable: true,
+      };
+    } catch (error) {
+      // If messaging fails, fall back to client-side check
+      return this.checkPermissionStatus();
+    }
   }
 }

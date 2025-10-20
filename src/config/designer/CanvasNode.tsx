@@ -166,7 +166,7 @@ export default function CanvasNode({
 
       <Stack>
         <Stack gap="xs">
-          <Group justify="space-between">
+          <Group justify="space-between" mih={28}>
             {renderNodeIcon(getNodeIcon(nodeData))}
             {nodeData.error && <IconAlertCircle color="red" />}
           </Group>

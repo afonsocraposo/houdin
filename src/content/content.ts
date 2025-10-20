@@ -19,6 +19,7 @@ import {
   WorkflowCommand,
   WorkflowCommandType,
 } from "@/types/background-workflow";
+import browser from "@/services/browser";
 
 console.debug("Content script loaded");
 
@@ -63,7 +64,7 @@ if ((window as any).houdinExtensionInitialized) {
   };
 
   const setupReadinessCheckListener = () => {
-    chrome.runtime.onMessage.addListener(
+    browser.runtime.onMessage.addListener(
       (
         message: CustomMessage<any>,
         _sender,
@@ -79,7 +80,7 @@ if ((window as any).houdinExtensionInitialized) {
           sendResponse({ ready: true });
           return true; // Indicate async response
         }
-        return false; // Let other listeners handle other messages
+        return; // Let other listeners handle other messages
       },
     );
   };
@@ -117,7 +118,7 @@ if ((window as any).houdinExtensionInitialized) {
 
   const setupNotificationBridge = () => {
     // Listen for notification messages from background script
-    chrome.runtime.onMessage.addListener(
+    browser.runtime.onMessage.addListener(
       (message: CustomMessage<NotificationProps>, _sender, _sendResponse) => {
         if (message.type === "SHOW_NOTIFICATION") {
           console.debug(
@@ -135,7 +136,7 @@ if ((window as any).houdinExtensionInitialized) {
     initializeActions();
     initializeCredentials();
     // Listen for messages from the background workflow engine
-    chrome.runtime.onMessage.addListener(
+    browser.runtime.onMessage.addListener(
       (
         message: CustomMessage<WorkflowCommand>,
         _sender,
@@ -184,7 +185,7 @@ if ((window as any).houdinExtensionInitialized) {
               .catch((error: any) =>
                 sendResponse({ success: false, error: error.message }),
               );
-            return false; // Indicate async response
+            return; // Indicate async response
           case WorkflowCommandType.EXECUTE_ACTION:
             const executeActionCommand = message.data as ActionCommand;
             const actionRegistry = ActionRegistry.getInstance();
@@ -205,9 +206,9 @@ if ((window as any).houdinExtensionInitialized) {
               });
             break;
           default:
-            return false; // Ignore other messages
+            return; // Ignore other messages
         }
-        return true; // Indicate that we will respond asynchronously
+        return true;
       },
     );
   };

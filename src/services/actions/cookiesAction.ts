@@ -4,8 +4,7 @@ import {
   selectProperty,
   textProperty,
 } from "@/types/config-properties";
-
-const runtime = (typeof browser !== "undefined" ? browser : chrome) as any;
+import browser from "@/services/browser";
 
 interface CookiesActionConfig {
   operation: "create" | "read" | "update" | "delete" | "list" | "clear";
@@ -133,7 +132,7 @@ export class CookiesAction extends BaseAction<
 
     try {
       // get url of tabId
-      const tab = await runtime.tabs.get(tabId);
+      const tab = await browser.tabs.get(tabId);
       const url = tab.url;
       const storeId = tab.cookieStoreId;
 
@@ -157,7 +156,7 @@ export class CookiesAction extends BaseAction<
             onError(new Error("Key and value are required for operation."));
             return;
           }
-          await runtime.cookies.set({
+          await browser.cookies.set({
             url,
             name: key,
             value: value,
@@ -173,7 +172,7 @@ export class CookiesAction extends BaseAction<
             onError(new Error("Key is required for read operation."));
             return;
           }
-          const readValue = await runtime.cookies.get({
+          const readValue = await browser.cookies.get({
             url: url,
             name: key,
             storeId,
@@ -185,7 +184,7 @@ export class CookiesAction extends BaseAction<
             onError(new Error("Key is required for delete operation."));
             return;
           }
-          await runtime.cookies.remove({
+          await browser.cookies.remove({
             url,
             name: key,
             storeId,
@@ -193,20 +192,20 @@ export class CookiesAction extends BaseAction<
           onSuccess({ key, operation });
           return;
         case "clear":
-          const items = await runtime.cookies.getAll({
+          const items = await browser.cookies.getAll({
             url,
             storeId,
           });
           const l = items.length;
           await Promise.all(
             items.map((item: any) =>
-              runtime.cookies.remove({ url, name: item.name }),
+              browser.cookies.remove({ url, name: item.name }),
             ),
           );
           onSuccess({ operation, cleared: l });
           return;
         case "list":
-          const allItems = await runtime.cookies.getAll({ url, storeId });
+          const allItems = await browser.cookies.getAll({ url, storeId });
           const data = allItems.reduce(
             (acc: Record<string, any>, item: any) => {
               if (item.name && item.value) {

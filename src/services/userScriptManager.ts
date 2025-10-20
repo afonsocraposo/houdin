@@ -1,4 +1,6 @@
 import { CustomMessage } from "@/lib/messages";
+import { Runtime } from "webextension-polyfill";
+import browser from "@/services/browser";
 
 export interface UserScriptExecuteRequest {
   scriptCode: string;
@@ -36,6 +38,7 @@ export class UserScriptManager {
       const userScript = request.scriptCode;
       // Check if userScripts.execute is available (Chrome/Chromium-based browsers)
       if (
+        typeof chrome !== "undefined" &&
         chrome.userScripts &&
         typeof chrome.userScripts.execute === "function"
       ) {
@@ -113,14 +116,14 @@ export class UserScriptManager {
     return new Promise((resolve) => {
       const messageListener = (
         message: CustomMessage<WorkflowScriptMessage>,
-        sender: chrome.runtime.MessageSender,
+        sender: Runtime.MessageSender,
       ) => {
         if (
           message.type === "workflow-script-response" &&
           message.data.nodeId === nodeId &&
           sender.tab?.id === tabId
         ) {
-          chrome.runtime.onMessage.removeListener(messageListener);
+          browser.runtime.onMessage.removeListener(messageListener);
           const data = message.data;
 
           // Check if the error indicates a CSP violation
@@ -146,20 +149,20 @@ export class UserScriptManager {
         }
       };
 
-      chrome.runtime.onMessage.addListener(messageListener);
+      browser.runtime.onMessage.addListener(messageListener);
 
-      // Execute script using chrome.scripting.executeScript (Manifest V3)
+      // Execute script using browser.scripting.executeScript (Manifest V3)
       if (
-        chrome.scripting &&
-        typeof chrome.scripting.executeScript === "function"
+        browser.scripting &&
+        typeof browser.scripting.executeScript === "function"
       ) {
         // Create and execute script directly
         const fallbackScript = this.createFallbackScript(userScript, nodeId);
 
-        chrome.scripting
+        browser.scripting
           .executeScript({
             target: { tabId: tabId },
-            world: "MAIN",
+            world: "MAIN" as any,
             args: [fallbackScript, nodeId],
             func: (script: string, nodeId: string) => {
               try {
@@ -211,8 +214,8 @@ export class UserScriptManager {
                 console.error("Outer script error:", outerError);
                 const errorMsg =
                   outerError &&
-                  typeof outerError === "object" &&
-                  "message" in outerError
+                    typeof outerError === "object" &&
+                    "message" in outerError
                     ? outerError.message
                     : outerError?.toString() || "Unknown error";
                 window.postMessage(
@@ -228,15 +231,15 @@ export class UserScriptManager {
             },
           })
           .catch((error) => {
-            chrome.runtime.onMessage.removeListener(messageListener);
+            browser.runtime.onMessage.removeListener(messageListener);
             resolve({
               success: false,
               error: `Script injection failed: ${error.message}`,
             });
           });
       } else {
-        // If chrome.scripting is not available, fall back to code injection
-        chrome.runtime.onMessage.removeListener(messageListener);
+        // If browser.scripting is not available, fall back to code injection
+        browser.runtime.onMessage.removeListener(messageListener);
         resolve({
           success: false,
           error: "Script injection API not available in this browser",
