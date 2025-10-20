@@ -1,4 +1,4 @@
-import { DEMO_FAILING_WORKFLOW as DEMO_FAILING_WORKFLOW } from "./demoWorkflows";
+import { DEMO_FAILING_WORKFLOW as DEMO_FAILING_WORKFLOW } from "./demoWorkflows/index";
 import { test, expect } from "./test.base";
 import { Destinations, importWorkflow, UrlBuilder } from "./utils";
 
