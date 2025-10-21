@@ -24,12 +24,74 @@ function NodeHandle({
   position,
   id,
   percentage = 0.5,
+  label,
 }: {
   type: "source" | "target";
   position: Position;
   id: string;
   percentage?: number;
+  label?: string;
 }) {
+  if (label) {
+    // When there's a label, make the label itself the interactive handle
+    const circleHandle = (
+      <div
+        style={{
+          width: 16,
+          height: 16,
+          borderRadius: "50%",
+          background: "#adb5bd",
+          border: "2px solid #fff",
+          transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "#495057";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "#adb5bd";
+        }}
+      />
+    );
+    return (
+      <Handle
+        key={id}
+        type={type}
+        position={position}
+        id={id}
+        style={{
+          position: "absolute",
+          top: `${percentage * 100}%`,
+          background: "transparent",
+          border: "none",
+          width: "auto",
+          height: "auto",
+          maxWidth: "100px",
+          padding: "0px 8px",
+          minWidth: "20px",
+          fontSize: "13px",
+          fontWeight: 500,
+          color: "#6c757d",
+          right: position === Position.Right ? "0" : "auto",
+          left: position === Position.Left ? "0" : "auto",
+          transform: `translateX(${
+            position === Position.Right
+              ? "calc(100% - 16px)"
+              : "calc(-100% + 16px)"
+          }) translateY(-50%)`,
+          borderRadius: "12px",
+          transition: "all 0.2s ease",
+        }}
+      >
+        <Group gap="xs" style={{ pointerEvents: "none" }}>
+          {position === Position.Left ? label : null}
+          {circleHandle}
+          {position === Position.Right ? label : null}
+        </Group>
+      </Handle>
+    );
+  }
+
+  // Default circle handle when no label
   return (
     <Handle
       key={id}
@@ -97,10 +159,10 @@ export default function CanvasNode({
 
   const renderNodeIcon = (icon: string | React.ComponentType<any>) => {
     if (typeof icon === "string") {
-      return <Text size="lg">{icon}</Text>;
+      return <Text size="xl">{icon}</Text>;
     } else {
       const IconComponent = icon;
-      return <IconComponent size={22} />;
+      return <IconComponent size={33} />;
     }
   };
 
@@ -156,8 +218,14 @@ export default function CanvasNode({
       withBorder
     >
       {/* Input handles */}
-      {(nodeData.inputs || []).map((input: string) =>
-        NodeHandle({ type: "target", position: Position.Left, id: input }),
+      {(nodeData.inputs || []).map((input: string, index: number) =>
+        NodeHandle({
+          type: "target",
+          position: Position.Left,
+          id: input,
+          percentage: (index + 1) / (nodeData.inputs!.length + 1),
+          label: (nodeData.inputs?.length ?? 0) > 1 ? input : undefined,
+        }),
       )}
 
       {/* Output handles */}
@@ -167,15 +235,14 @@ export default function CanvasNode({
           position: Position.Right,
           id: output,
           percentage: (index + 1) / (nodeData.outputs!.length + 1),
+          label: (nodeData.outputs?.length ?? 0) > 1 ? output : undefined,
         }),
       )}
 
       <Stack>
         <Stack gap="xs">
-          <Group justify="space-between" mih={28}>
-            {renderNodeIcon(getNodeIcon(nodeData))}
-            {nodeData.error && <IconAlertCircle color="red" />}
-          </Group>
+          {renderNodeIcon(getNodeIcon(nodeData))}
+          {nodeData.error && <IconAlertCircle color="red" />}
           <div>
             <Text size="sm" fw={500} c={getNodeColor(nodeData)}>
               {getNodeLabel(nodeData)}

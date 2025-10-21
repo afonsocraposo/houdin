@@ -1,6 +1,6 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
 import { selectProperty, textProperty } from "@/types/config-properties";
-import { IconGitBranch } from "@tabler/icons-react";
+import { IconArrowFork } from "@tabler/icons-react";
 
 interface IfActionConfig {
   a: any; // Left operand
@@ -21,7 +21,7 @@ export class IfAction extends BaseAction<IfActionConfig, IfActionOutput> {
     label: "If Comparison",
     description:
       "Perform a comparison between two values with true/false outputs",
-    icon: IconGitBranch,
+    icon: IconArrowFork,
     outputs: new Set(["true", "false"]),
   };
 
