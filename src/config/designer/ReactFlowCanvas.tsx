@@ -16,6 +16,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { ActionRegistry } from "@/services/actionRegistry";
 import {
   Box,
   ActionIcon,
@@ -253,6 +254,18 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const createNode = useCallback(
     (type: string, nodeType: NodeType) => {
       let defaultConfig = {};
+      let outputs: string[] = ["output"]; // default
+
+      // Get outputs from metadata
+      if (nodeType === "action") {
+        const actionRegistry = ActionRegistry.getInstance();
+        const action = actionRegistry.getAction(type);
+        if (action?.metadata.outputs) {
+          outputs = Array.from(action.metadata.outputs);
+        }
+      } else if (nodeType === "trigger") {
+        outputs = ["output"]; // triggers always have single output
+      }
 
       const newPosition = getNewNodePosition(workflowNodes);
 
@@ -262,7 +275,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         position: newPosition,
         data: { type, config: defaultConfig },
         inputs: nodeType === "trigger" ? [] : ["input"],
-        outputs: nodeType === "condition" ? ["true", "false"] : ["output"],
+        outputs,
       };
 
       onNodeCreate(newNode);

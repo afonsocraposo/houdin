@@ -48,7 +48,7 @@ export class ActionRegistry {
     workflowId: string,
     nodeId: string,
     tabId?: number,
-  ): Promise<any> {
+  ): Promise<{ data?: any; outputHandle?: string }> {
     const action = this.getAction(type);
     if (!action) {
       throw new Error(`Action type '${type}' not found in registry`);
@@ -64,11 +64,19 @@ export class ActionRegistry {
 
     // Execute with defaults applied
     const configWithDefaults = action.getConfigWithDefaults(config);
-    return new Promise<any>((resolve, reject) => {
+    return new Promise<{ data?: any; outputHandle?: string }>((resolve, reject) => {
+      const onSuccess = (data?: any, outputHandle?: string) => {
+        resolve({ data, outputHandle });
+      };
+
+      const onError = (error: Error) => {
+        reject(error);
+      };
+
       action
-        .execute(configWithDefaults, workflowId, nodeId, resolve, reject, tabId)
-        .catch((error) => reject(error))
-        .finally(() => resolve(null));
+        .execute(configWithDefaults, workflowId, nodeId, onSuccess, onError, tabId)
+        .catch((error) => reject(error));
+      
       if (!action.metadata?.disableTimeout) {
         setTimeout(
           () => reject(new Error(`Action ${type} execution timed out`)),

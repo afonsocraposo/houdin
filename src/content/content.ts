@@ -196,7 +196,7 @@ if ((window as any).houdinExtensionInitialized) {
                 executeActionCommand.workflowId,
                 executeActionCommand.nodeId,
               )
-              .then((result) => sendResponse({ success: true, data: result }))
+              .then((result) => sendResponse({ success: true, data: result.data, outputHandle: result.outputHandle }))
               .catch((error: any) => {
                 NotificationService.showErrorNotification({
                   title: `Error executing ${executeActionCommand.nodeId}`,

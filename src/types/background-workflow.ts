@@ -61,6 +61,7 @@ export interface StatusMessage {
   success: boolean;
   data?: any;
   error?: string;
+  outputHandle?: string;
 }
 
 export interface ReadinessCheckCommand {

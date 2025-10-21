@@ -88,17 +88,28 @@ export class WorkflowExecutor {
     }
   }
 
-  public onActionExecuted(nodeId: string, result: any): void {
-    console.debug("Action executed:", nodeId, result);
+  public onActionExecuted(nodeId: string, result: any, outputHandle?: string): void {
+    console.debug("Action executed:", nodeId, result, "outputHandle:", outputHandle);
     this.context.setOutput(nodeId, result);
-    // Find all actions connected to this node
+    
+    // Find connections from this node, filtered by output handle if specified
     const connections = this.workflow.connections.filter(
-      (conn) => conn.source === nodeId,
+      (conn) => {
+        if (conn.source !== nodeId) return false;
+        
+        // If outputHandle is specified, only follow connections from that handle
+        if (outputHandle) {
+          return conn.sourceHandle === outputHandle;
+        }
+        
+        // If no outputHandle specified, follow connections without sourceHandle (default behavior)
+        return !conn.sourceHandle;
+      }
     );
 
     if (connections.length === 0) {
       this.nodesProcessing.delete(nodeId);
-      console.debug("No further actions connected to node:", nodeId);
+      console.debug("No further actions connected to node:", nodeId, "via handle:", outputHandle);
       this.destroy(true);
       return;
     }
@@ -200,7 +211,7 @@ export class WorkflowExecutor {
         executedAt: start,
         duration,
       });
-      this.onActionExecuted(node.id, result.data);
+      this.onActionExecuted(node.id, result.data, result.outputHandle);
     } catch (error) {
       console.error("Error executing action:", error);
       this.destroy(false, true);
@@ -218,7 +229,7 @@ export class WorkflowExecutor {
           executeActionCommand.nodeId,
           this.tabId,
         )
-        .then((result) => resolve({ success: true, data: result }))
+        .then((result) => resolve({ success: true, data: result.data, outputHandle: result.outputHandle }))
         .catch((error) => {
           NotificationService.showErrorNotificationFromBackground({
             title: `Error executing ${executeActionCommand.nodeId}`,

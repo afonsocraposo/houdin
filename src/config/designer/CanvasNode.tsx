@@ -23,10 +23,12 @@ function NodeHandle({
   type,
   position,
   id,
+  percentage = 0.5,
 }: {
   type: "source" | "target";
   position: Position;
   id: string;
+  percentage?: number;
 }) {
   return (
     <Handle
@@ -35,9 +37,9 @@ function NodeHandle({
       position={position}
       id={id}
       style={{
-        top: "50%",
         width: 16,
         height: 16,
+        top: `${percentage * 100}%`,
         background: "#adb5bd",
         border: "2px solid #fff",
         transition: "all 0.2s ease",
@@ -125,8 +127,7 @@ export default function CanvasNode({
         return "#e03131";
       case "action":
         return "#1971c2";
-      case "condition":
-        return "#f08c00";
+
       default:
         return "#495057";
     }
@@ -160,8 +161,13 @@ export default function CanvasNode({
       )}
 
       {/* Output handles */}
-      {(nodeData.outputs || []).map((output: string) =>
-        NodeHandle({ type: "source", position: Position.Right, id: output }),
+      {(nodeData.outputs || []).map((output: string, index: number) =>
+        NodeHandle({
+          type: "source",
+          position: Position.Right,
+          id: output,
+          percentage: (index + 1) / (nodeData.outputs!.length + 1),
+        }),
       )}
 
       <Stack>
