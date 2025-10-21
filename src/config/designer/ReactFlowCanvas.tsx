@@ -33,6 +33,7 @@ import { WorkflowNode, WorkflowConnection, NodeType } from "@/types/workflow";
 import { initializeTriggers } from "@/services/triggerInitializer";
 import { initializeActions } from "@/services/actionInitializer";
 import CanvasNode from "./CanvasNode";
+import CanvasEdge from "./CanvasEdge";
 import { useHotkeys } from "@mantine/hooks";
 import AddNodeList from "./AddNodeList";
 import { generateId } from "@/utils/helpers";
@@ -124,16 +125,19 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             target: conn.target,
             sourceHandle: conn.sourceHandle,
             targetHandle: conn.targetHandle,
+            type: "custom",
             animated: false,
             markerEnd: {
               type: "arrow",
               width: 20,
               height: 20,
             },
-            style: { strokeWidth: 2 },
+            data: {
+              onDelete: onConnectionDelete,
+            },
           }) as Edge,
       ),
-    [workflowConnections],
+    [workflowConnections, onConnectionDelete],
   );
 
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState(reactFlowNodes);
@@ -193,9 +197,10 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   // Create a Set of existing connections for efficient duplicate checking
   const existingConnections = useMemo(() => {
     return new Set(
-      workflowConnections.map(conn => 
-        `${conn.source}:${conn.sourceHandle || "output"}:${conn.target}:${conn.targetHandle || "input"}`
-      )
+      workflowConnections.map(
+        (conn) =>
+          `${conn.source}:${conn.sourceHandle || "output"}:${conn.target}:${conn.targetHandle || "input"}`,
+      ),
     );
   }, [workflowConnections]);
 
@@ -206,7 +211,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
       // Check if connection already exists using Set
       const connectionKey = `${params.source}:${params.sourceHandle || "output"}:${params.target}:${params.targetHandle || "input"}`;
-      
+
       if (existingConnections.has(connectionKey)) {
         return; // Duplicate connection, don't create
       }
@@ -340,6 +345,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         onPaneClick={onPaneClick}
         nodeTypes={{
           custom: CanvasNode,
+        }}
+        edgeTypes={{
+          custom: CanvasEdge,
         }}
         connectionLineType={ConnectionLineType.Bezier}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}

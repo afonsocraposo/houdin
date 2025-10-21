@@ -22,3 +22,12 @@
 .mantine-CodeHighlight-controls:hover {
   opacity: 1;
 }
+
+/* Edge hover delete button styles */
+.react-flow__edge:hover + .react-flow__edgelabel .edge-delete-button {
+  opacity: 1 !important;
+}
+
+.react-flow__edge:hover .edge-delete-button {
+  opacity: 1 !important;
+}
