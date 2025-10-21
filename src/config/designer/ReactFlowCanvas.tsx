@@ -190,10 +190,26 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     [onNodesChangeFlow, onNodeMove],
   );
 
+  // Create a Set of existing connections for efficient duplicate checking
+  const existingConnections = useMemo(() => {
+    return new Set(
+      workflowConnections.map(conn => 
+        `${conn.source}:${conn.sourceHandle || "output"}:${conn.target}:${conn.targetHandle || "input"}`
+      )
+    );
+  }, [workflowConnections]);
+
   // Handle new connections
   const onConnect = useCallback(
     (params: Connection) => {
       if (!params.source || !params.target) return;
+
+      // Check if connection already exists using Set
+      const connectionKey = `${params.source}:${params.sourceHandle || "output"}:${params.target}:${params.targetHandle || "input"}`;
+      
+      if (existingConnections.has(connectionKey)) {
+        return; // Duplicate connection, don't create
+      }
 
       const newConnection: WorkflowConnection = {
         id: generateId("conn"),
@@ -205,7 +221,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
       onConnectionCreate(newConnection);
     },
-    [workflowConnections, onConnectionCreate],
+    [existingConnections, onConnectionCreate],
   );
 
   // Handle edge deletion
