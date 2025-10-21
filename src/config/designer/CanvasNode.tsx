@@ -11,6 +11,7 @@ import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionIcon, Card, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { Handle, Position } from "@xyflow/react";
 import { IconAlertCircle, IconTrash } from "@tabler/icons-react";
+import { useHover } from "@mantine/hooks";
 
 interface CanvasNodeProps {
   data: WorkflowNode["data"] &
@@ -121,6 +122,7 @@ export default function CanvasNode({
   id,
   selected,
 }: CanvasNodeProps) {
+  const { hovered, ref } = useHover();
   const handleCopyNodeId = useCallback(
     async (nodeId: string, event: React.MouseEvent) => {
       event.stopPropagation();
@@ -210,6 +212,7 @@ export default function CanvasNode({
   return (
     <Card
       key={id}
+      ref={ref}
       style={{
         width: "200px",
         borderColor,
@@ -269,6 +272,10 @@ export default function CanvasNode({
             color="red"
             variant="subtle"
             onClick={deleteNode}
+            style={{
+              opacity: hovered || selected ? 1 : 0,
+              transition: "opacity 0.2s",
+            }}
           >
             <IconTrash size={14} />
           </ActionIcon>
