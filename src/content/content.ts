@@ -153,7 +153,7 @@ if ((window as any).houdinExtensionInitialized) {
                 initTriggerCommand.nodeConfig,
                 initTriggerCommand.workflowId,
                 initTriggerCommand.nodeId,
-                async (data?: any) => {
+                async (config: Record<string, any>, data?: any) => {
                   console.debug(
                     "Content: Trigger fired:",
                     initTriggerCommand.nodeId,
@@ -169,6 +169,7 @@ if ((window as any).houdinExtensionInitialized) {
                     triggerNodeId: initTriggerCommand.nodeId,
                     data: data || initTriggerCommand.nodeConfig,
                     duration,
+                    config,
                   };
 
                   sendMessageToBackground<TriggerFiredCommand>(
@@ -196,13 +197,36 @@ if ((window as any).houdinExtensionInitialized) {
                 executeActionCommand.workflowId,
                 executeActionCommand.nodeId,
               )
-              .then((result) => sendResponse({ success: true, data: result.data, outputHandle: result.outputHandle }))
+              .then((result) => {
+                if (result.success) {
+                  sendResponse({
+                    success: true,
+                    data: result.data,
+                    outputHandle: result.outputHandle,
+                    config: result.config,
+                  });
+                } else {
+                  NotificationService.showErrorNotification({
+                    title: `Error executing ${executeActionCommand.nodeId}`,
+                    message: result.error?.message,
+                  });
+                  sendResponse({
+                    success: false,
+                    error: result.error?.message,
+                    config: result.config,
+                  });
+                }
+              })
               .catch((error: any) => {
                 NotificationService.showErrorNotification({
                   title: `Error executing ${executeActionCommand.nodeId}`,
                   message: error.message,
                 });
-                sendResponse({ success: false, error: error.message });
+                sendResponse({
+                  success: false,
+                  error: error.message,
+                  config: undefined,
+                });
               });
             break;
           default:

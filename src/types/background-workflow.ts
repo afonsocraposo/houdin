@@ -47,6 +47,7 @@ export interface TriggerFiredCommand {
   workflowId: string;
   triggerNodeId: string;
   data: any;
+  config: Record<string, any>;
   duration: number;
 }
 
@@ -62,6 +63,7 @@ export interface StatusMessage {
   data?: any;
   error?: string;
   outputHandle?: string;
+  config?: Record<string, any>;
 }
 
 export interface ReadinessCheckCommand {

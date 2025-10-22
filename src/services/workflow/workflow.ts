@@ -10,13 +10,13 @@ import { sendMessageToContentScript } from "@/lib/messages";
 import cloneDeep from "lodash/cloneDeep";
 import {
   ActionCommand,
+  StatusMessage,
   WorkflowCommandType,
 } from "@/types/background-workflow";
 import { ActionRegistry } from "../actionRegistry";
 import { NotificationService } from "../notification";
 import { ExecutionContext } from "./executionContext";
 import { BackgroundWorkflowEngine } from "../backgroundEngine";
-import { TriggerRegistry } from "../triggerRegistry";
 
 export class WorkflowExecutor {
   public readonly id: string;
@@ -55,7 +55,11 @@ export class WorkflowExecutor {
     );
   }
 
-  async start(triggerData: any, duration: number): Promise<void> {
+  async start(
+    triggerData: any,
+    duration: number,
+    config: Record<string, any>,
+  ): Promise<void> {
     console.debug(
       "Trigger fired for workflow:",
       this.workflow.name,
@@ -63,15 +67,13 @@ export class WorkflowExecutor {
       triggerData,
     );
     this.context.setOutput(this.triggerNode.id, triggerData);
-    const config = this.triggerNode.data?.config || {};
-    const trigger = TriggerRegistry.getInstance().getTrigger(triggerData.type);
-    const richConfig = trigger?.getConfigWithDefaults(config) || config;
+
     this.executionTracker.startExecution();
     this.executionTracker.addNodeResult({
       nodeId: this.triggerNode.id,
       nodeType: "trigger",
       nodeName: (this.triggerNode.data as TriggerNodeData)?.type || "unknown",
-      nodeConfig: richConfig,
+      nodeConfig: config || this.triggerNode.data?.config || {},
       data: triggerData,
       status: "success",
       executedAt: Date.now(),
@@ -161,7 +163,7 @@ export class WorkflowExecutor {
     }
 
     const action = actionRegistry.getAction(actionType);
-    const runBackground = action?.metadata.runInBackground ?? false;
+    const runBackground = action !== undefined;
 
     // Send command to content script to set up the trigger
     const message: ActionCommand = {
@@ -185,8 +187,7 @@ export class WorkflowExecutor {
           nodeId: node.id,
           nodeType: "action",
           nodeName: actionType,
-          nodeConfig:
-            action?.getConfigWithDefaults(actionConfig) ?? actionConfig,
+          nodeConfig: actionConfig,
           data: "Timeout waiting for content script to be ready",
           status: "error",
           executedAt: start,
@@ -197,11 +198,11 @@ export class WorkflowExecutor {
 
       const result = runBackground
         ? await this.executeActionInBackground(message)
-        : await sendMessageToContentScript(
+        : ((await sendMessageToContentScript<ActionCommand>(
             this.tabId,
             WorkflowCommandType.EXECUTE_ACTION,
             message,
-          );
+          )) as StatusMessage);
 
       const duration = Date.now() - start;
       if (!result || !result.success) {
@@ -209,8 +210,7 @@ export class WorkflowExecutor {
           nodeId: node.id,
           nodeType: "action",
           nodeName: actionType,
-          nodeConfig:
-            action?.getConfigWithDefaults(actionConfig) ?? actionConfig,
+          nodeConfig: result.config ?? actionConfig,
           data: result?.error,
           status: "error",
           executedAt: start,
@@ -229,7 +229,7 @@ export class WorkflowExecutor {
         nodeId: node.id,
         nodeType: "action",
         nodeName: actionType,
-        nodeConfig: action?.getConfigWithDefaults(actionConfig) ?? actionConfig,
+        nodeConfig: result.config ?? actionConfig,
         data: result.data,
         status: "success",
         executedAt: start,
@@ -241,12 +241,9 @@ export class WorkflowExecutor {
       this.destroy(false, true);
     }
   }
-  private executeActionInBackground(message: ActionCommand): Promise<{
-    success: boolean;
-    data?: any;
-    outputHandle?: string;
-    error?: string;
-  }> {
+  private executeActionInBackground(
+    message: ActionCommand,
+  ): Promise<StatusMessage> {
     return new Promise(async (resolve) => {
       const executeActionCommand = message as ActionCommand;
       const actionRegistry = ActionRegistry.getInstance();

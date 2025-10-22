@@ -126,16 +126,18 @@ workflowEngine.initialize().then(() => {
         const url = response.url;
         const workflowId = response.workflowId;
         const triggerNodeId = response.triggerNodeId;
-        const data = response.data || {};
+        const triggerData = response.data || {};
+        const config = response.config || {};
         const duration = response.duration || 0;
-        workflowEngine.dispatchExecutor(
+        workflowEngine.dispatchExecutor({
           url,
           tabId,
           workflowId,
           triggerNodeId,
-          data,
+          triggerData,
+          config,
           duration,
-        );
+        });
         return;
       }
     },

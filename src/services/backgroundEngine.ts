@@ -152,14 +152,23 @@ export class BackgroundWorkflowEngine {
     }
   }
 
-  public dispatchExecutor(
-    url: string,
-    tabId: number,
-    workflowId: string,
-    triggerNodeId: string,
-    triggerData: any,
-    duration: number,
-  ) {
+  public dispatchExecutor({
+    url,
+    tabId,
+    workflowId,
+    triggerNodeId,
+    triggerData,
+    duration,
+    config,
+  }: {
+    url: string;
+    tabId: number;
+    workflowId: string;
+    triggerNodeId: string;
+    triggerData: any;
+    duration: number;
+    config: Record<string, any>;
+  }) {
     const workflow = this.workflows.find((wf) => wf.id === workflowId);
     if (!workflow) {
       console.error(`Workflow not found: ${workflowId}`);
@@ -181,7 +190,7 @@ export class BackgroundWorkflowEngine {
     );
     this.activeExecutors.set(executor.id, executor);
 
-    executor.start(triggerData, duration).catch((error) => {
+    executor.start(triggerData, duration, config).catch((error) => {
       console.error(`Error executing workflow ${workflow.name}:`, error);
     });
   }
