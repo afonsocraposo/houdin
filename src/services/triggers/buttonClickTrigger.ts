@@ -198,34 +198,27 @@ export class ButtonClickTrigger extends BaseTrigger<
       true, // coreOnly
     );
 
-    // Wait for user interaction before continuing workflow
-    return new Promise<void>((resolve) => {
-      const handleComponentTrigger = (
-        event: CustomEventInit<ComponentTriggerEventDetail>,
-      ) => {
-        const customEvent = event as CustomEvent;
-        if (
-          customEvent.detail?.workflowId === workflowId &&
-          customEvent.detail?.nodeId === nodeId
-        ) {
-          document.removeEventListener(
-            "workflow-component-trigger",
-            handleComponentTrigger,
-          );
-          // Update output with interaction data
-          onTrigger({
-            componentType,
-            interactionData: customEvent.detail?.data,
-            timestamp: Date.now(),
-          });
-          resolve();
-        }
-      };
+    // Listen for user interactions continuously (keep listener active)
+    const handleComponentTrigger = (
+      event: CustomEventInit<ComponentTriggerEventDetail>,
+    ) => {
+      const customEvent = event as CustomEvent;
+      if (
+        customEvent.detail?.workflowId === workflowId &&
+        customEvent.detail?.nodeId === nodeId
+      ) {
+        // Trigger workflow execution but keep listening for more clicks
+        onTrigger({
+          componentType,
+          interactionData: customEvent.detail?.data,
+          timestamp: Date.now(),
+        });
+      }
+    };
 
-      document.addEventListener(
-        "workflow-component-trigger",
-        handleComponentTrigger,
-      );
-    });
+    document.addEventListener(
+      "workflow-component-trigger",
+      handleComponentTrigger,
+    );
   }
 }
