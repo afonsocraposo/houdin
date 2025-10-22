@@ -169,6 +169,14 @@ export default function VariablesButton({
             Variables
           </Group>
         </Menu.Label>
+        <Menu.Item
+          component="a"
+          href="https://liquidjs.com/tutorials/intro-to-liquid.html"
+          target="_blank"
+          style={{ fontSize: "12px" }}
+        >
+          💡 Supports Liquid syntax
+        </Menu.Item>
         <Menu.Divider />
         <Menu.Label>Nodes Outputs</Menu.Label>
         {nodeOutputs.map((node) => (
