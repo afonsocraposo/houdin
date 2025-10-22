@@ -33,7 +33,7 @@ export class ExecutionContext implements WorkflowExecutionContext {
     return this.liquidEngine.parseAndRenderSync(text, {
       ...this.outputs,
       env: this.env,
-      metadata: this.metadata,
+      meta: this.metadata,
     });
   }
 }
