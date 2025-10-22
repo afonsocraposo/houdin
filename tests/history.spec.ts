@@ -126,8 +126,8 @@ test.describe("Execution history", () => {
     await expect(page.getByText("action-P8n5PD")).toBeVisible();
 
     // Search for node type
-    await expect(page.getByText("trigger:page-load")).toBeVisible();
-    await expect(page.getByText("action:show-modal")).toBeVisible();
+    await expect(page.getByText("page-load").first()).toBeVisible();
+    await expect(page.getByText("show-modal").first()).toBeVisible();
 
     // Click on "View Output" elements
     const viewOutput = page.locator('text="View Output"');
@@ -231,8 +231,8 @@ test.describe("Execution history", () => {
     await expect(page.getByText("action-P8n5PD")).toBeVisible();
 
     // Search for node type
-    await expect(page.getByText("trigger:page-load")).toBeVisible();
-    await expect(page.getByText("action:click-element")).toBeVisible();
+    await expect(page.getByText("page-load").first()).toBeVisible();
+    await expect(page.getByText("click-element").first()).toBeVisible();
 
     // Expect to see one Success and one Error badge
     await expect(page.getByText("success")).toHaveCount(1);
