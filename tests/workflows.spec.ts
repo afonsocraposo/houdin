@@ -239,9 +239,6 @@ test.describe("Workflows creation, design and execution", () => {
     // Go to example.com
     await page.goto("https://example.com");
 
-    // Wait for 1 second
-    await page.waitForTimeout(1000);
-
     // Expect to see the modal with text
     await expect(page.getByText("Hello from Houdin workflow")).toBeVisible();
   });

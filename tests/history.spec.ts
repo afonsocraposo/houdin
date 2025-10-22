@@ -87,9 +87,6 @@ test.describe("Execution history", () => {
     // Go to example.com to trigger the workflow
     await page.goto("https://example.com");
 
-    // Wait to allow the workflow to execute
-    await page.waitForTimeout(1000);
-
     // Wait for text to show in modal
     await expect(page.getByText("Hello from Houdin workflow")).toBeVisible();
 
@@ -186,9 +183,6 @@ test.describe("Execution history", () => {
 
     // Go to example.com to trigger the workflow
     await page.goto("https://example.com");
-
-    // Wait to allow the workflow to execute
-    await page.waitForTimeout(1000);
 
     // Go back to history page
     page.goto(UrlBuilder(baseUrl, Destinations.HISTORY));
