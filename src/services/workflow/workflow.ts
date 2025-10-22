@@ -16,6 +16,7 @@ import { ActionRegistry } from "../actionRegistry";
 import { NotificationService } from "../notification";
 import { ExecutionContext } from "./executionContext";
 import { BackgroundWorkflowEngine } from "../backgroundEngine";
+import { TriggerRegistry } from "../triggerRegistry";
 
 export class WorkflowExecutor {
   public readonly id: string;
@@ -62,12 +63,15 @@ export class WorkflowExecutor {
       triggerData,
     );
     this.context.setOutput(this.triggerNode.id, triggerData);
+    const config = this.triggerNode.data?.config || {};
+    const trigger = TriggerRegistry.getInstance().getTrigger(triggerData.type);
+    const richConfig = trigger?.getConfigWithDefaults(config) || config;
     this.executionTracker.startExecution();
     this.executionTracker.addNodeResult({
       nodeId: this.triggerNode.id,
       nodeType: "trigger",
       nodeName: (this.triggerNode.data as TriggerNodeData)?.type || "unknown",
-      nodeConfig: this.triggerNode.data?.config || {},
+      nodeConfig: richConfig,
       data: triggerData,
       status: "success",
       executedAt: Date.now(),
@@ -157,7 +161,7 @@ export class WorkflowExecutor {
     }
 
     const action = actionRegistry.getAction(actionType);
-    const runBackground = action !== undefined;
+    const runBackground = action?.metadata.runInBackground ?? false;
 
     // Send command to content script to set up the trigger
     const message: ActionCommand = {
@@ -181,7 +185,8 @@ export class WorkflowExecutor {
           nodeId: node.id,
           nodeType: "action",
           nodeName: actionType,
-          nodeConfig: actionConfig,
+          nodeConfig:
+            action?.getConfigWithDefaults(actionConfig) ?? actionConfig,
           data: "Timeout waiting for content script to be ready",
           status: "error",
           executedAt: start,
@@ -204,7 +209,8 @@ export class WorkflowExecutor {
           nodeId: node.id,
           nodeType: "action",
           nodeName: actionType,
-          nodeConfig: actionConfig,
+          nodeConfig:
+            action?.getConfigWithDefaults(actionConfig) ?? actionConfig,
           data: result?.error,
           status: "error",
           executedAt: start,
@@ -212,12 +218,18 @@ export class WorkflowExecutor {
         });
         throw new Error(`Action ${actionType}: ${result?.error}`);
       }
+      console.log(
+        actionType,
+        action,
+        actionConfig,
+        action?.getConfigWithDefaults(actionConfig),
+      );
       // Track the execution result
       this.executionTracker.addNodeResult({
         nodeId: node.id,
         nodeType: "action",
         nodeName: actionType,
-        nodeConfig: actionConfig,
+        nodeConfig: action?.getConfigWithDefaults(actionConfig) ?? actionConfig,
         data: result.data,
         status: "success",
         executedAt: start,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { getBezierPath, BaseEdge, EdgeToolbar, EdgeProps } from "@xyflow/react";
 import { ActionIcon } from "@mantine/core";
 import { IconTrash } from "@tabler/icons-react";

@@ -64,26 +64,35 @@ export class ActionRegistry {
 
     // Execute with defaults applied
     const configWithDefaults = action.getConfigWithDefaults(config);
-    return new Promise<{ data?: any; outputHandle?: string }>((resolve, reject) => {
-      const onSuccess = (data?: any, outputHandle?: string) => {
-        resolve({ data, outputHandle });
-      };
+    return new Promise<{ data?: any; outputHandle?: string }>(
+      (resolve, reject) => {
+        const onSuccess = (data?: any, outputHandle?: string) => {
+          resolve({ data, outputHandle });
+        };
 
-      const onError = (error: Error) => {
-        reject(error);
-      };
+        const onError = (error: Error) => {
+          reject(error);
+        };
 
-      action
-        .execute(configWithDefaults, workflowId, nodeId, onSuccess, onError, tabId)
-        .catch((error) => reject(error));
-      
-      if (!action.metadata?.disableTimeout) {
-        setTimeout(
-          () => reject(new Error(`Action ${type} execution timed out`)),
-          10000,
-        );
-      }
-    });
+        action
+          .execute(
+            configWithDefaults,
+            workflowId,
+            nodeId,
+            onSuccess,
+            onError,
+            tabId,
+          )
+          .catch((error) => reject(error));
+
+        if (!action.metadata?.disableTimeout) {
+          setTimeout(
+            () => reject(new Error(`Action ${type} execution timed out`)),
+            10000,
+          );
+        }
+      },
+    );
   }
 
   // Validate action configuration
