@@ -5,6 +5,7 @@ import { DelayTrigger } from "./triggers/delayTrigger";
 import { KeyPressTrigger } from "./triggers/onKeyPressTrigger";
 import { HttpRequestTrigger } from "./triggers/httpRequestTrigger";
 import { ButtonClickTrigger } from "./triggers/buttonClickTrigger";
+import { PopupTrigger } from "./triggers/popupTrigger";
 
 // Initialize and register all triggers
 export function initializeTriggers(): void {
@@ -17,6 +18,7 @@ export function initializeTriggers(): void {
   registry.register(new KeyPressTrigger());
   registry.register(new HttpRequestTrigger());
   registry.register(new ButtonClickTrigger());
+  registry.register(new PopupTrigger());
 }
 
 // Export for convenience

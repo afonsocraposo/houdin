@@ -87,3 +87,7 @@ export interface HttpTriggerFiredMessage {
   triggerNodeId: string;
   data: any;
 }
+
+export interface PopupTriggerMessage {
+  workflowId: string;
+}
