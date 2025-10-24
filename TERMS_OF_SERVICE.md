@@ -74,7 +74,7 @@ The Extension stores data locally in your browser, including:
 
 - Workflow configurations
 - Execution history
-- Encrypted credentials and API keys
+- Credentials and API keys
 - User preferences and settings
 
 ### 5.2 No Data Transmission
