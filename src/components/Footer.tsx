@@ -22,8 +22,6 @@ export default function Footer() {
             Github
           </Anchor>
           {" • "}
-          <Anchor href="/terms-and-conditions">Terms & Conditions</Anchor>
-          {" • "}
           <Anchor
             href="https://github.com/afonsocraposo/houdin/blob/main/LICENSE.md"
             target="_blank"
