@@ -5,6 +5,10 @@ export default function Footer() {
     <Box py="lg" mt="xl">
       <Stack>
         <Text ta="center" c="dimmed" size="sm">
+          <Anchor href="https://houdin.dev" target="_blank">
+            Houdin
+          </Anchor>
+          {" • "}
           Made with 🧡 by{" "}
           <Anchor href="https://afonsoraposo.com" target="_blank">
             Afonso Raposo
@@ -17,6 +21,8 @@ export default function Footer() {
           >
             Github
           </Anchor>
+          {" • "}
+          <Anchor href="/terms-and-conditions">Terms & Conditions</Anchor>
           {" • "}
           <Anchor
             href="https://github.com/afonsocraposo/houdin/blob/main/LICENSE.md"
