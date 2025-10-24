@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Effective Date**: October 24, 2025  
+**Effective Date**: October 24, 2025
 **Last Updated**: October 24, 2025
 
 ## 1. Acceptance of Terms
@@ -27,6 +27,7 @@ Subject to these Terms, we grant you a limited, non-exclusive, non-transferable,
 ### 3.2 Permitted Use
 
 You may use the Extension for:
+
 - Personal automation projects
 - Educational and research purposes
 - Non-profit activities
@@ -35,6 +36,7 @@ You may use the Extension for:
 ### 3.3 Prohibited Use
 
 You may NOT use the Extension for:
+
 - Commercial purposes or for-profit activities
 - Selling, licensing, or sublicensing the Extension
 - Violating any website's terms of service or robots.txt
@@ -49,6 +51,7 @@ You may NOT use the Extension for:
 ### 4.1 Compliance
 
 You agree to:
+
 - Use the Extension in compliance with all applicable laws and regulations
 - Respect the terms of service of websites you interact with
 - Obtain necessary permissions before automating interactions with third-party services
@@ -57,6 +60,7 @@ You agree to:
 ### 4.2 Security
 
 You are responsible for:
+
 - Keeping your credentials and API keys secure
 - Not sharing sensitive information through the Extension
 - Monitoring your automated workflows for unexpected behavior
@@ -67,6 +71,7 @@ You are responsible for:
 ### 5.1 Local Storage
 
 The Extension stores data locally in your browser, including:
+
 - Workflow configurations
 - Execution history
 - Encrypted credentials and API keys
@@ -103,6 +108,7 @@ We do not guarantee that the Extension will work with all websites or remain fun
 ### 7.3 Automation Risks
 
 You acknowledge that browser automation carries inherent risks, including:
+
 - Unintended actions on web pages
 - Potential violations of website terms of service
 - Possible account restrictions or bans from third-party services
@@ -161,7 +167,3 @@ For questions about these Terms or the Extension, please contact us at:
 ## 17. Acknowledgment
 
 By using the Extension, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
-
----
-
-**Last Updated**: October 24, 2025
