@@ -23,7 +23,7 @@ const config: PlaywrightTestConfig = {
   /* Number of workers to run tests on. */
   workers: process.env.CI ? 2 : 1,
   /* Run tests in files in parallel */
-  fullyParallel: false,
+  fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
