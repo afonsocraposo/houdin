@@ -26,7 +26,7 @@ export default function Footer() {
             href="https://github.com/afonsocraposo/houdin/blob/main/LICENSE.md"
             target="_blank"
           >
-            PolyForm Noncommercial License
+            FSL-1.1-ALv2 License
           </Anchor>
         </Text>
       </Stack>

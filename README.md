@@ -152,17 +152,17 @@ All credentials are encrypted and stored locally in the browser's extension stor
 
 ## 📝 License
 
-This project is licensed under the **PolyForm Noncommercial License 1.0.0**.
+This project is licensed under the **Functional Source License 1.1** (FSL-1.1-ALv2).
 
 ### License Summary
 
-- ✅ **Free for noncommercial use**: Personal projects, research, education, nonprofits, government
+- ✅ **Internal use**: Use within your organization
+- ✅ **Non-commercial**: Education, research, and personal projects
+- ✅ **Professional services**: Provide services using the software
 - ✅ **Modify and share**: You can make changes and derivatives (must include license)
-- ❌ **No commercial use**: Cannot sell, use in paid products/services, or for profit
-- ❌ **No sublicensing**: Cannot transfer or sublicense the rights
+- ❌ **No competing use**: Cannot create competing SaaS or similar services
+- 🕐 **Future open source**: Automatically becomes Apache 2.0 after 2 years
 - ⚠️ **No warranty**: Software provided "as is" with no guarantees
-
-For commercial licensing options, please contact the project maintainers.
 
 ## 🤝 Contributing
 
