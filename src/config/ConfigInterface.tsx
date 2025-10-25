@@ -7,7 +7,6 @@ import {
   Notification,
   Alert,
   Tabs,
-  Anchor,
   Space,
   Box,
 } from "@mantine/core";
@@ -26,6 +25,7 @@ import { APP_VERSION } from "@/utils/version";
 import Logo from "@/components/Logo";
 import WorkflowsTab from "./workflows/WorkflowsTab";
 import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
+import Footer from "@/components/Footer";
 
 enum TabOption {
   Workflows = "workflows",
@@ -155,12 +155,7 @@ function ConfigInterface() {
         <Text size="xs" c="dimmed" ta="center">
           Houdin extension v{APP_VERSION}
         </Text>
-        <Text size="xs" c="dimmed" ta="center">
-          Made with 🧡 by&nbsp;
-          <Anchor target="_blank" href="https://afonsoraposo.com">
-            Afonso Raposo
-          </Anchor>
-        </Text>
+        <Footer />
       </Stack>
     </Container>
   );

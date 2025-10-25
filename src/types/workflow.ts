@@ -1,6 +1,6 @@
 import { newExecutionId, newWorkflowId } from "@/utils/helpers";
 
-export type NodeType = "trigger" | "action" | "condition";
+export type NodeType = "trigger" | "action";
 export interface WorkflowNode {
   id: string;
   type: NodeType;

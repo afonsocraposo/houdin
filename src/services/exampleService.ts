@@ -13,6 +13,7 @@ export class ExampleService {
       examples.summarizeNews,
       examples.apiTriggerYoutube,
       examples.copyUrlClipboard,
+      examples.apiRequestAndLiquid,
     ];
   }
 

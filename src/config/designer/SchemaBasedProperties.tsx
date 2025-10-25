@@ -3,7 +3,6 @@ import {
   Stack,
   TextInput,
   Select,
-  Textarea,
   NumberInput,
   ColorInput,
   InputLabel,
@@ -12,8 +11,9 @@ import {
 } from "@mantine/core";
 import { ConfigSchema, ConfigProperty } from "@/types/config-properties";
 import { CredentialsSelect } from "@/components/CredentialsSelect";
-import CodeEditor from "@/components/CodeEditor";
 import PasswordInput from "@/components/PasswordInput";
+import MaximizableTextArea from "./ModalTextArea";
+import MaximizableCodeInput from "./ModalCodeInput";
 
 interface SchemaBasedPropertiesProps {
   defaultConfig?: Record<string, any>;
@@ -79,11 +79,11 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
         );
       case "textarea":
         return (
-          <Textarea
+          <MaximizableTextArea
             label={property.label}
             placeholder={property.placeholder}
             description={property.description}
-            rows={property.rows || 3}
+            minRows={property.rows || 3}
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
             required={property.required}
@@ -155,29 +155,18 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
 
       case "code":
         return (
-          <div>
-            <InputLabel mb="xs" required={property.required}>
-              {property.label}
-            </InputLabel>
-            {property.description && (
-              <Text size="xs" c="dimmed" mb="xs">
-                {property.description}
-              </Text>
-            )}
-            <CodeEditor
-              language={property.language}
-              value={value}
-              onChange={(val) => onChange(key, val)}
-              height={property.height || 200}
-              placeholder={property.placeholder}
-              editorKey={key}
-            />
-            {errorMessage && (
-              <Text size="xs" c="red" mt="xs">
-                {errorMessage}
-              </Text>
-            )}
-          </div>
+          <MaximizableCodeInput
+            key={key}
+            label={property.label}
+            placeholder={property.placeholder}
+            description={property.description}
+            language={property.language}
+            height={property.height}
+            value={value}
+            onChange={(val) => onChange(key, val)}
+            required={property.required}
+            error={errorMessage}
+          />
         );
 
       case "boolean":

@@ -10,6 +10,7 @@ import { sendMessageToContentScript } from "@/lib/messages";
 import cloneDeep from "lodash/cloneDeep";
 import {
   ActionCommand,
+  StatusMessage,
   WorkflowCommandType,
 } from "@/types/background-workflow";
 import { ActionRegistry } from "../actionRegistry";
@@ -54,7 +55,11 @@ export class WorkflowExecutor {
     );
   }
 
-  async start(triggerData: any, duration: number): Promise<void> {
+  async start(
+    triggerData: any,
+    duration: number,
+    config: Record<string, any>,
+  ): Promise<void> {
     console.debug(
       "Trigger fired for workflow:",
       this.workflow.name,
@@ -62,12 +67,13 @@ export class WorkflowExecutor {
       triggerData,
     );
     this.context.setOutput(this.triggerNode.id, triggerData);
+
     this.executionTracker.startExecution();
     this.executionTracker.addNodeResult({
       nodeId: this.triggerNode.id,
       nodeType: "trigger",
       nodeName: (this.triggerNode.data as TriggerNodeData)?.type || "unknown",
-      nodeConfig: this.triggerNode.data?.config || {},
+      nodeConfig: config || this.triggerNode.data?.config || {},
       data: triggerData,
       status: "success",
       executedAt: Date.now(),
@@ -88,17 +94,40 @@ export class WorkflowExecutor {
     }
   }
 
-  public onActionExecuted(nodeId: string, result: any): void {
-    console.debug("Action executed:", nodeId, result);
-    this.context.setOutput(nodeId, result);
-    // Find all actions connected to this node
-    const connections = this.workflow.connections.filter(
-      (conn) => conn.source === nodeId,
+  public onActionExecuted(
+    nodeId: string,
+    result: any,
+    outputHandle?: string,
+  ): void {
+    console.debug(
+      "Action executed:",
+      nodeId,
+      result,
+      "outputHandle:",
+      outputHandle,
     );
+    this.context.setOutput(nodeId, result);
+
+    // Find connections from this node, filtered by output handle if specified
+    const connections = this.workflow.connections.filter((conn) => {
+      if (conn.source !== nodeId) return false;
+
+      // If outputHandle is specified, only follow connections from that handle
+      if (outputHandle) {
+        return conn.sourceHandle === outputHandle;
+      }
+
+      return true;
+    });
 
     if (connections.length === 0) {
       this.nodesProcessing.delete(nodeId);
-      console.debug("No further actions connected to node:", nodeId);
+      console.debug(
+        "No further actions connected to node:",
+        nodeId,
+        "via handle:",
+        outputHandle,
+      );
       this.destroy(true);
       return;
     }
@@ -169,11 +198,11 @@ export class WorkflowExecutor {
 
       const result = runBackground
         ? await this.executeActionInBackground(message)
-        : await sendMessageToContentScript(
-            this.tabId,
-            WorkflowCommandType.EXECUTE_ACTION,
-            message,
-          );
+        : ((await sendMessageToContentScript<ActionCommand>(
+          this.tabId,
+          WorkflowCommandType.EXECUTE_ACTION,
+          message,
+        )) as StatusMessage);
 
       const duration = Date.now() - start;
       if (!result || !result.success) {
@@ -181,7 +210,7 @@ export class WorkflowExecutor {
           nodeId: node.id,
           nodeType: "action",
           nodeName: actionType,
-          nodeConfig: actionConfig,
+          nodeConfig: result.config ?? actionConfig,
           data: result?.error,
           status: "error",
           executedAt: start,
@@ -194,19 +223,21 @@ export class WorkflowExecutor {
         nodeId: node.id,
         nodeType: "action",
         nodeName: actionType,
-        nodeConfig: actionConfig,
+        nodeConfig: result.config ?? actionConfig,
         data: result.data,
         status: "success",
         executedAt: start,
         duration,
       });
-      this.onActionExecuted(node.id, result.data);
+      this.onActionExecuted(node.id, result.data, result.outputHandle);
     } catch (error) {
       console.error("Error executing action:", error);
       this.destroy(false, true);
     }
   }
-  private executeActionInBackground(message: ActionCommand): Promise<any> {
+  private executeActionInBackground(
+    message: ActionCommand,
+  ): Promise<StatusMessage> {
     return new Promise(async (resolve) => {
       const executeActionCommand = message as ActionCommand;
       const actionRegistry = ActionRegistry.getInstance();
@@ -218,7 +249,13 @@ export class WorkflowExecutor {
           executeActionCommand.nodeId,
           this.tabId,
         )
-        .then((result) => resolve({ success: true, data: result }))
+        .then((result) =>
+          resolve({
+            success: true,
+            data: result.data,
+            outputHandle: result.outputHandle,
+          }),
+        )
         .catch((error) => {
           NotificationService.showErrorNotificationFromBackground({
             title: `Error executing ${executeActionCommand.nodeId}`,

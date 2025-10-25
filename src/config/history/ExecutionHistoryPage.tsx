@@ -13,27 +13,16 @@ import {
   ActionIcon,
   Select,
   TextInput,
-  Box,
-  Popover,
 } from "@mantine/core";
 import {
   IconChevronDown,
   IconChevronRight,
-  IconClock,
-  IconCheck,
   IconX,
-  IconPlayerPlay,
   IconRefresh,
   IconTrash,
   IconSearch,
-  IconSettings,
 } from "@tabler/icons-react";
-import {
-  WorkflowExecution,
-  WorkflowDefinition,
-  ActionNodeData,
-  TriggerNodeData,
-} from "@/types/workflow";
+import { WorkflowExecution, WorkflowDefinition } from "@/types/workflow";
 import {
   ContentStorageClient,
   MAX_EXECUTIONS_HISTORY,
@@ -41,7 +30,8 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import { formatTimeAgo } from "@/utils/time";
-import { CodeHighlight } from "@mantine/code-highlight";
+import ExecutionHistoryItem from "./ExecutionHistoryItem";
+import { getStatusColor, getStatusIcon } from "./utils";
 
 function ExecutionHistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -126,34 +116,6 @@ function ExecutionHistoryPage() {
     return `${execution.completedAt - execution.startedAt}ms`;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-      case "success":
-        return "green";
-      case "failed":
-      case "error":
-        return "red";
-      case "running":
-        return "blue";
-      default:
-        return "gray";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <IconCheck size={16} />;
-      case "failed":
-        return <IconX size={16} />;
-      case "running":
-        return <IconPlayerPlay size={16} />;
-      default:
-        return <IconClock size={16} />;
-    }
-  };
-
   const clearHistory = async () => {
     try {
       await storageClient.clearWorkflowExecutions();
@@ -176,24 +138,6 @@ function ExecutionHistoryPage() {
   const getWorkflowName = (workflowId: string) => {
     const workflow = workflows.find((w) => w.id === workflowId);
     return workflow?.name || `Workflow ${workflowId}`;
-  };
-
-  const getNodeType = (workflowId: string, nodeId: string): string => {
-    const workflow = workflows.find((w) => w.id === workflowId);
-    if (!workflow) return "unknown";
-
-    const node = workflow.nodes.find((n) => n.id === nodeId);
-    if (!node) return "unknown";
-
-    if (node.type === "action") {
-      const actionType = (node.data as ActionNodeData)?.type || "unknown";
-      return `action:${actionType}`;
-    } else if (node.type === "trigger") {
-      const triggerType = (node.data as TriggerNodeData)?.type || "unknown";
-      return `trigger:${triggerType}`;
-    }
-
-    return node.type;
   };
 
   const stats = getStats();
@@ -423,7 +367,7 @@ function ExecutionHistoryPage() {
                                       <Table.Th ta="center">Status</Table.Th>
                                       <Table.Th ta="center">Duration</Table.Th>
                                       <Table.Th>Output</Table.Th>
-                                      <Table.Th>Config</Table.Th>
+                                      <Table.Th ta="center">Config</Table.Th>
                                     </Table.Tr>
                                   </Table.Thead>
                                   <Table.Tbody>
@@ -431,109 +375,12 @@ function ExecutionHistoryPage() {
                                       .sort(
                                         (a, b) => a.executedAt - b.executedAt,
                                       )
-                                      .map((node, i) => {
-                                        const success =
-                                          node.data &&
-                                          node.status === "success";
-                                        return (
-                                          <Table.Tr key={i}>
-                                            <Table.Td>
-                                              <Text size="xs" ff="monospace">
-                                                {node.nodeId}
-                                              </Text>
-                                            </Table.Td>
-                                            <Table.Td>
-                                              <Text size="xs" c="blue">
-                                                {getNodeType(
-                                                  execution.workflowId,
-                                                  node.nodeId,
-                                                )}
-                                              </Text>
-                                            </Table.Td>
-                                            <Table.Td ta="center">
-                                              <Badge
-                                                size="xs"
-                                                color={getStatusColor(
-                                                  node.status,
-                                                )}
-                                              >
-                                                {node.status}
-                                              </Badge>
-                                            </Table.Td>
-                                            <Table.Td ta="center">
-                                              <Text size="xs">
-                                                {node.duration
-                                                  ? `${node.duration}ms`
-                                                  : "-"}
-                                              </Text>
-                                            </Table.Td>
-                                            <Table.Td style={{ width: 300 }}>
-                                              {node.data && (
-                                                <details open={!success}>
-                                                  <summary
-                                                    style={{
-                                                      cursor: "pointer",
-                                                      fontSize: "11px",
-                                                      color:
-                                                        "var(--mantine-color-blue-6)",
-                                                    }}
-                                                  >
-                                                    View Output
-                                                  </summary>
-                                                  <Box
-                                                    my={8}
-                                                    style={{
-                                                      overflow: "hidden",
-                                                      borderRadius: 8,
-                                                    }}
-                                                    w={300}
-                                                    display="flex"
-                                                    mah={200}
-                                                  >
-                                                    <ScrollArea
-                                                      w="100%"
-                                                      type="hover"
-                                                    >
-                                                      <CodeHighlight
-                                                        language="json"
-                                                        code={
-                                                          typeof node.data ===
-                                                          "object"
-                                                            ? JSON.stringify(
-                                                                node.data,
-                                                                null,
-                                                                2,
-                                                              )
-                                                            : String(node.data)
-                                                        }
-                                                      />
-                                                    </ScrollArea>
-                                                  </Box>
-                                                </details>
-                                              )}
-                                            </Table.Td>
-                                            <Table.Td ta="center">
-                                              <Popover withArrow shadow="md">
-                                                <Popover.Target>
-                                                  <ActionIcon variant="subtle">
-                                                    <IconSettings size="20" />
-                                                  </ActionIcon>
-                                                </Popover.Target>
-                                                <Popover.Dropdown maw={400}>
-                                                  <CodeHighlight
-                                                    language="json"
-                                                    code={JSON.stringify(
-                                                      node.nodeConfig,
-                                                      null,
-                                                      2,
-                                                    )}
-                                                  />
-                                                </Popover.Dropdown>
-                                              </Popover>
-                                            </Table.Td>
-                                          </Table.Tr>
-                                        );
-                                      })}
+                                      .map((node, i) => (
+                                        <ExecutionHistoryItem
+                                          key={i}
+                                          node={node}
+                                        />
+                                      ))}
                                   </Table.Tbody>
                                 </Table>
                               )}

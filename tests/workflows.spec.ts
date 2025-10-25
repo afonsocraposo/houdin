@@ -6,6 +6,7 @@ import {
 } from "../src/types/workflow";
 import { Destinations, importWorkflow, UrlBuilder } from "./utils";
 import { DEMO_META_VARIABLES_WORKFLOW } from "./demoWorkflows/metaVariables";
+import { DEMO_LIQUID_WORKFLOW } from "./demoWorkflows/liquid";
 
 test.describe("Workflows creation, design and execution", () => {
   // always go to config page before each test
@@ -238,9 +239,6 @@ test.describe("Workflows creation, design and execution", () => {
     // Go to example.com
     await page.goto("https://example.com");
 
-    // Wait for 1 second
-    await page.waitForTimeout(1000);
-
     // Expect to see the modal with text
     await expect(page.getByText("Hello from Houdin workflow")).toBeVisible();
   });
@@ -253,5 +251,17 @@ test.describe("Workflows creation, design and execution", () => {
 
     await expect(page.locator('text="meta.url"')).toBeVisible();
     await expect(page.locator('text="https://example.com/"')).toBeVisible();
+  });
+
+  test("can use liquid syntax with variables", async ({ page, baseUrl }) => {
+    await importWorkflow(baseUrl, page, DEMO_LIQUID_WORKFLOW);
+
+    // Go to example.com
+    await page.goto("https://example.com");
+
+    await expect(page.locator('text="meta url with liquid"')).toBeVisible();
+    await expect(
+      page.locator('text="https://example.com/#test"'),
+    ).toBeVisible();
   });
 });

@@ -34,21 +34,45 @@ export const getLayoutedElementsCallback = () =>
       dagreGraph.setDefaultEdgeLabel(() => ({}));
       dagreGraph.setGraph({
         rankdir: "LR", // Left to right layout
-        nodesep: 100, // Horizontal spacing between nodes
-        ranksep: 100, // Vertical spacing between ranks/levels
+        nodesep: 100, // Increased horizontal spacing between nodes
+        ranksep: 100, // Increased vertical spacing between ranks/levels
+        marginx: 20, // Margin around the graph
+        marginy: 20,
+        acyclicer: "greedy", // Algorithm for handling cycles
+        ranker: "network-simplex", // Try tight-tree for better crossing reduction
       });
 
       connectedNodes.forEach((node) => {
         dagreGraph.setNode(node.id, { width: 200, height: 150 });
       });
 
-      edges.forEach((edge) => {
-        if (
-          connectedNodeIds.has(edge.source) &&
-          connectedNodeIds.has(edge.target)
-        ) {
-          dagreGraph.setEdge(edge.source, edge.target);
-        }
+      // Sort edges by handle index to process in order
+      const sortedEdges = edges
+        .filter(
+          (edge) =>
+            connectedNodeIds.has(edge.source) &&
+            connectedNodeIds.has(edge.target),
+        )
+        .sort((a, b) => {
+          const sourceNodeA = connectedNodes.find((n) => n.id === a.source);
+          const sourceNodeB = connectedNodes.find((n) => n.id === b.source);
+          const handleIndexA =
+            sourceNodeA?.outputs?.indexOf(a.sourceHandle || "output") || 0;
+          const handleIndexB =
+            sourceNodeB?.outputs?.indexOf(b.sourceHandle || "output") || 0;
+          return handleIndexA - handleIndexB;
+        });
+
+      sortedEdges.forEach((edge) => {
+        // Add edge with weight based on handle to influence layout
+        const sourceNode = connectedNodes.find((n) => n.id === edge.source);
+        const handleIndex =
+          sourceNode?.outputs?.indexOf(edge.sourceHandle || "output") || 0;
+
+        dagreGraph.setEdge(edge.source, edge.target, {
+          weight: Math.max(1, 15 - handleIndex * 5), // Even stronger weight difference
+          minlen: 1 + handleIndex, // Minimum edge length based on handle position
+        });
       });
 
       dagre.layout(dagreGraph);

@@ -48,7 +48,13 @@ export class ActionRegistry {
     workflowId: string,
     nodeId: string,
     tabId?: number,
-  ): Promise<any> {
+  ): Promise<{
+    success: boolean;
+    data?: any;
+    error?: Error;
+    outputHandle?: string;
+    config: Record<string, any>;
+  }> {
     const action = this.getAction(type);
     if (!action) {
       throw new Error(`Action type '${type}' not found in registry`);
@@ -64,18 +70,43 @@ export class ActionRegistry {
 
     // Execute with defaults applied
     const configWithDefaults = action.getConfigWithDefaults(config);
-    return new Promise<any>((resolve, reject) => {
+    const result = await new Promise<{
+      success: boolean;
+      data?: any;
+      error?: Error;
+      outputHandle?: string;
+    }>((resolve) => {
+      const onSuccess = (data?: any, outputHandle?: string) => {
+        resolve({ success: true, data, outputHandle });
+      };
+
+      const onError = (error: Error) => {
+        resolve({ success: false, error });
+      };
+
       action
-        .execute(configWithDefaults, workflowId, nodeId, resolve, reject, tabId)
-        .catch((error) => reject(error))
-        .finally(() => resolve(null));
+        .execute(
+          configWithDefaults,
+          workflowId,
+          nodeId,
+          onSuccess,
+          onError,
+          tabId,
+        )
+        .catch((error) => resolve({ success: false, error }));
+
       if (!action.metadata?.disableTimeout) {
         setTimeout(
-          () => reject(new Error(`Action ${type} execution timed out`)),
+          () =>
+            resolve({
+              success: false,
+              error: new Error(`Action ${type} execution timed out`),
+            }),
           10000,
         );
       }
     });
+    return { ...result, config: configWithDefaults };
   }
 
   // Validate action configuration

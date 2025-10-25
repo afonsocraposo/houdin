@@ -16,6 +16,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { ActionRegistry } from "@/services/actionRegistry";
 import {
   Box,
   ActionIcon,
@@ -32,6 +33,7 @@ import { WorkflowNode, WorkflowConnection, NodeType } from "@/types/workflow";
 import { initializeTriggers } from "@/services/triggerInitializer";
 import { initializeActions } from "@/services/actionInitializer";
 import CanvasNode from "./CanvasNode";
+import CanvasEdge from "./CanvasEdge";
 import { useHotkeys } from "@mantine/hooks";
 import AddNodeList from "./AddNodeList";
 import { generateId } from "@/utils/helpers";
@@ -123,16 +125,19 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
             target: conn.target,
             sourceHandle: conn.sourceHandle,
             targetHandle: conn.targetHandle,
+            type: "custom",
             animated: false,
             markerEnd: {
               type: "arrow",
               width: 20,
               height: 20,
             },
-            style: { strokeWidth: 2 },
+            data: {
+              onDelete: onConnectionDelete,
+            },
           }) as Edge,
       ),
-    [workflowConnections],
+    [workflowConnections, onConnectionDelete],
   );
 
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState(reactFlowNodes);
@@ -189,10 +194,27 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     [onNodesChangeFlow, onNodeMove],
   );
 
+  // Create a Set of existing connections for efficient duplicate checking
+  const existingConnections = useMemo(() => {
+    return new Set(
+      workflowConnections.map(
+        (conn) =>
+          `${conn.source}:${conn.sourceHandle || "output"}:${conn.target}:${conn.targetHandle || "input"}`,
+      ),
+    );
+  }, [workflowConnections]);
+
   // Handle new connections
   const onConnect = useCallback(
     (params: Connection) => {
       if (!params.source || !params.target) return;
+
+      // Check if connection already exists using Set
+      const connectionKey = `${params.source}:${params.sourceHandle || "output"}:${params.target}:${params.targetHandle || "input"}`;
+
+      if (existingConnections.has(connectionKey)) {
+        return; // Duplicate connection, don't create
+      }
 
       const newConnection: WorkflowConnection = {
         id: generateId("conn"),
@@ -204,7 +226,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
       onConnectionCreate(newConnection);
     },
-    [workflowConnections, onConnectionCreate],
+    [existingConnections, onConnectionCreate],
   );
 
   // Handle edge deletion
@@ -253,6 +275,18 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const createNode = useCallback(
     (type: string, nodeType: NodeType) => {
       let defaultConfig = {};
+      let outputs: string[] = ["output"]; // default
+
+      // Get outputs from metadata
+      if (nodeType === "action") {
+        const actionRegistry = ActionRegistry.getInstance();
+        const action = actionRegistry.getAction(type);
+        if (action?.metadata.outputs) {
+          outputs = Array.from(action.metadata.outputs);
+        }
+      } else if (nodeType === "trigger") {
+        outputs = ["output"]; // triggers always have single output
+      }
 
       const newPosition = getNewNodePosition(workflowNodes);
 
@@ -262,7 +296,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         position: newPosition,
         data: { type, config: defaultConfig },
         inputs: nodeType === "trigger" ? [] : ["input"],
-        outputs: nodeType === "condition" ? ["true", "false"] : ["output"],
+        outputs,
       };
 
       onNodeCreate(newNode);
@@ -311,6 +345,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         onPaneClick={onPaneClick}
         nodeTypes={{
           custom: CanvasNode,
+        }}
+        edgeTypes={{
+          custom: CanvasEdge,
         }}
         connectionLineType={ConnectionLineType.Bezier}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}

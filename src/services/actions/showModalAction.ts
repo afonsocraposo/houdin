@@ -12,7 +12,10 @@ interface ShowModalActionOutput {
   content: string;
 }
 
-export class ShowModalAction extends BaseAction<ShowModalActionConfig, ShowModalActionOutput> {
+export class ShowModalAction extends BaseAction<
+  ShowModalActionConfig,
+  ShowModalActionOutput
+> {
   static readonly metadata: ActionMetadata = {
     type: "show-modal",
     label: "Show Modal",

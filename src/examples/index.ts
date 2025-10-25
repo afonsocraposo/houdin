@@ -7,3 +7,4 @@ export { summarizeNews } from "./summarizeNews";
 export { apiRequestIP } from "./apiRequestIP";
 export { apiTriggerYoutube } from "./apiTriggerYoutube";
 export { copyUrlClipboard } from "./copyUrlClipboard";
+export { apiRequestAndLiquid } from "./apiRequestAndLiquid";

@@ -1,8 +1,8 @@
-import { Text, Badge, Group, Card, Stack, ScrollArea } from "@mantine/core";
+import { Text, Badge, Group, Stack, ScrollArea } from "@mantine/core";
 import { useState, useEffect } from "react";
 import { ContentStorageClient } from "@/services/storage";
 import { WorkflowDefinition } from "@/types/workflow";
-import browser from "@/services/browser";
+import ActiveWorkflowItem from "./ActiveWorkflowItem";
 
 interface ActiveWorkflowsProps {
   currentUrl: string;
@@ -60,15 +60,6 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
     });
   };
 
-  const handleWorkflowClick = (workflow: WorkflowDefinition) => {
-    // Open workflow designer in new tab
-    const designerUrl = browser.runtime.getURL(
-      `src/config/index.html#/designer/${workflow.id}`,
-    );
-    browser.tabs.create({ url: designerUrl });
-    window.close();
-  };
-
   const activeWorkflows = getActiveWorkflows();
 
   return (
@@ -95,29 +86,7 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
           ) : activeWorkflows.length > 0 ? (
             <Stack gap="xs">
               {activeWorkflows.map((workflow) => (
-                <Card
-                  key={workflow.id}
-                  padding="xs"
-                  withBorder
-                  style={{ cursor: "pointer" }}
-                  onClick={() => handleWorkflowClick(workflow)}
-                >
-                  <Group justify="space-between" gap="xs">
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <Text size="xs" fw={500} truncate>
-                        {workflow.name}
-                      </Text>
-                      <Text size="xs" c="dimmed" truncate>
-                        {workflow.urlPattern}
-                      </Text>
-                      <Group gap="xs" mt={4}>
-                        <Badge size="xs" variant="light">
-                          {workflow.nodes.length} nodes
-                        </Badge>
-                      </Group>
-                    </div>
-                  </Group>
-                </Card>
+                <ActiveWorkflowItem key={workflow.id} workflow={workflow} />
               ))}
             </Stack>
           ) : (

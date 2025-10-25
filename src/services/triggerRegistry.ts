@@ -42,7 +42,7 @@ export class TriggerRegistry {
     config: Record<string, any>,
     workflowId: string,
     nodeId: string,
-    onTrigger: (data?: any) => Promise<void>,
+    onTrigger: (config: Record<string, any>, data?: any) => Promise<void>,
   ): Promise<void> {
     const trigger = this.getTrigger(type);
     if (!trigger) {
@@ -59,7 +59,15 @@ export class TriggerRegistry {
 
     // Setup with defaults applied
     const configWithDefaults = trigger.getConfigWithDefaults(config);
-    await trigger.setup(configWithDefaults, workflowId, nodeId, onTrigger);
+    const onTriggerWrapper = async (data?: any) => {
+      await onTrigger(configWithDefaults, data);
+    };
+    await trigger.setup(
+      configWithDefaults,
+      workflowId,
+      nodeId,
+      onTriggerWrapper,
+    );
   }
 
   // Validate trigger configuration
