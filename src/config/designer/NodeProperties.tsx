@@ -178,8 +178,6 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     return null;
   };
 
-
-
   const getNodeTypeColor = (type: string) => {
     switch (type) {
       case "trigger":
@@ -243,12 +241,11 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
           <VariablesButton nodes={nodes} workflowVars={workflowVars} />
         </Group>
       </Group>
-      <ScrollArea h="95%" style={{ overflowY: "auto" }}>
+      <ScrollArea h="95%" type="scroll" style={{ overflowY: "auto" }}>
         <Stack gap="md">
           {node.type === "trigger" &&
             renderTriggerProperties(node.data, errors)}
           {node.type === "action" && renderActionProperties(node.data, errors)}
-
         </Stack>
       </ScrollArea>
     </>
