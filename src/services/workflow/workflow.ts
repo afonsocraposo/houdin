@@ -199,10 +199,10 @@ export class WorkflowExecutor {
       const result = runBackground
         ? await this.executeActionInBackground(message)
         : ((await sendMessageToContentScript<ActionCommand>(
-            this.tabId,
-            WorkflowCommandType.EXECUTE_ACTION,
-            message,
-          )) as StatusMessage);
+          this.tabId,
+          WorkflowCommandType.EXECUTE_ACTION,
+          message,
+        )) as StatusMessage);
 
       const duration = Date.now() - start;
       if (!result || !result.success) {
@@ -218,12 +218,6 @@ export class WorkflowExecutor {
         });
         throw new Error(`Action ${actionType}: ${result?.error}`);
       }
-      console.log(
-        actionType,
-        action,
-        actionConfig,
-        action?.getConfigWithDefaults(actionConfig),
-      );
       // Track the execution result
       this.executionTracker.addNodeResult({
         nodeId: node.id,
