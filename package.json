@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:firefox": "TARGET=firefox vite build --watch",
     "build": "vite build",
-    "build:firefox": "TARGET=firefox && vite build",
+    "build:firefox": "TARGET=firefox vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "test": "npm run type-check",
