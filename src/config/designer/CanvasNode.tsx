@@ -15,7 +15,7 @@ import { useHover } from "@mantine/hooks";
 
 interface CanvasNodeProps {
   data: WorkflowNode["data"] &
-    WorkflowNode & { onDeleteNode?: (id: string) => void; error: boolean };
+  WorkflowNode & { onDeleteNode?: (id: string) => void; error: boolean };
   id: string;
   selected: boolean;
 }
@@ -74,11 +74,10 @@ function NodeHandle({
           color: "#6c757d",
           right: position === Position.Right ? "0" : "auto",
           left: position === Position.Left ? "0" : "auto",
-          transform: `translateX(${
-            position === Position.Right
+          transform: `translateX(${position === Position.Right
               ? "calc(100% - 16px)"
               : "calc(-100% + 16px)"
-          }) translateY(-50%)`,
+            }) translateY(-50%)`,
           borderRadius: "12px",
           transition: "all 0.2s ease",
         }}
@@ -244,8 +243,10 @@ export default function CanvasNode({
 
       <Stack>
         <Stack gap="xs">
-          {renderNodeIcon(getNodeIcon(nodeData))}
-          {nodeData.error && <IconAlertCircle color="red" />}
+          <Group justify="space-between" mih={28}>
+            {renderNodeIcon(getNodeIcon(nodeData))}
+            {nodeData.error && <IconAlertCircle color="red" />}
+          </Group>
           <div>
             <Text size="sm" fw={500} c={getNodeColor(nodeData)}>
               {getNodeLabel(nodeData)}
