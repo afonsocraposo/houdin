@@ -1,5 +1,5 @@
 import { TriggerNodeData, WorkflowDefinition } from "@/types/workflow";
-import { ActionIcon, Badge, Card, Group, Stack, Text } from "@mantine/core";
+import { ActionIcon, Card, Group, Stack, Text } from "@mantine/core";
 import browser from "@/services/browser";
 import { sendMessageToContentScript } from "@/lib/messages";
 import { MessageType } from "@/types/messages";
