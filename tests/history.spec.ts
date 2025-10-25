@@ -184,8 +184,11 @@ test.describe("Execution history", () => {
     // Go to example.com to trigger the workflow
     await page.goto("https://example.com");
 
+    // Wait for the workflow execution to complete (it should fail)
+    await page.waitForTimeout(100);
+
     // Go back to history page
-    page.goto(UrlBuilder(baseUrl, Destinations.HISTORY));
+    await page.goto(UrlBuilder(baseUrl, Destinations.HISTORY));
 
     // Select option in select with placeholder Filter by status
     await page.locator('input[placeholder="Filter by status"]').click();
