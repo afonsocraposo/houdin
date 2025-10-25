@@ -3,7 +3,7 @@ import { Group, InputLabel, Text } from "@mantine/core";
 import { ReactNode } from "react";
 
 export interface CodeInputProps {
-  label?: string | ReactNode;
+  label?: string;
   description?: string;
   labelRightSection?: ReactNode;
   required?: boolean;

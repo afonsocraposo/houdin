@@ -12,7 +12,9 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { IconMaximize } from "@tabler/icons-react";
 
-export default function MaximizableTextArea(props: TextareaProps) {
+export default function MaximizableTextArea(
+  props: TextareaProps & { label?: string },
+) {
   const [opened, { open, close }] = useDisclosure(false);
   return (
     <>
@@ -37,6 +39,7 @@ export default function MaximizableTextArea(props: TextareaProps) {
         autosize
         labelProps={{ style: { width: "100%" } }}
         maxRows={10}
+        aria-label={props.label}
       />
       <Modal
         size="80vw"
@@ -73,6 +76,7 @@ export default function MaximizableTextArea(props: TextareaProps) {
                   wrapper: { height: "100%" },
                   input: { height: "100%" },
                 }}
+                aria-label={props.label}
               />
             </Box>
           </Stack>

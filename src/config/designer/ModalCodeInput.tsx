@@ -31,9 +31,9 @@ export default function MaximizableCodeInput(props: CodeInputProps) {
         <Box h="80vh" style={{ overflow: "hidden" }}>
           <CodeInput
             {...props}
-            label={undefined}
             height="100%"
             required={false}
+            aria-label={props.label}
           />
         </Box>
       </Modal>
