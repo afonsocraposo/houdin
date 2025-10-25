@@ -116,6 +116,11 @@ jobs:
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "New version: $NEW_VERSION"
 
+          # Set outputs for other steps
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+
       - name: Update screenshots
         if: fromJson(steps.check-pr.outputs.result).shouldBump
         id: screenshots
@@ -137,6 +142,11 @@ jobs:
           # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Get variables from previous step
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
+          CURRENT_VERSION="${{ steps.bump.outputs.current_version }}"
+          PR_NUMBER="${{ steps.bump.outputs.pr_number }}"
 
           # Commit version bump and updated screenshots
           git add package.json package-lock.json screenshots/
