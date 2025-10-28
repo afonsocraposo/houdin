@@ -29,7 +29,15 @@ export default function FillFormBuilderItem({
         <Select
           label="Selector Type"
           value={item.selectorType}
-          data={["css", "xpath", "label", "name", "placeholder"]}
+          data={
+            [
+              { label: "CSS Selector", value: "css" },
+              { label: "XPath", value: "xpath" },
+              { label: "Label", value: "label" },
+              { label: "Name", value: "name" },
+              { label: "Placeholder", value: "placeholder" },
+            ] as { label: string; value: FillFormSelectorType }[]
+          }
           onChange={(value) =>
             onChange({
               ...item,

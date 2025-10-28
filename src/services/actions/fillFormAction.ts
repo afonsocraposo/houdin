@@ -2,6 +2,7 @@ import { BaseAction, ActionMetadata } from "@/types/actions";
 import React from "react";
 import { customProperty } from "@/types/config-properties";
 import { IconForms } from "@tabler/icons-react";
+import { getElement } from "@/utils/helpers";
 import FillFormBuilder, {
   FillFormFieldDefinition,
   FillFormSelectorType,
@@ -15,6 +16,8 @@ interface FillFormActionFieldOutput {
   selectorType: string;
   selector: string;
   value: string;
+  success: boolean;
+  error?: string;
 }
 
 interface FillFormActionOutput {
@@ -61,11 +64,15 @@ export class FillFormAction extends BaseAction<
         selectorType: "css",
         selector: "#email",
         value: "email@example.com",
+        success: true,
+        error: undefined,
       },
       {
         selectorType: "css",
         selector: "#password",
         value: "password123",
+        success: false,
+        error: "Element not found",
       },
     ],
     _timestamp: Date.now(),
@@ -75,10 +82,12 @@ export class FillFormAction extends BaseAction<
     config: FillFormActionConfig,
   ): FillFormActionOutput {
     const fieldsExample =
-      config.fields?.map((field) => ({
+      config.fields?.map((field, index) => ({
         selectorType: field.selectorType || "css",
         selector: field.selector || "#id",
         value: field.value || "example value",
+        success: index % 2 === 0,
+        result: index % 2 === 0 ? undefined : "Element not found",
       })) ?? [];
     return {
       _timestamp: Date.now(),
@@ -90,29 +99,73 @@ export class FillFormAction extends BaseAction<
     selectorType: FillFormSelectorType,
     selector: string,
     value: string,
-  ): boolean {}
+  ): string | undefined {
+    try {
+      const element = getElement(selector, selectorType);
+      console.log("element found:", element);
+      if (!element) {
+        return `Element not found for selector: ${selector} (type: ${selectorType})`;
+      }
+
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        // Clear existing value and set new value
+        element.value = value;
+
+        // Trigger input events to notify any listeners
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+
+        return undefined; // Success
+      } else if (element instanceof HTMLSelectElement) {
+        // For select elements, try to find matching option
+        const option = Array.from(element.options).find(
+          (opt) => opt.value === value || opt.text === value,
+        );
+        if (option) {
+          element.value = option.value;
+          element.dispatchEvent(new Event("change", { bubbles: true }));
+          return undefined; // Success
+        } else {
+          return `Option not found for select element with value: ${value}`;
+        }
+      } else {
+        return `Element is not a form input: ${element.tagName}`;
+      }
+    } catch (e) {
+      return `Error: ${(e as Error).message}`;
+    }
+  }
 
   async execute(
     config: FillFormActionConfig,
     _workflowId: string,
     _nodeId: string,
     onSuccess: (data?: any) => void,
-    onError: (error: Error) => void,
+    _onError: (error: Error) => void,
   ): Promise<void> {
     // fill fields
     const { fields } = config;
-    try {
-      const result = fields.map((field) => ({
-        ...field,
-        success: this.fillField(
-          field.selectorType,
-          field.selector,
-          field.value,
-        ),
-      }));
-      onSuccess({ fieds: result });
-    } catch (error) {
-      onError(error as Error);
-    }
+    const result: FillFormActionFieldOutput[] = fields.map((field) => {
+      const error = this.fillField(
+        field.selectorType,
+        field.selector,
+        field.value,
+      );
+      return {
+        selectorType: field.selectorType,
+        selector: field.selector,
+        value: field.value,
+        success: error === undefined,
+        error: error,
+      };
+    });
+    console.log(result);
+    onSuccess({
+      fields: result,
+      _timestamp: Date.now(),
+    });
   }
 }
