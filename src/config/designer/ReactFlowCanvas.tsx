@@ -14,6 +14,7 @@ import {
   NodeChange,
   EdgeChange,
   useReactFlow,
+
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { ActionRegistry } from "@/services/actionRegistry";
@@ -97,6 +98,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const reactFlowInstance = useReactFlow();
   const [opened, setOpened] = useState(false);
 
+
   // Convert workflow nodes to React Flow nodes
   const reactFlowNodes: Node[] = useMemo(
     () =>
@@ -145,23 +147,34 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
   // Update React Flow state when workflow data changes (but prevent infinite loops)
   useEffect(() => {
-    setNodes(reactFlowNodes);
-  }, [reactFlowNodes]);
+    // Use requestAnimationFrame to ensure the update happens after ReactFlow's internal updates
+    const updateNodes = () => {
+      setNodes(reactFlowNodes);
+    };
+    requestAnimationFrame(updateNodes);
+  }, [reactFlowNodes, setNodes]);
 
   useEffect(() => {
-    setEdges(reactFlowEdges);
-  }, [reactFlowEdges]); // Update when connections change
+    // Use requestAnimationFrame to ensure the update happens after ReactFlow's internal updates
+    const updateEdges = () => {
+      setEdges(reactFlowEdges);
+    };
+    requestAnimationFrame(updateEdges);
+  }, [reactFlowEdges, setEdges]);
 
   // Handle selection changes separately to avoid re-render cycles
+  // Only update if we actually have nodes to prevent interference with undo/redo
   useEffect(() => {
-    setNodes((currentNodes) =>
-      currentNodes.map((node) => ({
-        ...node,
-        selected: selectedNode?.id === node.id,
-      })),
-    );
+    if (nodes.length > 0) {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => ({
+          ...node,
+          selected: selectedNode?.id === node.id,
+        })),
+      );
+    }
     setOpened(false);
-  }, [selectedNode?.id, setNodes, setOpened]);
+  }, [selectedNode?.id, setNodes, setOpened, nodes.length]);
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(
@@ -323,6 +336,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     ["mod + Shift + Z", () => hasNext && redo()],
   ]);
 
+  console.log("flow", nodes, edges);
   return (
     <Box
       style={{
@@ -359,6 +373,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         }}
         disableKeyboardA11y
         colorMode={colorScheme}
+        onlyRenderVisibleElements={false}
       >
         <Background />
         <Controls />
