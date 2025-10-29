@@ -110,6 +110,32 @@ export const getLayoutedElementsCallback = () =>
     return { nodes: allLayoutedNodes, edges };
   }, []);
 
+export const onNodeDuplicateCallback = ({
+  workflowNodes,
+  onNodeCreate,
+  panToShowNode,
+}: {
+  workflowNodes: WorkflowNode[];
+  onNodeCreate: (newNode: WorkflowNode) => void;
+  panToShowNode: (position: { x: number; y: number }) => void;
+}) =>
+  useCallback(
+    (node: WorkflowNode) => {
+      if (node && node.id && node.type) {
+        const newPosition = getNewNodePosition(workflowNodes);
+
+        const newNode = {
+          ...node,
+          id: generateId(node.type), // New unique ID
+          position: newPosition,
+        };
+        onNodeCreate(newNode);
+        panToShowNode(newPosition);
+      }
+    },
+    [workflowNodes, onNodeCreate, panToShowNode],
+  );
+
 export const onNodeCopyCallback = (selectedNode: WorkflowNode | null) =>
   useCallback(() => {
     if (selectedNode) {

@@ -14,7 +14,6 @@ import {
   NodeChange,
   EdgeChange,
   useReactFlow,
-
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { ActionRegistry } from "@/services/actionRegistry";
@@ -42,6 +41,7 @@ import {
   getLayoutedElementsCallback,
   getNewNodePosition,
   onNodeCopyCallback,
+  onNodeDuplicateCallback,
   onNodePasteCallback,
   panToShowNodeCallback,
 } from "./ReactFlowCanvasCallbacks";
@@ -97,7 +97,12 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const colorScheme = useComputedColorScheme();
   const reactFlowInstance = useReactFlow();
   const [opened, setOpened] = useState(false);
-
+  const panToShowNode = panToShowNodeCallback(reactFlowInstance);
+  const onNodeDuplicate = onNodeDuplicateCallback({
+    workflowNodes,
+    onNodeCreate,
+    panToShowNode,
+  });
 
   // Convert workflow nodes to React Flow nodes
   const reactFlowNodes: Node[] = useMemo(
@@ -110,10 +115,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           ...node.data,
           ...node,
           onDeleteNode: onNodeDelete,
+          onCopyNode: () => onNodeDuplicate(node),
           error: errors[node.id] !== undefined,
         },
       })),
-    [workflowNodes, errors, onNodeDelete],
+    [workflowNodes, errors, onNodeDelete, onNodeDuplicate],
   );
 
   // Convert workflow connections to React Flow edges
@@ -319,8 +325,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     [workflowNodes, onNodeCreate],
   );
 
-  const panToShowNode = panToShowNodeCallback(reactFlowInstance);
-
   const onNodeCopy = onNodeCopyCallback(selectedNode);
 
   const onNodePaste = onNodePasteCallback({
@@ -336,7 +340,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     ["mod + Shift + Z", () => hasNext && redo()],
   ]);
 
-  console.log("flow", nodes, edges);
   return (
     <Box
       style={{
