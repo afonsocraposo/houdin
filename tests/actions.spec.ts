@@ -8,6 +8,7 @@ import { DEMO_CLIPBOARD_WORKFLOW } from "./demoWorkflows/clipboard";
 import { DEMO_INJECT_COMPONENT_WORKFLOW } from "./demoWorkflows/injectComponent";
 import { DEMO_HTTP_REQUEST_WORKFLOW } from "./demoWorkflows/httpRequest";
 import { DEMO_COOKIE_WORKFLOW } from "./demoWorkflows/cookie";
+import { DEMO_CREATE_VARIABLE_WORKFLOW } from "./demoWorkflows/createVariable";
 
 test.describe("Actions execution", () => {
   test("can execute custom script action", async ({ page, baseUrl }) => {
@@ -91,5 +92,13 @@ test.describe("Actions execution", () => {
 
     await expect(page.locator('text="Cookie"')).toBeVisible();
     await expect(page.locator('text="value: bar"')).toBeVisible();
+  });
+
+  test("can execute create variable action", async ({ page, baseUrl }) => {
+    await importWorkflow(baseUrl, page, DEMO_CREATE_VARIABLE_WORKFLOW);
+    await page.goto("https://example.com");
+
+    await expect(page.locator('text="Variable Test"')).toBeVisible();
+    await expect(page.locator('text="Hello World from Variable Action!"')).toBeVisible();
   });
 });
