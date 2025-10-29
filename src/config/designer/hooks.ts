@@ -27,18 +27,6 @@ export const useWorkflowState = (workflow: WorkflowDefinition | null) => {
     setState(historyState);
   }, [history.current]);
 
-  const setNodes = (nodes: WorkflowNode[]) => {
-    // check if nodes is same as state.nodes
-    if (isEqual(nodes, state.nodes)) return;
-    set({ nodes, connections: state.connections });
-  };
-
-  const setConnections = (connections: WorkflowConnection[]) => {
-    // check if connections is same as state.connections
-    if (isEqual(connections, state.connections)) return;
-    set({ nodes: state.nodes, connections });
-  };
-
   const throttledSet = useThrottledCallback(set, 1000);
 
   const setNodesAndConnections = (
@@ -62,8 +50,6 @@ export const useWorkflowState = (workflow: WorkflowDefinition | null) => {
   return {
     nodes: cloneDeep(state.nodes) as WorkflowNode[],
     connections: cloneDeep(state.connections) as WorkflowConnection[],
-    setNodes,
-    setConnections,
     set: setNodesAndConnections,
     undo,
     redo,

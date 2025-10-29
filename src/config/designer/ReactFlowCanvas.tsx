@@ -151,36 +151,49 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState(reactFlowNodes);
   const [edges, setEdges, onEdgesChangeFlow] = useEdgesState(reactFlowEdges);
 
-  // Update React Flow state when workflow data changes (but prevent infinite loops)
+  // Update React Flow state when workflow data changes
+  // Use a single effect to update both nodes and edges atomically to prevent desynchronization
   useEffect(() => {
-    // Use requestAnimationFrame to ensure the update happens after ReactFlow's internal updates
-    const updateNodes = () => {
+    const updateState = () => {
+      // Update both nodes and edges in the same animation frame to ensure atomicity
       setNodes(reactFlowNodes);
-    };
-    requestAnimationFrame(updateNodes);
-  }, [reactFlowNodes, setNodes]);
-
-  useEffect(() => {
-    // Use requestAnimationFrame to ensure the update happens after ReactFlow's internal updates
-    const updateEdges = () => {
       setEdges(reactFlowEdges);
     };
-    requestAnimationFrame(updateEdges);
-  }, [reactFlowEdges, setEdges]);
+    requestAnimationFrame(updateState);
+  }, [reactFlowNodes, reactFlowEdges, setNodes, setEdges]);
 
   // Handle selection changes separately to avoid re-render cycles
-  // Only update if we actually have nodes to prevent interference with undo/redo
+  // Only update if we actually have nodes and the selection state differs
   useEffect(() => {
-    if (nodes.length > 0) {
-      setNodes((currentNodes) =>
-        currentNodes.map((node) => ({
-          ...node,
-          selected: selectedNode?.id === node.id,
-        })),
+    if (nodes.length > 0 && selectedNode) {
+      const needsSelectionUpdate = nodes.some(
+        (node) =>
+          (node.id === selectedNode.id && !node.selected) ||
+          (node.id !== selectedNode.id && node.selected),
       );
+
+      if (needsSelectionUpdate) {
+        setNodes((currentNodes) =>
+          currentNodes.map((node) => ({
+            ...node,
+            selected: selectedNode.id === node.id,
+          })),
+        );
+      }
+    } else if (nodes.length > 0 && !selectedNode) {
+      // Clear all selections when no node is selected
+      const hasAnySelection = nodes.some((node) => node.selected);
+      if (hasAnySelection) {
+        setNodes((currentNodes) =>
+          currentNodes.map((node) => ({
+            ...node,
+            selected: false,
+          })),
+        );
+      }
     }
     setOpened(false);
-  }, [selectedNode?.id, setNodes, setOpened, nodes.length]);
+  }, [selectedNode, setNodes, setOpened, nodes]);
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(
@@ -338,6 +351,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     ["mod + V", () => onNodePaste()],
     ["mod + Z", () => hasPrevious && undo()],
     ["mod + Shift + Z", () => hasNext && redo()],
+    ["mod + Y", () => hasNext && redo()],
   ]);
 
   return (
