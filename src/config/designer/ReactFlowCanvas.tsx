@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useState } from "react";
+import React, { useCallback, useMemo, useEffect, useState, useRef } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -151,15 +151,45 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState(reactFlowNodes);
   const [edges, setEdges, onEdgesChangeFlow] = useEdgesState(reactFlowEdges);
 
-  // Update React Flow state when workflow data changes
-  // Use a single effect to update both nodes and edges atomically to prevent desynchronization
+  // Track previous state to detect structural vs data-only changes
+  const prevNodesRef = useRef<Node[]>([]);
+  const prevEdgesRef = useRef<Edge[]>([]);
+
+  // Update React Flow state only when structure changes (not just config updates)
   useEffect(() => {
-    const updateState = () => {
-      // Update both nodes and edges in the same animation frame to ensure atomicity
-      setNodes(reactFlowNodes);
-      setEdges(reactFlowEdges);
-    };
-    requestAnimationFrame(updateState);
+    const prevNodes = prevNodesRef.current;
+    const prevEdges = prevEdgesRef.current;
+    
+    // Check if this is a structural change (different nodes/edges, positions, connections)
+    const hasStructuralNodeChanges = 
+      reactFlowNodes.length !== prevNodes.length ||
+      reactFlowNodes.some((node) => {
+        const prevNode = prevNodes.find(n => n.id === node.id);
+        return !prevNode || 
+               node.position.x !== prevNode.position.x || 
+               node.position.y !== prevNode.position.y;
+      }) ||
+      prevNodes.some(prevNode => !reactFlowNodes.find(n => n.id === prevNode.id));
+
+    const hasStructuralEdgeChanges = 
+      reactFlowEdges.length !== prevEdges.length ||
+      reactFlowEdges.some(edge => !prevEdges.find(e => e.id === edge.id)) ||
+      prevEdges.some(prevEdge => !reactFlowEdges.find(e => e.id === prevEdge.id));
+
+    // Only update ReactFlow state for structural changes
+    if (hasStructuralNodeChanges || hasStructuralEdgeChanges) {
+      const updateState = () => {
+        setNodes(reactFlowNodes);
+        setEdges(reactFlowEdges);
+        prevNodesRef.current = [...reactFlowNodes];
+        prevEdgesRef.current = [...reactFlowEdges];
+      };
+      requestAnimationFrame(updateState);
+    } else {
+      // For data-only changes, just update the refs without triggering ReactFlow updates
+      prevNodesRef.current = [...reactFlowNodes];
+      prevEdgesRef.current = [...reactFlowEdges];
+    }
   }, [reactFlowNodes, reactFlowEdges, setNodes, setEdges]);
 
   // Handle selection changes separately to avoid re-render cycles
