@@ -99,6 +99,8 @@ test.describe("Actions execution", () => {
     await page.goto("https://example.com");
 
     await expect(page.locator('text="Variable Test"')).toBeVisible();
-    await expect(page.locator('text="Hello World from Variable Action!"')).toBeVisible();
+    await expect(
+      page.locator('text="Hello World from Variable Action!"'),
+    ).toBeVisible();
   });
 });

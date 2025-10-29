@@ -2,7 +2,7 @@ import { BaseAction, ActionMetadata } from "@/types/actions";
 import { textareaProperty } from "@/types/config-properties";
 
 interface CreateVariableActionConfig {
-  variableValue: string;
+  value: string;
 }
 
 type CreateVariableActionOutput = string;
@@ -21,7 +21,7 @@ export class CreateVariableAction extends BaseAction<
 
   readonly configSchema = {
     properties: {
-      variableValue: textareaProperty({
+      value: textareaProperty({
         label: "Variable Value",
         placeholder:
           "Hello {{user.name}}, you have {{orders.length}} orders.\nTotal: ${{orders | map: 'total' | sum}}",
@@ -42,7 +42,7 @@ export class CreateVariableAction extends BaseAction<
     onSuccess: (data: CreateVariableActionOutput) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
-    const { variableValue } = config;
-    onSuccess(variableValue);
+    const { value } = config;
+    onSuccess(value);
   }
 }

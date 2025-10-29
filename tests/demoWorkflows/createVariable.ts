@@ -24,7 +24,7 @@ export const DEMO_CREATE_VARIABLE_WORKFLOW = {
     {
       data: {
         config: {},
-        type: "component-load",
+        type: "page-load",
       },
       id: "trigger-1",
       inputs: [],
@@ -38,8 +38,7 @@ export const DEMO_CREATE_VARIABLE_WORKFLOW = {
     {
       data: {
         config: {
-          variableName: "greeting",
-          variableValue: "Hello World from Variable Action!"
+          value: "Hello World from Variable Action!",
         },
         type: "create-variable",
       },
@@ -56,7 +55,7 @@ export const DEMO_CREATE_VARIABLE_WORKFLOW = {
       data: {
         config: {
           notificationTitle: "Variable Test",
-          notificationContent: "{{action-1.greeting}}",
+          notificationContent: "{{action-1}}",
         },
         type: "show-notification",
       },
