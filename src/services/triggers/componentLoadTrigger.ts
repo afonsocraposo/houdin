@@ -1,5 +1,9 @@
 import { BaseTrigger } from "@/types/triggers";
-import { selectProperty, textProperty, numberProperty } from "@/types/config-properties";
+import {
+  selectProperty,
+  textProperty,
+  numberProperty,
+} from "@/types/config-properties";
 import { getElement } from "@/utils/helpers";
 
 interface ComponentLoadTriggerConfig {
@@ -12,7 +16,10 @@ interface ComponentLoadTriggerOutput {
   element: string;
 }
 
-export class ComponentLoadTrigger extends BaseTrigger<ComponentLoadTriggerConfig, ComponentLoadTriggerOutput> {
+export class ComponentLoadTrigger extends BaseTrigger<
+  ComponentLoadTriggerConfig,
+  ComponentLoadTriggerOutput
+> {
   static readonly metadata = {
     type: "component-load",
     label: "Component Load",

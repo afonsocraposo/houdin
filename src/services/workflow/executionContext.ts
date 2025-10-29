@@ -29,11 +29,11 @@ export class ExecutionContext implements WorkflowExecutionContext {
 
   interpolateVariables(text: string): string {
     if (!text) return text;
-
-    return this.liquidEngine.parseAndRenderSync(text, {
+    const context = {
       ...this.outputs,
       env: this.env,
       meta: this.metadata,
-    });
+    };
+    return this.liquidEngine.parseAndRenderSync(text, context);
   }
 }

@@ -12,6 +12,7 @@ import {
 } from "@/types/workflow";
 import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow/workflow";
+import { ExecutionContext } from "./workflow/executionContext";
 import { matchesUrlPattern } from "@/utils/helpers";
 
 export class BackgroundWorkflowEngine {
@@ -116,7 +117,7 @@ export class BackgroundWorkflowEngine {
   ): Promise<void> {
     // Access trigger type correctly - it's stored as triggerType, not type
     const triggerType = (node.data as TriggerNodeData)?.type;
-    const triggerConfig = node.data?.config || {};
+    let triggerConfig = node.data?.config || {};
 
     if (!triggerType) {
       console.error(
@@ -126,6 +127,38 @@ export class BackgroundWorkflowEngine {
         node.data,
       );
       return;
+    }
+
+    // Create execution context for variable interpolation
+    try {
+      // Get current tab URL for metadata
+      const tab = await chrome.tabs.get(tabId);
+      const url = tab.url || "";
+
+      const metadata = {
+        url,
+        workflowId: workflow.id,
+        executionId: `trigger-${Date.now()}`,
+        startedAt: Date.now(),
+      };
+
+      const context = new ExecutionContext(metadata, workflow.variables || {});
+
+      // Interpolate variables in trigger config
+      const interpolatedConfig = { ...triggerConfig };
+      for (const key in interpolatedConfig) {
+        if (interpolatedConfig.hasOwnProperty(key)) {
+          const value = interpolatedConfig[key];
+          if (typeof value === "string") {
+            interpolatedConfig[key] = context.interpolateVariables(value);
+          }
+        }
+      }
+
+      triggerConfig = interpolatedConfig;
+    } catch (error) {
+      console.warn("Failed to interpolate trigger config variables:", error);
+      // Continue with original config if interpolation fails
     }
 
     // First, check if content script is ready and initialize it if needed
