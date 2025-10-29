@@ -6,7 +6,7 @@ import {
 import { useStateHistory, useThrottledCallback } from "@mantine/hooks";
 import isEqual from "lodash/isEqual";
 import cloneDeep from "lodash/cloneDeep";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 export const useWorkflowState = (workflow: WorkflowDefinition | null) => {
   const [state, setState] = useState<{
@@ -28,24 +28,29 @@ export const useWorkflowState = (workflow: WorkflowDefinition | null) => {
   }, [history.current]);
 
   const throttledSet = useThrottledCallback(set, 1000);
+  
+  // Use a ref to access current state without recreating the callback
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-  const setNodesAndConnections = (
+  const setNodesAndConnections = useCallback((
     nodes?: WorkflowNode[],
     connections?: WorkflowConnection[],
   ) => {
+    const currentState = stateRef.current;
     // check if connections is same as state.connections
     if (
       (!connections && !nodes) ||
-      (isEqual(connections, state.connections) && isEqual(nodes, state.nodes))
+      (isEqual(connections, currentState.connections) && isEqual(nodes, currentState.nodes))
     )
       return;
     const newState = {
-      nodes: nodes || state.nodes,
-      connections: connections || state.connections,
+      nodes: nodes || currentState.nodes,
+      connections: connections || currentState.connections,
     };
     setState(newState);
     throttledSet(newState);
-  };
+  }, [throttledSet]);
 
   return {
     nodes: cloneDeep(state.nodes) as WorkflowNode[],

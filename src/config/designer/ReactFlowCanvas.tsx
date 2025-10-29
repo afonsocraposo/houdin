@@ -47,7 +47,6 @@ import {
   getLayoutedElementsCallback,
   getNewNodePosition,
   onNodeCopyCallback,
-  onNodeDuplicateCallback,
   onNodePasteCallback,
   panToShowNodeCallback,
 } from "./ReactFlowCanvasCallbacks";
@@ -62,6 +61,7 @@ interface ReactFlowCanvasProps {
   onConnectionCreate: (connection: WorkflowConnection) => void;
   onConnectionDelete: (id: string) => void;
   onNodeCreate: (node: WorkflowNode) => void;
+  onNodeDuplicate: (nodeId: string, position: { x: number; y: number }) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
   undo: () => void;
@@ -93,6 +93,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   onConnectionCreate,
   onConnectionDelete,
   onNodeCreate,
+  onNodeDuplicate,
   selectedNode,
   errors,
   undo,
@@ -104,30 +105,32 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const reactFlowInstance = useReactFlow();
   const [opened, setOpened] = useState(false);
   const panToShowNode = panToShowNodeCallback(reactFlowInstance);
-  const onNodeDuplicate = onNodeDuplicateCallback({
-    workflowNodes,
-    onNodeCreate,
-    panToShowNode,
-  });
 
   // Convert workflow nodes to React Flow nodes
-  const reactFlowNodes: Node[] = useMemo(
-    () =>
-      workflowNodes.map((node) => ({
-        id: node.id,
-        type: "custom",
-        position: node.position,
-        selected: selectedNode?.id === node.id,
-        data: {
-          ...node.data,
-          ...node,
-          onDeleteNode: onNodeDelete,
-          onCopyNode: () => onNodeDuplicate(node),
-          error: errors[node.id] !== undefined,
+  const reactFlowNodes: Node[] = useMemo(() => {
+    return workflowNodes.map((node) => ({
+      id: node.id,
+      type: "custom",
+      position: node.position,
+      selected: selectedNode?.id === node.id,
+      data: {
+        ...node.data,
+        ...node,
+        onDeleteNode: onNodeDelete,
+        onCopyNode: () => {
+          const newPosition = getNewNodePosition(workflowNodes);
+          onNodeDuplicate(node.id, newPosition);
         },
-      })),
-    [workflowNodes, errors, onNodeDelete, onNodeDuplicate, selectedNode],
-  );
+        error: errors[node.id] !== undefined,
+      },
+    }));
+  }, [
+    workflowNodes, // This is already optimized to only change on structural changes
+    selectedNode?.id, // Only depend on the ID, not the full node object
+    errors, 
+    onNodeDelete, 
+    onNodeDuplicate
+  ]);
 
   // Convert workflow connections to React Flow edges
   const reactFlowEdges: Edge[] = useMemo(
@@ -164,46 +167,14 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
   // Update React Flow state only when structure changes (not just config updates)
   useEffect(() => {
-    const prevNodes = prevNodesRef.current;
-    const prevEdges = prevEdgesRef.current;
-
-    // Check if this is a structural change (different nodes/edges, positions, connections)
-    const hasStructuralNodeChanges =
-      reactFlowNodes.length !== prevNodes.length ||
-      reactFlowNodes.some((node) => {
-        const prevNode = prevNodes.find((n) => n.id === node.id);
-        return (
-          !prevNode ||
-          node.position.x !== prevNode.position.x ||
-          node.position.y !== prevNode.position.y
-        );
-      }) ||
-      prevNodes.some(
-        (prevNode) => !reactFlowNodes.find((n) => n.id === prevNode.id),
-      );
-
-    const hasStructuralEdgeChanges =
-      reactFlowEdges.length !== prevEdges.length ||
-      reactFlowEdges.some((edge) => !prevEdges.find((e) => e.id === edge.id)) ||
-      prevEdges.some(
-        (prevEdge) => !reactFlowEdges.find((e) => e.id === prevEdge.id),
-      );
-
-    // Only update ReactFlow state for structural changes
-    if (hasStructuralNodeChanges || hasStructuralEdgeChanges) {
-      const updateState = () => {
-        setNodes(reactFlowNodes);
-        setEdges(reactFlowEdges);
-        prevNodesRef.current = [...reactFlowNodes];
-        prevEdgesRef.current = [...reactFlowEdges];
-      };
-      requestAnimationFrame(updateState);
-    } else {
-      // For data-only changes, just update the refs without triggering ReactFlow updates
+    const updateState = () => {
+      setNodes(reactFlowNodes);
+      setEdges(reactFlowEdges);
       prevNodesRef.current = [...reactFlowNodes];
       prevEdgesRef.current = [...reactFlowEdges];
-    }
-  }, [reactFlowNodes, reactFlowEdges, setNodes, setEdges]);
+    };
+    requestAnimationFrame(updateState);
+  }, [reactFlowNodes]);
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(
