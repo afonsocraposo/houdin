@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useEffect, useState, useRef } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useEffect,
+  useState,
+  useRef,
+} from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -111,6 +117,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         id: node.id,
         type: "custom",
         position: node.position,
+        selected: selectedNode?.id === node.id,
         data: {
           ...node.data,
           ...node,
@@ -119,7 +126,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
           error: errors[node.id] !== undefined,
         },
       })),
-    [workflowNodes, errors, onNodeDelete, onNodeDuplicate],
+    [workflowNodes, errors, onNodeDelete, onNodeDuplicate, selectedNode],
   );
 
   // Convert workflow connections to React Flow edges
@@ -159,22 +166,28 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   useEffect(() => {
     const prevNodes = prevNodesRef.current;
     const prevEdges = prevEdgesRef.current;
-    
+
     // Check if this is a structural change (different nodes/edges, positions, connections)
-    const hasStructuralNodeChanges = 
+    const hasStructuralNodeChanges =
       reactFlowNodes.length !== prevNodes.length ||
       reactFlowNodes.some((node) => {
-        const prevNode = prevNodes.find(n => n.id === node.id);
-        return !prevNode || 
-               node.position.x !== prevNode.position.x || 
-               node.position.y !== prevNode.position.y;
+        const prevNode = prevNodes.find((n) => n.id === node.id);
+        return (
+          !prevNode ||
+          node.position.x !== prevNode.position.x ||
+          node.position.y !== prevNode.position.y
+        );
       }) ||
-      prevNodes.some(prevNode => !reactFlowNodes.find(n => n.id === prevNode.id));
+      prevNodes.some(
+        (prevNode) => !reactFlowNodes.find((n) => n.id === prevNode.id),
+      );
 
-    const hasStructuralEdgeChanges = 
+    const hasStructuralEdgeChanges =
       reactFlowEdges.length !== prevEdges.length ||
-      reactFlowEdges.some(edge => !prevEdges.find(e => e.id === edge.id)) ||
-      prevEdges.some(prevEdge => !reactFlowEdges.find(e => e.id === prevEdge.id));
+      reactFlowEdges.some((edge) => !prevEdges.find((e) => e.id === edge.id)) ||
+      prevEdges.some(
+        (prevEdge) => !reactFlowEdges.find((e) => e.id === prevEdge.id),
+      );
 
     // Only update ReactFlow state for structural changes
     if (hasStructuralNodeChanges || hasStructuralEdgeChanges) {
@@ -191,39 +204,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       prevEdgesRef.current = [...reactFlowEdges];
     }
   }, [reactFlowNodes, reactFlowEdges, setNodes, setEdges]);
-
-  // Handle selection changes separately to avoid re-render cycles
-  // Only update if we actually have nodes and the selection state differs
-  useEffect(() => {
-    if (nodes.length > 0 && selectedNode) {
-      const needsSelectionUpdate = nodes.some(
-        (node) =>
-          (node.id === selectedNode.id && !node.selected) ||
-          (node.id !== selectedNode.id && node.selected),
-      );
-
-      if (needsSelectionUpdate) {
-        setNodes((currentNodes) =>
-          currentNodes.map((node) => ({
-            ...node,
-            selected: selectedNode.id === node.id,
-          })),
-        );
-      }
-    } else if (nodes.length > 0 && !selectedNode) {
-      // Clear all selections when no node is selected
-      const hasAnySelection = nodes.some((node) => node.selected);
-      if (hasAnySelection) {
-        setNodes((currentNodes) =>
-          currentNodes.map((node) => ({
-            ...node,
-            selected: false,
-          })),
-        );
-      }
-    }
-    setOpened(false);
-  }, [selectedNode, setNodes, setOpened, nodes]);
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(

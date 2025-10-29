@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import {
   Container,
   Title,
@@ -83,9 +89,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     useWorkflowState(workflow || null);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const selectedNode =
-    (selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null) ||
-    null;
+  const selectedNode = useMemo(
+    () =>
+      (selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null) ||
+      null,
+    [nodes, selectedNodeId],
+  );
 
   const [exportModalOpened, setExportModalOpened] = useState(false);
 
