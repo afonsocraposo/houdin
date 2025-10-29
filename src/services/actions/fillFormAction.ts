@@ -42,7 +42,13 @@ export class FillFormAction extends BaseAction<
       fields: customProperty({
         label: "Form Fields",
         description: "Define the fields to fill in the form and their values",
-        // required: true,
+        defaultValue: [
+          {
+            selectorType: "label",
+            selector: "",
+            value: "",
+          },
+        ],
         render: (
           values: Record<string, any>,
           onChange: (key: string, value: any) => void,
@@ -61,15 +67,15 @@ export class FillFormAction extends BaseAction<
   readonly outputExample = {
     fields: [
       {
-        selectorType: "css",
-        selector: "#email",
+        selectorType: "placeholder",
+        selector: "email@example.com",
         value: "email@example.com",
         success: true,
         error: undefined,
       },
       {
-        selectorType: "css",
-        selector: "#password",
+        selectorType: "label",
+        selector: "Password",
         value: "password123",
         success: false,
         error: "Element not found",
@@ -102,7 +108,6 @@ export class FillFormAction extends BaseAction<
   ): string | undefined {
     try {
       const element = getElement(selector, selectorType);
-      console.log("element found:", element);
       if (!element) {
         return `Element not found for selector: ${selector} (type: ${selectorType})`;
       }
@@ -162,7 +167,6 @@ export class FillFormAction extends BaseAction<
         error: error,
       };
     });
-    console.log(result);
     onSuccess({
       fields: result,
       _timestamp: Date.now(),
