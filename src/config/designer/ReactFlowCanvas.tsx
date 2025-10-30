@@ -3,7 +3,6 @@ import React, {
   useMemo,
   useEffect,
   useState,
-  useRef,
 } from "react";
 import {
   ReactFlow,
@@ -163,19 +162,17 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState(reactFlowNodes);
   const [edges, setEdges, onEdgesChangeFlow] = useEdgesState(reactFlowEdges);
 
-  // Track previous state to detect structural vs data-only changes
-  const prevNodesRef = useRef<Node[]>([]);
-  const prevEdgesRef = useRef<Edge[]>([]);
-
   // Update React Flow state only when structure changes (not just config updates)
   useEffect(() => {
     const updateState = () => {
       setNodes(reactFlowNodes);
       setEdges(reactFlowEdges);
-      prevNodesRef.current = [...reactFlowNodes];
-      prevEdgesRef.current = [...reactFlowEdges];
     };
-    requestAnimationFrame(updateState);
+    const frameId = requestAnimationFrame(updateState);
+    
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
   }, [reactFlowNodes]);
 
   useEffect(() => {
