@@ -54,7 +54,6 @@ import {
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
   connections: WorkflowConnection[];
-  setNodes: (nodes: WorkflowNode[]) => void;
   onNodeSelect: (id: string | null) => void;
   onNodeDelete: (id: string) => void;
   onNodeMove: (id: string, position: { x: number; y: number }) => void;
@@ -62,6 +61,7 @@ interface ReactFlowCanvasProps {
   onConnectionDelete: (id: string) => void;
   onNodeCreate: (node: WorkflowNode) => void;
   onNodeDuplicate: (nodeId: string, position: { x: number; y: number }) => void;
+  onBatchUpdateNodePositions: (positions: Record<string, { x: number; y: number }>) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
   undo: () => void;
@@ -86,7 +86,6 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
 const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   nodes: workflowNodes,
   connections: workflowConnections,
-  setNodes: setWorkflowNodes,
   onNodeSelect,
   onNodeDelete,
   onNodeMove,
@@ -94,6 +93,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   onConnectionDelete,
   onNodeCreate,
   onNodeDuplicate,
+  onBatchUpdateNodePositions,
   selectedNode,
   errors,
   undo,
@@ -282,8 +282,15 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       workflowNodes,
       workflowConnections,
     );
-    setWorkflowNodes(layoutedNodes);
-  }, [workflowNodes, workflowConnections, getLayoutedElements]);
+    
+    // Create position updates record
+    const positionUpdates: Record<string, { x: number; y: number }> = {};
+    layoutedNodes.forEach(node => {
+      positionUpdates[node.id] = node.position;
+    });
+    
+    onBatchUpdateNodePositions(positionUpdates);
+  }, [workflowNodes, workflowConnections, getLayoutedElements, onBatchUpdateNodePositions]);
 
   const createNode = useCallback(
     (type: string, nodeType: NodeType) => {

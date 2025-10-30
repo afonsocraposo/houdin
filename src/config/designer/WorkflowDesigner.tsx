@@ -278,12 +278,18 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     [set],
   );
 
-  const handleSetNodes = useCallback(
-    (newNodes: WorkflowNode[]) => {
-      set(newNodes, undefined);
+  const handleBatchUpdateNodePositions = useCallback(
+    (positions: Record<string, { x: number; y: number }>) => {
+      const updatedNodes = nodesRef.current.map((node) => {
+        const newPosition = positions[node.id];
+        return newPosition ? { ...node, position: newPosition } : node;
+      });
+      set(updatedNodes);
     },
     [set],
   );
+
+
 
   const handleSave = useCallback(() => {
     readyToSave.current = false;
@@ -497,13 +503,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
           <ReactFlowCanvas
             nodes={nodesWithoutConfig}
             connections={connections}
-            setNodes={handleSetNodes}
             selectedNode={selectedNode}
             onNodeSelect={setSelectedNodeId}
             onNodeCreate={handleNodeCreation}
             onNodeMove={handleNodeMovement}
             onNodeDelete={handleNodeDeletion}
             onNodeDuplicate={handleNodeDuplication}
+            onBatchUpdateNodePositions={handleBatchUpdateNodePositions}
             onConnectionCreate={handleConnectionCreation}
             onConnectionDelete={handleConnectionDeletion}
             errors={schemaErrors}
