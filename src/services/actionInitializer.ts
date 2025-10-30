@@ -21,6 +21,8 @@ import { LocalStorageAction } from "./actions/localStorageAction";
 import { SessionStorageAction } from "./actions/sessionStorageAction";
 import { CookiesAction } from "./actions/cookiesAction";
 import { IfAction } from "./actions/ifAction";
+import { FillFormAction } from "./actions/fillFormAction";
+import { CreateVariableAction } from "./actions/createVariableAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -49,6 +51,8 @@ export function initializeActions(): void {
   registry.register(SessionStorageAction);
   registry.register(CookiesAction);
   registry.register(IfAction);
+  registry.register(FillFormAction);
+  registry.register(CreateVariableAction);
 }
 
 export function initializeBackgroundActions(): void {

@@ -97,3 +97,5 @@ export const DEMO_FAILING_WORKFLOW = {
   ],
   urlPattern: "https://*",
 };
+
+export * from "./createVariable";

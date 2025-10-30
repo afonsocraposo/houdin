@@ -45,7 +45,7 @@ export function newExecutionId(): string {
 
 export const getElement = (
   selector: string,
-  selectorType: "css" | "xpath" | "text",
+  selectorType: "css" | "xpath" | "text" | "label" | "name" | "placeholder",
 ): Element | null => {
   if (selectorType === "css") {
     return document.querySelector(selector);
@@ -69,6 +69,43 @@ export const getElement = (
       null,
     );
     return result.singleNodeValue as Element | null;
+  } else if (selectorType === "label") {
+    // Find input by label text
+    const label = Array.from(document.querySelectorAll("label")).find((l) =>
+      l.textContent?.trim().toLowerCase().includes(selector.toLowerCase()),
+    );
+    if (label) {
+      // Try to find the associated input
+      if (label.htmlFor) {
+        const htmlFor = document.getElementById(label.htmlFor);
+        if (htmlFor) return htmlFor;
+      }
+      // Look for input inside the label
+      const input = label.querySelector("input, textarea, select");
+      if (input) return input;
+      // Look for next sibling input
+      const nextElement = label.nextElementSibling;
+      if (
+        nextElement &&
+        (nextElement.tagName === "INPUT" ||
+          nextElement.tagName === "TEXTAREA" ||
+          nextElement.tagName === "SELECT")
+      ) {
+        return nextElement;
+      }
+    }
+    // search using aria-label attribute
+    const ariaLabelElement = document.querySelector(
+      `[aria-label="${selector}"]`,
+    );
+    if (ariaLabelElement) {
+      return ariaLabelElement;
+    }
+    return null;
+  } else if (selectorType === "name") {
+    return document.querySelector(`[name="${selector}"]`);
+  } else if (selectorType === "placeholder") {
+    return document.querySelector(`[placeholder="${selector}"]`);
   }
   return null;
 };

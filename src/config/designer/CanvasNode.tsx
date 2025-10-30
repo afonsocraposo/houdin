@@ -10,12 +10,16 @@ import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionIcon, Card, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { Handle, Position } from "@xyflow/react";
-import { IconAlertCircle, IconTrash } from "@tabler/icons-react";
+import { IconAlertCircle, IconCopy, IconTrash } from "@tabler/icons-react";
 import { useHover } from "@mantine/hooks";
 
 interface CanvasNodeProps {
   data: WorkflowNode["data"] &
-  WorkflowNode & { onDeleteNode?: (id: string) => void; error: boolean };
+    WorkflowNode & {
+      onDeleteNode?: (id: string) => void;
+      error: boolean;
+      onCopyNode?: (id: string) => void;
+    };
   id: string;
   selected: boolean;
 }
@@ -74,10 +78,11 @@ function NodeHandle({
           color: "#6c757d",
           right: position === Position.Right ? "0" : "auto",
           left: position === Position.Left ? "0" : "auto",
-          transform: `translateX(${position === Position.Right
+          transform: `translateX(${
+            position === Position.Right
               ? "calc(100% - 16px)"
               : "calc(-100% + 16px)"
-            }) translateY(-50%)`,
+          }) translateY(-50%)`,
           borderRadius: "12px",
           transition: "all 0.2s ease",
         }}
@@ -196,6 +201,13 @@ export default function CanvasNode({
     }
   };
 
+  const copyNode = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (nodeData.onCopyNode) {
+      nodeData.onCopyNode(id);
+    }
+  };
+
   const deleteNode = (event: React.MouseEvent) => {
     event.stopPropagation();
     if (nodeData.onDeleteNode) {
@@ -267,12 +279,25 @@ export default function CanvasNode({
             </Tooltip>
           </div>
         </Stack>
-        <Group justify="end">
+        <Group justify="end" gap="xs">
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            onClick={copyNode}
+            aria-label="Copy Node"
+            style={{
+              opacity: hovered || selected ? 1 : 0,
+              transition: "opacity 0.2s",
+            }}
+          >
+            <IconCopy size={14} />
+          </ActionIcon>
           <ActionIcon
             size="sm"
             color="red"
             variant="subtle"
             onClick={deleteNode}
+            aria-label="Delete Node"
             style={{
               opacity: hovered || selected ? 1 : 0,
               transition: "opacity 0.2s",

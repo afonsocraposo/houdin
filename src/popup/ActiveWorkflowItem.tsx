@@ -62,8 +62,8 @@ export default function ActiveWorkflowItem({
       onClick={() => handleWorkflowClick(workflow)}
       title="Edit workflow"
     >
-      <Group justify="space-between" gap="xs">
-        <Stack gap="4">
+      <Group gap="xs" wrap="nowrap">
+        <Stack gap="4" style={{ flex: 1, minWidth: 0 }}>
           <Text size="xs" fw={500} truncate>
             {workflow.name}
           </Text>

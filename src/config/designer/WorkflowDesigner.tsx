@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import {
   Container,
   Title,
@@ -40,7 +46,7 @@ import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionRegistry } from "@/services/actionRegistry";
 import { useWorkflowState } from "./hooks";
 import { useThrottledCallback } from "@mantine/hooks";
-import { newWorkflowId } from "@/utils/helpers";
+import { newWorkflowId, generateId } from "@/utils/helpers";
 
 export const SESSION_STORAGE_KEY = "workflow-draft";
 interface WorkflowDesignerProps {
@@ -83,9 +89,40 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     useWorkflowState(workflow || null);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const selectedNode =
-    (selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null) ||
-    null;
+  const selectedNode = useMemo(
+    () =>
+      (selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null) ||
+      null,
+    [nodes, selectedNodeId],
+  );
+  // Track structural changes separately from config changes
+  const prevStructuralHashRef = useRef<string>('');
+  const nodesWithoutConfigRef = useRef<WorkflowNode[]>([]);
+
+  const nodesWithoutConfig = useMemo(() => {
+    // Create a hash of structural properties only
+    const structuralHash = nodes.map((n) => 
+      `${n.id}:${n.type}:${n.position.x},${n.position.y}:${(n.inputs || []).join(',')}:${(n.outputs || []).join(',')}:${(n.data as any).type}`
+    ).sort().join('|');
+
+    // Only recalculate if structural properties have changed
+    if (structuralHash !== prevStructuralHashRef.current) {
+      prevStructuralHashRef.current = structuralHash;
+      nodesWithoutConfigRef.current = nodes.map((n) => ({
+        id: n.id,
+        type: n.type,
+        position: n.position,
+        inputs: n.inputs || [],
+        outputs: n.outputs || [],
+        data: {
+          type: (n.data as any).type, // Only include the type, not the config
+          config: {}, // Empty config to avoid re-renders on config changes
+        },
+      }));
+    }
+
+    return nodesWithoutConfigRef.current;
+  }, [nodes]);
 
   const [exportModalOpened, setExportModalOpened] = useState(false);
 
@@ -122,8 +159,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   }, [schemaErrors, selectedNode, setSchemaErrors]);
 
-  const handleNodeUpdate = (updatedNode: WorkflowNode) => {
-    const updatedNodes = nodes.map((n) =>
+  const handleNodeUpdate = useCallback((updatedNode: WorkflowNode) => {
+    const updatedNodes = nodesRef.current.map((n) =>
       n.id === updatedNode.id
         ? {
             ...updatedNode,
@@ -133,20 +170,43 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     );
     set(updatedNodes);
     clearSelectedNodeErrors();
-  };
+  }, [set, clearSelectedNodeErrors]);
+
+  // Use refs to access current state without recreating callbacks
+  const nodesRef = useRef(nodes);
+  const connectionsRef = useRef(connections);
+  const selectedNodeIdRef = useRef(selectedNodeId);
+  const schemaErrorsRef = useRef(schemaErrors);
+
+  // Update refs whenever values change
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+  
+  useEffect(() => {
+    connectionsRef.current = connections;
+  }, [connections]);
+  
+  useEffect(() => {
+    selectedNodeIdRef.current = selectedNodeId;
+  }, [selectedNodeId]);
+  
+  useEffect(() => {
+    schemaErrorsRef.current = schemaErrors;
+  }, [schemaErrors]);
 
   const handleNodeCreation = useCallback(
     (newNode: WorkflowNode) => {
-      const updatedNodes = [...nodes, newNode];
+      const updatedNodes = [...nodesRef.current, newNode];
       set(updatedNodes);
       setSelectedNodeId(newNode.id);
     },
-    [nodes],
+    [set],
   );
 
   const handleNodeMovement = useCallback(
     (id: string, position: { x: number; y: number }) => {
-      const updatedNodes = nodes.map((n) =>
+      const updatedNodes = nodesRef.current.map((n) =>
         n.id === id
           ? {
               ...n,
@@ -156,21 +216,21 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       );
       set(updatedNodes, undefined);
     },
-    [nodes],
+    [set],
   );
 
   const handleNodeDeletion = useCallback(
     (nodeId: string) => {
-      const updatedNodes = nodes.filter((n) => n.id !== nodeId);
-      const updatedConnections = connections.filter(
+      const updatedNodes = nodesRef.current.filter((n) => n.id !== nodeId);
+      const updatedConnections = connectionsRef.current.filter(
         (c) => c.source !== nodeId && c.target !== nodeId,
       );
       set(updatedNodes, updatedConnections);
-      if (selectedNodeId === nodeId) {
+      if (selectedNodeIdRef.current === nodeId) {
         setSelectedNodeId(null);
       }
       // remove any schema errors for the deleted node
-      if (schemaErrors[nodeId]) {
+      if (schemaErrorsRef.current[nodeId]) {
         setSchemaErrors((prev) => {
           const updated = { ...prev };
           delete updated[nodeId];
@@ -178,26 +238,58 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         });
       }
     },
-    [nodes, connections, selectedNodeId, schemaErrors],
+    [set],
   );
 
   const handleConnectionCreation = useCallback(
     (newConnection: WorkflowConnection) => {
-      const updatedConnections = [...connections, newConnection];
+      const updatedConnections = [...connectionsRef.current, newConnection];
       set(undefined, updatedConnections);
     },
-    [connections],
+    [set],
   );
 
   const handleConnectionDeletion = useCallback(
     (connectionId: string) => {
-      const updatedConnections = connections.filter(
+      const updatedConnections = connectionsRef.current.filter(
         (c) => c.id !== connectionId,
       );
       set(undefined, updatedConnections);
     },
-    [connections],
+    [set],
   );
+
+  const handleNodeDuplication = useCallback(
+    (nodeId: string, position: { x: number; y: number }) => {
+      const originalNode = nodesRef.current.find((n) => n.id === nodeId);
+      if (!originalNode) return;
+
+      // Create a duplicate with a new ID and the calculated position
+      const duplicatedNode: WorkflowNode = {
+        ...originalNode,
+        id: generateId(originalNode.type),
+        position,
+      };
+
+      const updatedNodes = [...nodesRef.current, duplicatedNode];
+      set(updatedNodes);
+      setSelectedNodeId(duplicatedNode.id);
+    },
+    [set],
+  );
+
+  const handleBatchUpdateNodePositions = useCallback(
+    (positions: Record<string, { x: number; y: number }>) => {
+      const updatedNodes = nodesRef.current.map((node) => {
+        const newPosition = positions[node.id];
+        return newPosition ? { ...node, position: newPosition } : node;
+      });
+      set(updatedNodes);
+    },
+    [set],
+  );
+
+
 
   const handleSave = useCallback(() => {
     readyToSave.current = false;
@@ -409,14 +501,15 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
         <Box flex={1} style={{ position: "relative", overflow: "hidden" }}>
           <ReactFlowCanvas
-            nodes={nodes}
+            nodes={nodesWithoutConfig}
             connections={connections}
-            setNodes={(n: WorkflowNode[]) => set(n, undefined)}
             selectedNode={selectedNode}
             onNodeSelect={setSelectedNodeId}
             onNodeCreate={handleNodeCreation}
             onNodeMove={handleNodeMovement}
             onNodeDelete={handleNodeDeletion}
+            onNodeDuplicate={handleNodeDuplication}
+            onBatchUpdateNodePositions={handleBatchUpdateNodePositions}
             onConnectionCreate={handleConnectionCreation}
             onConnectionDelete={handleConnectionDeletion}
             errors={schemaErrors}

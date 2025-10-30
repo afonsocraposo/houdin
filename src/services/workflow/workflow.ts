@@ -146,36 +146,54 @@ export class WorkflowExecutor {
   }
 
   private async executeAction(node: WorkflowNode): Promise<void> {
-    this.nodesProcessing.add(node.id);
-    const actionRegistry = ActionRegistry.getInstance();
-    // Access trigger type correctly - it's stored as triggerType, not type
-    const actionType = (node.data as ActionNodeData)?.type;
-    const actionConfig = cloneDeep(node.data?.config || {});
-
-    // iterate object properties and interpolate variables
-    for (const key in actionConfig) {
-      if (actionConfig.hasOwnProperty(key)) {
-        const value = actionConfig[key];
-        if (typeof value === "string") {
-          actionConfig[key] = this.context.interpolateVariables(value);
-        }
-      }
-    }
-
-    const action = actionRegistry.getAction(actionType);
-    const runBackground = action !== undefined;
-
-    // Send command to content script to set up the trigger
-    const message: ActionCommand = {
-      type: WorkflowCommandType.EXECUTE_ACTION,
-      executionId: this.id,
-      workflowId: this.workflow.id,
-      tabId: this.tabId,
-      nodeType: actionType,
-      nodeConfig: actionConfig,
-      nodeId: node.id,
-    };
     try {
+      this.nodesProcessing.add(node.id);
+      const actionRegistry = ActionRegistry.getInstance();
+      // Access trigger type correctly - it's stored as triggerType, not type
+      const actionType = (node.data as ActionNodeData)?.type;
+      const actionConfig = cloneDeep(node.data?.config || {});
+
+      try {
+        // iterate object properties and interpolate variables
+        for (const key in actionConfig) {
+          if (actionConfig.hasOwnProperty(key)) {
+            const value = actionConfig[key];
+            if (typeof value === "string") {
+              actionConfig[key] = this.context.interpolateVariables(value);
+            }
+          }
+        }
+      } catch (error) {
+        this.executionTracker.addNodeResult({
+          nodeId: node.id,
+          nodeType: "action",
+          nodeName: actionType,
+          nodeConfig: actionConfig,
+          data: `Error interpolating action config: ${error}`,
+          status: "error",
+          executedAt: Date.now(),
+          duration: 0,
+        });
+        NotificationService.showErrorNotificationFromBackground({
+          title: `Error executing ${actionType}`,
+          message: `Error interpolating action config: ${error}`,
+        });
+        throw error;
+      }
+
+      const action = actionRegistry.getAction(actionType);
+      const runBackground = action !== undefined;
+
+      // Send command to content script to set up the trigger
+      const message: ActionCommand = {
+        type: WorkflowCommandType.EXECUTE_ACTION,
+        executionId: this.id,
+        workflowId: this.workflow.id,
+        tabId: this.tabId,
+        nodeType: actionType,
+        nodeConfig: actionConfig,
+        nodeId: node.id,
+      };
       const start = Date.now();
 
       // For content script actions, ensure content script is ready before executing
@@ -199,10 +217,10 @@ export class WorkflowExecutor {
       const result = runBackground
         ? await this.executeActionInBackground(message)
         : ((await sendMessageToContentScript<ActionCommand>(
-          this.tabId,
-          WorkflowCommandType.EXECUTE_ACTION,
-          message,
-        )) as StatusMessage);
+            this.tabId,
+            WorkflowCommandType.EXECUTE_ACTION,
+            message,
+          )) as StatusMessage);
 
       const duration = Date.now() - start;
       if (!result || !result.success) {

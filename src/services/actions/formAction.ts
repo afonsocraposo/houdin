@@ -35,7 +35,16 @@ export class FormAction extends BaseAction<FormActionConfig, FormActionOutput> {
       fields: customProperty({
         label: "Form Fields",
         description: "Define the fields to collect user input",
-        // required: true,
+        defaultValue: [
+          {
+            name: "",
+            label: "",
+            type: "text",
+            required: false,
+            placeholder: "",
+            defaultValue: "",
+          },
+        ],
         render: (
           values: Record<string, any>,
           onChange: (key: string, value: any) => void,

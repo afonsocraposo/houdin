@@ -1,4 +1,9 @@
-import React, { useCallback, useMemo, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useEffect,
+  useState,
+} from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -48,13 +53,16 @@ import {
 interface ReactFlowCanvasProps {
   nodes: WorkflowNode[];
   connections: WorkflowConnection[];
-  setNodes: (nodes: WorkflowNode[]) => void;
   onNodeSelect: (id: string | null) => void;
   onNodeDelete: (id: string) => void;
   onNodeMove: (id: string, position: { x: number; y: number }) => void;
   onConnectionCreate: (connection: WorkflowConnection) => void;
   onConnectionDelete: (id: string) => void;
   onNodeCreate: (node: WorkflowNode) => void;
+  onNodeDuplicate: (nodeId: string, position: { x: number; y: number }) => void;
+  onBatchUpdateNodePositions: (
+    positions: Record<string, { x: number; y: number }>,
+  ) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
   undo: () => void;
@@ -79,13 +87,14 @@ export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
 const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   nodes: workflowNodes,
   connections: workflowConnections,
-  setNodes: setWorkflowNodes,
   onNodeSelect,
   onNodeDelete,
   onNodeMove,
   onConnectionCreate,
   onConnectionDelete,
   onNodeCreate,
+  onNodeDuplicate,
+  onBatchUpdateNodePositions,
   selectedNode,
   errors,
   undo,
@@ -96,23 +105,33 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const colorScheme = useComputedColorScheme();
   const reactFlowInstance = useReactFlow();
   const [opened, setOpened] = useState(false);
+  const panToShowNode = panToShowNodeCallback(reactFlowInstance);
 
   // Convert workflow nodes to React Flow nodes
-  const reactFlowNodes: Node[] = useMemo(
-    () =>
-      workflowNodes.map((node) => ({
-        id: node.id,
-        type: "custom",
-        position: node.position,
-        data: {
-          ...node.data,
-          ...node,
-          onDeleteNode: onNodeDelete,
-          error: errors[node.id] !== undefined,
+  const reactFlowNodes: Node[] = useMemo(() => {
+    return workflowNodes.map((node) => ({
+      id: node.id,
+      type: "custom",
+      position: node.position,
+      selected: selectedNode?.id === node.id,
+      data: {
+        ...node.data,
+        ...node,
+        onDeleteNode: onNodeDelete,
+        onCopyNode: () => {
+          const newPosition = getNewNodePosition(workflowNodes);
+          onNodeDuplicate(node.id, newPosition);
         },
-      })),
-    [workflowNodes, errors, onNodeDelete],
-  );
+        error: errors[node.id] !== undefined,
+      },
+    }));
+  }, [
+    workflowNodes, // This is already optimized to only change on structural changes
+    selectedNode?.id, // Only depend on the ID, not the full node object
+    errors,
+    onNodeDelete,
+    onNodeDuplicate,
+  ]);
 
   // Convert workflow connections to React Flow edges
   const reactFlowEdges: Edge[] = useMemo(
@@ -143,25 +162,22 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState(reactFlowNodes);
   const [edges, setEdges, onEdgesChangeFlow] = useEdgesState(reactFlowEdges);
 
-  // Update React Flow state when workflow data changes (but prevent infinite loops)
+  // Update React Flow state only when structure changes (not just config updates)
   useEffect(() => {
-    setNodes(reactFlowNodes);
+    const updateState = () => {
+      setNodes(reactFlowNodes);
+      setEdges(reactFlowEdges);
+    };
+    const frameId = requestAnimationFrame(updateState);
+    
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
   }, [reactFlowNodes]);
 
   useEffect(() => {
-    setEdges(reactFlowEdges);
-  }, [reactFlowEdges]); // Update when connections change
-
-  // Handle selection changes separately to avoid re-render cycles
-  useEffect(() => {
-    setNodes((currentNodes) =>
-      currentNodes.map((node) => ({
-        ...node,
-        selected: selectedNode?.id === node.id,
-      })),
-    );
-    setOpened(false);
-  }, [selectedNode?.id, setNodes, setOpened]);
+    if (opened && selectedNode !== null) setOpened(false);
+  }, [selectedNode, opened]);
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(
@@ -269,8 +285,20 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       workflowNodes,
       workflowConnections,
     );
-    setWorkflowNodes(layoutedNodes);
-  }, [workflowNodes, workflowConnections, getLayoutedElements]);
+
+    // Create position updates record
+    const positionUpdates: Record<string, { x: number; y: number }> = {};
+    layoutedNodes.forEach((node) => {
+      positionUpdates[node.id] = node.position;
+    });
+
+    onBatchUpdateNodePositions(positionUpdates);
+  }, [
+    workflowNodes,
+    workflowConnections,
+    getLayoutedElements,
+    onBatchUpdateNodePositions,
+  ]);
 
   const createNode = useCallback(
     (type: string, nodeType: NodeType) => {
@@ -306,8 +334,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     [workflowNodes, onNodeCreate],
   );
 
-  const panToShowNode = panToShowNodeCallback(reactFlowInstance);
-
   const onNodeCopy = onNodeCopyCallback(selectedNode);
 
   const onNodePaste = onNodePasteCallback({
@@ -321,6 +347,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     ["mod + V", () => onNodePaste()],
     ["mod + Z", () => hasPrevious && undo()],
     ["mod + Shift + Z", () => hasNext && redo()],
+    ["mod + Y", () => hasNext && redo()],
   ]);
 
   return (
@@ -359,6 +386,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         }}
         disableKeyboardA11y
         colorMode={colorScheme}
+        onlyRenderVisibleElements={false}
       >
         <Background />
         <Controls />

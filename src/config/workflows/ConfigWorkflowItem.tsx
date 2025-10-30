@@ -42,12 +42,19 @@ export default function ConfigWorkflowItem({
         <Text fw={500}>{workflow.name}</Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm" c="dimmed" style={{ fontFamily: "monospace" }}>
+        <Text
+          size="sm"
+          c="dimmed"
+          style={{ fontFamily: "monospace" }}
+          truncate
+          maw={300}
+          title={workflow.urlPattern}
+        >
           {workflow.urlPattern || "No pattern set"}
         </Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="dimmed" truncate maw={300}>
           {workflow.description || "No description"}
         </Text>
       </Table.Td>
