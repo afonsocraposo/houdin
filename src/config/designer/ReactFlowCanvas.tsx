@@ -61,7 +61,9 @@ interface ReactFlowCanvasProps {
   onConnectionDelete: (id: string) => void;
   onNodeCreate: (node: WorkflowNode) => void;
   onNodeDuplicate: (nodeId: string, position: { x: number; y: number }) => void;
-  onBatchUpdateNodePositions: (positions: Record<string, { x: number; y: number }>) => void;
+  onBatchUpdateNodePositions: (
+    positions: Record<string, { x: number; y: number }>,
+  ) => void;
   selectedNode: WorkflowNode | null;
   errors: Record<string, Record<string, string[]>>;
   undo: () => void;
@@ -127,9 +129,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   }, [
     workflowNodes, // This is already optimized to only change on structural changes
     selectedNode?.id, // Only depend on the ID, not the full node object
-    errors, 
-    onNodeDelete, 
-    onNodeDuplicate
+    errors,
+    onNodeDelete,
+    onNodeDuplicate,
   ]);
 
   // Convert workflow connections to React Flow edges
@@ -175,6 +177,10 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     };
     requestAnimationFrame(updateState);
   }, [reactFlowNodes]);
+
+  useEffect(() => {
+    if (opened && selectedNode !== null) setOpened(false);
+  }, [selectedNode, opened]);
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(
@@ -282,15 +288,20 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       workflowNodes,
       workflowConnections,
     );
-    
+
     // Create position updates record
     const positionUpdates: Record<string, { x: number; y: number }> = {};
-    layoutedNodes.forEach(node => {
+    layoutedNodes.forEach((node) => {
       positionUpdates[node.id] = node.position;
     });
-    
+
     onBatchUpdateNodePositions(positionUpdates);
-  }, [workflowNodes, workflowConnections, getLayoutedElements, onBatchUpdateNodePositions]);
+  }, [
+    workflowNodes,
+    workflowConnections,
+    getLayoutedElements,
+    onBatchUpdateNodePositions,
+  ]);
 
   const createNode = useCallback(
     (type: string, nodeType: NodeType) => {
