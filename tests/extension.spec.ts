@@ -1,6 +1,6 @@
 import { test, expect } from "./test.base";
 
-test.describe("Load extension in chrome", () => {
+test.describe("Load extension", () => {
   test("extension config page opens", async ({ page, baseUrl }) => {
     // Open extension config page
     await page.goto(baseUrl);

@@ -56,7 +56,6 @@ const config: PlaywrightTestConfig = {
       name: "firefox",
       use: {
         ...devices["Desktop Firefox"],
-        permissions: ["clipboard-read"],
       },
     },
   ],
