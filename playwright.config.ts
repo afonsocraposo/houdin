@@ -52,13 +52,6 @@ const config: PlaywrightTestConfig = {
         permissions: ["clipboard-read"],
       },
     },
-    {
-      name: "firefox",
-      use: {
-        ...devices["Desktop Firefox"],
-        permissions: ["clipboard-read"],
-      },
-    },
   ],
 };
 
