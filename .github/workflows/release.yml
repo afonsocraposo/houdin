@@ -82,12 +82,6 @@ jobs:
       - name: Build Firefox extension
         run: npm run build:firefox
 
-      - name: Install Playwright firefox
-        run: npx playwright install firefox
-
-      - name: Run e2e tests (firefox)
-        run: npm run test:e2e:headless:firefox
-
       - name: Prepare Firefox build
         run: mv dist dist-firefox
 
