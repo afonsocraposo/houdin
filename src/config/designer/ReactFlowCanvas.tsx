@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useMemo,
-  useEffect,
-  useState,
-} from "react";
+import React, { useCallback, useMemo, useEffect, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -169,11 +164,11 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       setEdges(reactFlowEdges);
     };
     const frameId = requestAnimationFrame(updateState);
-    
+
     return () => {
       cancelAnimationFrame(frameId);
     };
-  }, [reactFlowNodes]);
+  }, [reactFlowNodes, reactFlowEdges]);
 
   useEffect(() => {
     if (opened && selectedNode !== null) setOpened(false);
