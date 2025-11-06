@@ -174,11 +174,7 @@ export class WorkflowExecutor {
           executedAt: Date.now(),
           duration: 0,
         });
-        NotificationService.showErrorNotificationFromBackground({
-          title: `Error executing ${actionType}`,
-          message: `Error interpolating action config: ${error}`,
-        });
-        throw error;
+        throw new Error(`Error interpolating action config: ${error}`);
       }
 
       const action = actionRegistry.getAction(actionType);
@@ -211,7 +207,7 @@ export class WorkflowExecutor {
           executedAt: start,
           duration: Date.now() - start,
         });
-        throw new Error("Content script not ready for action execution");
+        throw new Error("Timed out waiting for content script to be ready");
       }
 
       const result = runBackground
@@ -248,8 +244,12 @@ export class WorkflowExecutor {
         duration,
       });
       this.onActionExecuted(node.id, result.data, result.outputHandle);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error executing action:", error);
+      NotificationService.showErrorNotificationFromBackground({
+        title: `Error executing action ${node.id} in workflow ${this.workflow.id}`,
+        message: error.message,
+      });
       this.destroy(false, true);
     }
   }

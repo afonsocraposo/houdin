@@ -14,6 +14,7 @@ import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow/workflow";
 import { ExecutionContext } from "./workflow/executionContext";
 import { matchesUrlPattern } from "@/utils/helpers";
+import { NotificationService } from "./notification";
 
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();
@@ -61,6 +62,10 @@ export class BackgroundWorkflowEngine {
 
     const success = await this.initializeContentScript(tabId);
     if (!success) {
+      NotificationService.showErrorNotificationFromBackground({
+        title: "Failed to start workflow",
+        message: `Could not initialize content script for workflows on this page.`,
+      });
       return;
     }
 
