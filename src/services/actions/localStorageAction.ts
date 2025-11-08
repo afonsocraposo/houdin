@@ -98,6 +98,12 @@ export class LocalStorageAction extends BaseAction<
             return;
           }
           const readValue = localStorage.getItem(key);
+          if (readValue === null) {
+            onError(
+              new Error(`No value found in local storage for key: ${key}`),
+            );
+            return;
+          }
           onSuccess({ key, value: readValue, operation });
           return;
         case "delete":

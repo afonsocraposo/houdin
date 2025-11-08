@@ -98,6 +98,12 @@ export class SessionStorageAction extends BaseAction<
             return;
           }
           const readValue = sessionStorage.getItem(key);
+          if (readValue === null) {
+            onError(
+              new Error(`No item found in session storage for key: ${key}`),
+            );
+            return;
+          }
           onSuccess({ key, value: readValue, operation });
           return;
         case "delete":
