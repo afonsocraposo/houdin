@@ -177,6 +177,10 @@ export class CookiesAction extends BaseAction<
             name: key,
             storeId,
           });
+          if (!readValue) {
+            onError(new Error(`No cookie found for key: ${key}`));
+            return;
+          }
           onSuccess({ key, value: readValue, operation });
           return;
         case "delete":
