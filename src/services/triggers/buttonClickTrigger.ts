@@ -4,7 +4,7 @@ import {
   ComponentTriggerEventDetail,
 } from "@/components/ComponentFactory";
 import { BaseTrigger } from "@/types/triggers";
-import { getElement } from "@/utils/helpers";
+import { waitForElement } from "@/utils/helpers";
 import { NotificationService } from "@/services/notification";
 import { ContentInjector } from "@/services/injector";
 import {
@@ -165,7 +165,7 @@ export class ButtonClickTrigger extends BaseTrigger<
     const targetElement =
       componentType === "fab"
         ? document.body
-        : getElement(targetSelector, selectorType);
+        : await waitForElement(targetSelector, selectorType, 5000);
 
     if (!targetElement) {
       NotificationService.showErrorNotification({

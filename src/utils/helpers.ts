@@ -110,6 +110,38 @@ export const getElement = (
   return null;
 };
 
+export const waitForElement = (
+  selector: string,
+  selectorType: "css" | "xpath" | "text" | "label" | "name" | "placeholder",
+  timeout: number = 5000,
+): Promise<Element | null> => {
+  return new Promise((resolve) => {
+    const element = getElement(selector, selectorType);
+    if (element) {
+      resolve(element);
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      const element = getElement(selector, selectorType);
+      if (element) {
+        observer.disconnect();
+        resolve(element);
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    setTimeout(() => {
+      observer.disconnect();
+      resolve(null);
+    }, timeout);
+  });
+};
+
 export function insertAtCursor(
   input: HTMLInputElement | HTMLTextAreaElement,
   text: string,
