@@ -32,6 +32,8 @@ export class TypeTextAction extends BaseAction<
           { label: "CSS Selector", value: "css" },
           { label: "XPath", value: "xpath" },
           { label: "Text", value: "text" },
+          { label: "Placeholder", value: "placeholder" },
+          { label: "Label", value: "label" },
           { label: "Focused Input", value: "focused" },
         ],
         defaultValue: "focused",
@@ -46,7 +48,7 @@ export class TypeTextAction extends BaseAction<
         defaultValue: "input",
         showWhen: {
           field: "selectorType",
-          value: ["css", "xpath", "text"],
+          value: ["css", "xpath", "text", "label", "placeholder"],
         },
       }),
       text: textProperty({
@@ -96,31 +98,44 @@ export class TypeTextAction extends BaseAction<
         element instanceof HTMLTextAreaElement
       )
     ) {
-      onError(
-        new Error(
-          "Focused element is not an input, textarea, or contenteditable",
-        ),
-      );
-      return;
-    }
+      // Check for contenteditable
+      if (
+        !(element instanceof HTMLElement) ||
+        element.contentEditable !== "true"
+      ) {
+        onError(new Error("Focused element is not an input field"));
+        return;
+      }
+      element.focus();
 
-    // Type the text into the input field
-    const inputElement = element as HTMLInputElement | HTMLTextAreaElement;
-    const start = inputElement.selectionStart;
-    const end = inputElement.selectionEnd;
-    if (start === null || end === null) {
-      inputElement.value += text;
+      element.innerHTML = `<p>${text}</p>`;
+
+      const inputEvent = new Event("input", { bubbles: true });
+      element.dispatchEvent(inputEvent);
+
+      const changeEvent = new Event("change", { bubbles: true });
+      element.dispatchEvent(changeEvent);
+
+      element.blur();
     } else {
-      const currentValue = inputElement.value;
-      inputElement.value =
-        currentValue.substring(0, start) + text + currentValue.substring(end);
-      const newCursorPosition = start + text.length;
-      try {
-        inputElement.selectionStart = newCursorPosition;
-        inputElement.selectionEnd = newCursorPosition;
-        inputElement.dispatchEvent(new Event("input", { bubbles: true }));
-      } catch (e) {
-        // ignore
+      // Type the text into the input field
+      const inputElement = element as HTMLInputElement | HTMLTextAreaElement;
+      const start = inputElement.selectionStart;
+      const end = inputElement.selectionEnd;
+      if (start === null || end === null) {
+        inputElement.value += text;
+      } else {
+        const currentValue = inputElement.value;
+        inputElement.value =
+          currentValue.substring(0, start) + text + currentValue.substring(end);
+        const newCursorPosition = start + text.length;
+        try {
+          inputElement.selectionStart = newCursorPosition;
+          inputElement.selectionEnd = newCursorPosition;
+          inputElement.dispatchEvent(new Event("input", { bubbles: true }));
+        } catch (e) {
+          // ignore
+        }
       }
     }
 
