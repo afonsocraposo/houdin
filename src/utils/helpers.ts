@@ -122,14 +122,22 @@ export const waitForElement = (
       return;
     }
 
-    const observer = new MutationObserver(() => {
-      const element = getElement(selector, selectorType);
-      if (element) {
-        observer.disconnect();
-        resolve(element);
+    // Debounce function to limit how often getElement is called on mutations
+    let debounceTimeout: number | undefined;
+    const debouncedCallback = () => {
+      if (debounceTimeout !== undefined) {
+        clearTimeout(debounceTimeout);
       }
-    });
+      debounceTimeout = window.setTimeout(() => {
+        const element = getElement(selector, selectorType);
+        if (element) {
+          observer.disconnect();
+          resolve(element);
+        }
+      }, 50); // 50ms debounce delay
+    };
 
+    const observer = new MutationObserver(debouncedCallback);
     observer.observe(document.body, {
       childList: true,
       subtree: true,
