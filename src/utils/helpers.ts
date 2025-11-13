@@ -96,7 +96,7 @@ export const getElement = (
     }
     // search using aria-label attribute
     const ariaLabelElement = document.querySelector(
-      `[aria-label="${selector}"]`,
+      `[aria-label*="${selector}"]`,
     );
     if (ariaLabelElement) {
       return ariaLabelElement;
@@ -105,7 +105,7 @@ export const getElement = (
   } else if (selectorType === "name") {
     return document.querySelector(`[name="${selector}"]`);
   } else if (selectorType === "placeholder") {
-    return document.querySelector(`[placeholder="${selector}"]`);
+    return document.querySelector(`[placeholder*="${selector}"]`);
   }
   return null;
 };
