@@ -63,6 +63,7 @@ export function initializeBackgroundActions(): void {
   registry.register(CustomScriptAction);
   registry.register(NavigateUrlAction);
   registry.register(CookiesAction);
+  registry.register(LLMOpenAIAction);
 }
 
 // Export registry instance for convenience

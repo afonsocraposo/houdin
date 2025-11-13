@@ -113,7 +113,7 @@ export class LLMOpenAIAction extends BaseAction<
       config;
 
     if (!credentialId) {
-      NotificationService.showErrorNotification({
+      NotificationService.showErrorNotificationFromBackground({
         message: "No OpenAI credential selected",
       });
       onError(new Error("No OpenAI credential available"));
@@ -121,7 +121,7 @@ export class LLMOpenAIAction extends BaseAction<
     }
 
     if (!prompt) {
-      NotificationService.showErrorNotification({
+      NotificationService.showErrorNotificationFromBackground({
         message: "No prompt provided for OpenAI",
       });
       onError(new Error("No prompt provided for OpenAI"));
@@ -130,7 +130,7 @@ export class LLMOpenAIAction extends BaseAction<
 
     try {
       // Show loading notification
-      NotificationService.showNotification({
+      NotificationService.showNotificationFromBackground({
         title: "Calling OpenAI API...",
         timeout: 1000,
       });
@@ -153,9 +153,6 @@ export class LLMOpenAIAction extends BaseAction<
         tokensUsed: undefined, // OpenAI service doesn't return token count currently
       });
     } catch (error: any) {
-      NotificationService.showErrorNotification({
-        message: `OpenAI API error: ${error}`,
-      });
       // Store empty response on error
       onError(error as Error);
     }
