@@ -1,4 +1,4 @@
-import { BackgroundStorageClient, ContentStorageClient } from "./storage";
+import { BackgroundStorageClient } from "./storage";
 import { CredentialRegistry } from "./credentialRegistry";
 import { HttpClientService } from "./httpClient";
 
