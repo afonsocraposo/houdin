@@ -18,6 +18,7 @@ interface InjectComponentActionConfig {
   targetSelector: string;
   componentType: "text" | "html";
   selectorType: "css" | "xpath";
+  injectionPosition: "start" | "end";
   componentText?: string;
   componentHtml?: string;
   textColor?: string;
@@ -92,6 +93,15 @@ export class InjectComponentAction extends BaseAction<
         description:
           "Where to inject the component (not needed for floating action button)",
         defaultValue: "body",
+      }),
+      injectionPosition: selectProperty({
+        label: "Position",
+        options: [
+          { value: "start", label: "Start (prepend)" },
+          { value: "end", label: "End (append)" },
+        ],
+        defaultValue: "end",
+        description: "Where to inject the component within the target element",
       }),
       componentType: selectProperty({
         label: "Component Type",
@@ -175,7 +185,8 @@ export class InjectComponentAction extends BaseAction<
     onSuccess: (data: any) => void,
     _onError: (error: Error) => void,
   ): Promise<void> {
-    const { selectorType, targetSelector, componentType } = config;
+    const { selectorType, targetSelector, componentType, injectionPosition } =
+      config;
 
     const targetElement = getElement(targetSelector, selectorType);
 
@@ -193,6 +204,7 @@ export class InjectComponentAction extends BaseAction<
       component,
       targetElement,
       true, // coreOnly
+      injectionPosition,
     );
 
     onSuccess({

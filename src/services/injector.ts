@@ -15,6 +15,7 @@ export class ContentInjector {
   private static getParentShadowRoot(
     target: Element,
     rootId: string,
+    position: "start" | "end" = "end",
   ): { root: Root | null; hostDiv: HTMLElement | null } {
     try {
       // Check if container already exists
@@ -41,8 +42,12 @@ export class ContentInjector {
       // Attach a Shadow Root
       const shadowRoot = container.attachShadow({ mode: "open" });
 
-      // Append the container to the body
-      target.append(container);
+      // Inject the container at the specified position
+      if (position === "start") {
+        target.prepend(container);
+      } else {
+        target.append(container);
+      }
 
       // Create a container for React to mount
       const hostDiv = document.createElement("div");
@@ -64,8 +69,13 @@ export class ContentInjector {
     component: JSX.Element,
     target: Element,
     coreOnly: boolean = false,
+    position: "start" | "end" = "end",
   ): void {
-    const { root, hostDiv } = this.getParentShadowRoot(target, rootId);
+    const { root, hostDiv } = this.getParentShadowRoot(
+      target,
+      rootId,
+      position,
+    );
     if (!root || !hostDiv) {
       console.error("Failed to create React root or app element.");
       return;
