@@ -96,7 +96,7 @@ export const getElement = (
     }
     // search using aria-label attribute
     const ariaLabelElement = document.querySelector(
-      `[aria-label="${selector}"]`,
+      `[aria-label*="${selector}"]`,
     );
     if (ariaLabelElement) {
       return ariaLabelElement;
@@ -105,9 +105,49 @@ export const getElement = (
   } else if (selectorType === "name") {
     return document.querySelector(`[name="${selector}"]`);
   } else if (selectorType === "placeholder") {
-    return document.querySelector(`[placeholder="${selector}"]`);
+    return document.querySelector(`[placeholder*="${selector}"]`);
   }
   return null;
+};
+
+export const waitForElement = (
+  selector: string,
+  selectorType: "css" | "xpath" | "text" | "label" | "name" | "placeholder",
+  timeout: number = 5000,
+): Promise<Element | null> => {
+  return new Promise((resolve) => {
+    const element = getElement(selector, selectorType);
+    if (element) {
+      resolve(element);
+      return;
+    }
+
+    // Debounce function to limit how often getElement is called on mutations
+    let debounceTimeout: number | undefined;
+    const debouncedCallback = () => {
+      if (debounceTimeout !== undefined) {
+        clearTimeout(debounceTimeout);
+      }
+      debounceTimeout = window.setTimeout(() => {
+        const element = getElement(selector, selectorType);
+        if (element) {
+          observer.disconnect();
+          resolve(element);
+        }
+      }, 50); // 50ms debounce delay
+    };
+
+    const observer = new MutationObserver(debouncedCallback);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    setTimeout(() => {
+      observer.disconnect();
+      resolve(null);
+    }, timeout);
+  });
 };
 
 export function insertAtCursor(

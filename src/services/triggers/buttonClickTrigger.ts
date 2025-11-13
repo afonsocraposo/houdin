@@ -4,7 +4,7 @@ import {
   ComponentTriggerEventDetail,
 } from "@/components/ComponentFactory";
 import { BaseTrigger } from "@/types/triggers";
-import { getElement } from "@/utils/helpers";
+import { waitForElement } from "@/utils/helpers";
 import { NotificationService } from "@/services/notification";
 import { ContentInjector } from "@/services/injector";
 import {
@@ -23,6 +23,7 @@ interface ButtonClickTriggerConfig {
   buttonColor?: string;
   buttonTextColor?: string;
   customStyle?: string;
+  injectionPosition?: "start" | "end";
 }
 
 interface ButtonClickTriggerOutput {
@@ -111,6 +112,19 @@ export class ButtonClickTrigger extends BaseTrigger<
           value: "button",
         },
       }),
+      injectionPosition: selectProperty({
+        label: "Position",
+        options: [
+          { value: "start", label: "Start (prepend)" },
+          { value: "end", label: "End (append)" },
+        ],
+        defaultValue: "end",
+        description: "Where to inject the component within the target element",
+        showWhen: {
+          field: "componentType",
+          value: "button",
+        },
+      }),
       componentText: textProperty({
         label: "Component Text",
         placeholder: "Click me",
@@ -160,12 +174,13 @@ export class ButtonClickTrigger extends BaseTrigger<
       buttonColor,
       buttonTextColor,
       customStyle,
+      injectionPosition,
     } = config;
 
     const targetElement =
       componentType === "fab"
         ? document.body
-        : getElement(targetSelector, selectorType);
+        : await waitForElement(targetSelector, selectorType, 5000);
 
     if (!targetElement) {
       NotificationService.showErrorNotification({
@@ -196,6 +211,7 @@ export class ButtonClickTrigger extends BaseTrigger<
       component,
       targetElement,
       true, // coreOnly
+      injectionPosition,
     );
 
     // Listen for user interactions continuously (keep listener active)

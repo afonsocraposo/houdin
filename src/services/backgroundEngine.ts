@@ -15,6 +15,7 @@ import { WorkflowExecutor } from "./workflow/workflow";
 import { ExecutionContext } from "./workflow/executionContext";
 import { matchesUrlPattern } from "@/utils/helpers";
 import { NotificationService } from "./notification";
+import { initializeCredentials } from "./credentialInitializer";
 
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();
@@ -24,6 +25,7 @@ export class BackgroundWorkflowEngine {
   constructor() {
     this.storageClient = new BackgroundStorageClient();
     initializeBackgroundActions();
+    initializeCredentials();
   }
 
   async initialize(): Promise<void> {
