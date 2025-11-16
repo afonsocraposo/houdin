@@ -26,6 +26,7 @@ import Logo from "@/components/Logo";
 import WorkflowsTab from "./workflows/WorkflowsTab";
 import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
 import Footer from "@/components/Footer";
+import LoginButton from "@/components/LoginButton";
 
 enum TabOption {
   Workflows = "workflows",
@@ -115,26 +116,29 @@ function ConfigInterface() {
         )}
 
         <Tabs value={activeTab} onChange={handleTabChange} mt="md">
-          <Tabs.List>
-            <Tabs.Tab
-              value={TabOption.Workflows}
-              leftSection={<IconNetwork size={16} />}
-            >
-              Workflows
-            </Tabs.Tab>
-            <Tabs.Tab
-              value={TabOption.Credentials}
-              leftSection={<IconKey size={16} />}
-            >
-              Credentials
-            </Tabs.Tab>
-            <Tabs.Tab
-              value={TabOption.History}
-              leftSection={<IconClock size={16} />}
-            >
-              History
-            </Tabs.Tab>
-          </Tabs.List>
+          <Group>
+            <Tabs.List flex={1}>
+              <Tabs.Tab
+                value={TabOption.Workflows}
+                leftSection={<IconNetwork size={16} />}
+              >
+                Workflows
+              </Tabs.Tab>
+              <Tabs.Tab
+                value={TabOption.Credentials}
+                leftSection={<IconKey size={16} />}
+              >
+                Credentials
+              </Tabs.Tab>
+              <Tabs.Tab
+                value={TabOption.History}
+                leftSection={<IconClock size={16} />}
+              >
+                History
+              </Tabs.Tab>
+            </Tabs.List>
+            <LoginButton />
+          </Group>
 
           <Box pt="md">
             <Tabs.Panel value={TabOption.Workflows}>

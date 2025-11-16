@@ -4,11 +4,11 @@ import DesignerView from "./designer/DesignerView";
 import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
 import HelpModal from "@/components/HelpModal";
 import { useDisclosure } from "@mantine/hooks";
-import { ActionIcon, Affix } from "@mantine/core";
+import { ActionIcon, Affix, Box, useComputedColorScheme } from "@mantine/core";
 import { IconQuestionMark } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ApiClient } from "@/api/client";
-import { Account } from "@/api/types/account";
+import { useStore } from "./store";
 
 function DesignerWithParams() {
   const { workflowId } = useParams<{ workflowId?: string }>();
@@ -17,25 +17,33 @@ function DesignerWithParams() {
 
 function ConfigApp() {
   const [opened, { open, close }] = useDisclosure(false);
-  const [account, setAccount] = useState<Account | null>(null);
+  const setAccount = useStore((state) => state.setAccount);
+  const colorScheme = useComputedColorScheme();
 
   useEffect(() => {
     fetchAccount();
   }, []);
 
   const fetchAccount = async () => {
-    const client = ApiClient.getInstance();
     try {
-      const account = await client.getAccount();
+      const account = await ApiClient.getAccount();
       setAccount(account);
-      console.log("Fetched account:", account);
     } catch (error) {
       console.error("Error fetching account:", error);
     }
   };
 
   return (
-    <>
+    <Box
+      w="100vw"
+      h="100vh"
+      style={{
+        background:
+          colorScheme === "dark"
+            ? "linear-gradient(135deg, var(--mantine-color-dark-7) 0%, var(--mantine-color-dark-8) 100%)"
+            : undefined,
+      }}
+    >
       <Routes>
         <Route path="/" element={<ConfigInterface />} />
         <Route path="/designer" element={<DesignerView />} />
@@ -48,7 +56,7 @@ function ConfigApp() {
           <IconQuestionMark />
         </ActionIcon>
       </Affix>
-    </>
+    </Box>
   );
 }
 
