@@ -43,7 +43,10 @@ function App() {
   const loadCurrentUrl = async () => {
     try {
       // Get current tab URL
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      const tabs = await browser.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
 
       if (tabs.length > 0) {
         setCurrentUrl(tabs[0].url || "");
@@ -62,7 +65,10 @@ function App() {
   const handleSelectElement = async () => {
     try {
       // send message to content script
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      const tabs = await browser.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       if (tabs.length > 0 && tabs[0].id) {
         sendMessageToContentScript(tabs[0].id, "START_ELEMENT_SELECTION", {});
       }

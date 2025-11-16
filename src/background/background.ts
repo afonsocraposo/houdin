@@ -36,19 +36,23 @@ if (browser.action) {
   });
 }
 
-// Handle navigation to houdin.config
+// Handle navigation to https://houdin.config
 browser.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
-  if (changeInfo.url && changeInfo.url.includes("houdin.config")) {
-    // Redirect to the config page
-    const configUrl = browser.runtime.getURL("src/config/index.html");
-    browser.tabs.update(tabId, { url: configUrl });
+  if (changeInfo.url) {
+    const url = changeInfo.url;
+    if (url.startsWith("https://houdin.config")) {
+      // Redirect to the config page
+      const configUrl = browser.runtime.getURL("src/config/index.html");
+      browser.tabs.update(tabId, { url: configUrl });
+    }
   }
 });
 
 // Note: webNavigation API requires additional permission in manifest v3
 if (browser.webNavigation) {
   browser.webNavigation.onBeforeNavigate.addListener((details: any) => {
-    if (details.url.includes("houdin.config")) {
+    const url = details.url;
+    if (url.startsWith("https://houdin.config")) {
       const configUrl = browser.runtime.getURL("src/config/index.html");
       browser.tabs.update(details.tabId, { url: configUrl });
     }
