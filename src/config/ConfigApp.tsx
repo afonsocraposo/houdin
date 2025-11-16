@@ -6,6 +6,9 @@ import HelpModal from "@/components/HelpModal";
 import { useDisclosure } from "@mantine/hooks";
 import { ActionIcon, Affix } from "@mantine/core";
 import { IconQuestionMark } from "@tabler/icons-react";
+import { useEffect, useState } from "react";
+import { ApiClient } from "@/api/client";
+import { Account } from "@/api/types/account";
 
 function DesignerWithParams() {
   const { workflowId } = useParams<{ workflowId?: string }>();
@@ -14,6 +17,22 @@ function DesignerWithParams() {
 
 function ConfigApp() {
   const [opened, { open, close }] = useDisclosure(false);
+  const [account, setAccount] = useState<Account | null>(null);
+
+  useEffect(() => {
+    fetchAccount();
+  }, []);
+
+  const fetchAccount = async () => {
+    const client = ApiClient.getInstance();
+    try {
+      const account = await client.getAccount();
+      setAccount(account);
+      console.log("Fetched account:", account);
+    } catch (error) {
+      console.error("Error fetching account:", error);
+    }
+  };
 
   return (
     <>
