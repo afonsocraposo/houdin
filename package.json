@@ -1,6 +1,6 @@
 {
   "name": "Houdin",
-  "version": "3.8.5",
+  "version": "4.0.0",
   "description": "Browser automation that feels like magic. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
