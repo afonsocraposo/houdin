@@ -4,14 +4,11 @@ import { ApiClient } from "@/api/client";
 
 export interface AccountSlice {
   account: Account | null | undefined;
-  setAccount: (account: Account | null) => void;
   fetchAccount: () => Promise<void>;
 }
 
 export const createAccountSlice: StateCreator<AccountSlice> = (set, _get) => ({
   account: undefined,
-  lastFetched: null,
-  setAccount: (account) => set({ account }),
   fetchAccount: async () => {
     try {
       const account = await ApiClient.getAccount();

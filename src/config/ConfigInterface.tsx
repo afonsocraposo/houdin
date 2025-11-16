@@ -41,7 +41,7 @@ function ConfigInterface() {
   useEffect(() => {
     initializeCredentials();
     fetchAccount();
-  }, []);
+  }, [fetchAccount]);
 
   const [saved, setSaved] = useState(false);
   const [showUrlAlert, setShowUrlAlert] = useState(false);

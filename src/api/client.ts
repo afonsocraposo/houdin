@@ -4,7 +4,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export class ApiClient {
   static async getAccount(): Promise<Account | null> {
-    const response = await fetch(`${API_BASE_URL}/account`);
+    const response = await fetch(`${API_BASE_URL}/account`, {
+      credentials: "include",
+    });
     if (!response.ok) {
       if (response.status === 401) {
         return null; // Not logged in
