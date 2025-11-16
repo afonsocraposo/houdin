@@ -6,9 +6,6 @@ import HelpModal from "@/components/HelpModal";
 import { useDisclosure } from "@mantine/hooks";
 import { ActionIcon, Affix, Box, useComputedColorScheme } from "@mantine/core";
 import { IconQuestionMark } from "@tabler/icons-react";
-import { useEffect } from "react";
-import { ApiClient } from "@/api/client";
-import { useStore } from "./store";
 
 function DesignerWithParams() {
   const { workflowId } = useParams<{ workflowId?: string }>();
@@ -17,21 +14,7 @@ function DesignerWithParams() {
 
 function ConfigApp() {
   const [opened, { open, close }] = useDisclosure(false);
-  const setAccount = useStore((state) => state.setAccount);
   const colorScheme = useComputedColorScheme();
-
-  useEffect(() => {
-    fetchAccount();
-  }, []);
-
-  const fetchAccount = async () => {
-    try {
-      const account = await ApiClient.getAccount();
-      setAccount(account);
-    } catch (error) {
-      console.error("Error fetching account:", error);
-    }
-  };
 
   return (
     <Box

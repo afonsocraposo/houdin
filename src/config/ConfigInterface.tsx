@@ -27,6 +27,7 @@ import WorkflowsTab from "./workflows/WorkflowsTab";
 import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
 import Footer from "@/components/Footer";
 import LoginButton from "@/components/LoginButton";
+import { useStore } from "./store";
 
 enum TabOption {
   Workflows = "workflows",
@@ -35,9 +36,11 @@ enum TabOption {
 }
 
 function ConfigInterface() {
+  const fetchAccount = useStore((state) => state.fetchAccount);
   // Initialize credentials on app startup
   useEffect(() => {
     initializeCredentials();
+    fetchAccount();
   }, []);
 
   const [saved, setSaved] = useState(false);
