@@ -10,7 +10,7 @@ export default function LoginButton() {
     return null;
   }
   if (!account) {
-    const url = window.location.href;
+    const url = "https://houdin.config";
     return (
       <Button
         component={"a"}
