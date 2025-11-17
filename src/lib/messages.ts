@@ -3,15 +3,12 @@ import browser from "@/services/browser";
 export const sendMessageToBackground = async <T>(
   type: string,
   data?: T,
-  responseCallback?: (response: any) => void,
 ): Promise<any> => {
   try {
-    return await browser.runtime
-      .sendMessage({
-        type,
-        data,
-      } as CustomMessage<T>)
-      .then(responseCallback);
+    return await browser.runtime.sendMessage({
+      type,
+      data,
+    } as CustomMessage<T>);
   } catch (error) {
     console.error(`Error sending message to background: ${error}`);
     return null;

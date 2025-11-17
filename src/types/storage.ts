@@ -5,4 +5,5 @@ export enum StorageAction {
   SUBSCRIBE = "storage-subscribe",
   UNSUBSCRIBE = "storage-unsubscribe",
   CHANGE_NOTIFICATION = "storage-change-notification",
+  PING = "storage-ping",
 }
