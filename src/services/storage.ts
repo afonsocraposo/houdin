@@ -49,13 +49,13 @@ export class StorageServer {
       const { data } = message;
       switch (message.type) {
         case StorageAction.GET:
-          try {
-            return this.get(data.key).then((value) => {
+          return this.get(data.key)
+            .then((value) => {
               return Promise.resolve({ success: true, value });
+            })
+            .catch((error: any) => {
+              return Promise.resolve({ success: false, error: error.message });
             });
-          } catch (error: any) {
-            return Promise.resolve({ success: false, error: error.message });
-          }
         case StorageAction.SET:
           return this.set(data.key, data.value)
             .then(() => {
@@ -76,7 +76,7 @@ export class StorageServer {
             .catch((error: any) => {
               return Promise.resolve({ success: false, error: error.message });
             });
-        case "PING":
+        case StorageAction.PING:
           return Promise.resolve({ success: true });
       }
     });
@@ -566,7 +566,7 @@ export class ContentStorageClient extends StorageClientBase {
 
   private async pingBackgroundScript(): Promise<void> {
     try {
-      await sendMessageToBackground("PING");
+      await sendMessageToBackground(StorageAction.PING);
     } catch (error) {
       throw new Error("Failed to ping background script");
     }

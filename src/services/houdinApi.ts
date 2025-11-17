@@ -2,7 +2,9 @@ import browser from "./browser";
 
 export class HoudinApi {
   private static instance: HoudinApi | null = null;
-  constructor(public baseUrl: string = import.meta.env.VITE_API_BASE_URL) {
+  constructor(public baseUrl: string = import.meta.env.VITE_API_BASE_URL) {}
+
+  private startListener() {
     browser.runtime.onMessage.addListener((message: any, _sender: any) => {
       if (message.type === "HOUDIN_API") {
         const { path, options } = message.data;
@@ -22,7 +24,7 @@ export class HoudinApi {
               message,
               error,
             });
-            throw error;
+            return Promise.resolve(null);
           });
       }
     });
@@ -39,6 +41,7 @@ export class HoudinApi {
   static getInstance(): HoudinApi {
     if (!HoudinApi.instance) {
       HoudinApi.instance = new HoudinApi();
+      HoudinApi.instance.startListener();
     }
     return HoudinApi.instance;
   }
