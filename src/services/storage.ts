@@ -6,6 +6,7 @@ import { StorageKeys } from "./storage-keys";
 import browser from "./browser";
 import type { Runtime } from "webextension-polyfill";
 import { sendMessageToBackground } from "@/lib/messages";
+import { ApiClient } from "@/api/client";
 
 export const MAX_EXECUTIONS_HISTORY = 50; // Limit for workflow executions
 
@@ -607,5 +608,17 @@ export class ContentStorageClient extends StorageClientBase {
         }
       });
     }
+  }
+}
+
+export class ApiStorageClient extends ContentStorageClient {
+  // Additional API-specific methods can be added here
+  async getWorkflows(): Promise<WorkflowDefinition[]> {
+    const workflows = await ApiClient.listWorkflows();
+    console.log(workflows);
+    return workflows;
+  }
+  async createWorkflow(workflow: WorkflowDefinition): Promise<void> {
+    const created = await ApiClient.createWorkflow(workflow);
   }
 }

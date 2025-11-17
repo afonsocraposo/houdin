@@ -1,4 +1,4 @@
-import { ContentStorageClient } from "@/services/storage";
+import { ApiStorageClient, ContentStorageClient } from "@/services/storage";
 import { ExampleService } from "@/services/exampleService";
 import { WorkflowDefinition } from "@/types/workflow";
 import {
@@ -35,7 +35,7 @@ export default function WorkflowsTab({
   const [workflowToExport, setWorkflowToExport] =
     useState<WorkflowDefinition | null>(null);
 
-  const storageClient = useMemo(() => new ContentStorageClient(), []);
+  const storageClient = useMemo(() => new ApiStorageClient(), []);
   const exampleService = useMemo(() => new ExampleService(), []);
 
   const navigate = useNavigate();
