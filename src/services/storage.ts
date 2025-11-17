@@ -5,6 +5,7 @@ import { StorageAction } from "@/types/storage";
 import { StorageKeys } from "./storage-keys";
 import browser from "./browser";
 import type { Runtime } from "webextension-polyfill";
+import { sendMessageToBackground } from "@/lib/messages";
 
 export const MAX_EXECUTIONS_HISTORY = 50; // Limit for workflow executions
 
@@ -44,36 +45,41 @@ export class StorageServer {
       }
     });
 
-    browser.runtime.onMessage.addListener(
-      async (message: any, _sender: any) => {
-        try {
-          switch (message.type) {
-            case StorageAction.GET:
-              const value = await this.get(message.key);
-              return { success: true, value };
-            case StorageAction.SET:
-              await this.set(message.key, message.value);
-              // Notify subscribers of the change
-              this.notifySubscribers(message.key, message.value);
-              this.notifyLocalListeners(message.key, message.value);
-              return { success: true };
-            case StorageAction.REMOVE:
-              await this.remove(message.key);
-              // Notify subscribers of the removal
-              this.notifySubscribers(message.key, null);
-              this.notifyLocalListeners(message.key, null);
-              return { success: true };
-            case "ping":
-              // Handle ping for connection testing
-              return { success: true };
-            default:
-              return undefined;
+    browser.runtime.onMessage.addListener((message: any, _sender: any) => {
+      const { data } = message;
+      switch (message.type) {
+        case StorageAction.GET:
+          try {
+            return this.get(data.key).then((value) => {
+              return Promise.resolve({ success: true, value });
+            });
+          } catch (error: any) {
+            return Promise.resolve({ success: false, error: error.message });
           }
-        } catch (error: any) {
-          return { success: false, error: error.message };
-        }
-      },
-    );
+        case StorageAction.SET:
+          return this.set(data.key, data.value)
+            .then(() => {
+              this.notifySubscribers(data.key, data.value);
+              this.notifyLocalListeners(data.key, data.value);
+              return Promise.resolve({ success: true });
+            })
+            .catch((error: any) => {
+              return Promise.resolve({ success: false, error: error.message });
+            });
+        case StorageAction.REMOVE:
+          return this.remove(data.key)
+            .then(() => {
+              this.notifySubscribers(data.key, null);
+              this.notifyLocalListeners(data.key, null);
+              return Promise.resolve({ success: true });
+            })
+            .catch((error: any) => {
+              return Promise.resolve({ success: false, error: error.message });
+            });
+        case "PING":
+          return Promise.resolve({ success: true });
+      }
+    });
   }
 
   static getInstance(): StorageServer {
@@ -429,10 +435,8 @@ export class ContentStorageClient extends StorageClientBase {
   private isConnecting = false;
 
   protected async get(key: string): Promise<any> {
-    const result = await browser.runtime.sendMessage({
-      type: StorageAction.GET,
-      key,
-    });
+    const result = await sendMessageToBackground(StorageAction.GET, { key });
+
     if (!result || !result.success) {
       throw new Error(
         `Failed to get key ${key}: ${result?.error || "Unknown error"}`,
@@ -442,11 +446,11 @@ export class ContentStorageClient extends StorageClientBase {
   }
 
   protected async set(key: string, value: any): Promise<void> {
-    const result = await browser.runtime.sendMessage({
-      type: StorageAction.SET,
+    const result = await sendMessageToBackground(StorageAction.SET, {
       key,
       value,
     });
+
     if (!result || !result.success) {
       throw new Error(
         `Failed to set key ${key}: ${result?.error || "Unknown error"}`,
@@ -455,8 +459,7 @@ export class ContentStorageClient extends StorageClientBase {
   }
 
   protected async remove(key: string): Promise<void> {
-    const result = await browser.runtime.sendMessage({
-      type: StorageAction.REMOVE,
+    const result = await sendMessageToBackground(StorageAction.REMOVE, {
       key,
     });
     if (!result || !result.success) {
@@ -563,7 +566,7 @@ export class ContentStorageClient extends StorageClientBase {
 
   private async pingBackgroundScript(): Promise<void> {
     try {
-      await browser.runtime.sendMessage({ type: "ping" });
+      await sendMessageToBackground("PING");
     } catch (error) {
       throw new Error("Failed to ping background script");
     }
