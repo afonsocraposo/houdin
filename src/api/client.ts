@@ -1,27 +1,11 @@
 import { Account } from "./types/account";
-import { sendMessageToBackground } from "@/lib/messages";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://houdin.dev/api";
 
 export class ApiClient {
-  private static async fetch(
-    path: string,
-    options: RequestInit = {},
-  ): Promise<Response> {
-    const response = await sendMessageToBackground("HOUDIN_API", {
-      path,
-      options,
-    });
-    if (!response) {
-      throw new Error("No response from Houdin API");
-    }
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-    });
-  }
-
   static async getAccount(): Promise<Account | null> {
-    const response = await this.fetch(`/account`, {
+    const response = await fetch(`${API_BASE_URL}/account`, {
       credentials: "include",
     });
     if (!response.ok) {
