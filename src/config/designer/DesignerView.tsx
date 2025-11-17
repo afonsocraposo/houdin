@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
 import { ContentStorageClient } from "@/services/storage";
 import { WorkflowDefinition } from "@/types/workflow";
-import browser from "@/services/browser";
 import { sendMessageToBackground } from "@/lib/messages";
 
 interface DesignerViewProps {
