@@ -63,7 +63,7 @@ export const apiRequestIP: WorkflowDefinition = {
     {
       data: {
         config: {
-          modalContent: "{{action-Hi5qne.data}}",
+          modalContent: "{{action-Hi5qne.data.ip}}",
           modalTitle: "My Public IP is...",
         },
         type: "show-modal",
