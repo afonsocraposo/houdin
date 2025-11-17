@@ -8,7 +8,6 @@ import { StorageServer } from "@/services/storage";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
-import { HoudinApi } from "@/services/houdinApi";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -63,10 +62,6 @@ if (browser.webNavigation) {
 // Initialize storage server
 // @ts-ignore
 const storageServer = StorageServer.getInstance();
-
-// Initialize Houdin API handler
-// @ts-ignore
-const houdinApi = HoudinApi.getInstance();
 
 // Initialize background workflow engine
 const workflowEngine = new BackgroundWorkflowEngine();
