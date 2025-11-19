@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
-import { ApiStorageClient } from "@/services/storage";
+import { ContentStorageClient } from "@/services/storage";
 import { WorkflowDefinition } from "@/types/workflow";
 import { sendMessageToBackground } from "@/lib/messages";
 
@@ -17,7 +17,7 @@ function DesignerView({ workflowId }: DesignerViewProps) {
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
-  const storageClient = new ApiStorageClient();
+  const storageClient = new ContentStorageClient();
 
   const loadWorkflow = useCallback(async (id: string) => {
     const workflows = await storageClient.getWorkflows();

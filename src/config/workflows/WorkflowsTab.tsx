@@ -1,4 +1,4 @@
-import { ApiStorageClient, ContentStorageClient } from "@/services/storage";
+import { ContentStorageClient } from "@/services/storage";
 import { ExampleService } from "@/services/exampleService";
 import { WorkflowDefinition } from "@/types/workflow";
 import {
@@ -35,7 +35,7 @@ export default function WorkflowsTab({
   const [workflowToExport, setWorkflowToExport] =
     useState<WorkflowDefinition | null>(null);
 
-  const storageClient = useMemo(() => new ApiStorageClient(), []);
+  const storageClient = useMemo(() => new ContentStorageClient(), []);
   const exampleService = useMemo(() => new ExampleService(), []);
 
   const navigate = useNavigate();
@@ -93,8 +93,8 @@ export default function WorkflowsTab({
 
   const handleDeleteWorkflow = async (id: string) => {
     try {
-      const updatedWorkflows = workflows.filter((w) => w.id !== id);
-      await storageClient.saveWorkflows(updatedWorkflows);
+      await storageClient.deleteWorkflow(id);
+      const updatedWorkflows = await storageClient.getWorkflows();
       setWorkflows(updatedWorkflows);
     } catch (error) {
       console.error("Failed to delete workflow:", error);

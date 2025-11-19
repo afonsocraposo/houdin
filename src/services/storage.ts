@@ -6,7 +6,6 @@ import { StorageKeys } from "./storage-keys";
 import browser from "./browser";
 import type { Runtime } from "webextension-polyfill";
 import { sendMessageToBackground } from "@/lib/messages";
-import { ApiClient } from "@/api/client";
 
 export const MAX_EXECUTIONS_HISTORY = 50; // Limit for workflow executions
 
@@ -197,6 +196,8 @@ interface IStorageClient {
   saveCredentials(credentials: Credential[]): Promise<void>;
   getCredentialsByType(type: string): Promise<Credential[]>;
   getWorkflowExecutions(): Promise<WorkflowExecution[]>;
+  getLastSynced(): Promise<number | undefined>;
+  setLastSynced(timestamp: number): Promise<void>;
   saveWorkflowExecutions(executions: WorkflowExecution[]): Promise<void>;
   saveWorkflowExecution(execution: WorkflowExecution): Promise<void>;
   clearWorkflowExecutions(): Promise<void>;
@@ -259,6 +260,34 @@ abstract class StorageClientBase implements IStorageClient {
     }
     workflows[index] = workflow;
     await this.saveWorkflows(workflows);
+  }
+
+  async deleteWorkflow(workflowId: string): Promise<void> {
+    const workflows = await this.getWorkflows();
+    const updatedWorkflows = workflows.filter((w) => w.id !== workflowId);
+    if (updatedWorkflows.length === workflows.length) {
+      throw new Error(`Workflow with id ${workflowId} does not exist`);
+    }
+    await this.saveWorkflows(updatedWorkflows);
+  }
+
+  async getLastSynced(): Promise<number | undefined> {
+    try {
+      const timestamp = await this.get(StorageKeys.LAST_SYNCED);
+      return timestamp || undefined;
+    } catch (error) {
+      console.error("Failed to get last synced timestamp:", error);
+      return undefined;
+    }
+  }
+
+  async setLastSynced(timestamp: number): Promise<void> {
+    try {
+      await this.set(StorageKeys.LAST_SYNCED, timestamp);
+    } catch (error) {
+      console.error("Failed to set last synced timestamp:", error);
+      throw error;
+    }
   }
 
   async getCredentials(): Promise<Credential[]> {
@@ -611,14 +640,33 @@ export class ContentStorageClient extends StorageClientBase {
   }
 }
 
-export class ApiStorageClient extends ContentStorageClient {
-  // Additional API-specific methods can be added here
-  async getWorkflows(): Promise<WorkflowDefinition[]> {
-    const workflows = await ApiClient.listWorkflows();
-    console.log(workflows);
-    return workflows;
-  }
-  async createWorkflow(workflow: WorkflowDefinition): Promise<void> {
-    const created = await ApiClient.createWorkflow(workflow);
-  }
-}
+// export class ApiStorageClient extends ContentStorageClient {
+//   private storageClient: ContentStorageClient;
+//
+//   constructor() {
+//     super();
+//     this.storageClient = new ContentStorageClient();
+//   }
+//
+//   // Additional API-specific methods can be added here
+//   async getWorkflows(): Promise<WorkflowDefinition[]> {
+//     const workflows = await ApiClient.listWorkflows();
+//     await this.storageClient.saveWorkflows(workflows);
+//     return workflows;
+//   }
+//
+//   async createWorkflow(workflow: WorkflowDefinition): Promise<void> {
+//     await ApiClient.createWorkflow(workflow);
+//     await this.storageClient.createWorkflow(workflow);
+//   }
+//
+//   async updateWorkflow(workflow: WorkflowDefinition): Promise<void> {
+//     await ApiClient.updateWorkflow(workflow);
+//     await this.storageClient.updateWorkflow(workflow);
+//   }
+//
+//   async deleteWorkflow(workflowId: string): Promise<void> {
+//     await ApiClient.deleteWorkflow(workflowId);
+//     await this.storageClient.deleteWorkflow(workflowId);
+//   }
+// }

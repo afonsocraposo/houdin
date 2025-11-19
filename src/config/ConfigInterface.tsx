@@ -28,6 +28,7 @@ import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
 import Footer from "@/components/Footer";
 import LoginButton from "@/components/LoginButton";
 import { useStore } from "./store";
+import SyncButton from "@/components/SyncButton";
 
 enum TabOption {
   Workflows = "workflows",
@@ -140,6 +141,7 @@ function ConfigInterface() {
                 History
               </Tabs.Tab>
             </Tabs.List>
+            <SyncButton />
             <LoginButton />
           </Group>
 

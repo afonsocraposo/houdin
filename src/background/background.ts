@@ -8,6 +8,7 @@ import { StorageServer } from "@/services/storage";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
+import { WorkflowSyncer } from "@/services/workflowSyncer";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -62,6 +63,9 @@ if (browser.webNavigation) {
 // Initialize storage server
 // @ts-ignore
 const storageServer = StorageServer.getInstance();
+
+const workflowSyncer = WorkflowSyncer.getInstance();
+workflowSyncer.startMessageListener();
 
 // Initialize background workflow engine
 const workflowEngine = new BackgroundWorkflowEngine();
