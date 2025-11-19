@@ -64,9 +64,9 @@ export class WorkflowSyncer {
   private async performSync(): Promise<void> {
     try {
       const lastSync = await this.storage.getLastSynced();
-      const currentTimestamp = Date.now();
-
       const remoteWorkflows = await this.client.listWorkflows(lastSync);
+      // UTC timestamp
+      const currentTimestamp = Date.now();
       const localWorkflows = await this.storage.getWorkflows();
 
       const localWorkflowIds = new Set(localWorkflows.map((wf) => wf.id));
@@ -93,6 +93,7 @@ export class WorkflowSyncer {
 
       for (const remoteWorkflow of remoteWorkflows) {
         if (!localWorkflowMap.has(remoteWorkflow.id)) {
+          console.log(remoteWorkflow.lastUpdated, lastSync);
           if (
             remoteWorkflow.lastUpdated &&
             lastSync &&

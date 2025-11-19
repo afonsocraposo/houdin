@@ -1,5 +1,10 @@
 import { Account } from "./types/account";
-import { Visibility, workflowCreateSchema } from "./types/workflows";
+import {
+  Visibility,
+  WorkflowConnection,
+  workflowCreateSchema,
+  WorkflowNode,
+} from "./types/workflows";
 import { WorkflowDefinition as Workflow } from "@/types/workflow";
 
 const API_BASE_URL =
@@ -35,8 +40,15 @@ export class ApiClient {
       const parsedWorkflow = workflowCreateSchema.parse(wf);
       return {
         id: parsedWorkflow.workflowId,
-        ...parsedWorkflow.definition,
-      };
+        name: parsedWorkflow.definition.name,
+        description: parsedWorkflow.definition.description,
+        urlPattern: parsedWorkflow.definition.urlPattern,
+        enabled: parsedWorkflow.definition.enabled,
+        nodes: parsedWorkflow.definition.nodes as any,
+        connections: parsedWorkflow.definition.connections as any,
+        variables: parsedWorkflow.definition.variables,
+        lastUpdated: new Date(wf.updatedAt).getTime(),
+      } as Workflow;
     });
   }
 

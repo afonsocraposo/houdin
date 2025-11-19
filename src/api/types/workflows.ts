@@ -12,7 +12,7 @@ export const workflowNodeSchema = z.object({
   id: z.string(),
   type: nodeTypeSchema,
   position: z.object({ x: z.number(), y: z.number() }),
-  data: z.object(),
+  data: z.record(z.string(), z.any()),
   inputs: z.array(z.string()).optional(),
   outputs: z.array(z.string()).optional(),
 });
