@@ -23,6 +23,7 @@ import { ImportModal } from "./ImportModal";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
 import { newWorkflowId } from "@/utils/helpers";
+import { WorkflowSyncer } from "@/services/workflowSyncer";
 
 export default function WorkflowsTab({
   setSaved,
@@ -56,6 +57,7 @@ export default function WorkflowsTab({
     // Set up storage change listener
     const handleStorageChange = (updatedWorkflows: WorkflowDefinition[]) => {
       setWorkflows(updatedWorkflows);
+      WorkflowSyncer.triggerThrottledSync();
     };
 
     const unsubscribe = storageClient.addWorkflowsListener(handleStorageChange);

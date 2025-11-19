@@ -1,10 +1,5 @@
 import { Account } from "./types/account";
-import {
-  Visibility,
-  WorkflowConnection,
-  workflowCreateSchema,
-  WorkflowNode,
-} from "./types/workflows";
+import { Visibility, workflowCreateSchema } from "./types/workflows";
 import { WorkflowDefinition as Workflow } from "@/types/workflow";
 
 const API_BASE_URL =
@@ -39,7 +34,7 @@ export class ApiClient {
     return workflows.map((wf: any) => {
       const parsedWorkflow = workflowCreateSchema.parse(wf);
       return {
-        id: parsedWorkflow.workflowId,
+        id: `workflow-${parsedWorkflow.workflowId}`,
         name: parsedWorkflow.definition.name,
         description: parsedWorkflow.definition.description,
         urlPattern: parsedWorkflow.definition.urlPattern,

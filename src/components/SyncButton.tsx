@@ -1,7 +1,7 @@
-import { sendMessageToBackground } from "@/lib/messages";
 import { getRelativeTime } from "@/lib/time";
 import { ContentStorageClient } from "@/services/storage";
 import { StorageKeys } from "@/services/storage-keys";
+import { WorkflowSyncer } from "@/services/workflowSyncer";
 import { ActionIcon, Group, Loader, Text, Tooltip } from "@mantine/core";
 import { IconCheck, IconRefresh, IconAlertCircle } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -21,13 +21,10 @@ export default function SyncButton() {
   }, [storageClient]);
 
   const syncWorkflows = useCallback(async () => {
-    setStatus("syncing");
     try {
-      await sendMessageToBackground("SYNC_WORKFLOWS");
+      await WorkflowSyncer.triggerSync();
     } catch (error) {
-      console.error("Sync failed:", error);
-      setStatus("error");
-      setTimeout(() => setStatus("idle"), 3000);
+      console.error("Manual sync failed:", error);
     }
   }, []);
 
@@ -35,39 +32,48 @@ export default function SyncButton() {
     const isSyncing = await storageClient.isSyncInProgress();
 
     if (isSyncing) {
-      console.debug(
-        "Sync already in progress in another tab, waiting for completion",
-      );
       setStatus("syncing");
       return;
     }
 
-    setStatus("syncing");
     try {
-      await sendMessageToBackground("SYNC_WORKFLOWS_THROTTLED");
-      await loadLastSynced();
-      setStatus("success");
-      setTimeout(() => setStatus("idle"), 2000);
+      await WorkflowSyncer.triggerThrottledSync();
     } catch (error) {
-      console.error("Sync failed:", error);
-      setStatus("error");
-      setTimeout(() => setStatus("idle"), 3000);
+      console.error("Throttled sync failed:", error);
     }
-  }, [storageClient, loadLastSynced]);
+  }, [storageClient]);
 
   useEffect(() => {
     loadLastSynced();
 
     const unsubscribeSyncLock = storageClient.addListener(
       StorageKeys.SYNC_IN_PROGRESS,
-      (lockData) => {
+      async (lockData) => {
         if (lockData) {
           setStatus("syncing");
         } else {
-          loadLastSynced().then(() => {
+          const result = await storageClient.getSyncResult();
+          await loadLastSynced();
+
+          if (result && !result.success) {
+            console.error("Sync failed:", result.error);
+            setStatus("error");
+            setTimeout(() => setStatus("idle"), 3000);
+          } else {
             setStatus("success");
             setTimeout(() => setStatus("idle"), 2000);
-          });
+          }
+        }
+      },
+    );
+
+    const unsubscribeSyncResult = storageClient.addListener(
+      StorageKeys.SYNC_RESULT,
+      async (result) => {
+        if (result && !result.success) {
+          console.error("Sync failed:", result.error);
+          setStatus("error");
+          setTimeout(() => setStatus("idle"), 3000);
         }
       },
     );
@@ -76,6 +82,7 @@ export default function SyncButton() {
 
     return () => {
       unsubscribeSyncLock();
+      unsubscribeSyncResult();
     };
   }, [storageClient, loadLastSynced, throttledSyncWorkflows]);
 

@@ -442,6 +442,14 @@ abstract class StorageClientBase implements IStorageClient {
     await this.remove(StorageKeys.SYNC_IN_PROGRESS);
   }
 
+  async setSyncResult(success: boolean, error?: string): Promise<void> {
+    await this.set(StorageKeys.SYNC_RESULT, { success, error, timestamp: Date.now() });
+  }
+
+  async getSyncResult(): Promise<{ success: boolean; error?: string; timestamp: number } | null> {
+    return await this.get(StorageKeys.SYNC_RESULT);
+  }
+
   async isSyncInProgress(): Promise<boolean> {
     const lockData = await this.get(StorageKeys.SYNC_IN_PROGRESS);
     return !!lockData;
