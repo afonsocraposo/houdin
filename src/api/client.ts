@@ -43,7 +43,6 @@ export class ApiClient {
   async listMissingWorkflowIds(
     localWorkflowIds: Set<string>,
   ): Promise<string[]> {
-    console.log(localWorkflowIds);
     const response = await fetch(`${API_BASE_URL}/workflows/missing`, {
       method: "POST",
       headers: {

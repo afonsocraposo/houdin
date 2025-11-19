@@ -31,14 +31,29 @@ export class WorkflowSyncer {
     });
   }
 
+  private async canUserSync(): Promise<boolean> {
+    try {
+      const account = await ApiClient.getAccount();
+      return account?.plan !== "free";
+    } catch (error) {
+      console.error("Failed to fetch user info for sync check:", error);
+      return false;
+    }
+  }
+
   async syncWorkflows(): Promise<void> {
+    const canSync = await this.canUserSync();
+    if (!canSync) {
+      return;
+    }
+
     if (WorkflowSyncer.syncPromise) {
       console.debug("Sync already in progress, waiting for completion");
       return WorkflowSyncer.syncPromise;
     }
 
     WorkflowSyncer.syncPromise = this.performSync();
-    
+
     try {
       await WorkflowSyncer.syncPromise;
     } finally {
