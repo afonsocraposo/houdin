@@ -410,6 +410,43 @@ abstract class StorageClientBase implements IStorageClient {
     }
   }
 
+  async acquireSyncLock(): Promise<string | null> {
+    const syncId = crypto.randomUUID();
+    const lockData = await this.get(StorageKeys.SYNC_IN_PROGRESS);
+
+    if (lockData) {
+      const { timestamp } = lockData;
+      const now = Date.now();
+
+      if (now - timestamp < 30000) {
+        return null;
+      }
+    }
+
+    await this.set(StorageKeys.SYNC_IN_PROGRESS, {
+      timestamp: Date.now(),
+      syncId,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const verifyLock = await this.get(StorageKeys.SYNC_IN_PROGRESS);
+    if (verifyLock?.syncId !== syncId) {
+      return null;
+    }
+
+    return syncId;
+  }
+
+  async releaseSyncLock(): Promise<void> {
+    await this.remove(StorageKeys.SYNC_IN_PROGRESS);
+  }
+
+  async isSyncInProgress(): Promise<boolean> {
+    const lockData = await this.get(StorageKeys.SYNC_IN_PROGRESS);
+    return !!lockData;
+  }
+
   // Convenience methods for listeners
   addWorkflowsListener(
     callback: (workflows: WorkflowDefinition[]) => void,

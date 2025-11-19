@@ -1,40 +1,138 @@
 import { sendMessageToBackground } from "@/lib/messages";
+import { getRelativeTime } from "@/lib/time";
 import { ContentStorageClient } from "@/services/storage";
-import { ActionIcon, Group, Loader, Text } from "@mantine/core";
-import { IconRefresh } from "@tabler/icons-react";
+import { StorageKeys } from "@/services/storage-keys";
+import { ActionIcon, Group, Loader, Text, Tooltip } from "@mantine/core";
+import { IconCheck, IconRefresh, IconAlertCircle } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+type SyncStatus = "idle" | "syncing" | "success" | "error";
 
 export default function SyncButton() {
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
-  const [syncing, setSyncing] = useState(false);
+  const [status, setStatus] = useState<SyncStatus>("idle");
   const storageClient = useMemo(() => new ContentStorageClient(), []);
-  const syncWorkflows = useCallback(async () => {
-    setSyncing(true);
-    await sendMessageToBackground("SYNC_WORKFLOWS");
+
+  const loadLastSynced = useCallback(async () => {
     const date = await storageClient.getLastSynced();
     if (date) {
       setLastSynced(new Date(date));
     }
-    setSyncing(false);
   }, [storageClient]);
-  useEffect(() => {
-    storageClient.getLastSynced().then((date) => {
-      if (date) {
-        setLastSynced(new Date(date));
-      }
-      syncWorkflows();
-    });
+
+  const syncWorkflows = useCallback(async () => {
+    setStatus("syncing");
+    try {
+      await sendMessageToBackground("SYNC_WORKFLOWS");
+    } catch (error) {
+      console.error("Sync failed:", error);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
   }, []);
+
+  const throttledSyncWorkflows = useCallback(async () => {
+    const isSyncing = await storageClient.isSyncInProgress();
+
+    if (isSyncing) {
+      console.debug(
+        "Sync already in progress in another tab, waiting for completion",
+      );
+      setStatus("syncing");
+      return;
+    }
+
+    setStatus("syncing");
+    try {
+      await sendMessageToBackground("SYNC_WORKFLOWS_THROTTLED");
+      await loadLastSynced();
+      setStatus("success");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Sync failed:", error);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
+  }, [storageClient, loadLastSynced]);
+
+  useEffect(() => {
+    loadLastSynced();
+
+    const unsubscribeSyncLock = storageClient.addListener(
+      StorageKeys.SYNC_IN_PROGRESS,
+      (lockData) => {
+        if (lockData) {
+          setStatus("syncing");
+        } else {
+          loadLastSynced().then(() => {
+            setStatus("success");
+            setTimeout(() => setStatus("idle"), 2000);
+          });
+        }
+      },
+    );
+
+    throttledSyncWorkflows();
+
+    return () => {
+      unsubscribeSyncLock();
+    };
+  }, [storageClient, loadLastSynced, throttledSyncWorkflows]);
+
+  const getIcon = () => {
+    switch (status) {
+      case "syncing":
+        return <Loader size={16} />;
+      case "success":
+        return <IconCheck size={16} />;
+      case "error":
+        return <IconAlertCircle size={16} />;
+      default:
+        return <IconRefresh size={16} />;
+    }
+  };
+
+  const getColor = () => {
+    switch (status) {
+      case "success":
+        return "teal";
+      case "error":
+        return "red";
+      default:
+        return "gray";
+    }
+  };
+
+  const getTooltip = () => {
+    switch (status) {
+      case "syncing":
+        return "Syncing workflows...";
+      case "success":
+        return "Sync successful";
+      case "error":
+        return "Sync failed. Click to retry.";
+      default:
+        return lastSynced
+          ? `Last synced: ${lastSynced.toLocaleString()}`
+          : "Never synced. Click to sync.";
+    }
+  };
+
   return (
-    <Group>
-      <ActionIcon onClick={syncWorkflows} disabled={syncing}>
-        {syncing ? <Loader size={16} /> : <IconRefresh />}
-      </ActionIcon>
-      <Text size="xs" color="dimmed">
-        {lastSynced
-          ? `Last Synced: ${lastSynced.toLocaleString()}`
-          : "Never Synced"}
+    <Group gap="xs">
+      <Text size="xs" c="dimmed">
+        {lastSynced ? getRelativeTime(lastSynced) : "Never synced"}
       </Text>
+      <Tooltip label={getTooltip()} position="bottom">
+        <ActionIcon
+          onClick={syncWorkflows}
+          disabled={status === "syncing"}
+          color={getColor()}
+          variant={status === "idle" ? "subtle" : "light"}
+        >
+          {getIcon()}
+        </ActionIcon>
+      </Tooltip>
     </Group>
   );
 }

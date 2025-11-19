@@ -5,6 +5,7 @@ import browser from "./browser";
 export class WorkflowSyncer {
   static instance: WorkflowSyncer = new WorkflowSyncer();
   private static syncPromise: Promise<void> | null = null;
+  private static throttledSyncPromise: Promise<void> | null = null;
   private client: ApiClient;
   private storage: BackgroundStorageClient;
 
@@ -23,9 +24,12 @@ export class WorkflowSyncer {
   startMessageListener(): void {
     browser.runtime.onMessage.addListener((message: any, _sender: any) => {
       if (message.type === "SYNC_WORKFLOWS") {
-        console.debug("Received SYNC_WORKFLOWS message, starting sync...");
-        this.syncWorkflows().catch((error) => {
+        this.sync().catch((error) => {
           console.error("Error during workflow sync:", error);
+        });
+      } else if (message.type === "SYNC_WORKFLOWS_THROTTLED") {
+        this.throttledSync().catch((error) => {
+          console.error("Error during throttled workflow sync:", error);
         });
       }
     });
@@ -41,15 +45,19 @@ export class WorkflowSyncer {
     }
   }
 
-  async syncWorkflows(): Promise<void> {
+  async sync(): Promise<void> {
     const canSync = await this.canUserSync();
     if (!canSync) {
       return;
     }
 
     if (WorkflowSyncer.syncPromise) {
-      console.debug("Sync already in progress, waiting for completion");
       return WorkflowSyncer.syncPromise;
+    }
+
+    const syncId = await this.storage.acquireSyncLock();
+    if (!syncId) {
+      return;
     }
 
     WorkflowSyncer.syncPromise = this.performSync();
@@ -58,10 +66,26 @@ export class WorkflowSyncer {
       await WorkflowSyncer.syncPromise;
     } finally {
       WorkflowSyncer.syncPromise = null;
+      await this.storage.releaseSyncLock();
+    }
+  }
+
+  async throttledSync(): Promise<void> {
+    if (WorkflowSyncer.throttledSyncPromise) {
+      return WorkflowSyncer.throttledSyncPromise;
+    }
+
+    WorkflowSyncer.throttledSyncPromise = this.sync();
+
+    try {
+      await WorkflowSyncer.throttledSyncPromise;
+    } finally {
+      WorkflowSyncer.throttledSyncPromise = null;
     }
   }
 
   private async performSync(): Promise<void> {
+    console.debug("Starting workflow sync process...");
     try {
       const lastSync = await this.storage.getLastSynced();
       const remoteWorkflows = await this.client.listWorkflows(lastSync);
@@ -151,6 +175,7 @@ export class WorkflowSyncer {
       }
 
       await this.storage.setLastSynced(currentTimestamp);
+      console.debug("Workflow sync process completed successfully");
     } catch (error) {
       console.error("Failed to sync workflows:", error);
     }
