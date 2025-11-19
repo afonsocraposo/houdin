@@ -1,3 +1,4 @@
+import { useStore } from "@/config/store";
 import { getRelativeTime } from "@/lib/time";
 import { ContentStorageClient } from "@/services/storage";
 import { StorageKeys } from "@/services/storage-keys";
@@ -9,6 +10,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 type SyncStatus = "idle" | "syncing" | "success" | "error";
 
 export default function SyncButton() {
+  const account = useStore((state) => state.account);
+  const canSync = useMemo(() => account && account.plan !== "free", [account]);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [status, setStatus] = useState<SyncStatus>("idle");
   const storageClient = useMemo(() => new ContentStorageClient(), []);
@@ -45,6 +48,9 @@ export default function SyncButton() {
 
   useEffect(() => {
     loadLastSynced();
+    if (!canSync) {
+      return;
+    }
 
     const unsubscribeSyncLock = storageClient.addListener(
       StorageKeys.SYNC_IN_PROGRESS,
@@ -84,7 +90,7 @@ export default function SyncButton() {
       unsubscribeSyncLock();
       unsubscribeSyncResult();
     };
-  }, [storageClient, loadLastSynced, throttledSyncWorkflows]);
+  }, [account, storageClient, loadLastSynced, throttledSyncWorkflows]);
 
   const getIcon = () => {
     switch (status) {
@@ -111,6 +117,9 @@ export default function SyncButton() {
   };
 
   const getTooltip = () => {
+    if (!canSync) {
+      return "Upgrade your plan to enable workflow synchronization.";
+    }
     switch (status) {
       case "syncing":
         return "Syncing workflows...";
@@ -133,7 +142,7 @@ export default function SyncButton() {
       <Tooltip label={getTooltip()} position="bottom">
         <ActionIcon
           onClick={syncWorkflows}
-          disabled={status === "syncing"}
+          disabled={status === "syncing" || !canSync}
           color={getColor()}
           variant={status === "idle" ? "subtle" : "light"}
         >

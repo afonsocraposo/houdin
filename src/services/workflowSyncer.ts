@@ -52,11 +52,17 @@ export class WorkflowSyncer {
     }
   }
 
-  async sync(): Promise<void> {
+  async sync(failQuiet: boolean = false): Promise<void> {
     const canSync = await this.canUserSync();
     if (!canSync) {
-      const error = new Error("User plan does not support workflow synchronization.");
+      const error = new Error(
+        "User plan does not support workflow synchronization.",
+      );
       await this.storage.setSyncResult(false, error.message);
+      if (failQuiet) {
+        console.debug("Sync skipped:", error.message);
+        return;
+      }
       throw error;
     }
 
@@ -77,7 +83,10 @@ export class WorkflowSyncer {
       await this.storage.setSyncResult(true);
     } catch (error) {
       console.error("Error during workflow sync:", error);
-      await this.storage.setSyncResult(false, error instanceof Error ? error.message : String(error));
+      await this.storage.setSyncResult(
+        false,
+        error instanceof Error ? error.message : String(error),
+      );
       _error = error;
     } finally {
       WorkflowSyncer.syncPromise = null;

@@ -66,7 +66,7 @@ const storageServer = StorageServer.getInstance();
 
 // Initialize workflow syncer
 const workflowSyncer = WorkflowSyncer.getInstance();
-workflowSyncer.sync();
+workflowSyncer.sync(true);
 workflowSyncer.startMessageListener();
 
 // Initialize background workflow engine
