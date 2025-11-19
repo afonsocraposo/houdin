@@ -66,7 +66,7 @@ export class ApiClient {
       );
     }
     const json = await response.json();
-    return json.data.missing;
+    return json.data.missing.map((id: string) => `workflow-${id}`);
   }
 
   async createWorkflow(
