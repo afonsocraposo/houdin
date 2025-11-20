@@ -106,7 +106,13 @@ export default function WorkflowsTab({
   const handleToggleWorkflow = async (id: string) => {
     try {
       const updatedWorkflows = workflows.map((w) =>
-        w.id === id ? { ...w, enabled: !w.enabled } : w,
+        w.id === id
+          ? {
+              ...w,
+              enabled: !w.enabled,
+              lastUpdated: Date.now(),
+            }
+          : w,
       );
       await storageClient.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
