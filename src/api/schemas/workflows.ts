@@ -1,9 +1,5 @@
 import { z } from "@/lib/zod";
 
-// Visibility enum via zod
-export const visibilitySchema = z.enum(["public", "unlisted", "private"]);
-export type Visibility = z.infer<typeof visibilitySchema>;
-
 // Node related schemas
 export const nodeTypeSchema = z.enum(["trigger", "action"]);
 export type NodeType = z.infer<typeof nodeTypeSchema>;
@@ -35,14 +31,27 @@ export const workflowDefinitionSchema = z.object({
   nodes: z.array(workflowNodeSchema),
   connections: z.array(workflowConnectionSchema),
   enabled: z.boolean(),
-  variables: z.object(),
+  variables: z.record(z.string(), z.string()).optional(),
 });
 export type WorkflowDefinition = z.infer<typeof workflowDefinitionSchema>;
 
 // Schema for POST body: workflowId, visibility, definition
 export const workflowCreateSchema = z.object({
-  workflowId: z.string().length(12),
-  visibility: visibilitySchema.optional().default("unlisted"),
+  workflowId: z.string().min(1).max(12),
   definition: workflowDefinitionSchema,
 });
 export type WorkflowCreateInput = z.infer<typeof workflowCreateSchema>;
+
+export const workflowUpdateSchema = z.object({
+  definition: workflowDefinitionSchema.optional(),
+});
+export type WorkflowUpdateInput = z.infer<typeof workflowUpdateSchema>;
+
+export const WorkflowEntitySchema = z.object({
+  workflowId: z.string().length(12),
+  definition: workflowDefinitionSchema,
+  updatedAt: z.string().transform((val) => new Date(val)),
+  createdAt: z.string().transform((val) => new Date(val)),
+});
+
+export type WorkflowEntity = z.infer<typeof WorkflowEntitySchema>;

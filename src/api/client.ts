@@ -1,5 +1,9 @@
-import { Account } from "./types/account";
-import { Visibility, workflowCreateSchema } from "./types/workflows";
+import { AcccountSchema, Account } from "./schemas/account";
+import {
+  WorkflowDefinition,
+  workflowDefinitionSchema,
+  WorkflowEntitySchema,
+} from "./schemas/workflows";
 import { WorkflowDefinition as Workflow } from "@/types/workflow";
 
 const API_BASE_URL =
@@ -16,7 +20,8 @@ export class ApiClient {
       }
       throw new Error(`Failed to fetch account: ${response.statusText}`);
     }
-    return Account.parse(await response.json());
+    const data = (await response.json()).data;
+    return AcccountSchema.parse(data);
   }
 
   async listWorkflows(lastSync?: number): Promise<Workflow[]> {
@@ -32,7 +37,7 @@ export class ApiClient {
     }
     const workflows = (await response.json()).data;
     return workflows.map((wf: any) => {
-      const parsedWorkflow = workflowCreateSchema.parse(wf);
+      const parsedWorkflow = WorkflowEntitySchema.parse(wf);
       return {
         id: `workflow-${parsedWorkflow.workflowId}`,
         name: parsedWorkflow.definition.name,
@@ -47,18 +52,13 @@ export class ApiClient {
     });
   }
 
-  async listMissingWorkflowIds(
-    localWorkflowIds: Set<string>,
-  ): Promise<string[]> {
-    const response = await fetch(`${API_BASE_URL}/workflows/missing`, {
-      method: "POST",
+  async listWorkflowsId(): Promise<string[]> {
+    const response = await fetch(`${API_BASE_URL}/workflows/workflowId`, {
+      method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify({
-        workflowIds: Array.from(localWorkflowIds).map((id) => id.slice(-12)),
-      }),
     });
     if (!response.ok) {
       throw new Error(
@@ -66,13 +66,11 @@ export class ApiClient {
       );
     }
     const json = await response.json();
-    return json.data.missing.map((id: string) => `workflow-${id}`);
+    return json.data.map((id: string) => `workflow-${id}`);
   }
 
-  async createWorkflow(
-    workflow: Workflow,
-    visibility: Visibility = "unlisted",
-  ): Promise<any> {
+  async createWorkflow(workflow: Workflow): Promise<WorkflowDefinition> {
+    const definition = workflowDefinitionSchema.parse(workflow);
     const response = await fetch(`${API_BASE_URL}/workflows`, {
       method: "POST",
       headers: {
@@ -81,17 +79,21 @@ export class ApiClient {
       credentials: "include",
       body: JSON.stringify({
         workflowId: workflow.id.slice(-12),
-        definition: workflow,
-        visibility,
+        definition,
       }),
     });
     if (!response.ok) {
       throw new Error(`Failed to create workflow: ${response.statusText}`);
     }
-    return (await response.json()).data;
+    const data = (await response.json()).data;
+    return (
+      workflowDefinitionSchema.safeParse(data.definition).data ||
+      (data as WorkflowDefinition)
+    );
   }
 
   async updateWorkflow(workflow: Workflow): Promise<any> {
+    const definition = workflowDefinitionSchema.parse(workflow);
     const response = await fetch(
       `${API_BASE_URL}/workflows/${workflow.id.slice(-12)}`,
       {
@@ -101,14 +103,18 @@ export class ApiClient {
         },
         credentials: "include",
         body: JSON.stringify({
-          definition: workflow,
+          definition,
         }),
       },
     );
     if (!response.ok) {
       throw new Error(`Failed to update workflow: ${response.statusText}`);
     }
-    return (await response.json()).data;
+    const data = (await response.json()).data;
+    return (
+      workflowDefinitionSchema.safeParse(data.definition).data ||
+      (data as WorkflowDefinition)
+    );
   }
 
   async deleteWorkflow(workflowId: string): Promise<void> {

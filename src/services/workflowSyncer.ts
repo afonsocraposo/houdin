@@ -123,11 +123,13 @@ export class WorkflowSyncer {
     const localWorkflowMap = new Map(localWorkflows.map((wf) => [wf.id, wf]));
     const remoteWorkflowIds = new Set(remoteWorkflows.map((wf) => wf.id));
 
-    const missingWorkflows =
-      await this.client.listMissingWorkflowIds(localWorkflowIds);
+    const allRemoteWorkflowIds = new Set(await this.client.listWorkflowsId());
 
-    for (const missingId of missingWorkflows) {
-      const localWorkflow = localWorkflowMap.get(missingId);
+    for (const localWorkflowId of localWorkflowIds) {
+      const localWorkflow = localWorkflowMap.get(localWorkflowId);
+      if (allRemoteWorkflowIds.has(localWorkflowId)) {
+        continue;
+      }
       if (
         localWorkflow &&
         localWorkflow.lastUpdated &&
@@ -135,9 +137,9 @@ export class WorkflowSyncer {
         localWorkflow.lastUpdated < lastSync
       ) {
         console.debug(
-          `Deleting local workflow missing on server: ${missingId}`,
+          `Deleting local workflow missing on server: ${localWorkflowId}`,
         );
-        await this.storage.deleteWorkflow(missingId);
+        await this.storage.deleteWorkflow(localWorkflowId);
       }
     }
 

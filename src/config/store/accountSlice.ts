@@ -1,5 +1,5 @@
 import { StateCreator } from "zustand";
-import { Account } from "@/api/types/account";
+import { Account } from "@/api/schemas/account";
 import { ApiClient } from "@/api/client";
 
 export interface AccountSlice {
