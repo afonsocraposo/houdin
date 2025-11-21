@@ -10,6 +10,7 @@ import {
   Text,
   Title,
   Menu,
+  LoadingOverlay,
 } from "@mantine/core";
 import {
   IconNetwork,
@@ -24,6 +25,7 @@ import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
 import { newWorkflowId } from "@/utils/helpers";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
+import { useStore } from "@/config/store";
 
 export default function WorkflowsTab({
   setSaved,
@@ -35,6 +37,8 @@ export default function WorkflowsTab({
   const [exportModalOpened, setExportModalOpened] = useState(false);
   const [workflowToExport, setWorkflowToExport] =
     useState<WorkflowDefinition | null>(null);
+
+  const isSyncing = useStore((state) => state.isSyncing);
 
   const storageClient = useMemo(() => new ContentStorageClient(), []);
   const exampleService = useMemo(() => new ExampleService(), []);
@@ -162,7 +166,8 @@ export default function WorkflowsTab({
 
   return (
     <>
-      <Card withBorder padding="lg">
+      <Card withBorder padding="lg" pos="relative">
+        <LoadingOverlay visible={isSyncing} loaderProps={{ type: "dots" }} />
         <Group justify="space-between" mb="md">
           <Title order={3}>Workflows</Title>
           <Group>

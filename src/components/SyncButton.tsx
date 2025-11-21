@@ -46,18 +46,39 @@ export default function SyncButton() {
     }
   }, [storageClient]);
 
+  const setIsSyncing = useStore((state) => state.setIsSyncing);
+
   useEffect(() => {
     loadLastSynced();
     if (!canSync) {
       return;
     }
 
+    let failsafeTimeout: NodeJS.Timeout | null = null;
+
     const unsubscribeSyncLock = storageClient.addListener(
       StorageKeys.SYNC_IN_PROGRESS,
       async (lockData) => {
         if (lockData) {
           setStatus("syncing");
+          setIsSyncing(true);
+
+          if (failsafeTimeout) {
+            clearTimeout(failsafeTimeout);
+          }
+
+          failsafeTimeout = setTimeout(() => {
+            console.warn("Sync took longer than 15 seconds, resetting sync state");
+            setIsSyncing(false);
+            setStatus("error");
+            setTimeout(() => setStatus("idle"), 3000);
+          }, 15000);
         } else {
+          if (failsafeTimeout) {
+            clearTimeout(failsafeTimeout);
+            failsafeTimeout = null;
+          }
+
           const result = await storageClient.getSyncResult();
           await loadLastSynced();
 
@@ -69,6 +90,7 @@ export default function SyncButton() {
             setStatus("success");
             setTimeout(() => setStatus("idle"), 2000);
           }
+          setIsSyncing(false);
         }
       },
     );
@@ -87,10 +109,13 @@ export default function SyncButton() {
     throttledSyncWorkflows();
 
     return () => {
+      if (failsafeTimeout) {
+        clearTimeout(failsafeTimeout);
+      }
       unsubscribeSyncLock();
       unsubscribeSyncResult();
     };
-  }, [account, storageClient, loadLastSynced, throttledSyncWorkflows]);
+  }, [account, storageClient, loadLastSynced, throttledSyncWorkflows, setIsSyncing]);
 
   const getIcon = () => {
     switch (status) {
