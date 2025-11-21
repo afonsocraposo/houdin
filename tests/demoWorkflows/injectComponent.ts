@@ -46,7 +46,7 @@ export const DEMO_INJECT_COMPONENT_WORKFLOW = {
       targetHandle: "input",
     },
   ],
-  lastUpdated: 1760994025259,
+  modifiedAt: 1760994025259,
   name: "Test inject component",
   description: "",
   urlPattern: "https://*",

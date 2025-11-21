@@ -53,7 +53,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
       const newWorkflow: WorkflowDefinition = {
         ...importedWorkflow,
         id: newWorkflowId(),
-        lastUpdated: Date.now(),
+        modifiedAt: Date.now(),
       };
 
       onImport(newWorkflow);

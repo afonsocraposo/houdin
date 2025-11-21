@@ -11,7 +11,7 @@ export const DEMO_MODAL_WORKFLOW = {
   description: "",
   enabled: true,
   id: "workflow-tk2LATvt1GsV",
-  lastUpdated: 1760992632871,
+  modifiedAt: 1760992632871,
   name: "Test modal",
   nodes: [
     {

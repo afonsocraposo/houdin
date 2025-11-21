@@ -190,8 +190,6 @@ export class StorageServer {
 
 // Interface for storage operations
 interface IStorageClient {
-  getWorkflows(): Promise<WorkflowDefinition[]>;
-  saveWorkflows(workflows: WorkflowDefinition[]): Promise<void>;
   getCredentials(): Promise<Credential[]>;
   saveCredentials(credentials: Credential[]): Promise<void>;
   getCredentialsByType(type: string): Promise<Credential[]>;
@@ -222,54 +220,6 @@ abstract class StorageClientBase implements IStorageClient {
     key: string,
     callback: (value: any) => void,
   ): () => void;
-
-  // Shared business logic methods
-  async getWorkflows(): Promise<WorkflowDefinition[]> {
-    try {
-      return (await this.get(StorageKeys.WORKFLOWS)) || [];
-    } catch (error) {
-      console.error("Failed to get workflows:", error);
-      return [];
-    }
-  }
-
-  async saveWorkflows(workflows: WorkflowDefinition[]): Promise<void> {
-    try {
-      await this.set(StorageKeys.WORKFLOWS, workflows);
-    } catch (error) {
-      console.error("Failed to save workflows:", error);
-      throw error;
-    }
-  }
-
-  async createWorkflow(workflow: WorkflowDefinition): Promise<void> {
-    const workflows = await this.getWorkflows();
-    const exists = workflows.some((w) => w.id === workflow.id);
-    if (exists) {
-      throw new Error(`Workflow with id ${workflow.id} already exists`);
-    }
-    workflows.push(workflow);
-    await this.saveWorkflows(workflows);
-  }
-
-  async updateWorkflow(workflow: WorkflowDefinition): Promise<void> {
-    const workflows = await this.getWorkflows();
-    const index = workflows.findIndex((w) => w.id === workflow.id);
-    if (index === -1) {
-      throw new Error(`Workflow with id ${workflow.id} does not exist`);
-    }
-    workflows[index] = workflow;
-    await this.saveWorkflows(workflows);
-  }
-
-  async deleteWorkflow(workflowId: string): Promise<void> {
-    const workflows = await this.getWorkflows();
-    const updatedWorkflows = workflows.filter((w) => w.id !== workflowId);
-    if (updatedWorkflows.length === workflows.length) {
-      throw new Error(`Workflow with id ${workflowId} does not exist`);
-    }
-    await this.saveWorkflows(updatedWorkflows);
-  }
 
   async getLastSynced(): Promise<number | undefined> {
     try {
@@ -443,10 +393,18 @@ abstract class StorageClientBase implements IStorageClient {
   }
 
   async setSyncResult(success: boolean, error?: string): Promise<void> {
-    await this.set(StorageKeys.SYNC_RESULT, { success, error, timestamp: Date.now() });
+    await this.set(StorageKeys.SYNC_RESULT, {
+      success,
+      error,
+      timestamp: Date.now(),
+    });
   }
 
-  async getSyncResult(): Promise<{ success: boolean; error?: string; timestamp: number } | null> {
+  async getSyncResult(): Promise<{
+    success: boolean;
+    error?: string;
+    timestamp: number;
+  } | null> {
     return await this.get(StorageKeys.SYNC_RESULT);
   }
 
@@ -684,34 +642,3 @@ export class ContentStorageClient extends StorageClientBase {
     }
   }
 }
-
-// export class ApiStorageClient extends ContentStorageClient {
-//   private storageClient: ContentStorageClient;
-//
-//   constructor() {
-//     super();
-//     this.storageClient = new ContentStorageClient();
-//   }
-//
-//   // Additional API-specific methods can be added here
-//   async getWorkflows(): Promise<WorkflowDefinition[]> {
-//     const workflows = await ApiClient.listWorkflows();
-//     await this.storageClient.saveWorkflows(workflows);
-//     return workflows;
-//   }
-//
-//   async createWorkflow(workflow: WorkflowDefinition): Promise<void> {
-//     await ApiClient.createWorkflow(workflow);
-//     await this.storageClient.createWorkflow(workflow);
-//   }
-//
-//   async updateWorkflow(workflow: WorkflowDefinition): Promise<void> {
-//     await ApiClient.updateWorkflow(workflow);
-//     await this.storageClient.updateWorkflow(workflow);
-//   }
-//
-//   async deleteWorkflow(workflowId: string): Promise<void> {
-//     await ApiClient.deleteWorkflow(workflowId);
-//     await this.storageClient.deleteWorkflow(workflowId);
-//   }
-// }

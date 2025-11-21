@@ -20,7 +20,7 @@ export const apiRequestAndLiquid: WorkflowDefinition = {
   description: "Example workflow showcasing HTTP request and liquid syntax",
   enabled: true,
   id: "workflow-aq9pm4eiW5SS",
-  lastUpdated: 1761167088942,
+  modifiedAt: 1761167088942,
   name: "Parse API response with Liquid syntax",
   nodes: [
     {

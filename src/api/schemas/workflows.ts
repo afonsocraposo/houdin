@@ -32,6 +32,7 @@ export const workflowDefinitionSchema = z.object({
   connections: z.array(workflowConnectionSchema),
   enabled: z.boolean(),
   variables: z.record(z.string(), z.string()).optional(),
+  modifiedAt: z.number().optional(),
 });
 export type WorkflowDefinition = z.infer<typeof workflowDefinitionSchema>;
 

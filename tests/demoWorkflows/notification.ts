@@ -11,7 +11,7 @@ export const DEMO_NOTIFICATION_WORKFLOW = {
   description: "",
   enabled: true,
   id: "workflow-tk2LATvt1GsV",
-  lastUpdated: 1760992353944,
+  modifiedAt: 1760992353944,
   name: "Test notification",
   nodes: [
     {

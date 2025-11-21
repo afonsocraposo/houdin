@@ -18,7 +18,7 @@ export const DEMO_CREATE_VARIABLE_WORKFLOW = {
   description: "Demo workflow for create variable action",
   enabled: true,
   id: "workflow-create-variable-demo",
-  lastUpdated: Date.now(),
+  modifiedAt: Date.now(),
   name: "Demo Create Variable",
   nodes: [
     {

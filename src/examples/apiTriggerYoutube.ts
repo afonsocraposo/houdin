@@ -14,7 +14,7 @@ export const apiTriggerYoutube: WorkflowDefinition = {
     "Use the HTTP Request trigger to notify every time an API request is Youtube",
   enabled: true,
   id: "workflow-w2XiPXIYD76O",
-  lastUpdated: 1759442690345,
+  modifiedAt: 1759442690345,
   name: "Detect HTTP Requests",
   nodes: [
     {

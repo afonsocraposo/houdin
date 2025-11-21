@@ -48,7 +48,7 @@ export const DEMO_FAB_WORKFLOW = {
       targetHandle: "input",
     },
   ],
-  lastUpdated: 1760996037663,
+  modifiedAt: 1760996037663,
   name: "Test FAB",
   description: "",
   urlPattern: "https://*",

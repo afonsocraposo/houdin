@@ -11,7 +11,7 @@ export const DEMO_META_VARIABLES_WORKFLOW = {
   description: "",
   enabled: true,
   id: "workflow-tk2LATvt1GsV",
-  lastUpdated: 1760994837561,
+  modifiedAt: 1760994837561,
   name: "Test meta variables",
   nodes: [
     {

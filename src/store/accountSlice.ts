@@ -7,7 +7,7 @@ export interface AccountSlice {
   fetchAccount: () => Promise<void>;
 }
 
-export const createAccountSlice: StateCreator<AccountSlice> = (set, _get) => ({
+export const createAccountSlice: StateCreator<AccountSlice> = (set) => ({
   account: undefined,
   fetchAccount: async () => {
     try {

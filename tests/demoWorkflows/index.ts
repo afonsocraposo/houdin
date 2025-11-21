@@ -11,7 +11,7 @@ export const DEMO_WORKFLOW = {
   description: "This is a test workflow",
   enabled: true,
   id: "workflow-mo1MFlsIZKh9",
-  lastUpdated: 1758567088230,
+  modifiedAt: 1758567088230,
   name: "Test Workflow",
   nodes: [
     {
@@ -61,7 +61,7 @@ export const DEMO_FAILING_WORKFLOW = {
   description: "This is a test workflow",
   enabled: true,
   id: "workflow-mo1MFlsIZKh9",
-  lastUpdated: 1758567088230,
+  modifiedAt: 1758567088230,
   name: "Test Workflow",
   nodes: [
     {

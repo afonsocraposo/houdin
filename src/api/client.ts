@@ -47,7 +47,7 @@ export class ApiClient {
         nodes: parsedWorkflow.definition.nodes as any,
         connections: parsedWorkflow.definition.connections as any,
         variables: parsedWorkflow.definition.variables,
-        lastUpdated: new Date(wf.updatedAt).getTime(),
+        modifiedAt: parsedWorkflow.definition.modifiedAt,
       } as Workflow;
     });
   }

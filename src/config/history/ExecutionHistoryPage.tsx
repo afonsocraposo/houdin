@@ -22,7 +22,7 @@ import {
   IconTrash,
   IconSearch,
 } from "@tabler/icons-react";
-import { WorkflowExecution, WorkflowDefinition } from "@/types/workflow";
+import { WorkflowExecution } from "@/types/workflow";
 import {
   ContentStorageClient,
   MAX_EXECUTIONS_HISTORY,
@@ -32,6 +32,7 @@ import { TimeAgoText } from "@/components/TimeAgoText";
 import { formatTimeAgo } from "@/utils/time";
 import ExecutionHistoryItem from "./ExecutionHistoryItem";
 import { getStatusColor, getStatusIcon } from "./utils";
+import { useStore } from "@/store";
 
 function ExecutionHistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,7 +42,7 @@ function ExecutionHistoryPage() {
   const [expanded, setExpanded] = useState<string[]>(
     executionId ? [executionId] : [],
   );
-  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
+  const workflows = useStore((state) => state.workflows);
   const [filteredExecutions, setFilteredExecutions] = useState<
     WorkflowExecution[]
   >([]);
@@ -60,18 +61,8 @@ function ExecutionHistoryPage() {
     }
   };
 
-  const loadWorkflows = async () => {
-    try {
-      const workflowList = await storageClient.getWorkflows();
-      setWorkflows(workflowList);
-    } catch (error) {
-      console.error("Failed to load workflows:", error);
-    }
-  };
-
   useEffect(() => {
     loadExecutions();
-    loadWorkflows();
 
     // Set up periodic refresh
     const interval = setInterval(loadExecutions, 2000);

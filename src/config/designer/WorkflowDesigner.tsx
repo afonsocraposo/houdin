@@ -96,14 +96,18 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     [nodes, selectedNodeId],
   );
   // Track structural changes separately from config changes
-  const prevStructuralHashRef = useRef<string>('');
+  const prevStructuralHashRef = useRef<string>("");
   const nodesWithoutConfigRef = useRef<WorkflowNode[]>([]);
 
   const nodesWithoutConfig = useMemo(() => {
     // Create a hash of structural properties only
-    const structuralHash = nodes.map((n) => 
-      `${n.id}:${n.type}:${n.position.x},${n.position.y}:${(n.inputs || []).join(',')}:${(n.outputs || []).join(',')}:${(n.data as any).type}`
-    ).sort().join('|');
+    const structuralHash = nodes
+      .map(
+        (n) =>
+          `${n.id}:${n.type}:${n.position.x},${n.position.y}:${(n.inputs || []).join(",")}:${(n.outputs || []).join(",")}:${(n.data as any).type}`,
+      )
+      .sort()
+      .join("|");
 
     // Only recalculate if structural properties have changed
     if (structuralHash !== prevStructuralHashRef.current) {
@@ -159,18 +163,21 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     }
   }, [schemaErrors, selectedNode, setSchemaErrors]);
 
-  const handleNodeUpdate = useCallback((updatedNode: WorkflowNode) => {
-    const updatedNodes = nodesRef.current.map((n) =>
-      n.id === updatedNode.id
-        ? {
-            ...updatedNode,
-            position: n.position, // keep original position
-          }
-        : n,
-    );
-    set(updatedNodes);
-    clearSelectedNodeErrors();
-  }, [set, clearSelectedNodeErrors]);
+  const handleNodeUpdate = useCallback(
+    (updatedNode: WorkflowNode) => {
+      const updatedNodes = nodesRef.current.map((n) =>
+        n.id === updatedNode.id
+          ? {
+              ...updatedNode,
+              position: n.position, // keep original position
+            }
+          : n,
+      );
+      set(updatedNodes);
+      clearSelectedNodeErrors();
+    },
+    [set, clearSelectedNodeErrors],
+  );
 
   // Use refs to access current state without recreating callbacks
   const nodesRef = useRef(nodes);
@@ -182,15 +189,15 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
-  
+
   useEffect(() => {
     connectionsRef.current = connections;
   }, [connections]);
-  
+
   useEffect(() => {
     selectedNodeIdRef.current = selectedNodeId;
   }, [selectedNodeId]);
-  
+
   useEffect(() => {
     schemaErrorsRef.current = schemaErrors;
   }, [schemaErrors]);
@@ -289,8 +296,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     [set],
   );
 
-
-
   const handleSave = useCallback(() => {
     readyToSave.current = false;
     const result = form.validate();
@@ -350,7 +355,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       id: currentWorkflowId,
       nodes,
       connections,
-      lastUpdated: Date.now(),
+      modifiedAt: Date.now(),
       ...form.getValues(),
     }),
     [nodes, connections, form.values, currentWorkflowId],

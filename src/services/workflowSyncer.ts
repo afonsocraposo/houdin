@@ -1,5 +1,4 @@
 import { ApiClient } from "@/api/client";
-import { BackgroundStorageClient } from "./storage";
 import browser from "./browser";
 import { sendMessageToBackground } from "@/lib/messages";
 import { useStore } from "@/store";
@@ -9,11 +8,9 @@ export class WorkflowSyncer {
   private static syncPromise: Promise<void> | null = null;
   private static throttledSyncPromise: Promise<void> | null = null;
   private client: ApiClient;
-  private storage: BackgroundStorageClient;
 
   constructor() {
     this.client = new ApiClient();
-    this.storage = new BackgroundStorageClient();
   }
 
   static getInstance(): WorkflowSyncer {
@@ -140,12 +137,11 @@ export class WorkflowSyncer {
   private async performSync(): Promise<void> {
     console.debug("Starting workflow sync process...");
     const lastSync = useStore.getState().lastSynced;
-    console.log("Last sync timestamp:", lastSync);
     const remoteWorkflows = await this.client.listWorkflows(
       lastSync || undefined,
     );
     const currentTimestamp = Date.now();
-    const localWorkflows = await this.storage.getWorkflows();
+    const localWorkflows = useStore.getState().workflows;
 
     const localWorkflowIds = new Set(localWorkflows.map((wf) => wf.id));
     const localWorkflowMap = new Map(localWorkflows.map((wf) => [wf.id, wf]));
@@ -160,23 +156,23 @@ export class WorkflowSyncer {
       }
       if (
         localWorkflow &&
-        localWorkflow.lastUpdated &&
+        localWorkflow.modifiedAt &&
         lastSync &&
-        localWorkflow.lastUpdated < lastSync
+        localWorkflow.modifiedAt < lastSync
       ) {
         console.debug(
           `Deleting local workflow missing on server: ${localWorkflowId}`,
         );
-        await this.storage.deleteWorkflow(localWorkflowId);
+        useStore.getState().deleteWorkflow(localWorkflowId);
       }
     }
 
     for (const remoteWorkflow of remoteWorkflows) {
       if (!localWorkflowMap.has(remoteWorkflow.id)) {
         if (
-          remoteWorkflow.lastUpdated &&
+          remoteWorkflow.modifiedAt &&
           lastSync &&
-          remoteWorkflow.lastUpdated < lastSync
+          remoteWorkflow.modifiedAt < lastSync
         ) {
           console.debug(
             `Deleting workflow from server (was deleted locally): ${remoteWorkflow.id}`,
@@ -186,25 +182,29 @@ export class WorkflowSyncer {
           console.debug(
             `Syncing new workflow from server: ${remoteWorkflow.id}`,
           );
-          await this.storage.createWorkflow(remoteWorkflow);
+          useStore.getState().createWorkflow(remoteWorkflow);
         }
       } else {
         const localWorkflow = localWorkflowMap.get(remoteWorkflow.id);
         if (
           localWorkflow &&
-          remoteWorkflow.lastUpdated &&
-          localWorkflow.lastUpdated &&
-          remoteWorkflow.lastUpdated > localWorkflow.lastUpdated
+          remoteWorkflow.modifiedAt &&
+          localWorkflow.modifiedAt &&
+          remoteWorkflow.modifiedAt > localWorkflow.modifiedAt
         ) {
           console.debug(
             `Updating local workflow from server: ${remoteWorkflow.id}`,
+            "remote modifiedAt",
+            new Date(remoteWorkflow.modifiedAt),
+            "local modifiedAt",
+            new Date(localWorkflow.modifiedAt),
           );
-          await this.storage.updateWorkflow(remoteWorkflow);
+          useStore.getState().updateWorkflow(remoteWorkflow);
         } else if (
           localWorkflow &&
-          localWorkflow.lastUpdated &&
-          remoteWorkflow.lastUpdated &&
-          localWorkflow.lastUpdated > remoteWorkflow.lastUpdated
+          localWorkflow.modifiedAt &&
+          remoteWorkflow.modifiedAt &&
+          localWorkflow.modifiedAt > remoteWorkflow.modifiedAt
         ) {
           console.debug(
             `Updating server workflow from local: ${remoteWorkflow.id}`,
@@ -217,9 +217,9 @@ export class WorkflowSyncer {
     for (const localWorkflow of localWorkflows) {
       if (!remoteWorkflowIds.has(localWorkflow.id)) {
         if (
-          localWorkflow.lastUpdated &&
+          localWorkflow.modifiedAt &&
           lastSync &&
-          localWorkflow.lastUpdated > lastSync
+          localWorkflow.modifiedAt > lastSync
         ) {
           console.debug(`Creating new workflow on server: ${localWorkflow.id}`);
           await this.client.createWorkflow(localWorkflow);
