@@ -1,5 +1,4 @@
 import { sendMessageToContentScript } from "@/lib/messages";
-import { BackgroundStorageClient } from "@/services/storage";
 import {
   ReadinessResponse,
   TriggerCommand,
@@ -16,32 +15,30 @@ import { ExecutionContext } from "./workflow/executionContext";
 import { matchesUrlPattern } from "@/utils/helpers";
 import { NotificationService } from "./notification";
 import { initializeCredentials } from "./credentialInitializer";
+import { useStore } from "@/store";
 
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();
   private workflows: WorkflowDefinition[] = [];
-  private storageClient: BackgroundStorageClient;
 
   constructor() {
-    this.storageClient = new BackgroundStorageClient();
     initializeBackgroundActions();
     initializeCredentials();
   }
 
   async initialize(): Promise<void> {
-    await this.loadWorkflows();
-    this.setupStorageListener();
+    this.loadWorkflows();
+    this.setupStoreListener();
   }
 
-  private setupStorageListener(): void {
-    this.storageClient.addWorkflowsListener((workflows) => {
-      console.debug("Workflows updated, reloading...");
-      this.workflows = workflows;
+  private setupStoreListener(): void {
+    useStore.subscribe((state) => {
+      this.workflows = state.workflows;
     });
   }
 
-  private async loadWorkflows(): Promise<void> {
-    this.workflows = await this.storageClient.getWorkflows();
+  private loadWorkflows(): void {
+    this.workflows = useStore.getState().workflows;
     console.debug("Loaded workflows:", this.workflows.length);
   }
 

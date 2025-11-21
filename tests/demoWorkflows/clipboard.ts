@@ -41,7 +41,7 @@ export const DEMO_CLIPBOARD_WORKFLOW = {
       targetHandle: "input",
     },
   ],
-  lastUpdated: 1760993413442,
+  modifiedAt: 1760993413442,
   name: "Test clipboard write",
   description: "",
   urlPattern: "https://*",

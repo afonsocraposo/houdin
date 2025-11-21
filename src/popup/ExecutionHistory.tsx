@@ -16,16 +16,16 @@ import {
 } from "@tabler/icons-react";
 import {
   WorkflowExecution,
-  WorkflowDefinition,
   WorkflowExecutionStats,
 } from "@/types/workflow";
 import { ContentStorageClient } from "@/services/storage";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import browser from "@/services/browser";
+import { useStore } from "@/store";
 
 function ExecutionHistory() {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
-  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
+  const workflows = useStore((state) => state.workflows);
   const [stats, setStats] = useState<WorkflowExecutionStats>({
     total: 0,
     successful: 0,
@@ -55,18 +55,8 @@ function ExecutionHistory() {
     }
   };
 
-  const loadWorkflows = async () => {
-    try {
-      const workflowList = await storageClient.getWorkflows();
-      setWorkflows(workflowList);
-    } catch (error) {
-      console.error("Failed to load workflows:", error);
-    }
-  };
-
   useEffect(() => {
     loadExecutions();
-    loadWorkflows();
     loadSessionStats();
 
     // Set up periodic refresh to get real-time updates

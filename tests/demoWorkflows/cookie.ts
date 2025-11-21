@@ -92,7 +92,7 @@ export const DEMO_COOKIE_WORKFLOW = {
       targetHandle: "input",
     },
   ],
-  lastUpdated: 1760994527313,
+  modifiedAt: 1760994527313,
   name: "Test cookies",
   description: "",
   urlPattern: "https://*",

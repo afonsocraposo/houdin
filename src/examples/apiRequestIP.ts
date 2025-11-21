@@ -20,7 +20,7 @@ export const apiRequestIP: WorkflowDefinition = {
   description: "Use ipify public IP to figure out current public IP.",
   enabled: true,
   id: "workflow-gapi8s9c2ukY",
-  lastUpdated: 1759441266664,
+  modifiedAt: 1759441266664,
   name: "API Request IP",
   nodes: [
     {

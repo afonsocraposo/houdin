@@ -1,4 +1,3 @@
-import { ContentStorageClient } from "@/services/storage";
 import { ExampleService } from "@/services/exampleService";
 import { WorkflowDefinition } from "@/types/workflow";
 import {
@@ -10,6 +9,7 @@ import {
   Text,
   Title,
   Menu,
+  LoadingOverlay,
 } from "@mantine/core";
 import {
   IconNetwork,
@@ -23,48 +23,31 @@ import { ImportModal } from "./ImportModal";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
 import { newWorkflowId } from "@/utils/helpers";
+import { useStore } from "@/store";
+import { WorkflowSyncer } from "@/services/workflowSyncer";
 
 export default function WorkflowsTab({
   setSaved,
 }: {
   setSaved: (saved: boolean) => void;
 }) {
-  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
+  const workflows = useStore((state) => state.workflows);
+  const setWorkflows = useStore((state) => state.setWorkflows);
+  const deleteWorkflow = useStore((state) => state.deleteWorkflow);
   const [importModalOpened, setImportModalOpened] = useState(false);
   const [exportModalOpened, setExportModalOpened] = useState(false);
   const [workflowToExport, setWorkflowToExport] =
     useState<WorkflowDefinition | null>(null);
 
-  const storageClient = useMemo(() => new ContentStorageClient(), []);
+  // const isSyncing = useStore((state) => state.isSyncing);
+
   const exampleService = useMemo(() => new ExampleService(), []);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load existing workflows from storage using storage
-    const loadData = async () => {
-      try {
-        const loadedWorkflows = await storageClient.getWorkflows();
-        setWorkflows(loadedWorkflows);
-      } catch (error) {
-        console.error("Failed to load workflows:", error);
-      }
-    };
-
-    loadData();
-
-    // Set up storage change listener
-    const handleStorageChange = (updatedWorkflows: WorkflowDefinition[]) => {
-      setWorkflows(updatedWorkflows);
-    };
-
-    const unsubscribe = storageClient.addWorkflowsListener(handleStorageChange);
-
-    return () => {
-      // Clean up listener on unmount
-      unsubscribe();
-    };
-  }, []); // Load workflows once on mount
+    WorkflowSyncer.triggerThrottledSync();
+  }, []);
 
   const handleCreateWorkflow = () => {
     navigate("/designer"); // Navigate to designer without workflow ID
@@ -74,7 +57,7 @@ export default function WorkflowsTab({
     const newWorkflow = {
       ...example,
       id: newWorkflowId(),
-      lastUpdated: Date.now(),
+      modifiedAt: Date.now(),
       executionCount: 0,
       lastExecuted: undefined,
     };
@@ -93,9 +76,8 @@ export default function WorkflowsTab({
 
   const handleDeleteWorkflow = async (id: string) => {
     try {
-      const updatedWorkflows = workflows.filter((w) => w.id !== id);
-      await storageClient.saveWorkflows(updatedWorkflows);
-      setWorkflows(updatedWorkflows);
+      deleteWorkflow(id);
+      WorkflowSyncer.triggerThrottledSync();
     } catch (error) {
       console.error("Failed to delete workflow:", error);
     }
@@ -104,10 +86,16 @@ export default function WorkflowsTab({
   const handleToggleWorkflow = async (id: string) => {
     try {
       const updatedWorkflows = workflows.map((w) =>
-        w.id === id ? { ...w, enabled: !w.enabled } : w,
+        w.id === id
+          ? {
+              ...w,
+              enabled: !w.enabled,
+              modifiedAt: Date.now(),
+            }
+          : w,
       );
-      await storageClient.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
+      WorkflowSyncer.triggerThrottledSync();
     } catch (error) {
       console.error("Failed to toggle workflow:", error);
     }
@@ -124,12 +112,11 @@ export default function WorkflowsTab({
         ...workflow,
         id: newWorkflowId(),
         name: `${workflow.name} (Copy)`,
-        lastUpdated: Date.now(),
+        modifiedAt: Date.now(),
         executionCount: 0,
         lastExecuted: undefined,
       } as WorkflowDefinition;
       const updatedWorkflows = [...workflows, newWorkflow];
-      await storageClient.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -142,7 +129,6 @@ export default function WorkflowsTab({
   const handleImportWorkflow = async (workflow: WorkflowDefinition) => {
     try {
       const updatedWorkflows = [...workflows, workflow];
-      await storageClient.saveWorkflows(updatedWorkflows);
       setWorkflows(updatedWorkflows);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -154,7 +140,8 @@ export default function WorkflowsTab({
 
   return (
     <>
-      <Card withBorder padding="lg">
+      <Card withBorder padding="lg" pos="relative">
+        <LoadingOverlay visible={false} loaderProps={{ type: "dots" }} />
         <Group justify="space-between" mb="md">
           <Title order={3}>Workflows</Title>
           <Group>
@@ -229,7 +216,7 @@ export default function WorkflowsTab({
             </Table.Thead>
             <Table.Tbody>
               {workflows
-                .sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0))
+                .sort((a, b) => (b.modifiedAt || 0) - (a.modifiedAt || 0))
                 .map((workflow) => (
                   <ConfigWorkflowItem
                     key={workflow.id}

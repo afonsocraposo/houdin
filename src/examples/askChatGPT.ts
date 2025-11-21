@@ -35,7 +35,7 @@ export const askChatGPT: WorkflowDefinition = {
   description:
     "Press CTRL+H on any webpage and ask anything about it to ChatGPT. It requires an OpenAI API key.",
   enabled: true,
-  lastUpdated: 1758990841893,
+  modifiedAt: 1758990841893,
   name: "Ask ChatGPT",
   nodes: [
     {

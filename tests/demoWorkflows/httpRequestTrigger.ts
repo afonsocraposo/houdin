@@ -44,7 +44,7 @@ export const DEMO_HTTP_REQUEST_TRIGGER_WORKFLOW = {
       targetHandle: "input",
     },
   ],
-  lastUpdated: 1760995407724,
+  modifiedAt: 1760995407724,
   name: "Test http request trigger",
   description: "",
   urlPattern: "https://*",

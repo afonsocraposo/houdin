@@ -18,7 +18,7 @@ export const DEMO_HTTP_REQUEST_WORKFLOW = {
   description: "",
   enabled: true,
   id: "workflow-tk2LATvt1GsV",
-  lastUpdated: 1760994279475,
+  modifiedAt: 1760994279475,
   name: "Test HTTP request",
   nodes: [
     {

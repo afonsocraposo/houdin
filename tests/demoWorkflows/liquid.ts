@@ -11,7 +11,7 @@ export const DEMO_LIQUID_WORKFLOW = {
   description: "",
   enabled: true,
   id: "workflow-ZwK1HxwgSFB2",
-  lastUpdated: 1761167376547,
+  modifiedAt: 1761167376547,
   name: "Test liquid syntax",
   nodes: [
     {

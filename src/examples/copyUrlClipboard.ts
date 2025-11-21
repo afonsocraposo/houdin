@@ -20,7 +20,7 @@ export const copyUrlClipboard: WorkflowDefinition = {
   description: "",
   enabled: true,
   id: "workflow-DEEvluCY1ZUo",
-  lastUpdated: 1759681061210,
+  modifiedAt: 1759681061210,
   name: "Copy current URL to clipboard",
   nodes: [
     {

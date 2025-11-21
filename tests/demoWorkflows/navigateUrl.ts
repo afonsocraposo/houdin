@@ -18,7 +18,7 @@ export const DEMO_NAVIGATE_URL_WORKFLOW = {
   description: "",
   enabled: true,
   id: "workflow-tk2LATvt1GsV",
-  lastUpdated: 1760993282738,
+  modifiedAt: 1760993282738,
   name: "Test navigate URL",
   nodes: [
     {

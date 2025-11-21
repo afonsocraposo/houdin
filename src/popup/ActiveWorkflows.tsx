@@ -1,7 +1,5 @@
 import { Text, Badge, Group, Stack, ScrollArea } from "@mantine/core";
-import { useState, useEffect } from "react";
-import { ContentStorageClient } from "@/services/storage";
-import { WorkflowDefinition } from "@/types/workflow";
+import { useStore } from "@/store";
 import ActiveWorkflowItem from "./ActiveWorkflowItem";
 
 interface ActiveWorkflowsProps {
@@ -9,27 +7,7 @@ interface ActiveWorkflowsProps {
 }
 
 function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
-  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Cross-browser API compatibility
-  const storageClient = new ContentStorageClient();
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const workflows = await storageClient.getWorkflows();
-      setWorkflows(workflows);
-    } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const workflows = useStore((state) => state.workflows);
 
   const getActiveWorkflows = () => {
     if (!currentUrl) return [];
@@ -79,11 +57,7 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
         </Group>
 
         <ScrollArea h={180} type="auto">
-          {loading ? (
-            <Text size="xs" c="dimmed" ta="center" py="md">
-              Loading workflows...
-            </Text>
-          ) : activeWorkflows.length > 0 ? (
+          {activeWorkflows.length > 0 ? (
             <Stack gap="xs">
               {activeWorkflows.map((workflow) => (
                 <ActiveWorkflowItem key={workflow.id} workflow={workflow} />

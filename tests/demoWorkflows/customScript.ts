@@ -11,7 +11,7 @@ export const DEMO_CUSTOM_SCRIPT_WORKFLOW = {
   description: "",
   enabled: true,
   id: "workflow-dX2oK6UEhKnr",
-  lastUpdated: 1760984247415,
+  modifiedAt: 1760984247415,
   name: "Test custom script",
   nodes: [
     {

@@ -35,7 +35,7 @@ export const summarizeNews: WorkflowDefinition = {
     "Uses OpenAI to summarize CNN's news article and injects the summary at the top of the page",
   enabled: true,
   id: "workflow-Wdf7eudQPW0r",
-  lastUpdated: 1758988717106,
+  modifiedAt: 1758988717106,
   name: "Summarize News",
   nodes: [
     {

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
-import { ContentStorageClient } from "@/services/storage";
 import { WorkflowDefinition } from "@/types/workflow";
 import { sendMessageToBackground } from "@/lib/messages";
+import { useStore } from "@/store";
 
 interface DesignerViewProps {
   workflowId?: string;
@@ -17,13 +17,17 @@ function DesignerView({ workflowId }: DesignerViewProps) {
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
-  const storageClient = new ContentStorageClient();
+  const workflows = useStore((state) => state.workflows);
+  const createWorkflow = useStore((state) => state.createWorkflow);
+  const updateWorkflow = useStore((state) => state.updateWorkflow);
 
-  const loadWorkflow = useCallback(async (id: string) => {
-    const workflows = await storageClient.getWorkflows();
-    const workflow = workflows.find((w) => w.id === id);
-    setEditingWorkflow(workflow || null);
-  }, []);
+  const loadWorkflow = useCallback(
+    (id: string) => {
+      const workflow = workflows.find((w) => w.id === id);
+      setEditingWorkflow(workflow || null);
+    },
+    [workflows],
+  );
 
   // Set editing workflow based on URL parameter or example from navigation state
   useEffect(() => {
@@ -68,9 +72,9 @@ function DesignerView({ workflowId }: DesignerViewProps) {
   const handleWorkflowSave = async (workflow: WorkflowDefinition) => {
     try {
       if (newWorkflow) {
-        await storageClient.createWorkflow(workflow);
+        createWorkflow(workflow);
       } else {
-        await storageClient.updateWorkflow(workflow);
+        updateWorkflow(workflow);
       }
 
       // Sync HTTP triggers in background script when explicitly saving

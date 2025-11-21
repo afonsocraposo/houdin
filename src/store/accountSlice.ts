@@ -1,5 +1,5 @@
 import { StateCreator } from "zustand";
-import { Account } from "@/api/types/account";
+import { Account } from "@/api/schemas/account";
 import { ApiClient } from "@/api/client";
 
 export interface AccountSlice {
@@ -7,7 +7,7 @@ export interface AccountSlice {
   fetchAccount: () => Promise<void>;
 }
 
-export const createAccountSlice: StateCreator<AccountSlice> = (set, _get) => ({
+export const createAccountSlice: StateCreator<AccountSlice> = (set) => ({
   account: undefined,
   fetchAccount: async () => {
     try {

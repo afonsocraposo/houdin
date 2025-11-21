@@ -190,12 +190,12 @@ export class StorageServer {
 
 // Interface for storage operations
 interface IStorageClient {
-  getWorkflows(): Promise<WorkflowDefinition[]>;
-  saveWorkflows(workflows: WorkflowDefinition[]): Promise<void>;
   getCredentials(): Promise<Credential[]>;
   saveCredentials(credentials: Credential[]): Promise<void>;
   getCredentialsByType(type: string): Promise<Credential[]>;
   getWorkflowExecutions(): Promise<WorkflowExecution[]>;
+  getLastSynced(): Promise<number | undefined>;
+  setLastSynced(timestamp: number): Promise<void>;
   saveWorkflowExecutions(executions: WorkflowExecution[]): Promise<void>;
   saveWorkflowExecution(execution: WorkflowExecution): Promise<void>;
   clearWorkflowExecutions(): Promise<void>;
@@ -221,43 +221,23 @@ abstract class StorageClientBase implements IStorageClient {
     callback: (value: any) => void,
   ): () => void;
 
-  // Shared business logic methods
-  async getWorkflows(): Promise<WorkflowDefinition[]> {
+  async getLastSynced(): Promise<number | undefined> {
     try {
-      return (await this.get(StorageKeys.WORKFLOWS)) || [];
+      const timestamp = await this.get(StorageKeys.LAST_SYNCED);
+      return timestamp || undefined;
     } catch (error) {
-      console.error("Failed to get workflows:", error);
-      return [];
+      console.error("Failed to get last synced timestamp:", error);
+      return undefined;
     }
   }
 
-  async saveWorkflows(workflows: WorkflowDefinition[]): Promise<void> {
+  async setLastSynced(timestamp: number): Promise<void> {
     try {
-      await this.set(StorageKeys.WORKFLOWS, workflows);
+      await this.set(StorageKeys.LAST_SYNCED, timestamp);
     } catch (error) {
-      console.error("Failed to save workflows:", error);
+      console.error("Failed to set last synced timestamp:", error);
       throw error;
     }
-  }
-
-  async createWorkflow(workflow: WorkflowDefinition): Promise<void> {
-    const workflows = await this.getWorkflows();
-    const exists = workflows.some((w) => w.id === workflow.id);
-    if (exists) {
-      throw new Error(`Workflow with id ${workflow.id} already exists`);
-    }
-    workflows.push(workflow);
-    await this.saveWorkflows(workflows);
-  }
-
-  async updateWorkflow(workflow: WorkflowDefinition): Promise<void> {
-    const workflows = await this.getWorkflows();
-    const index = workflows.findIndex((w) => w.id === workflow.id);
-    if (index === -1) {
-      throw new Error(`Workflow with id ${workflow.id} does not exist`);
-    }
-    workflows[index] = workflow;
-    await this.saveWorkflows(workflows);
   }
 
   async getCredentials(): Promise<Credential[]> {
@@ -378,6 +358,59 @@ abstract class StorageClientBase implements IStorageClient {
       console.error("Failed to clear workflow executions:", error);
       throw error;
     }
+  }
+
+  async acquireSyncLock(): Promise<string | null> {
+    const syncId = crypto.randomUUID();
+    const lockData = await this.get(StorageKeys.SYNC_IN_PROGRESS);
+
+    if (lockData) {
+      const { timestamp } = lockData;
+      const now = Date.now();
+
+      if (now - timestamp < 30000) {
+        return null;
+      }
+    }
+
+    await this.set(StorageKeys.SYNC_IN_PROGRESS, {
+      timestamp: Date.now(),
+      syncId,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const verifyLock = await this.get(StorageKeys.SYNC_IN_PROGRESS);
+    if (verifyLock?.syncId !== syncId) {
+      return null;
+    }
+
+    return syncId;
+  }
+
+  async releaseSyncLock(): Promise<void> {
+    await this.remove(StorageKeys.SYNC_IN_PROGRESS);
+  }
+
+  async setSyncResult(success: boolean, error?: string): Promise<void> {
+    await this.set(StorageKeys.SYNC_RESULT, {
+      success,
+      error,
+      timestamp: Date.now(),
+    });
+  }
+
+  async getSyncResult(): Promise<{
+    success: boolean;
+    error?: string;
+    timestamp: number;
+  } | null> {
+    return await this.get(StorageKeys.SYNC_RESULT);
+  }
+
+  async isSyncInProgress(): Promise<boolean> {
+    const lockData = await this.get(StorageKeys.SYNC_IN_PROGRESS);
+    return !!lockData;
   }
 
   // Convenience methods for listeners
