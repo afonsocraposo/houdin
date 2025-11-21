@@ -3,8 +3,8 @@ import { createTheme } from "@mantine/core";
 
 export const mantineTheme = createTheme({
   defaultGradient: {
-    from: "#fda085",
-    to: "#f6d365",
+    from: "#f97316",
+    to: "#f59e0b",
     deg: 45,
   },
   defaultRadius: "sm",

@@ -3,12 +3,28 @@ import { getRelativeTime } from "@/lib/time";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
 import { ActionIcon, Group, Loader, Text, Tooltip } from "@mantine/core";
 import { IconCheck, IconRefresh, IconAlertCircle } from "@tabler/icons-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDisclosure } from "@mantine/hooks";
+import UpgradeModal from "./modals/upgradeModal";
 
 export default function SyncButton() {
   const account = useSessionStore((state) => state.account);
   const lastSynced = useStore((state) => state.lastSynced);
-  const status = useStore((state) => state.status);
+  const _status = useStore((state) => state.status);
+  const [opened, { open, close }] = useDisclosure(false);
+  const [status, setSyncStatus] = useState<
+    "idle" | "syncing" | "success" | "error"
+  >(_status);
+
+  useEffect(() => {
+    setSyncStatus(_status);
+    if (_status === "success" || _status === "error") {
+      const timer = setTimeout(() => {
+        setSyncStatus("idle");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [_status]);
 
   const canSync = useMemo(() => account && account.plan !== "free", [account]);
 
@@ -45,9 +61,6 @@ export default function SyncButton() {
   };
 
   const getTooltip = () => {
-    if (!canSync) {
-      return "Upgrade your plan to enable workflow synchronization.";
-    }
     switch (status) {
       case "syncing":
         return "Syncing workflows...";
@@ -62,21 +75,32 @@ export default function SyncButton() {
     }
   };
 
+  if (account === null) {
+    return null;
+  }
+
   return (
-    <Group gap="xs">
-      <Text size="xs" c="dimmed">
-        {lastSynced ? getRelativeTime(new Date(lastSynced)) : "Never synced"}
-      </Text>
-      <Tooltip label={getTooltip()} position="bottom">
-        <ActionIcon
-          onClick={syncWorkflows}
-          disabled={status === "syncing" || !canSync}
-          color={getColor()}
-          variant={status === "idle" ? "subtle" : "light"}
-        >
-          {getIcon()}
-        </ActionIcon>
-      </Tooltip>
-    </Group>
+    <>
+      <Group gap="xs">
+        {canSync && (
+          <Text size="xs" c="dimmed">
+            {lastSynced
+              ? getRelativeTime(new Date(lastSynced))
+              : "Never synced"}
+          </Text>
+        )}
+        <Tooltip label={getTooltip()} position="bottom">
+          <ActionIcon
+            onClick={canSync ? syncWorkflows : open}
+            disabled={status === "syncing"}
+            color={getColor()}
+            variant={status === "idle" ? "subtle" : "light"}
+          >
+            {getIcon()}
+          </ActionIcon>
+        </Tooltip>
+      </Group>
+      <UpgradeModal opened={opened} onClose={close} />
+    </>
   );
 }
