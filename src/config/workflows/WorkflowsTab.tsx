@@ -25,7 +25,7 @@ import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
 import { newWorkflowId } from "@/utils/helpers";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
-import { useStore } from "@/config/store";
+import { useStore } from "@/store";
 
 export default function WorkflowsTab({
   setSaved,

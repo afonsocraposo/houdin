@@ -9,6 +9,8 @@ import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
+import { useStore } from "@/store";
+import type { Runtime } from "webextension-polyfill";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -33,23 +35,19 @@ browser.runtime.onInstalled.addListener(() => {
 
 if (browser.action) {
   browser.action.onClicked.addListener((_tab: any) => {
-    // Extension icon clicked
   });
 }
 
-// Handle navigation to https://houdin.config
 browser.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
   if (changeInfo.url) {
     const url = changeInfo.url;
     if (url.startsWith("https://houdin.config")) {
-      // Redirect to the config page
       const configUrl = browser.runtime.getURL("src/config/index.html");
       browser.tabs.update(tabId, { url: configUrl });
     }
   }
 });
 
-// Note: webNavigation API requires additional permission in manifest v3
 if (browser.webNavigation) {
   browser.webNavigation.onBeforeNavigate.addListener((details: any) => {
     const url = details.url;
@@ -60,16 +58,103 @@ if (browser.webNavigation) {
   });
 }
 
-// Initialize storage server
-// @ts-ignore
-const storageServer = StorageServer.getInstance();
+StorageServer.getInstance();
 
-// Initialize workflow syncer
 const workflowSyncer = WorkflowSyncer.getInstance();
 workflowSyncer.sync(true);
 workflowSyncer.startMessageListener();
 
-// Initialize background workflow engine
+const connectedPorts = new Set<Runtime.Port>();
+
+browser.runtime.onConnect.addListener((port) => {
+  if (port.name === "store-sync") {
+    connectedPorts.add(port);
+    console.debug("Background: Store sync port connected");
+
+    port.onDisconnect.addListener(() => {
+      connectedPorts.delete(port);
+      console.debug("Background: Store sync port disconnected");
+    });
+  }
+});
+
+useStore.subscribe((state) => {
+  connectedPorts.forEach((port) => {
+    try {
+      port.postMessage({
+        type: "STORE_STATE_UPDATE",
+        state,
+      });
+    } catch (error) {
+      console.error("Background: Error sending state update to port:", error);
+      connectedPorts.delete(port);
+    }
+  });
+});
+
+browser.runtime.onMessage.addListener((message: CustomMessage, sender: any, sendResponse: (response?: any) => void) => {
+  switch (message.type) {
+    case "GET_STORE_STATE":
+      sendResponse(useStore.getState());
+      return true;
+
+    case "STORE_ACTION":
+      try {
+        const { action, payload } = message.data;
+        const state = useStore.getState() as any;
+        if (typeof state[action] === "function") {
+          state[action](payload);
+          sendResponse({ success: true });
+        } else {
+          sendResponse({ success: false, error: `Action ${action} not found` });
+        }
+      } catch (error) {
+        sendResponse({ success: false, error: (error as Error).message });
+      }
+      return true;
+
+    case "REGISTER_HTTP_TRIGGER":
+      console.debug("Background: Registering HTTP trigger", message);
+
+      if (!httpListener) {
+        console.error(
+          "Background: Cannot register HTTP trigger - httpListener not available",
+        );
+        return;
+      }
+
+      const triggerCallback = async (data: any) => {
+        console.debug("HTTP trigger fired:", {
+          tabId: sender.tab.id,
+          workflowId: message.data.workflowId,
+          triggerNodeId: message.data.triggerNodeId,
+          data,
+        });
+        sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
+          workflowId: message.data.workflowId,
+          triggerNodeId: message.data.triggerNodeId,
+          data,
+        }).catch(() => {});
+      };
+
+      httpListener.registerTrigger(
+        sender.tab.id,
+        message.data.workflowId,
+        message.data.triggerNodeId,
+        message.data.urlPattern,
+        message.data.method,
+        triggerCallback,
+      );
+      return;
+
+    case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
+      if (httpListener) {
+        httpListener.unregisterTriggers(sender.tab.id);
+      }
+      return;
+  }
+});
+
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
   browser.webNavigation.onCompleted.addListener(
@@ -84,49 +169,6 @@ workflowEngine.initialize().then(() => {
   browser.runtime.onMessage.addListener(
     (message: CustomMessage, sender: any) => {
       switch (message.type) {
-        case "REGISTER_HTTP_TRIGGER":
-          // Register HTTP trigger with webRequest API
-          console.debug("Background: Registering HTTP trigger", message);
-
-          if (!httpListener) {
-            console.error(
-              "Background: Cannot register HTTP trigger - httpListener not available",
-            );
-            return;
-          }
-
-          const triggerCallback = async (data: any) => {
-            console.debug("HTTP trigger fired:", {
-              tabId: sender.tab.id,
-              workflowId: message.data.workflowId,
-              triggerNodeId: message.data.triggerNodeId,
-              data,
-            });
-            // Send trigger event back to content script
-            sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
-              workflowId: message.data.workflowId,
-              triggerNodeId: message.data.triggerNodeId,
-              data,
-            }).catch(() => {
-              // send and forget
-            });
-          };
-
-          httpListener.registerTrigger(
-            sender.tab.id,
-            message.data.workflowId,
-            message.data.triggerNodeId,
-            message.data.urlPattern,
-            message.data.method,
-            triggerCallback,
-          );
-          return;
-        case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
-          // Unregister HTTP triggers
-          if (httpListener) {
-            httpListener.unregisterTriggers(sender.tab.id);
-          }
-          return;
         case WorkflowCommandType.TRIGGER_FIRED:
           const tabId = sender.tab.id;
 

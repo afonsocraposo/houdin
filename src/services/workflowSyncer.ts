@@ -2,6 +2,7 @@ import { ApiClient } from "@/api/client";
 import { BackgroundStorageClient } from "./storage";
 import browser from "./browser";
 import { sendMessageToBackground } from "@/lib/messages";
+import { useStore } from "@/store";
 
 export class WorkflowSyncer {
   static instance: WorkflowSyncer = new WorkflowSyncer();
@@ -58,7 +59,12 @@ export class WorkflowSyncer {
       const error = new Error(
         "User plan does not support workflow synchronization.",
       );
-      await this.storage.setSyncResult(false, error.message);
+      useStore.getState().setSyncResult({
+        success: false,
+        error: error.message,
+        timestamp: Date.now(),
+      });
+      useStore.getState().setStatus("error");
       if (failQuiet) {
         console.debug("Sync skipped:", error.message);
         return;
@@ -70,27 +76,47 @@ export class WorkflowSyncer {
       return WorkflowSyncer.syncPromise;
     }
 
-    const syncId = await this.storage.acquireSyncLock();
-    if (!syncId) {
+    if (useStore.getState().isSyncing) {
       return;
     }
+
+    useStore.getState().setIsSyncing(true);
+    useStore.getState().setStatus("syncing");
+
+    const failsafeTimeout = setTimeout(() => {
+      console.warn("Sync took longer than 15 seconds, resetting sync state");
+      useStore.getState().setIsSyncing(false);
+      useStore.getState().setStatus("error");
+      setTimeout(() => useStore.getState().setStatus("idle"), 3000);
+    }, 15000);
 
     WorkflowSyncer.syncPromise = this.performSync();
 
     let _error;
     try {
       await WorkflowSyncer.syncPromise;
-      await this.storage.setSyncResult(true);
+      clearTimeout(failsafeTimeout);
+      useStore
+        .getState()
+        .setSyncResult({ success: true, timestamp: Date.now() });
+      useStore.getState().setStatus("success");
+      setTimeout(() => useStore.getState().setStatus("idle"), 2000);
     } catch (error) {
+      clearTimeout(failsafeTimeout);
       console.error("Error during workflow sync:", error);
-      await this.storage.setSyncResult(
-        false,
-        error instanceof Error ? error.message : String(error),
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      useStore.getState().setSyncResult({
+        success: false,
+        error: errorMessage,
+        timestamp: Date.now(),
+      });
+      useStore.getState().setStatus("error");
+      setTimeout(() => useStore.getState().setStatus("idle"), 3000);
       _error = error;
     } finally {
       WorkflowSyncer.syncPromise = null;
-      await this.storage.releaseSyncLock();
+      useStore.getState().setIsSyncing(false);
     }
     if (_error) {
       throw _error;
@@ -113,9 +139,11 @@ export class WorkflowSyncer {
 
   private async performSync(): Promise<void> {
     console.debug("Starting workflow sync process...");
-    const lastSync = await this.storage.getLastSynced();
-    const remoteWorkflows = await this.client.listWorkflows(lastSync);
-    // UTC timestamp
+    const lastSync = useStore.getState().lastSynced;
+    console.log("Last sync timestamp:", lastSync);
+    const remoteWorkflows = await this.client.listWorkflows(
+      lastSync || undefined,
+    );
     const currentTimestamp = Date.now();
     const localWorkflows = await this.storage.getWorkflows();
 
@@ -199,7 +227,7 @@ export class WorkflowSyncer {
       }
     }
 
-    await this.storage.setLastSynced(currentTimestamp);
+    useStore.getState().setLastSynced(currentTimestamp);
     console.debug("Workflow sync process completed successfully");
   }
 

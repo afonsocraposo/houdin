@@ -1,11 +1,11 @@
 import { Button } from "@mantine/core";
 import Avatar from "@/components/Avatar";
-import { useStore } from "@/config/store";
+import { useSessionStore } from "@/store";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://houdin.dev";
 
 export default function LoginButton() {
-  const account = useStore((state) => state.account);
+  const account = useSessionStore((state) => state.account);
   if (account === undefined) {
     return null;
   }

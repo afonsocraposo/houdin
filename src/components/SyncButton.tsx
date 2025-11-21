@@ -1,27 +1,16 @@
-import { useStore } from "@/config/store";
+import { useSessionStore, useStore } from "@/store";
 import { getRelativeTime } from "@/lib/time";
-import { ContentStorageClient } from "@/services/storage";
-import { StorageKeys } from "@/services/storage-keys";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
 import { ActionIcon, Group, Loader, Text, Tooltip } from "@mantine/core";
 import { IconCheck, IconRefresh, IconAlertCircle } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
-type SyncStatus = "idle" | "syncing" | "success" | "error";
+import { useCallback, useMemo } from "react";
 
 export default function SyncButton() {
-  const account = useStore((state) => state.account);
-  const canSync = useMemo(() => account && account.plan !== "free", [account]);
-  const [lastSynced, setLastSynced] = useState<Date | null>(null);
-  const [status, setStatus] = useState<SyncStatus>("idle");
-  const storageClient = useMemo(() => new ContentStorageClient(), []);
+  const account = useSessionStore((state) => state.account);
+  const lastSynced = useStore((state) => state.lastSynced);
+  const status = useStore((state) => state.status);
 
-  const loadLastSynced = useCallback(async () => {
-    const date = await storageClient.getLastSynced();
-    if (date) {
-      setLastSynced(new Date(date));
-    }
-  }, [storageClient]);
+  const canSync = useMemo(() => account && account.plan !== "free", [account]);
 
   const syncWorkflows = useCallback(async () => {
     try {
@@ -30,92 +19,6 @@ export default function SyncButton() {
       console.error("Manual sync failed:", error);
     }
   }, []);
-
-  const throttledSyncWorkflows = useCallback(async () => {
-    const isSyncing = await storageClient.isSyncInProgress();
-
-    if (isSyncing) {
-      setStatus("syncing");
-      return;
-    }
-
-    try {
-      await WorkflowSyncer.triggerThrottledSync();
-    } catch (error) {
-      console.error("Throttled sync failed:", error);
-    }
-  }, [storageClient]);
-
-  const setIsSyncing = useStore((state) => state.setIsSyncing);
-
-  useEffect(() => {
-    loadLastSynced();
-    if (!canSync) {
-      return;
-    }
-
-    let failsafeTimeout: NodeJS.Timeout | null = null;
-
-    const unsubscribeSyncLock = storageClient.addListener(
-      StorageKeys.SYNC_IN_PROGRESS,
-      async (lockData) => {
-        if (lockData) {
-          setStatus("syncing");
-          setIsSyncing(true);
-
-          if (failsafeTimeout) {
-            clearTimeout(failsafeTimeout);
-          }
-
-          failsafeTimeout = setTimeout(() => {
-            console.warn("Sync took longer than 15 seconds, resetting sync state");
-            setIsSyncing(false);
-            setStatus("error");
-            setTimeout(() => setStatus("idle"), 3000);
-          }, 15000);
-        } else {
-          if (failsafeTimeout) {
-            clearTimeout(failsafeTimeout);
-            failsafeTimeout = null;
-          }
-
-          const result = await storageClient.getSyncResult();
-          await loadLastSynced();
-
-          if (result && !result.success) {
-            console.error("Sync failed:", result.error);
-            setStatus("error");
-            setTimeout(() => setStatus("idle"), 3000);
-          } else {
-            setStatus("success");
-            setTimeout(() => setStatus("idle"), 2000);
-          }
-          setIsSyncing(false);
-        }
-      },
-    );
-
-    const unsubscribeSyncResult = storageClient.addListener(
-      StorageKeys.SYNC_RESULT,
-      async (result) => {
-        if (result && !result.success) {
-          console.error("Sync failed:", result.error);
-          setStatus("error");
-          setTimeout(() => setStatus("idle"), 3000);
-        }
-      },
-    );
-
-    throttledSyncWorkflows();
-
-    return () => {
-      if (failsafeTimeout) {
-        clearTimeout(failsafeTimeout);
-      }
-      unsubscribeSyncLock();
-      unsubscribeSyncResult();
-    };
-  }, [account, storageClient, loadLastSynced, throttledSyncWorkflows, setIsSyncing]);
 
   const getIcon = () => {
     switch (status) {
@@ -154,7 +57,7 @@ export default function SyncButton() {
         return "Sync failed. Click to retry.";
       default:
         return lastSynced
-          ? `Last synced: ${lastSynced.toLocaleString()}`
+          ? `Last synced: ${new Date(lastSynced).toLocaleString()}`
           : "Never synced. Click to sync.";
     }
   };
@@ -162,7 +65,7 @@ export default function SyncButton() {
   return (
     <Group gap="xs">
       <Text size="xs" c="dimmed">
-        {lastSynced ? getRelativeTime(lastSynced) : "Never synced"}
+        {lastSynced ? getRelativeTime(new Date(lastSynced)) : "Never synced"}
       </Text>
       <Tooltip label={getTooltip()} position="bottom">
         <ActionIcon
