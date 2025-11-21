@@ -138,7 +138,6 @@ export default function WorkflowsTab({
     }
   };
 
-  console.log("Rendering WorkflowsTab with workflows:", workflows);
   return (
     <>
       <Card withBorder padding="lg" pos="relative">

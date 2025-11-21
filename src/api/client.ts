@@ -1,4 +1,4 @@
-import { AcccountSchema, Account } from "./schemas/account";
+import { AcccountSchema as AccountSchema, Account } from "./schemas/account";
 import {
   WorkflowDefinition,
   workflowDefinitionSchema,
@@ -21,7 +21,7 @@ export class ApiClient {
       throw new Error(`Failed to fetch account: ${response.statusText}`);
     }
     const data = (await response.json()).data;
-    return AcccountSchema.parse(data);
+    return AccountSchema.parse(data);
   }
 
   async listWorkflows(lastSync?: number): Promise<Workflow[]> {
