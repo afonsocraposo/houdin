@@ -14,6 +14,7 @@ import {
 import {
   IconCheck,
   IconCloud,
+  IconPlus,
   IconShieldCheck,
   IconSparkles,
 } from "@tabler/icons-react";
@@ -88,7 +89,7 @@ export default function UpgradeModal(props: ModalProps) {
             fullWidth
             size="lg"
             variant="gradient"
-            rightSection={<IconSparkles size={18} />}
+            rightSection={<IconPlus size={18} />}
           >
             Upgrade to Plus - $2.99/month
           </Button>
