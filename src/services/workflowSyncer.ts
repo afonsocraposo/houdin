@@ -147,23 +147,18 @@ export class WorkflowSyncer {
     const localWorkflowMap = new Map(localWorkflows.map((wf) => [wf.id, wf]));
     const remoteWorkflowIds = new Set(remoteWorkflows.map((wf) => wf.id));
 
-    const allRemoteWorkflowIds = new Set(await this.client.listWorkflowsId());
+    const deletedWorkflowIds = new Set(
+      (await this.client.listDeletedWorkflows(lastSync || undefined)).map(
+        (wf) => wf.id,
+      ),
+    );
 
-    for (const localWorkflowId of localWorkflowIds) {
-      const localWorkflow = localWorkflowMap.get(localWorkflowId);
-      if (allRemoteWorkflowIds.has(localWorkflowId)) {
-        continue;
-      }
-      if (
-        localWorkflow &&
-        localWorkflow.modifiedAt &&
-        lastSync &&
-        localWorkflow.modifiedAt < lastSync
-      ) {
+    for (const deletedWorkflowId of deletedWorkflowIds) {
+      if (localWorkflowIds.has(deletedWorkflowId)) {
         console.debug(
-          `Deleting local workflow missing on server: ${localWorkflowId}`,
+          `Deleting local workflow missing on server: ${deletedWorkflowId}`,
         );
-        useStore.getState().deleteWorkflow(localWorkflowId);
+        useStore.getState().deleteWorkflow(deletedWorkflowId);
       }
     }
 

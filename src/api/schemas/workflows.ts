@@ -56,3 +56,10 @@ export const WorkflowEntitySchema = z.object({
 });
 
 export type WorkflowEntity = z.infer<typeof WorkflowEntitySchema>;
+
+// extends WorkflowEntitySchema with deletedAt
+export const DeletedWorkflowEntitySchema = WorkflowEntitySchema.extend({
+  deletedAt: z.string().transform((val) => new Date(val)),
+});
+
+export type DeletedWorkflowEntity = z.infer<typeof DeletedWorkflowEntitySchema>;

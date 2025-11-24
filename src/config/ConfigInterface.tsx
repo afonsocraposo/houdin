@@ -17,8 +17,9 @@ import {
   IconNetwork,
   IconKey,
   IconClock,
+  IconTrash,
 } from "@tabler/icons-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CredentialsTab } from "@/config/credentials/CredentialsTab";
 import { APP_VERSION } from "@/utils/version";
@@ -28,16 +29,21 @@ import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
 import Footer from "@/components/Footer";
 import LoginButton from "@/components/LoginButton";
 import { useSessionStore } from "@/store";
-import SyncButton from "@/components/SyncButton";
+import TrashWorkflowsTab from "./trash/TrashWorkflowsTab";
+import { useDisclosure } from "@mantine/hooks";
+import UpgradeModal from "@/components/modals/upgradeModal";
 
 enum TabOption {
   Workflows = "workflows",
+  Trash = "trash",
   Credentials = "credentials",
   History = "history",
 }
 
 function ConfigInterface() {
   const fetchAccount = useSessionStore((state) => state.fetchAccount);
+  const account = useSessionStore((state) => state.account);
+  const isFree = useMemo(() => !account || account.plan === "free", [account]);
   // Initialize credentials on app startup
   useEffect(() => {
     initializeCredentials();
@@ -48,6 +54,7 @@ function ConfigInterface() {
   const [showUrlAlert, setShowUrlAlert] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("workflows");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [opened, { open, close }] = useDisclosure(false);
 
   useEffect(() => {
     // Check if URL alert should be shown
@@ -61,6 +68,11 @@ function ConfigInterface() {
   useEffect(() => {
     const tabParam = searchParams.get("tab");
     if (tabParam && Object.values(TabOption).includes(tabParam as TabOption)) {
+      if (tabParam === TabOption.Trash && isFree) {
+        open();
+        updateSearchParams("workflows");
+        return;
+      }
       setActiveTab(tabParam);
     } else {
       setActiveTab("workflows");
@@ -70,11 +82,16 @@ function ConfigInterface() {
   const handleTabChange = (value: string | null) => {
     // check if value is one of the TabOption values
     if (value && Object.values(TabOption).includes(value as TabOption)) {
-      setActiveTab(value);
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.set("tab", value);
-      setSearchParams(newSearchParams, { replace: true });
+      updateSearchParams(value);
+    } else {
+      updateSearchParams(TabOption.Workflows);
     }
+  };
+
+  const updateSearchParams = (value: string) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set("tab", value);
+    setSearchParams(newSearchParams, { replace: true });
   };
 
   const handleAlertClose = () => {
@@ -83,90 +100,101 @@ function ConfigInterface() {
   };
 
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="lg">
-        <div style={{ textAlign: "center" }}>
-          <Group justify="center">
-            <Logo size={48} title />
-          </Group>
-          <Text size="sm" c="dimmed">
-            Browser automation that feels like magic
+    <>
+      <Container size="xl" py="xl">
+        <Stack gap="lg">
+          <div style={{ textAlign: "center" }}>
+            <Group justify="center">
+              <Logo size={48} title />
+            </Group>
+            <Text size="sm" c="dimmed">
+              Browser automation that feels like magic
+            </Text>
+          </div>
+
+          {saved && (
+            <Notification
+              icon={<IconCheck size={18} />}
+              color="green"
+              title="Saved!"
+              onClose={() => setSaved(false)}
+            >
+              Your changes have been saved successfully.
+            </Notification>
+          )}
+
+          {showUrlAlert && (
+            <Alert
+              icon={<IconInfoCircle size={16} />}
+              title="Access this page anytime"
+              color="blue"
+              withCloseButton={true}
+              onClose={handleAlertClose}
+            >
+              You can always access this configuration page by typing{" "}
+              <Badge variant="light">https://houdin.config</Badge> in your
+              browser address bar.
+            </Alert>
+          )}
+
+          <Tabs value={activeTab} onChange={handleTabChange} mt="md">
+            <Group>
+              <Tabs.List flex={1}>
+                <Tabs.Tab
+                  value={TabOption.Workflows}
+                  leftSection={<IconNetwork size={16} />}
+                >
+                  Workflows
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value={TabOption.Trash}
+                  leftSection={<IconTrash size={16} />}
+                >
+                  Trash
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value={TabOption.Credentials}
+                  leftSection={<IconKey size={16} />}
+                >
+                  Credentials
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value={TabOption.History}
+                  leftSection={<IconClock size={16} />}
+                >
+                  History
+                </Tabs.Tab>
+              </Tabs.List>
+              <LoginButton />
+            </Group>
+
+            <Box pt="md">
+              <Tabs.Panel value={TabOption.Workflows}>
+                <WorkflowsTab setSaved={setSaved} />
+              </Tabs.Panel>
+              <Tabs.Panel value={TabOption.Trash}>
+                <TrashWorkflowsTab />
+              </Tabs.Panel>
+
+              <Tabs.Panel value={TabOption.Credentials}>
+                <CredentialsTab onSaved={() => setSaved(true)} />
+              </Tabs.Panel>
+
+              <Tabs.Panel value={TabOption.History}>
+                <ExecutionHistoryPage />
+              </Tabs.Panel>
+            </Box>
+          </Tabs>
+
+          <Space h="xl" />
+          <Text size="xs" c="dimmed" ta="center">
+            Houdin extension v{APP_VERSION}
           </Text>
-        </div>
-
-        {saved && (
-          <Notification
-            icon={<IconCheck size={18} />}
-            color="green"
-            title="Saved!"
-            onClose={() => setSaved(false)}
-          >
-            Your changes have been saved successfully.
-          </Notification>
-        )}
-
-        {showUrlAlert && (
-          <Alert
-            icon={<IconInfoCircle size={16} />}
-            title="Access this page anytime"
-            color="blue"
-            withCloseButton={true}
-            onClose={handleAlertClose}
-          >
-            You can always access this configuration page by typing{" "}
-            <Badge variant="light">https://houdin.config</Badge> in your browser
-            address bar.
-          </Alert>
-        )}
-
-        <Tabs value={activeTab} onChange={handleTabChange} mt="md">
-          <Group>
-            <Tabs.List flex={1}>
-              <Tabs.Tab
-                value={TabOption.Workflows}
-                leftSection={<IconNetwork size={16} />}
-              >
-                Workflows
-              </Tabs.Tab>
-              <Tabs.Tab
-                value={TabOption.Credentials}
-                leftSection={<IconKey size={16} />}
-              >
-                Credentials
-              </Tabs.Tab>
-              <Tabs.Tab
-                value={TabOption.History}
-                leftSection={<IconClock size={16} />}
-              >
-                History
-              </Tabs.Tab>
-            </Tabs.List>
-            <SyncButton />
-            <LoginButton />
-          </Group>
-
-          <Box pt="md">
-            <Tabs.Panel value={TabOption.Workflows}>
-              <WorkflowsTab setSaved={setSaved} />
-            </Tabs.Panel>
-
-            <Tabs.Panel value={TabOption.Credentials}>
-              <CredentialsTab onSaved={() => setSaved(true)} />
-            </Tabs.Panel>
-
-            <Tabs.Panel value={TabOption.History}>
-              <ExecutionHistoryPage />
-            </Tabs.Panel>
-          </Box>
-        </Tabs>
-
-        <Space h="xl" />
-        <Text size="xs" c="dimmed" ta="center">
-          Houdin extension v{APP_VERSION}
-        </Text>
-        <Footer />
-      </Stack>
-    </Container>
+          <Footer />
+        </Stack>
+      </Container>
+      <UpgradeModal opened={opened} onClose={close} />
+    </>
   );
 }
 

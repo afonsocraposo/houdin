@@ -25,6 +25,7 @@ import { ExportModal } from "./ExportModal";
 import { newWorkflowId } from "@/utils/helpers";
 import { useStore } from "@/store";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
+import SyncButton from "@/components/SyncButton";
 
 export default function WorkflowsTab({
   setSaved,
@@ -88,10 +89,10 @@ export default function WorkflowsTab({
       const updatedWorkflows = workflows.map((w) =>
         w.id === id
           ? {
-              ...w,
-              enabled: !w.enabled,
-              modifiedAt: Date.now(),
-            }
+            ...w,
+            enabled: !w.enabled,
+            modifiedAt: Date.now(),
+          }
           : w,
       );
       setWorkflows(updatedWorkflows);
@@ -143,7 +144,10 @@ export default function WorkflowsTab({
       <Card withBorder padding="lg" pos="relative">
         <LoadingOverlay visible={false} loaderProps={{ type: "dots" }} />
         <Group justify="space-between" mb="md">
-          <Title order={3}>Workflows</Title>
+          <Group>
+            <Title order={3}>Workflows</Title>
+            <SyncButton />
+          </Group>
           <Group>
             <Button
               variant="outline"

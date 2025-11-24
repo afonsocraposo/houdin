@@ -1,5 +1,7 @@
 import { AcccountSchema as AccountSchema, Account } from "./schemas/account";
+import { DeletedWorkflow } from "./schemas/types";
 import {
+  DeletedWorkflowEntitySchema,
   WorkflowDefinition,
   workflowDefinitionSchema,
   WorkflowEntitySchema,
@@ -47,11 +49,69 @@ export class ApiClient {
         nodes: parsedWorkflow.definition.nodes as any,
         connections: parsedWorkflow.definition.connections as any,
         variables: parsedWorkflow.definition.variables,
-        modifiedAt: parsedWorkflow.definition.modifiedAt,
+        modifiedAt: parsedWorkflow.updatedAt.getTime(),
       } as Workflow;
     });
   }
 
+  async listDeletedWorkflows(lastSync?: number): Promise<DeletedWorkflow[]> {
+    const url = new URL(`${API_BASE_URL}/workflows/trash`);
+    if (lastSync) {
+      url.searchParams.append("deletedAfter", lastSync.toString());
+    }
+    const response = await fetch(url, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch deleted workflows: ${response.statusText}`,
+      );
+    }
+    const workflows = (await response.json()).data;
+    return workflows.map((wf: any) => {
+      const parsedWorkflow = DeletedWorkflowEntitySchema.parse(wf);
+      return {
+        id: `workflow-${parsedWorkflow.workflowId}`,
+        name: parsedWorkflow.definition.name,
+        description: parsedWorkflow.definition.description,
+        urlPattern: parsedWorkflow.definition.urlPattern,
+        nodes: parsedWorkflow.definition.nodes.length,
+        deletedAt: parsedWorkflow.deletedAt.getTime(),
+      } as DeletedWorkflow;
+    });
+  }
+
+  async restoreDeletedWorkflow(workflowId: string): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/workflows/trash/${workflowId.slice(-12)}`,
+      {
+        method: "PATCH",
+        credentials: "include",
+      },
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Failed to restore deleted workflow: ${response.statusText}`,
+      );
+    }
+  }
+
+  async permanentlyDeleteWorkflow(workflowId: string): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/workflows/trash/${workflowId.slice(-12)}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      },
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Failed to permanently delete workflow: ${response.statusText}`,
+      );
+    }
+  }
+
+  /** @deprecated Use listWorkflows instead */
   async listWorkflowsId(): Promise<string[]> {
     const response = await fetch(`${API_BASE_URL}/workflows/workflowId`, {
       method: "GET",

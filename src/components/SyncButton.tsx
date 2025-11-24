@@ -56,7 +56,7 @@ export default function SyncButton() {
       case "error":
         return "red";
       default:
-        return "gray";
+        return undefined;
     }
   };
 
@@ -82,13 +82,6 @@ export default function SyncButton() {
   return (
     <>
       <Group gap="xs">
-        {canSync && (
-          <Text size="xs" c="dimmed">
-            {lastSynced
-              ? getRelativeTime(new Date(lastSynced))
-              : "Never synced"}
-          </Text>
-        )}
         <Tooltip label={getTooltip()} position="bottom">
           <ActionIcon
             onClick={canSync ? syncWorkflows : open}
@@ -99,6 +92,13 @@ export default function SyncButton() {
             {getIcon()}
           </ActionIcon>
         </Tooltip>
+        {canSync && (
+          <Text size="xs" c="dimmed">
+            {lastSynced
+              ? getRelativeTime(new Date(lastSynced))
+              : "Never synced"}
+          </Text>
+        )}
       </Group>
       <UpgradeModal opened={opened} onClose={close} />
     </>
