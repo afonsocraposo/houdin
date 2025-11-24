@@ -54,6 +54,49 @@ export class ApiClient {
     });
   }
 
+  async listAllWorkflows(): Promise<Workflow[]> {
+    const allWorkflows: Workflow[] = [];
+    let after: string | undefined = undefined;
+    while (true) {
+      const url = new URL(`${API_BASE_URL}/workflows`);
+      if (after) {
+        url.searchParams.append("after", after);
+      }
+      const response = await fetch(url, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch all workflows: ${response.statusText}`,
+        );
+      }
+      const responseJson = await response.json();
+      const workflows = responseJson.data;
+      allWorkflows.push(
+        ...workflows.map((wf: any) => {
+          const parsedWorkflow = WorkflowEntitySchema.parse(wf);
+          return {
+            id: `workflow-${parsedWorkflow.workflowId}`,
+            name: parsedWorkflow.definition.name,
+            description: parsedWorkflow.definition.description,
+            urlPattern: parsedWorkflow.definition.urlPattern,
+            enabled: parsedWorkflow.definition.enabled,
+            nodes: parsedWorkflow.definition.nodes as any,
+            connections: parsedWorkflow.definition.connections as any,
+            variables: parsedWorkflow.definition.variables,
+            modifiedAt: parsedWorkflow.updatedAt.getTime(),
+          } as Workflow;
+        }),
+      );
+      if (!responseJson.meta.hasMore) {
+        break;
+      } else {
+        after = responseJson.meta.next;
+      }
+    }
+    return allWorkflows;
+  }
+
   async listDeletedWorkflows(lastSync?: number): Promise<DeletedWorkflow[]> {
     const url = new URL(`${API_BASE_URL}/workflows/trash`);
     if (lastSync) {

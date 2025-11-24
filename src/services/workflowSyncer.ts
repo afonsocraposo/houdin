@@ -134,96 +134,121 @@ export class WorkflowSyncer {
     }
   }
 
+  // private async performSync(): Promise<void> {
+  //   console.debug("Starting workflow sync process...");
+  //   const lastSync = useStore.getState().lastSynced;
+  //   const remoteWorkflows = await this.client.listAllWorkflows();
+  //   const localWorkflows = useStore.getState().workflows;
+  //
+  //   const localWorkflowIds = new Set(localWorkflows.map((wf) => wf.id));
+  //   const localWorkflowMap = new Map(localWorkflows.map((wf) => [wf.id, wf]));
+  //   const remoteWorkflowIds = new Set(remoteWorkflows.map((wf) => wf.id));
+  //
+  //   const deletedWorkflowIds = new Set(
+  //     (await this.client.listDeletedWorkflows(lastSync || undefined)).map(
+  //       (wf) => wf.id,
+  //     ),
+  //   );
+  //
+  //   for (const deletedWorkflowId of deletedWorkflowIds) {
+  //     if (localWorkflowIds.has(deletedWorkflowId)) {
+  //       console.debug(
+  //         `Deleting local workflow missing on server: ${deletedWorkflowId}`,
+  //       );
+  //       useStore.getState().deleteWorkflow(deletedWorkflowId);
+  //     }
+  //   }
+  //
+  //   for (const remoteWorkflow of remoteWorkflows) {
+  //     if (!localWorkflowMap.has(remoteWorkflow.id)) {
+  //       if (
+  //         remoteWorkflow.modifiedAt &&
+  //         lastSync &&
+  //         remoteWorkflow.modifiedAt < lastSync
+  //       ) {
+  //         console.debug(
+  //           `Deleting workflow from server (was deleted locally): ${remoteWorkflow.id}`,
+  //         );
+  //         await this.client.deleteWorkflow(remoteWorkflow.id);
+  //       } else {
+  //         console.debug(
+  //           `Syncing new workflow from server: ${remoteWorkflow.id}`,
+  //         );
+  //         useStore.getState().createWorkflow(remoteWorkflow);
+  //       }
+  //     } else {
+  //       const localWorkflow = localWorkflowMap.get(remoteWorkflow.id);
+  //       if (
+  //         localWorkflow &&
+  //         remoteWorkflow.modifiedAt &&
+  //         localWorkflow.modifiedAt &&
+  //         remoteWorkflow.modifiedAt > localWorkflow.modifiedAt
+  //       ) {
+  //         console.debug(
+  //           `Updating local workflow from server: ${remoteWorkflow.id}`,
+  //           "remote modifiedAt",
+  //           new Date(remoteWorkflow.modifiedAt).toISOString(),
+  //           "local modifiedAt",
+  //           new Date(localWorkflow.modifiedAt).toISOString(),
+  //         );
+  //         useStore.getState().updateWorkflow(remoteWorkflow);
+  //       } else if (
+  //         localWorkflow &&
+  //         localWorkflow.modifiedAt &&
+  //         remoteWorkflow.modifiedAt &&
+  //         localWorkflow.modifiedAt > remoteWorkflow.modifiedAt
+  //       ) {
+  //         console.debug(
+  //           `Updating server workflow from local: ${remoteWorkflow.id}`,
+  //         );
+  //         await this.client.updateWorkflow(localWorkflow);
+  //       }
+  //     }
+  //   }
+  //
+  //   for (const localWorkflow of localWorkflows) {
+  //     if (!remoteWorkflowIds.has(localWorkflow.id)) {
+  //       if (
+  //         localWorkflow.modifiedAt &&
+  //         lastSync &&
+  //         localWorkflow.modifiedAt > lastSync
+  //       ) {
+  //         console.debug(`Creating new workflow on server: ${localWorkflow.id}`);
+  //         await this.client.createWorkflow(localWorkflow);
+  //       }
+  //     }
+  //   }
+  //
+  //   const currentTimestamp = Date.now();
+  //   useStore.getState().setLastSynced(currentTimestamp);
+  //   console.debug("Workflow sync process completed successfully");
+  // }
+
   private async performSync(): Promise<void> {
-    console.debug("Starting workflow sync process...");
-    const lastSync = useStore.getState().lastSynced;
-    const remoteWorkflows = await this.client.listWorkflows(
-      lastSync || undefined,
-    );
-    const currentTimestamp = Date.now();
-    const localWorkflows = useStore.getState().workflows;
-
-    const localWorkflowIds = new Set(localWorkflows.map((wf) => wf.id));
-    const localWorkflowMap = new Map(localWorkflows.map((wf) => [wf.id, wf]));
-    const remoteWorkflowIds = new Set(remoteWorkflows.map((wf) => wf.id));
-
-    const deletedWorkflowIds = new Set(
-      (await this.client.listDeletedWorkflows(lastSync || undefined)).map(
-        (wf) => wf.id,
-      ),
-    );
-
-    for (const deletedWorkflowId of deletedWorkflowIds) {
-      if (localWorkflowIds.has(deletedWorkflowId)) {
-        console.debug(
-          `Deleting local workflow missing on server: ${deletedWorkflowId}`,
+    console.log("Starting outbox processing for workflow sync...");
+    console.log(useStore.getState().outbox);
+    while (useStore.getState().outbox.length > 0) {
+      const message = useStore.getState().outbox[0];
+      try {
+        if (message.action === "create" && message.workflow) {
+          console.debug(`Creating workflow on server: ${message.workflowId}`);
+          await this.client.createWorkflow(message.workflow);
+        } else if (message.action === "update" && message.workflow) {
+          console.debug(`Updating workflow on server: ${message.workflowId}`);
+          await this.client.updateWorkflow(message.workflow);
+        } else if (message.action === "delete") {
+          console.debug(`Deleting workflow on server: ${message.workflowId}`);
+          await this.client.deleteWorkflow(message.workflowId);
+        }
+        useStore.getState().pop();
+      } catch (error) {
+        console.error(
+          `Failed to process outbox message for workflow ${message.workflowId}:`,
+          error,
         );
-        useStore.getState().deleteWorkflow(deletedWorkflowId);
+        throw error;
       }
     }
-
-    for (const remoteWorkflow of remoteWorkflows) {
-      if (!localWorkflowMap.has(remoteWorkflow.id)) {
-        if (
-          remoteWorkflow.modifiedAt &&
-          lastSync &&
-          remoteWorkflow.modifiedAt < lastSync
-        ) {
-          console.debug(
-            `Deleting workflow from server (was deleted locally): ${remoteWorkflow.id}`,
-          );
-          await this.client.deleteWorkflow(remoteWorkflow.id);
-        } else {
-          console.debug(
-            `Syncing new workflow from server: ${remoteWorkflow.id}`,
-          );
-          useStore.getState().createWorkflow(remoteWorkflow);
-        }
-      } else {
-        const localWorkflow = localWorkflowMap.get(remoteWorkflow.id);
-        if (
-          localWorkflow &&
-          remoteWorkflow.modifiedAt &&
-          localWorkflow.modifiedAt &&
-          remoteWorkflow.modifiedAt > localWorkflow.modifiedAt
-        ) {
-          console.debug(
-            `Updating local workflow from server: ${remoteWorkflow.id}`,
-            "remote modifiedAt",
-            new Date(remoteWorkflow.modifiedAt),
-            "local modifiedAt",
-            new Date(localWorkflow.modifiedAt),
-          );
-          useStore.getState().updateWorkflow(remoteWorkflow);
-        } else if (
-          localWorkflow &&
-          localWorkflow.modifiedAt &&
-          remoteWorkflow.modifiedAt &&
-          localWorkflow.modifiedAt > remoteWorkflow.modifiedAt
-        ) {
-          console.debug(
-            `Updating server workflow from local: ${remoteWorkflow.id}`,
-          );
-          await this.client.updateWorkflow(localWorkflow);
-        }
-      }
-    }
-
-    for (const localWorkflow of localWorkflows) {
-      if (!remoteWorkflowIds.has(localWorkflow.id)) {
-        if (
-          localWorkflow.modifiedAt &&
-          lastSync &&
-          localWorkflow.modifiedAt > lastSync
-        ) {
-          console.debug(`Creating new workflow on server: ${localWorkflow.id}`);
-          await this.client.createWorkflow(localWorkflow);
-        }
-      }
-    }
-
-    useStore.getState().setLastSynced(currentTimestamp);
-    console.debug("Workflow sync process completed successfully");
   }
 
   static async triggerSync(): Promise<void> {

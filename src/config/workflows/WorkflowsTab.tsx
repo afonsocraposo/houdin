@@ -33,7 +33,8 @@ export default function WorkflowsTab({
   setSaved: (saved: boolean) => void;
 }) {
   const workflows = useStore((state) => state.workflows);
-  const setWorkflows = useStore((state) => state.setWorkflows);
+  const createWorkflow = useStore((state) => state.createWorkflow);
+  const updateWorkflow = useStore((state) => state.updateWorkflow);
   const deleteWorkflow = useStore((state) => state.deleteWorkflow);
   const [importModalOpened, setImportModalOpened] = useState(false);
   const [exportModalOpened, setExportModalOpened] = useState(false);
@@ -84,19 +85,13 @@ export default function WorkflowsTab({
     }
   };
 
-  const handleToggleWorkflow = async (id: string) => {
+  const handleToggleWorkflow = async (workflow: WorkflowDefinition) => {
     try {
-      const updatedWorkflows = workflows.map((w) =>
-        w.id === id
-          ? {
-            ...w,
-            enabled: !w.enabled,
-            modifiedAt: Date.now(),
-          }
-          : w,
-      );
-      setWorkflows(updatedWorkflows);
-      WorkflowSyncer.triggerThrottledSync();
+      updateWorkflow({
+        ...workflow,
+        enabled: !workflow.enabled,
+        modifiedAt: Date.now(),
+      });
     } catch (error) {
       console.error("Failed to toggle workflow:", error);
     }
@@ -117,8 +112,7 @@ export default function WorkflowsTab({
         executionCount: 0,
         lastExecuted: undefined,
       } as WorkflowDefinition;
-      const updatedWorkflows = [...workflows, newWorkflow];
-      setWorkflows(updatedWorkflows);
+      createWorkflow(newWorkflow);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
@@ -129,8 +123,14 @@ export default function WorkflowsTab({
 
   const handleImportWorkflow = async (workflow: WorkflowDefinition) => {
     try {
-      const updatedWorkflows = [...workflows, workflow];
-      setWorkflows(updatedWorkflows);
+      const newWorkflow = {
+        ...workflow,
+        id: newWorkflowId(),
+        modifiedAt: Date.now(),
+        executionCount: 0,
+        lastExecuted: undefined,
+      } as WorkflowDefinition;
+      createWorkflow(newWorkflow);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
@@ -227,7 +227,7 @@ export default function WorkflowsTab({
                     workflow={workflow}
                     handleEditWorkflow={handleEditWorkflow}
                     handleDeleteWorkflow={handleDeleteWorkflow}
-                    handleToggleWorkflow={handleToggleWorkflow}
+                    handleToggleWorkflow={() => handleToggleWorkflow(workflow)}
                     handleExportWorkflow={handleExportWorkflow}
                     handleDuplicateWorkflow={handleDuplicateWorkflow}
                   />

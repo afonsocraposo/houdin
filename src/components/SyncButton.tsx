@@ -1,5 +1,5 @@
 import { useSessionStore, useStore } from "@/store";
-import { getRelativeTime } from "@/lib/time";
+import { formatTimeAgo } from "@/lib/time";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
 import { ActionIcon, Group, Loader, Text, Tooltip } from "@mantine/core";
 import { IconCheck, IconRefresh, IconAlertCircle } from "@tabler/icons-react";
@@ -94,9 +94,7 @@ export default function SyncButton() {
         </Tooltip>
         {canSync && (
           <Text size="xs" c="dimmed">
-            {lastSynced
-              ? getRelativeTime(new Date(lastSynced))
-              : "Never synced"}
+            {lastSynced ? formatTimeAgo(new Date(lastSynced)) : "Never synced"}
           </Text>
         )}
       </Group>

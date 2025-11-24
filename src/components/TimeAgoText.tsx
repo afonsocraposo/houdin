@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Text, TextProps } from "@mantine/core";
-import { formatTimeAgo } from "@/utils/time";
+import { formatTimeAgo } from "@/lib/time";
 
 interface TimeAgoTextProps extends Omit<TextProps, "children"> {
   timestamp: number;
