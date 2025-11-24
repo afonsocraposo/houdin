@@ -147,12 +147,6 @@ function ConfigInterface() {
                   Workflows
                 </Tabs.Tab>
                 <Tabs.Tab
-                  value={TabOption.Trash}
-                  leftSection={<IconTrash size={16} />}
-                >
-                  Trash
-                </Tabs.Tab>
-                <Tabs.Tab
                   value={TabOption.Credentials}
                   leftSection={<IconKey size={16} />}
                 >
@@ -163,6 +157,12 @@ function ConfigInterface() {
                   leftSection={<IconClock size={16} />}
                 >
                   History
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value={TabOption.Trash}
+                  leftSection={<IconTrash size={16} />}
+                >
+                  Trash
                 </Tabs.Tab>
               </Tabs.List>
               <LoginButton />
