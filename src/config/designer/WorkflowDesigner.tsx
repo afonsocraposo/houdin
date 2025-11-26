@@ -297,7 +297,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   );
 
   const handleSave = useCallback(() => {
-    console.log("Saving workflow...");
     readyToSave.current = false;
     const result = form.validate();
     if (result.hasErrors) {
@@ -331,14 +330,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       }
     });
     if (Object.keys(schemaErrors).length > 0) {
-      console.log("Schema validation errors:", schemaErrors);
       setSchemaErrors(schemaErrors);
       readyToSave.current = true;
       return;
     }
 
     const workflowDefinition = getCurrentWorkflowDefinition();
-    console.log("Workflow definition to save:", workflowDefinition);
 
     onSave(workflowDefinition);
   }, [nodes, connections, form]);

@@ -26,7 +26,6 @@ export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (set) => ({
     set((state) => {
       const newSet = new Set(state.pendingUpdates);
       newSet.add(workflow.id);
-      console.log("Creating workflow, pending updates:", newSet);
       return {
         workflows: [...state.workflows, workflow],
         pendingUpdates: newSet,

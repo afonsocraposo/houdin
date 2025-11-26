@@ -71,13 +71,11 @@ function DesignerView({ workflowId }: DesignerViewProps) {
 
   const handleWorkflowSave = async (workflow: WorkflowDefinition) => {
     try {
-      console.log("Saving workflow:", workflow);
       if (newWorkflow) {
         createWorkflow(workflow);
       } else {
         updateWorkflow(workflow);
       }
-      console.log("Workflow saved successfully");
 
       // Sync HTTP triggers in background script when explicitly saving
       sendMessageToBackground("SYNC_HTTP_TRIGGERS");

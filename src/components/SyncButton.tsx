@@ -9,22 +9,43 @@ import UpgradeModal from "./modals/upgradeModal";
 
 export default function SyncButton() {
   const account = useSessionStore((state) => state.account);
-  const lastSynced = useStore((state) => state.lastSynced);
-  const _status = useStore((state) => state.status);
   const [opened, { open, close }] = useDisclosure(false);
-  const [status, setSyncStatus] = useState<
+  const syncResult = useStore((state) => state.syncResult);
+  const syncStartedAt = useStore((state) => state.syncStartedAt);
+  const syncCompletedAt = useStore((state) => state.syncCompletedAt);
+  const [status, setStatus] = useState<
     "idle" | "syncing" | "success" | "error"
-  >(_status);
+  >("idle");
 
   useEffect(() => {
-    setSyncStatus(_status);
-    if (_status === "success" || _status === "error") {
-      const timer = setTimeout(() => {
-        setSyncStatus("idle");
-      }, 3000);
-      return () => clearTimeout(timer);
+    if (
+      syncStartedAt &&
+      (!syncCompletedAt || syncStartedAt > syncCompletedAt)
+    ) {
+      setStatus("syncing");
     }
-  }, [_status]);
+  }, [syncStartedAt, syncCompletedAt]);
+
+  useEffect(() => {
+    if (!syncResult) {
+      if (
+        syncStartedAt &&
+        (!syncCompletedAt || syncStartedAt > syncCompletedAt)
+      ) {
+        setStatus("syncing");
+        return;
+      }
+      setStatus("idle");
+      return;
+    }
+    setStatus(syncResult.success ? "success" : "error");
+    const timeout = setTimeout(() => {
+      if (syncStartedAt && syncCompletedAt && syncStartedAt < syncCompletedAt) {
+        setStatus("idle");
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [syncResult]);
 
   const canSync = useMemo(() => account && account.plan !== "free", [account]);
 
@@ -69,8 +90,8 @@ export default function SyncButton() {
       case "error":
         return "Sync failed. Click to retry.";
       default:
-        return lastSynced
-          ? `Last synced: ${new Date(lastSynced).toLocaleString()}`
+        return syncCompletedAt
+          ? `Last synced: ${new Date(syncCompletedAt).toLocaleString()}`
           : "Never synced. Click to sync.";
     }
   };
@@ -94,7 +115,9 @@ export default function SyncButton() {
         </Tooltip>
         {canSync && (
           <Text size="xs" c="dimmed">
-            {lastSynced ? formatTimeAgo(new Date(lastSynced)) : "Never synced"}
+            {syncCompletedAt
+              ? formatTimeAgo(new Date(syncCompletedAt))
+              : "Never synced"}
           </Text>
         )}
       </Group>

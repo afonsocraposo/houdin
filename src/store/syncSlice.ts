@@ -5,27 +5,21 @@ export type SyncStatus = "idle" | "syncing" | "success" | "error";
 export interface SyncResult {
   success: boolean;
   error?: string;
-  timestamp: number;
 }
 
 export interface SyncSlice {
-  isSyncing: boolean;
-  lastSynced: number | null;
-  status: SyncStatus;
+  syncStartedAt?: number;
+  startSync: () => void;
+  syncCompletedAt?: number;
   syncResult: SyncResult | null;
-  setIsSyncing: (syncing: boolean) => void;
-  setLastSynced: (timestamp: number | null) => void;
-  setStatus: (status: SyncStatus) => void;
   setSyncResult: (result: SyncResult | null) => void;
 }
 
 export const createSyncSlice: StateCreator<SyncSlice> = (set) => ({
-  isSyncing: false,
-  lastSynced: null,
-  status: "idle",
+  syncStartedAt: undefined,
+  startSync: () => set({ syncStartedAt: Date.now(), syncResult: null }),
+  syncCompletedAt: undefined,
   syncResult: null,
-  setIsSyncing: (syncing: boolean) => set({ isSyncing: syncing }),
-  setLastSynced: (timestamp: number | null) => set({ lastSynced: timestamp }),
-  setStatus: (status: SyncStatus) => set({ status }),
-  setSyncResult: (result: SyncResult | null) => set({ syncResult: result }),
+  setSyncResult: (result: SyncResult | null) =>
+    set({ syncResult: result, syncCompletedAt: Date.now() }),
 });

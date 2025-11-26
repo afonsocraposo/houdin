@@ -7,7 +7,6 @@ import { WorkflowDefinition } from "@/types/workflow";
 export class WorkflowSyncer {
   static instance: WorkflowSyncer = new WorkflowSyncer();
   private static syncPromise: Promise<void> | null = null;
-  private static throttledSyncPromise: Promise<void> | null = null;
   private client: ApiClient;
 
   constructor() {
@@ -28,13 +27,6 @@ export class WorkflowSyncer {
           .then(() => Promise.resolve(true))
           .catch((error) => {
             console.error("Error during workflow sync:", error);
-            return Promise.reject(error);
-          });
-      } else if (message.type === "SYNC_WORKFLOWS_THROTTLED") {
-        return this.throttledSync()
-          .then(() => Promise.resolve(true))
-          .catch((error) => {
-            console.error("Error during throttled workflow sync:", error);
             return Promise.reject(error);
           });
       }
@@ -60,9 +52,7 @@ export class WorkflowSyncer {
       useStore.getState().setSyncResult({
         success: false,
         error: error.message,
-        timestamp: Date.now(),
       });
-      useStore.getState().setStatus("error");
       if (failQuiet) {
         console.debug("Sync skipped:", error.message);
         return;
@@ -74,156 +64,36 @@ export class WorkflowSyncer {
       return WorkflowSyncer.syncPromise;
     }
 
-    if (useStore.getState().isSyncing) {
-      return;
-    }
-
-    useStore.getState().setIsSyncing(true);
-    useStore.getState().setStatus("syncing");
-
-    const failsafeTimeout = setTimeout(() => {
-      console.warn("Sync took longer than 15 seconds, resetting sync state");
-      useStore.getState().setIsSyncing(false);
-      useStore.getState().setStatus("error");
-      setTimeout(() => useStore.getState().setStatus("idle"), 3000);
-    }, 15000);
-
     WorkflowSyncer.syncPromise = this.performSync();
 
-    let _error;
-    try {
-      await WorkflowSyncer.syncPromise;
-      clearTimeout(failsafeTimeout);
-      useStore
-        .getState()
-        .setSyncResult({ success: true, timestamp: Date.now() });
-      useStore.getState().setStatus("success");
-      setTimeout(() => useStore.getState().setStatus("idle"), 2000);
-    } catch (error) {
-      clearTimeout(failsafeTimeout);
-      console.error("Error during workflow sync:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+    const TIMEOUT_MS = 15000;
+    const failsafeTimeout = setTimeout(() => {
+      console.warn("Sync took longer than 15 seconds, resetting sync state");
       useStore.getState().setSyncResult({
         success: false,
-        error: errorMessage,
-        timestamp: Date.now(),
+        error: "Sync operation timed out.",
       });
-      useStore.getState().setStatus("error");
-      setTimeout(() => useStore.getState().setStatus("idle"), 3000);
-      _error = error;
+    }, TIMEOUT_MS);
+
+    try {
+      useStore.getState().startSync();
+      await WorkflowSyncer.syncPromise;
+      useStore.getState().setSyncResult({ success: true });
+    } catch (error) {
+      console.error("Error during workflow sync:", error);
+      useStore.getState().setSyncResult({
+        success: false,
+        error: (error as Error).message,
+      });
     } finally {
       WorkflowSyncer.syncPromise = null;
-      useStore.getState().setIsSyncing(false);
-    }
-    if (_error) {
-      throw _error;
+      clearTimeout(failsafeTimeout);
     }
   }
 
   async throttledSync(): Promise<void> {
-    if (WorkflowSyncer.throttledSyncPromise) {
-      return WorkflowSyncer.throttledSyncPromise;
-    }
-
-    WorkflowSyncer.throttledSyncPromise = this.sync();
-
-    try {
-      await WorkflowSyncer.throttledSyncPromise;
-    } finally {
-      WorkflowSyncer.throttledSyncPromise = null;
-    }
+    await this.sync();
   }
-
-  // private async performSync(): Promise<void> {
-  //   console.debug("Starting workflow sync process...");
-  //   const lastSync = useStore.getState().lastSynced;
-  //   const remoteWorkflows = await this.client.listAllWorkflows();
-  //   const localWorkflows = useStore.getState().workflows;
-  //
-  //   const localWorkflowIds = new Set(localWorkflows.map((wf) => wf.id));
-  //   const localWorkflowMap = new Map(localWorkflows.map((wf) => [wf.id, wf]));
-  //   const remoteWorkflowIds = new Set(remoteWorkflows.map((wf) => wf.id));
-  //
-  //   const deletedWorkflowIds = new Set(
-  //     (await this.client.listDeletedWorkflows(lastSync || undefined)).map(
-  //       (wf) => wf.id,
-  //     ),
-  //   );
-  //
-  //   for (const deletedWorkflowId of deletedWorkflowIds) {
-  //     if (localWorkflowIds.has(deletedWorkflowId)) {
-  //       console.debug(
-  //         `Deleting local workflow missing on server: ${deletedWorkflowId}`,
-  //       );
-  //       useStore.getState().deleteWorkflow(deletedWorkflowId);
-  //     }
-  //   }
-  //
-  //   for (const remoteWorkflow of remoteWorkflows) {
-  //     if (!localWorkflowMap.has(remoteWorkflow.id)) {
-  //       if (
-  //         remoteWorkflow.modifiedAt &&
-  //         lastSync &&
-  //         remoteWorkflow.modifiedAt < lastSync
-  //       ) {
-  //         console.debug(
-  //           `Deleting workflow from server (was deleted locally): ${remoteWorkflow.id}`,
-  //         );
-  //         await this.client.deleteWorkflow(remoteWorkflow.id);
-  //       } else {
-  //         console.debug(
-  //           `Syncing new workflow from server: ${remoteWorkflow.id}`,
-  //         );
-  //         useStore.getState().createWorkflow(remoteWorkflow);
-  //       }
-  //     } else {
-  //       const localWorkflow = localWorkflowMap.get(remoteWorkflow.id);
-  //       if (
-  //         localWorkflow &&
-  //         remoteWorkflow.modifiedAt &&
-  //         localWorkflow.modifiedAt &&
-  //         remoteWorkflow.modifiedAt > localWorkflow.modifiedAt
-  //       ) {
-  //         console.debug(
-  //           `Updating local workflow from server: ${remoteWorkflow.id}`,
-  //           "remote modifiedAt",
-  //           new Date(remoteWorkflow.modifiedAt).toISOString(),
-  //           "local modifiedAt",
-  //           new Date(localWorkflow.modifiedAt).toISOString(),
-  //         );
-  //         useStore.getState().updateWorkflow(remoteWorkflow);
-  //       } else if (
-  //         localWorkflow &&
-  //         localWorkflow.modifiedAt &&
-  //         remoteWorkflow.modifiedAt &&
-  //         localWorkflow.modifiedAt > remoteWorkflow.modifiedAt
-  //       ) {
-  //         console.debug(
-  //           `Updating server workflow from local: ${remoteWorkflow.id}`,
-  //         );
-  //         await this.client.updateWorkflow(localWorkflow);
-  //       }
-  //     }
-  //   }
-  //
-  //   for (const localWorkflow of localWorkflows) {
-  //     if (!remoteWorkflowIds.has(localWorkflow.id)) {
-  //       if (
-  //         localWorkflow.modifiedAt &&
-  //         lastSync &&
-  //         localWorkflow.modifiedAt > lastSync
-  //       ) {
-  //         console.debug(`Creating new workflow on server: ${localWorkflow.id}`);
-  //         await this.client.createWorkflow(localWorkflow);
-  //       }
-  //     }
-  //   }
-  //
-  //   const currentTimestamp = Date.now();
-  //   useStore.getState().setLastSynced(currentTimestamp);
-  //   console.debug("Workflow sync process completed successfully");
-  // }
 
   private async pull(): Promise<void> {
     const lastServerTime = useStore.getState().lastServerTime;
@@ -231,8 +101,16 @@ export class WorkflowSyncer {
       await this.client.pullWorkflows(lastServerTime);
     const workflows = useStore.getState().workflows;
     const workflowsMap = new Map(workflows.map((wf) => [wf.id, wf]));
+    const tombstones = useStore.getState().tombstones;
+    const tombstonesMap = new Map(tombstones.map((t) => [t.id, t]));
 
     for (const workflow of updated) {
+      const tombstone = tombstonesMap.get(workflow.id);
+      if (tombstone && workflow.modifiedAt <= tombstone.deletedAt) {
+        // Skip applying this update since we have a newer tombstone
+        continue;
+      }
+
       const existing = workflowsMap.get(workflow.id);
       if (!existing || workflow.modifiedAt > existing.modifiedAt) {
         useStore.getState().updateWorkflow(workflow);
@@ -253,7 +131,6 @@ export class WorkflowSyncer {
   private async push(): Promise<void> {
     const workflows = useStore.getState().workflows;
     const workflowMap = new Map(workflows.map((wf) => [wf.id, wf]));
-    console.log(useStore.getState().pendingUpdates);
     const updated = Array.from(useStore.getState().pendingUpdates)
       .map((id) => workflowMap.get(id))
       .filter((wf): wf is WorkflowDefinition => wf !== undefined);
@@ -277,9 +154,5 @@ export class WorkflowSyncer {
 
   static async triggerSync(): Promise<void> {
     return await sendMessageToBackground("SYNC_WORKFLOWS");
-  }
-
-  static async triggerThrottledSync(): Promise<void> {
-    return await sendMessageToBackground("SYNC_WORKFLOWS_THROTTLED");
   }
 }

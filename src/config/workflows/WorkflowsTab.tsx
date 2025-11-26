@@ -48,7 +48,7 @@ export default function WorkflowsTab({
   const navigate = useNavigate();
 
   useEffect(() => {
-    WorkflowSyncer.triggerThrottledSync();
+    WorkflowSyncer.triggerSync();
   }, []);
 
   const handleCreateWorkflow = () => {
@@ -79,7 +79,6 @@ export default function WorkflowsTab({
   const handleDeleteWorkflow = async (id: string) => {
     try {
       deleteWorkflow(id);
-      WorkflowSyncer.triggerThrottledSync();
     } catch (error) {
       console.error("Failed to delete workflow:", error);
     }
