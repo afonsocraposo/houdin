@@ -25,6 +25,7 @@ export type WorkflowConnection = z.infer<typeof workflowConnectionSchema>;
 
 // Definition schema
 export const workflowDefinitionSchema = z.object({
+  id: z.string().length(12),
   name: z.string().min(1),
   description: z.string().optional(),
   urlPattern: z.string().min(1),
@@ -32,16 +33,9 @@ export const workflowDefinitionSchema = z.object({
   connections: z.array(workflowConnectionSchema),
   enabled: z.boolean(),
   variables: z.record(z.string(), z.string()).optional(),
-  modifiedAt: z.number().optional(),
+  modifiedAt: z.number(),
 });
 export type WorkflowDefinition = z.infer<typeof workflowDefinitionSchema>;
-
-// Schema for POST body: workflowId, visibility, definition
-export const workflowCreateSchema = z.object({
-  workflowId: z.string().min(1).max(12),
-  definition: workflowDefinitionSchema,
-});
-export type WorkflowCreateInput = z.infer<typeof workflowCreateSchema>;
 
 export const workflowUpdateSchema = z.object({
   definition: workflowDefinitionSchema.optional(),
@@ -63,3 +57,8 @@ export const DeletedWorkflowEntitySchema = WorkflowEntitySchema.extend({
 });
 
 export type DeletedWorkflowEntity = z.infer<typeof DeletedWorkflowEntitySchema>;
+
+export type WorkflowTombstone = {
+  id: string;
+  deletedAt: number;
+};

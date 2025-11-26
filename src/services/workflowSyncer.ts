@@ -2,6 +2,7 @@ import { ApiClient } from "@/api/client";
 import browser from "./browser";
 import { sendMessageToBackground } from "@/lib/messages";
 import { useStore } from "@/store";
+import { WorkflowDefinition } from "@/types/workflow";
 
 export class WorkflowSyncer {
   static instance: WorkflowSyncer = new WorkflowSyncer();
@@ -224,31 +225,54 @@ export class WorkflowSyncer {
   //   console.debug("Workflow sync process completed successfully");
   // }
 
-  private async performSync(): Promise<void> {
-    console.log("Starting outbox processing for workflow sync...");
-    console.log(useStore.getState().outbox);
-    while (useStore.getState().outbox.length > 0) {
-      const message = useStore.getState().outbox[0];
-      try {
-        if (message.action === "create" && message.workflow) {
-          console.debug(`Creating workflow on server: ${message.workflowId}`);
-          await this.client.createWorkflow(message.workflow);
-        } else if (message.action === "update" && message.workflow) {
-          console.debug(`Updating workflow on server: ${message.workflowId}`);
-          await this.client.updateWorkflow(message.workflow);
-        } else if (message.action === "delete") {
-          console.debug(`Deleting workflow on server: ${message.workflowId}`);
-          await this.client.deleteWorkflow(message.workflowId);
-        }
-        useStore.getState().pop();
-      } catch (error) {
-        console.error(
-          `Failed to process outbox message for workflow ${message.workflowId}:`,
-          error,
-        );
-        throw error;
+  private async pull(): Promise<void> {
+    const lastServerTime = useStore.getState().lastServerTime;
+    const { updated, deleted, serverTime } =
+      await this.client.pullWorkflows(lastServerTime);
+    const workflows = useStore.getState().workflows;
+    const workflowsMap = new Map(workflows.map((wf) => [wf.id, wf]));
+
+    for (const workflow of updated) {
+      const existing = workflowsMap.get(workflow.id);
+      if (!existing || workflow.modifiedAt > existing.modifiedAt) {
+        useStore.getState().updateWorkflow(workflow);
       }
     }
+
+    for (const tombstone of deleted) {
+      const existing = workflowsMap.get(tombstone.id);
+      // Should I simply delete the existing workflow without checking modifiedAt?
+      if (existing && tombstone.deletedAt > existing.modifiedAt) {
+        useStore.getState().deleteWorkflow(tombstone.id);
+      }
+    }
+
+    useStore.getState().setLastServerTime(serverTime);
+  }
+
+  private async push(): Promise<void> {
+    const workflows = useStore.getState().workflows;
+    const workflowMap = new Map(workflows.map((wf) => [wf.id, wf]));
+    console.log(useStore.getState().pendingUpdates);
+    const updated = Array.from(useStore.getState().pendingUpdates)
+      .map((id) => workflowMap.get(id))
+      .filter((wf): wf is WorkflowDefinition => wf !== undefined);
+    const pendingDeletes = useStore.getState().pendingDeletes;
+    const deleted = Object.entries(pendingDeletes).map(([id, deletedAt]) => ({
+      id,
+      deletedAt,
+    }));
+    if (updated.length === 0 && deleted.length === 0) {
+      return;
+    }
+    await this.client.pushWorkflows(updated, deleted);
+    useStore.getState().clearPendingUpdates();
+    useStore.getState().clearPendingDeletes();
+  }
+
+  private async performSync(): Promise<void> {
+    await this.pull();
+    await this.push();
   }
 
   static async triggerSync(): Promise<void> {

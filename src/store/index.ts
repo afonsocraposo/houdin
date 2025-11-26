@@ -30,6 +30,18 @@ export const useStore = create<StoreState>()(
     {
       name: "houdin-store",
       storage: createJSONStorage(() => browserStorageAdapter),
+      partialize: (state) => ({
+        ...state,
+        pendingUpdates: Array.from(state.pendingUpdates),
+      }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as any;
+        return {
+          ...currentState,
+          ...persisted,
+          pendingUpdates: new Set(persisted.pendingUpdates || []),
+        };
+      },
     },
   ),
 );

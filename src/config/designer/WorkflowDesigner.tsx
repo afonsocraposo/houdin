@@ -168,9 +168,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       const updatedNodes = nodesRef.current.map((n) =>
         n.id === updatedNode.id
           ? {
-              ...updatedNode,
-              position: n.position, // keep original position
-            }
+            ...updatedNode,
+            position: n.position, // keep original position
+          }
           : n,
       );
       set(updatedNodes);
@@ -216,9 +216,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       const updatedNodes = nodesRef.current.map((n) =>
         n.id === id
           ? {
-              ...n,
-              position, // update position
-            }
+            ...n,
+            position, // update position
+          }
           : n,
       );
       set(updatedNodes, undefined);
@@ -297,6 +297,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   );
 
   const handleSave = useCallback(() => {
+    console.log("Saving workflow...");
     readyToSave.current = false;
     const result = form.validate();
     if (result.hasErrors) {
@@ -330,12 +331,14 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       }
     });
     if (Object.keys(schemaErrors).length > 0) {
+      console.log("Schema validation errors:", schemaErrors);
       setSchemaErrors(schemaErrors);
       readyToSave.current = true;
       return;
     }
 
     const workflowDefinition = getCurrentWorkflowDefinition();
+    console.log("Workflow definition to save:", workflowDefinition);
 
     onSave(workflowDefinition);
   }, [nodes, connections, form]);
