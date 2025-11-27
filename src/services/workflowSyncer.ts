@@ -113,7 +113,8 @@ export class WorkflowSyncer {
 
       const existing = workflowsMap.get(workflow.id);
       if (!existing || workflow.modifiedAt > existing.modifiedAt) {
-        useStore.getState().updateWorkflow(workflow);
+        console.debug("Applying server update for workflow:", workflow.id);
+        useStore.getState().applyServerUpdate(workflow);
       }
     }
 
@@ -121,7 +122,8 @@ export class WorkflowSyncer {
       const existing = workflowsMap.get(tombstone.id);
       // Should I simply delete the existing workflow without checking modifiedAt?
       if (existing && tombstone.deletedAt > existing.modifiedAt) {
-        useStore.getState().deleteWorkflow(tombstone.id);
+        console.debug("Applying server delete for workflow:", tombstone.id);
+        useStore.getState().applyServerDelete(tombstone.id);
       }
     }
 

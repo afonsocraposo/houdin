@@ -8,6 +8,8 @@ export interface WorkflowsSlice {
   createWorkflow: (workflow: WorkflowDefinition) => void;
   updateWorkflow: (workflow: WorkflowDefinition) => void;
   deleteWorkflow: (workflowId: string) => void;
+  applyServerUpdate: (workflow: WorkflowDefinition) => void;
+  applyServerDelete: (workflowId: string) => void;
   tombstones: WorkflowTombstone[];
   addTombstone: (tombstone: WorkflowTombstone) => void;
   removeTombstone: (workflowId: string) => void;
@@ -58,7 +60,25 @@ export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (set) => ({
         pendingDeletes: newPendingDeletes,
       };
     }),
-  outbox: [],
+  applyServerUpdate: (updatedWorkflow: WorkflowDefinition) =>
+    set((state) => {
+      const index = state.workflows.findIndex(
+        (w) => w.id === updatedWorkflow.id,
+      );
+      const newWorkflows = [...state.workflows];
+      if (index !== -1) {
+        newWorkflows[index] = updatedWorkflow;
+      } else {
+        newWorkflows.push(updatedWorkflow);
+      }
+      return {
+        workflows: newWorkflows,
+      };
+    }),
+  applyServerDelete: (workflowId: string) =>
+    set((state) => ({
+      workflows: state.workflows.filter((w) => w.id !== workflowId),
+    })),
   tombstones: [],
   addTombstone: (tombstone: WorkflowTombstone) =>
     set((state) => ({
