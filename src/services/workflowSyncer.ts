@@ -4,6 +4,8 @@ import { sendMessageToBackground } from "@/lib/messages";
 import { useStore } from "@/store";
 import { WorkflowDefinition } from "@/types/workflow";
 
+const PERIODIC_SYNC_MINUTES = 15;
+
 export class WorkflowSyncer {
   static instance: WorkflowSyncer = new WorkflowSyncer();
   private static syncPromise: Promise<void> | null = null;
@@ -20,7 +22,7 @@ export class WorkflowSyncer {
     return WorkflowSyncer.instance;
   }
 
-  startMessageListener(): void {
+  init(): void {
     browser.runtime.onMessage.addListener((message: any, _sender: any) => {
       if (message.type === "SYNC_WORKFLOWS") {
         return this.sync()
@@ -29,6 +31,14 @@ export class WorkflowSyncer {
             console.error("Error during workflow sync:", error);
             return Promise.reject(error);
           });
+      }
+    });
+    browser.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name === "workflowSyncAlarm") {
+        console.debug("Performing periodic workflow sync");
+        this.sync().catch((error) => {
+          console.error("Error during scheduled workflow sync:", error);
+        });
       }
     });
   }
@@ -53,12 +63,14 @@ export class WorkflowSyncer {
         success: false,
         error: error.message,
       });
+      this.deleteAlarm();
       if (failQuiet) {
         console.debug("Sync skipped:", error.message);
         return;
       }
       throw error;
     }
+    this.setAlarm();
 
     if (WorkflowSyncer.syncPromise) {
       return WorkflowSyncer.syncPromise;
@@ -156,6 +168,19 @@ export class WorkflowSyncer {
   private async performSync(): Promise<void> {
     await this.pull();
     await this.push();
+  }
+
+  private async setAlarm() {
+    const alarm = await browser.alarms.get("workflowSyncAlarm");
+    if (!alarm || alarm.periodInMinutes !== PERIODIC_SYNC_MINUTES) {
+      browser.alarms.create("workflowSyncAlarm", {
+        periodInMinutes: PERIODIC_SYNC_MINUTES,
+      });
+    }
+  }
+
+  private deleteAlarm(): void {
+    browser.alarms.clear("workflowSyncAlarm");
   }
 
   static async triggerSync(): Promise<void> {

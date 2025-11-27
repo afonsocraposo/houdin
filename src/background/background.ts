@@ -66,7 +66,7 @@ StorageMigration.runMigrations().catch((error) => {
 
 const workflowSyncer = WorkflowSyncer.getInstance();
 workflowSyncer.sync(true);
-workflowSyncer.startMessageListener();
+workflowSyncer.init();
 
 const connectedPorts = new Set<Runtime.Port>();
 
