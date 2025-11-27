@@ -5,8 +5,9 @@ import HelpModal from "@/components/HelpModal";
 import { useDisclosure } from "@mantine/hooks";
 import { ActionIcon, Affix, Box, useComputedColorScheme } from "@mantine/core";
 import { IconQuestionMark } from "@tabler/icons-react";
-import AssetsActions from "./assets/actions";
-import AssetsTriggers from "./assets/triggers";
+import AssetsActions from "./static/actions";
+import AssetsTriggers from "./static/triggers";
+import AssetsIcons from "./static/icons";
 
 function DesignerWithParams() {
   const { workflowId } = useParams<{ workflowId?: string }>();
@@ -34,6 +35,7 @@ function ConfigApp() {
         <Route path="/designer/:workflowId" element={<DesignerWithParams />} />
         <Route path="/assets/actions" element={<AssetsActions />} />
         <Route path="/assets/triggers" element={<AssetsTriggers />} />
+        <Route path="/assets/icons" element={<AssetsIcons />} />
       </Routes>
       <HelpModal key="help-modal" opened={opened} onClose={close} />
       <Affix position={{ bottom: 20, right: 20 }}>

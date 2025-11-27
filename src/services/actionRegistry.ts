@@ -45,8 +45,12 @@ export class ActionRegistry {
   getAllStatic(): Record<string, any> {
     const staticData: Record<string, any> = {};
     for (const action of this.getAllActions()) {
+      const { icon, ...rest } = action.metadata;
       staticData[action.metadata.type] = {
-        metadata: action.metadata,
+        metadata: {
+          icon: icon instanceof Object ? `Icon${icon.displayName}` : icon,
+          ...rest,
+        },
         configSchema: action.configSchema,
         outputExample: action.outputExample,
       };

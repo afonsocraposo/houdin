@@ -39,8 +39,12 @@ export class TriggerRegistry {
   getAllStatic(): Record<string, any> {
     const staticData: Record<string, any> = {};
     for (const trigger of this.getAllTriggers()) {
+      const { icon, ...rest } = trigger.metadata;
       staticData[trigger.metadata.type] = {
-        metadata: trigger.metadata,
+        metadata: {
+          icon: icon instanceof Object ? `Icon${icon.displayName}` : icon,
+          ...rest,
+        },
         configSchema: trigger.configSchema,
         outputExample: trigger.outputExample,
       };

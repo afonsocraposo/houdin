@@ -1,5 +1,6 @@
 import { initializeTriggers } from "@/services/triggerInitializer";
 import { TriggerRegistry } from "@/services/triggerRegistry";
+import StaticRenderer from "./StaticRenderer";
 
 export default function AssetsTriggers() {
   initializeTriggers();
@@ -7,5 +8,9 @@ export default function AssetsTriggers() {
   const assets = {
     triggers: triggerRegistry.getAllStatic(),
   };
-  return <pre>{JSON.stringify(assets, null, 2)}</pre>;
+  return (
+    <StaticRenderer filename="triggers.json">
+      {JSON.stringify(assets, null, 2)}
+    </StaticRenderer>
+  );
 }
