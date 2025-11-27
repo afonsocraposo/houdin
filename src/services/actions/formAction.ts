@@ -45,6 +45,7 @@ export class FormAction extends BaseAction<FormActionConfig, FormActionOutput> {
             defaultValue: "",
           },
         ],
+        component: "FormBuilder",
         render: (
           values: Record<string, any>,
           onChange: (key: string, value: any) => void,

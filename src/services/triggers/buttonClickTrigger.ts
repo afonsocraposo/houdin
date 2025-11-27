@@ -48,6 +48,7 @@ export class ButtonClickTrigger extends BaseTrigger<
       // Component preview
       preview: customProperty({
         label: "Component Preview",
+        component: "InjectComponentPreview",
         render: (values: Record<string, any>) => {
           try {
             const previewComponent = ComponentFactory.create(

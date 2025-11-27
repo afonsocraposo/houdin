@@ -34,6 +34,7 @@ export class CustomScriptAction extends BaseAction<
     properties: {
       permissionCheck: customProperty({
         label: "Permission Status",
+        component: "PermissionButton",
         render: () => PermissionButton(),
       }),
       customScript: codeProperty({

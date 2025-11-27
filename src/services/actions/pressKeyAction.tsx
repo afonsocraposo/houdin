@@ -11,7 +11,10 @@ interface PressKeyActionOutput {
   timestamp: number;
 }
 
-export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyActionOutput> {
+export class PressKeyAction extends BaseAction<
+  PressKeyActionConfig,
+  PressKeyActionOutput
+> {
   static readonly metadata: ActionMetadata = {
     type: "press-key",
     label: "Press Key",
@@ -23,9 +26,9 @@ export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyAct
     properties: {
       keyCombo: customProperty({
         label: "Key Combination",
-        description:
-          "Set the key combination that will trigger this workflow",
+        description: "Set the key combination that will trigger this workflow",
         required: true,
+        component: "KeybindingSetter",
         render: (
           values: Record<string, any>,
           onChange: (key: string, value: any) => void,
@@ -76,8 +79,10 @@ export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyAct
 
   private handleTabNavigation(): void {
     const focusableElements = this.getFocusableElements();
-    const currentIndex = focusableElements.findIndex(el => el === document.activeElement);
-    
+    const currentIndex = focusableElements.findIndex(
+      (el) => el === document.activeElement,
+    );
+
     if (currentIndex !== -1 && currentIndex < focusableElements.length - 1) {
       (focusableElements[currentIndex + 1] as HTMLElement).focus();
     } else if (focusableElements.length > 0) {
@@ -87,20 +92,21 @@ export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyAct
 
   private handleEnterKey(): void {
     const activeElement = document.activeElement;
-    
-    if (activeElement instanceof HTMLInputElement || 
-        activeElement instanceof HTMLTextAreaElement) {
-      
+
+    if (
+      activeElement instanceof HTMLInputElement ||
+      activeElement instanceof HTMLTextAreaElement
+    ) {
       // Try to find and submit the parent form
-      const form = activeElement.closest('form');
+      const form = activeElement.closest("form");
       if (form) {
         // Dispatch submit event
-        const submitEvent = new Event('submit', { 
-          bubbles: true, 
-          cancelable: true 
+        const submitEvent = new Event("submit", {
+          bubbles: true,
+          cancelable: true,
         });
         form.dispatchEvent(submitEvent);
-        
+
         // If not prevented, actually submit
         if (!submitEvent.defaultPrevented) {
           form.submit();
@@ -117,7 +123,7 @@ export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyAct
   private dispatchKeyboardEvent(key: string): void {
     const targetElement = document.activeElement || document;
     const keyCode = this.getKeyCode(key);
-    
+
     const eventOptions = {
       key: key,
       code: key === "Enter" ? "Enter" : key,
@@ -143,29 +149,30 @@ export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyAct
   }
 
   private getFocusableElements(): Element[] {
-    const selector = 'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable]';
-    return Array.from(document.querySelectorAll(selector)).filter(el => {
+    const selector =
+      'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable]';
+    return Array.from(document.querySelectorAll(selector)).filter((el) => {
       const style = window.getComputedStyle(el as HTMLElement);
-      return style.display !== 'none' && style.visibility !== 'hidden';
+      return style.display !== "none" && style.visibility !== "hidden";
     });
   }
 
   private getKeyCode(key: string): number {
     const keyCodes: Record<string, number> = {
-      'Enter': 13,
-      'Tab': 9,
-      'Escape': 27,
-      'Space': 32,
-      'ArrowUp': 38,
-      'ArrowDown': 40,
-      'ArrowLeft': 37,
-      'ArrowRight': 39,
+      Enter: 13,
+      Tab: 9,
+      Escape: 27,
+      Space: 32,
+      ArrowUp: 38,
+      ArrowDown: 40,
+      ArrowLeft: 37,
+      ArrowRight: 39,
     };
-    
+
     return keyCodes[key] || key.charCodeAt(0);
   }
 
   private isPrintableKey(key: string): boolean {
-    return key.length === 1 || ['Space', 'Enter', 'Tab'].includes(key);
+    return key.length === 1 || ["Space", "Enter", "Tab"].includes(key);
   }
 }

@@ -11,7 +11,10 @@ interface KeyPressTriggerOutput {
   timestamp: number;
 }
 
-export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig, KeyPressTriggerOutput> {
+export class KeyPressTrigger extends BaseTrigger<
+  KeyPressTriggerConfig,
+  KeyPressTriggerOutput
+> {
   static readonly metadata = {
     type: "key-press",
     label: "Key Press",
@@ -23,9 +26,9 @@ export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig, KeyPress
     properties: {
       keyCombo: customProperty({
         label: "Key Combination",
-        description:
-          "Set the key combination that will trigger this workflow",
+        description: "Set the key combination that will trigger this workflow",
         required: true,
+        component: "KeybindingSetter",
         render: (
           values: Record<string, any>,
           onChange: (key: string, value: any) => void,

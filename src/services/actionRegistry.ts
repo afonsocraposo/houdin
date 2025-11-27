@@ -41,6 +41,19 @@ export class ActionRegistry {
       .sort((a, b) => a.label.localeCompare(b.label));
   }
 
+  // Get all actions static data
+  getAllStatic(): Record<string, any> {
+    const staticData: Record<string, any> = {};
+    for (const action of this.getAllActions()) {
+      staticData[action.metadata.type] = {
+        metadata: action.metadata,
+        configSchema: action.configSchema,
+        outputExample: action.outputExample,
+      };
+    }
+    return staticData;
+  }
+
   // Execute an action
   async execute(
     type: string,

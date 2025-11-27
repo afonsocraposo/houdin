@@ -1,11 +1,12 @@
 import { Routes, Route, useParams } from "react-router-dom";
 import ConfigInterface from "./ConfigInterface";
 import DesignerView from "./designer/DesignerView";
-import ExecutionHistoryPage from "./history/ExecutionHistoryPage";
 import HelpModal from "@/components/HelpModal";
 import { useDisclosure } from "@mantine/hooks";
 import { ActionIcon, Affix, Box, useComputedColorScheme } from "@mantine/core";
 import { IconQuestionMark } from "@tabler/icons-react";
+import AssetsActions from "./assets/actions";
+import AssetsTriggers from "./assets/triggers";
 
 function DesignerWithParams() {
   const { workflowId } = useParams<{ workflowId?: string }>();
@@ -31,7 +32,8 @@ function ConfigApp() {
         <Route path="/" element={<ConfigInterface />} />
         <Route path="/designer" element={<DesignerView />} />
         <Route path="/designer/:workflowId" element={<DesignerWithParams />} />
-        <Route path="/executions" element={<ExecutionHistoryPage />} />
+        <Route path="/assets/actions" element={<AssetsActions />} />
+        <Route path="/assets/triggers" element={<AssetsTriggers />} />
       </Routes>
       <HelpModal key="help-modal" opened={opened} onClose={close} />
       <Affix position={{ bottom: 20, right: 20 }}>

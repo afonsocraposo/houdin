@@ -49,6 +49,7 @@ export class FillFormAction extends BaseAction<
             value: "",
           },
         ],
+        component: "FillFormBuilder",
         render: (
           values: Record<string, any>,
           onChange: (key: string, value: any) => void,
