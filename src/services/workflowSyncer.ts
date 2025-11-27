@@ -144,9 +144,13 @@ export class WorkflowSyncer {
     if (updated.length === 0 && deleted.length === 0) {
       return;
     }
-    await this.client.pushWorkflows(updated, deleted);
+    const response = await this.client.pushWorkflows(updated, deleted);
     useStore.getState().clearPendingUpdates();
     useStore.getState().clearPendingDeletes();
+    for (const workflowId of response.permanentlyDeleted) {
+      console.debug("Permanently deleted workflow on server:", workflowId);
+      useStore.getState().applyServerDelete(workflowId);
+    }
   }
 
   private async performSync(): Promise<void> {

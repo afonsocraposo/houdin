@@ -1,11 +1,8 @@
 import { AcccountSchema as AccountSchema, Account } from "./schemas/account";
 import { WorkflowPullResponse } from "./schemas/pull";
+import { WorkflowPushResponse } from "./schemas/push";
 import { DeletedWorkflow } from "./schemas/types";
-import {
-  DeletedWorkflowEntitySchema,
-  WorkflowDefinition,
-  WorkflowTombstone,
-} from "./schemas/workflows";
+import { WorkflowDefinition, WorkflowTombstone } from "./schemas/workflows";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://houdin.dev/api";
@@ -35,23 +32,13 @@ export class ApiClient {
         `Failed to fetch deleted workflows: ${response.statusText}`,
       );
     }
-    const workflows = (await response.json()).data;
-    return workflows.map((wf: any) => {
-      const parsedWorkflow = DeletedWorkflowEntitySchema.parse(wf);
-      return {
-        id: `workflow-${parsedWorkflow.workflowId}`,
-        name: parsedWorkflow.definition.name,
-        description: parsedWorkflow.definition.description,
-        urlPattern: parsedWorkflow.definition.urlPattern,
-        nodes: parsedWorkflow.definition.nodes.length,
-        deletedAt: parsedWorkflow.deletedAt.getTime(),
-      } as DeletedWorkflow;
-    });
+    const deleted = (await response.json()).data;
+    return deleted as DeletedWorkflow[];
   }
 
   async restoreDeletedWorkflow(workflowId: string): Promise<void> {
     const response = await fetch(
-      `${API_BASE_URL}/workflows/trash/${workflowId.slice(-12)}`,
+      `${API_BASE_URL}/workflows/trash/${workflowId}`,
       {
         method: "PATCH",
         credentials: "include",
@@ -66,7 +53,7 @@ export class ApiClient {
 
   async permanentlyDeleteWorkflow(workflowId: string): Promise<void> {
     const response = await fetch(
-      `${API_BASE_URL}/workflows/trash/${workflowId.slice(-12)}`,
+      `${API_BASE_URL}/workflows/trash/${workflowId}`,
       {
         method: "DELETE",
         credentials: "include",
@@ -97,7 +84,7 @@ export class ApiClient {
   async pushWorkflows(
     updated: WorkflowDefinition[],
     deleted: WorkflowTombstone[],
-  ): Promise<void> {
+  ): Promise<WorkflowPushResponse> {
     const response = await fetch(`${API_BASE_URL}/workflows/push`, {
       method: "POST",
       headers: {
@@ -109,5 +96,8 @@ export class ApiClient {
     if (!response.ok) {
       throw new Error(`Failed to push workflows: ${response.statusText}`);
     }
+
+    const data = (await response.json()).data;
+    return data as WorkflowPushResponse;
   }
 }
