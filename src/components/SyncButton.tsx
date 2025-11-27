@@ -38,6 +38,13 @@ export default function SyncButton() {
       setStatus("idle");
       return;
     }
+    if (
+      status === "idle" &&
+      syncCompletedAt &&
+      syncCompletedAt < Date.now() - 1000
+    ) {
+      return;
+    }
     setStatus(syncResult.success ? "success" : "error");
     const timeout = setTimeout(() => {
       if (syncStartedAt && syncCompletedAt && syncStartedAt < syncCompletedAt) {
