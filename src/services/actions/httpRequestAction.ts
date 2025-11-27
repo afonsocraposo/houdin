@@ -51,7 +51,7 @@ export class HttpRequestAction extends BaseAction<
 
   private httpClient = HttpClientService.getInstance();
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       method: selectProperty({
         label: "HTTP Method",

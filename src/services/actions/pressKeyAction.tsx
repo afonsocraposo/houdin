@@ -19,7 +19,7 @@ export class PressKeyAction extends BaseAction<PressKeyActionConfig, PressKeyAct
     description: "Press a key or combination",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       keyCombo: customProperty({
         label: "Key Combination",

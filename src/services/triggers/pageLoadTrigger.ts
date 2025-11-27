@@ -16,7 +16,7 @@ export class PageLoadTrigger extends BaseTrigger<PageLoadTriggerConfig, PageLoad
     description: "Trigger when page finishes loading",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {},
   };
 

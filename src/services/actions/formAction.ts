@@ -25,7 +25,7 @@ export class FormAction extends BaseAction<FormActionConfig, FormActionOutput> {
     disableTimeout: true,
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       title: textProperty({
         label: "Form Title",

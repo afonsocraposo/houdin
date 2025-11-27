@@ -30,7 +30,7 @@ export class CustomScriptAction extends BaseAction<
     description: "Execute custom JavaScript code",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       permissionCheck: customProperty({
         label: "Permission Status",

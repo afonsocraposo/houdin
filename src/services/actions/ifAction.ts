@@ -25,7 +25,7 @@ export class IfAction extends BaseAction<IfActionConfig, IfActionOutput> {
     outputs: new Set(["true", "false"]),
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       a: textProperty({
         label: "Left Operand (A)",

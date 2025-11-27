@@ -23,7 +23,7 @@ export class ClickElementAction extends BaseAction<
     description: "Click on a page element",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       selectorType: selectProperty({
         label: "Selector Type",

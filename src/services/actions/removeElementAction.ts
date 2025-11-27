@@ -22,7 +22,7 @@ export class RemoveElementAction extends BaseAction<
     description: "Remove on a page element",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       selectorType: selectProperty({
         label: "Selector Type",

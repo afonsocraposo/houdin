@@ -23,7 +23,7 @@ export class CopyContentAction extends BaseAction<
     description: "Copy text from page element",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       selectorType: selectProperty({
         label: "Selector Type",

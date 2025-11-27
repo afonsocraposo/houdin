@@ -20,7 +20,7 @@ export class ShowNotificationAction extends BaseAction<ShowNotificationActionCon
     description: "Display notification",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       notificationTitle: textProperty({
         label: "Notification Title",

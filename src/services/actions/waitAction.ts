@@ -19,7 +19,7 @@ export class WaitAction extends BaseAction<WaitActionConfig, WaitActionOutput> {
     disableTimeout: true,
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       duration: numberProperty({
         label: "Duration (s)",

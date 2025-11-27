@@ -27,7 +27,7 @@ export class ComponentLoadTrigger extends BaseTrigger<
     description: "Trigger when specific element appears",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       selectorType: selectProperty({
         label: "Selector Type",

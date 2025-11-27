@@ -23,7 +23,11 @@ export abstract class BaseConfigurable<TConfig = Record<string, any>> {
   }
 
   // Get the configuration schema
-  abstract readonly configSchema: ConfigSchema<TConfig>;
+  static readonly configSchema: ConfigSchema;
+  public get configSchema(): ConfigSchema<TConfig> {
+    return (this.constructor as typeof BaseConfigurable)
+      .configSchema as ConfigSchema<TConfig>;
+  }
 
   // Get default configuration values (defaults to schema defaults)
   getDefaultConfig(): TConfig {

@@ -23,7 +23,7 @@ export class InputAction extends BaseAction<
     disableTimeout: true,
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       prompt: textProperty({
         label: "Prompt",

@@ -19,7 +19,7 @@ export class KeyPressTrigger extends BaseTrigger<KeyPressTriggerConfig, KeyPress
     description: "Trigger when a specific key combination is pressed",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       keyCombo: customProperty({
         label: "Key Combination",

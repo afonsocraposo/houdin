@@ -24,7 +24,7 @@ export class TypeTextAction extends BaseAction<
     description: "Type text into input field",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       selectorType: selectProperty({
         label: "Selector Type. (Optional, defaults to focused input)",

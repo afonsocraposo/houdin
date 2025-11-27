@@ -37,7 +37,7 @@ export class LLMOpenAIAction extends BaseAction<
     disableTimeout: true,
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       credentialId: credentialsProperty({
         credentialType: "openai",
