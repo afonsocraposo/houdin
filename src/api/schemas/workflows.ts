@@ -25,7 +25,7 @@ export type WorkflowConnection = z.infer<typeof workflowConnectionSchema>;
 
 // Definition schema
 export const workflowDefinitionSchema = z.object({
-  id: z.string().length(12),
+  id: z.string(),
   name: z.string().min(1),
   description: z.string().optional(),
   urlPattern: z.string().min(1),
@@ -43,7 +43,7 @@ export const workflowUpdateSchema = z.object({
 export type WorkflowUpdateInput = z.infer<typeof workflowUpdateSchema>;
 
 export const WorkflowEntitySchema = z.object({
-  workflowId: z.string().length(12),
+  workflowId: z.string(),
   definition: workflowDefinitionSchema,
   updatedAt: z.string().transform((val) => new Date(val)),
   createdAt: z.string().transform((val) => new Date(val)),

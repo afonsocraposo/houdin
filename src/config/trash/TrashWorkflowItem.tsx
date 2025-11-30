@@ -7,7 +7,7 @@ interface Props {
   handleDeleteWorkflow: (workflowId: string) => Promise<void>;
   handleRestoreWorkflow: (workflowId: string) => Promise<void>;
 }
-export default function ConfigWorkflowItem({
+export default function TrashWorkflowItem({
   workflow,
   handleRestoreWorkflow,
   handleDeleteWorkflow,
