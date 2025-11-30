@@ -27,7 +27,7 @@ export class LocalStorageAction extends BaseAction<
       "Create, read, update, and delete items in the browser's local storage",
   };
 
-  configSchema = {
+  static readonly configSchema = {
     properties: {
       operation: selectProperty({
         label: "Operation",

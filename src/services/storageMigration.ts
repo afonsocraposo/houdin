@@ -49,11 +49,6 @@ export class StorageMigration {
         );
       }
 
-      if (lastSynced && store.setLastSynced) {
-        store.setLastSynced(lastSynced);
-        console.debug(`Migrated lastSynced timestamp: ${lastSynced}`);
-      }
-
       await this.cleanupOldStorage();
 
       console.debug("Migration to Zustand store completed successfully");

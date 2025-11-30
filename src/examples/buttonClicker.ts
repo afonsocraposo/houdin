@@ -69,4 +69,5 @@ export const buttonClicker: WorkflowDefinition = {
       targetHandle: "input",
     },
   ],
+  modifiedAt: 0,
 };

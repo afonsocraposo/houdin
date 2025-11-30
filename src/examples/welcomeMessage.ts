@@ -46,4 +46,5 @@ export const welcomeMessage: WorkflowDefinition = {
       targetHandle: "input",
     },
   ],
+  modifiedAt: 0,
 };

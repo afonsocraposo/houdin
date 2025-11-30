@@ -54,7 +54,10 @@ export class ComponentFactory {
     nodeId: string,
     data?: any,
   ): void {
-    // Dispatch custom event that the workflow executor can listen to
+    if (typeof document === "undefined") {
+      console.warn("ComponentFactory.triggerNextAction called in non-DOM context");
+      return;
+    }
     const event = new CustomEvent<ComponentTriggerEventDetail>(
       "workflow-component-trigger",
       {

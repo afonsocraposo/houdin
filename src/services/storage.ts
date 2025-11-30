@@ -1,5 +1,4 @@
 import { WorkflowDefinition, WorkflowExecutionStats } from "@/types/workflow";
-import type { Credential } from "@/types/credentials";
 import { WorkflowExecution } from "@/types/workflow";
 import { StorageAction } from "@/types/storage";
 import { StorageKeys } from "./storage-keys";
@@ -190,21 +189,10 @@ export class StorageServer {
 
 // Interface for storage operations
 interface IStorageClient {
-  getCredentials(): Promise<Credential[]>;
-  saveCredentials(credentials: Credential[]): Promise<void>;
-  getCredentialsByType(type: string): Promise<Credential[]>;
   getWorkflowExecutions(): Promise<WorkflowExecution[]>;
-  getLastSynced(): Promise<number | undefined>;
-  setLastSynced(timestamp: number): Promise<void>;
   saveWorkflowExecutions(executions: WorkflowExecution[]): Promise<void>;
   saveWorkflowExecution(execution: WorkflowExecution): Promise<void>;
   clearWorkflowExecutions(): Promise<void>;
-  addWorkflowsListener(
-    callback: (workflows: WorkflowDefinition[]) => void,
-  ): () => void;
-  addCredentialsListener(
-    callback: (credentials: Credential[]) => void,
-  ): () => void;
   addWorkflowExecutionsListener(
     callback: (executions: WorkflowExecution[]) => void,
   ): () => void;
@@ -220,48 +208,6 @@ abstract class StorageClientBase implements IStorageClient {
     key: string,
     callback: (value: any) => void,
   ): () => void;
-
-  async getLastSynced(): Promise<number | undefined> {
-    try {
-      const timestamp = await this.get(StorageKeys.LAST_SYNCED);
-      return timestamp || undefined;
-    } catch (error) {
-      console.error("Failed to get last synced timestamp:", error);
-      return undefined;
-    }
-  }
-
-  async setLastSynced(timestamp: number): Promise<void> {
-    try {
-      await this.set(StorageKeys.LAST_SYNCED, timestamp);
-    } catch (error) {
-      console.error("Failed to set last synced timestamp:", error);
-      throw error;
-    }
-  }
-
-  async getCredentials(): Promise<Credential[]> {
-    try {
-      return (await this.get(StorageKeys.CREDENTIALS)) || [];
-    } catch (error) {
-      console.error("Failed to get credentials:", error);
-      return [];
-    }
-  }
-
-  async saveCredentials(credentials: Credential[]): Promise<void> {
-    try {
-      await this.set(StorageKeys.CREDENTIALS, credentials);
-    } catch (error) {
-      console.error("Failed to save credentials:", error);
-      throw error;
-    }
-  }
-
-  async getCredentialsByType(type: string): Promise<Credential[]> {
-    const allCredentials = await this.getCredentials();
-    return allCredentials.filter((cred) => cred.type === type);
-  }
 
   async getWorkflowExecutions(
     options?: getWorkflowExecutionsOptions,
@@ -411,19 +357,6 @@ abstract class StorageClientBase implements IStorageClient {
   async isSyncInProgress(): Promise<boolean> {
     const lockData = await this.get(StorageKeys.SYNC_IN_PROGRESS);
     return !!lockData;
-  }
-
-  // Convenience methods for listeners
-  addWorkflowsListener(
-    callback: (workflows: WorkflowDefinition[]) => void,
-  ): () => void {
-    return this.addListener(StorageKeys.WORKFLOWS, callback);
-  }
-
-  addCredentialsListener(
-    callback: (credentials: Credential[]) => void,
-  ): () => void {
-    return this.addListener(StorageKeys.CREDENTIALS, callback);
   }
 
   addWorkflowExecutionsListener(

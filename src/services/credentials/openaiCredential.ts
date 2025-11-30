@@ -19,7 +19,7 @@ export class OpenAICredential extends BaseCredential<OpenAIConfig, OpenAIAuth> {
     description: "OpenAI API credentials for GPT models and other AI services",
   };
 
-  configSchema = {
+  static readonly configSchema = {
     properties: {
       apiKey: passwordProperty({
         label: "API Key",

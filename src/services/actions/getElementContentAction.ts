@@ -23,7 +23,7 @@ export class GetElementContentAction extends BaseAction<
     description: "Extract text content from page element",
   };
 
-  configSchema = {
+  static readonly configSchema = {
     properties: {
       selectorType: selectProperty({
         label: "Selector Type",
