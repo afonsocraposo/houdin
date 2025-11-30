@@ -9,8 +9,6 @@ import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
-import { useStore } from "@/store";
-import type { Runtime } from "webextension-polyfill";
 import { StorageMigration } from "@/services/storageMigration";
 
 let httpListener: HttpListenerWebRequest | null = null;
@@ -35,7 +33,7 @@ browser.runtime.onInstalled.addListener(() => {
 });
 
 if (browser.action) {
-  browser.action.onClicked.addListener((_tab: any) => { });
+  browser.action.onClicked.addListener((_tab: any) => {});
 }
 
 browser.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
@@ -122,7 +120,7 @@ workflowEngine.initialize().then(() => {
               workflowId: message.data.workflowId,
               triggerNodeId: message.data.triggerNodeId,
               data,
-            }).catch(() => { });
+            }).catch(() => {});
           };
 
           httpListener.registerTrigger(

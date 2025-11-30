@@ -5,7 +5,7 @@ export class ActionRegistry {
   private static instance: ActionRegistry;
   private actions = new Map<string, BaseAction>();
 
-  private constructor() { }
+  private constructor() {}
 
   static getInstance(): ActionRegistry {
     if (!ActionRegistry.instance) {
@@ -43,7 +43,6 @@ export class ActionRegistry {
 
   // Get all actions static data
   getAllStatic(): Record<string, any> {
-    return {};
     const staticData: Record<string, any> = {};
     for (const action of this.getAllActions()) {
       const { icon, ...rest } = action.metadata;

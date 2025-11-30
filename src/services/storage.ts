@@ -1,4 +1,4 @@
-import { WorkflowDefinition, WorkflowExecutionStats } from "@/types/workflow";
+import { WorkflowExecutionStats } from "@/types/workflow";
 import { WorkflowExecution } from "@/types/workflow";
 import { StorageAction } from "@/types/storage";
 import { StorageKeys } from "./storage-keys";

@@ -20,6 +20,7 @@ import { CredentialRegistry } from "@/services/credentialRegistry";
 import { SchemaBasedProperties } from "@/config/designer/SchemaBasedProperties";
 import { NotificationService } from "@/services/notification";
 import { useStore } from "@/store";
+// @ts-ignore
 import sha256 from "crypto-js/sha256";
 
 interface CredentialsTabProps {
