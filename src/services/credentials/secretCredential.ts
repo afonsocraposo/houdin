@@ -17,7 +17,7 @@ export class SecretCredential extends BaseCredential<SecretConfig, SecretAuth> {
     description: "Generic secret storage for API keys, tokens, passwords, etc.",
   };
 
-  configSchema = {
+  static readonly configSchema = {
     properties: {
       secretValue: passwordProperty({
         label: "Secret Value",

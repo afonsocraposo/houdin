@@ -1,6 +1,6 @@
-import { BackgroundStorageClient } from "./storage";
 import { CredentialRegistry } from "./credentialRegistry";
 import { HttpClientService } from "./httpClient";
+import { useStore } from "@/store";
 
 export interface OpenAIRequest {
   model: string;
@@ -32,9 +32,8 @@ export class OpenAIService {
     temperature?: number, // Made optional
   ): Promise<string> {
     // Get the credential
-    const storageClient = new BackgroundStorageClient();
     const credentialRegistry = CredentialRegistry.getInstance();
-    const credentials = await storageClient.getCredentials();
+    const credentials = useStore.getState().credentials;
     const credential = credentials.find((c) => c.id === credentialId);
 
     if (!credential) {

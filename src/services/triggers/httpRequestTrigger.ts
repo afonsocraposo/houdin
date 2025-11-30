@@ -30,7 +30,7 @@ export class HttpRequestTrigger extends BaseTrigger<
       "Trigger when an HTTP request matches the specified URL pattern",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       urlPattern: textProperty({
         label: "URL Pattern",

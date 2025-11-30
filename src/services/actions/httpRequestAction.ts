@@ -1,6 +1,5 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
 import { NotificationService } from "@/services/notification";
-import { ContentStorageClient } from "@/services/storage";
 import { CredentialRegistry } from "@/services/credentialRegistry";
 import { HttpClientService } from "@/services/httpClient";
 import {
@@ -12,6 +11,7 @@ import {
   textProperty,
 } from "@/types/config-properties";
 import { IconWorld } from "@tabler/icons-react";
+import { useStore } from "@/store";
 
 interface HttpRequestActionConfig {
   url: string;
@@ -19,10 +19,10 @@ interface HttpRequestActionConfig {
   headers?: string;
   body?: string;
   contentType:
-    | "application/json"
-    | "application/x-www-form-urlencoded"
-    | "text/plain"
-    | "custom";
+  | "application/json"
+  | "application/x-www-form-urlencoded"
+  | "text/plain"
+  | "custom";
   customContentType?: string;
   credentialId?: string;
   timeout?: number;
@@ -51,7 +51,7 @@ export class HttpRequestAction extends BaseAction<
 
   private httpClient = HttpClientService.getInstance();
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       method: selectProperty({
         label: "HTTP Method",
@@ -180,9 +180,8 @@ export class HttpRequestAction extends BaseAction<
 
     try {
       // Get the credential from storage
-      const storageClient = new ContentStorageClient();
       const credentialRegistry = CredentialRegistry.getInstance();
-      const credentials = await storageClient.getCredentials();
+      const credentials = useStore.getState().credentials;
       const credential = credentials.find((c) => c.id === credentialId);
 
       if (!credential) {

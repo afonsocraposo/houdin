@@ -69,4 +69,5 @@ export const contentExtractor: WorkflowDefinition = {
       targetHandle: "input",
     },
   ],
+  modifiedAt: 0,
 };

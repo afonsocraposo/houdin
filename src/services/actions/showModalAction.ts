@@ -23,7 +23,7 @@ export class ShowModalAction extends BaseAction<
     description: "Display modal with content",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       modalTitle: textProperty({
         label: "Modal Title",

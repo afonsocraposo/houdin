@@ -44,11 +44,12 @@ export class InjectComponentAction extends BaseAction<
     description: "Inject a custom component into the page (text, HTML)",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       // Component preview
       preview: customProperty({
         label: "Component Preview",
+        component: "InjectComponentPreview",
         render: (values: Record<string, any>) => {
           try {
             const previewComponent = ComponentFactory.create(

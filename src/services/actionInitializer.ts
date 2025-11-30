@@ -26,6 +26,14 @@ import { CreateVariableAction } from "./actions/createVariableAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
+  try {
+    if (typeof document === "undefined") {
+      throw new Error("Document is undefined");
+    }
+  } catch {
+    console.warn("initializeActions called in non-DOM context");
+    return;
+  }
   const registry = ActionRegistry.getInstance();
 
   // Actions to run in the content
@@ -53,17 +61,6 @@ export function initializeActions(): void {
   registry.register(IfAction);
   registry.register(FillFormAction);
   registry.register(CreateVariableAction);
-}
-
-export function initializeBackgroundActions(): void {
-  const registry = ActionRegistry.getInstance();
-
-  // Actions to run in background
-  registry.register(WaitAction);
-  registry.register(CustomScriptAction);
-  registry.register(NavigateUrlAction);
-  registry.register(CookiesAction);
-  registry.register(LLMOpenAIAction);
 }
 
 // Export registry instance for convenience

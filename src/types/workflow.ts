@@ -68,7 +68,7 @@ export interface WorkflowDefinition {
   connections: WorkflowConnection[];
   enabled: boolean;
   variables?: Record<string, string>;
-  modifiedAt?: number;
+  modifiedAt: number;
   lastExecuted?: number;
   executionCount?: number;
 }

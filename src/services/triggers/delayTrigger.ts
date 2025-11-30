@@ -18,7 +18,7 @@ export class DelayTrigger extends BaseTrigger<DelayTriggerConfig, DelayTriggerOu
     description: "Triggers after a specified delay",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       delay: numberProperty({
         label: "Delay (seconds)",

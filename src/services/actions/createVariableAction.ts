@@ -19,7 +19,7 @@ export class CreateVariableAction extends BaseAction<
       "Create a variable by merging other variables or processing with Liquid syntax",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       value: textareaProperty({
         label: "Variable Value",

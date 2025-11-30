@@ -37,7 +37,7 @@ export class FillFormAction extends BaseAction<
     disableTimeout: true,
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       fields: customProperty({
         label: "Form Fields",
@@ -49,6 +49,7 @@ export class FillFormAction extends BaseAction<
             value: "",
           },
         ],
+        component: "FillFormBuilder",
         render: (
           values: Record<string, any>,
           onChange: (key: string, value: any) => void,

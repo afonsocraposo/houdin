@@ -70,4 +70,5 @@ export const formFiller: WorkflowDefinition = {
       targetHandle: "input",
     },
   ],
+  modifiedAt: 0,
 };

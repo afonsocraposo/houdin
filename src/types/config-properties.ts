@@ -55,6 +55,7 @@ export interface CodeConfigProperty extends BaseConfigProperty {
 
 export interface CustomConfigProperty extends BaseConfigProperty {
   type: "custom";
+  component: string;
   render: (
     values: Record<string, any>,
     onChange: (key: string, value: any) => void,
@@ -329,7 +330,10 @@ export function codeProperty(
 export function customProperty(
   config: Omit<CustomConfigProperty, "type">,
 ): CustomConfigProperty {
-  return { type: "custom", ...config };
+  return {
+    type: "custom",
+    ...config,
+  };
 }
 
 export function credentialsProperty(

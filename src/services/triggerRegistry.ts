@@ -36,6 +36,22 @@ export class TriggerRegistry {
       .sort((a, b) => a.label.localeCompare(b.label));
   }
 
+  getAllStatic(): Record<string, any> {
+    const staticData: Record<string, any> = {};
+    for (const trigger of this.getAllTriggers()) {
+      const { icon, ...rest } = trigger.metadata;
+      staticData[trigger.metadata.type] = {
+        metadata: {
+          icon: icon instanceof Object ? `Icon${icon.displayName}` : icon,
+          ...rest,
+        },
+        configSchema: trigger.configSchema,
+        outputExample: trigger.outputExample,
+      };
+    }
+    return staticData;
+  }
+
   // Setup a trigger
   async setupTrigger(
     type: string,

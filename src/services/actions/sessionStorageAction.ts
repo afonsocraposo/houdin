@@ -27,7 +27,7 @@ export class SessionStorageAction extends BaseAction<
       "Create, read, update, and delete items in the browser's session storage",
   };
 
-  configSchema = {
+  static readonly configSchema = {
     properties: {
       operation: selectProperty({
         label: "Operation",

@@ -29,7 +29,7 @@ import {
 } from "@/services/storage";
 import { useSearchParams } from "react-router-dom";
 import { TimeAgoText } from "@/components/TimeAgoText";
-import { formatTimeAgo } from "@/utils/time";
+import { formatTimeAgo } from "@/lib/time";
 import ExecutionHistoryItem from "./ExecutionHistoryItem";
 import { getStatusColor, getStatusIcon } from "./utils";
 import { useStore } from "@/store";

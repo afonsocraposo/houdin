@@ -23,7 +23,7 @@ export class GetElementContentAction extends BaseAction<
     description: "Extract text content from page element",
   };
 
-  configSchema = {
+  static readonly configSchema = {
     properties: {
       selectorType: selectProperty({
         label: "Selector Type",
@@ -63,7 +63,7 @@ export class GetElementContentAction extends BaseAction<
     if (element) {
       const textContent = element.textContent || "";
       // Store the output in the execution context
-      onSuccess(textContent);
+      onSuccess({ content: textContent });
     } else {
       NotificationService.showErrorNotification({
         message: "Element not found for content extraction",

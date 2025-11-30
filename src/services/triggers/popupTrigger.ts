@@ -22,7 +22,7 @@ export class PopupTrigger extends BaseTrigger<
       "Triggers when the workflow is manually executed from the popup",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {},
   };
 

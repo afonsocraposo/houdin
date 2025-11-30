@@ -168,9 +168,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       const updatedNodes = nodesRef.current.map((n) =>
         n.id === updatedNode.id
           ? {
-              ...updatedNode,
-              position: n.position, // keep original position
-            }
+            ...updatedNode,
+            position: n.position, // keep original position
+          }
           : n,
       );
       set(updatedNodes);
@@ -216,9 +216,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       const updatedNodes = nodesRef.current.map((n) =>
         n.id === id
           ? {
-              ...n,
-              position, // update position
-            }
+            ...n,
+            position, // update position
+          }
           : n,
       );
       set(updatedNodes, undefined);

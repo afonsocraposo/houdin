@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Stack,
   Card,
@@ -16,18 +16,20 @@ import {
 } from "@mantine/core";
 import { IconPlus, IconEdit, IconTrash, IconKey } from "@tabler/icons-react";
 import { Credential } from "@/types/credentials";
-import { ContentStorageClient } from "@/services/storage";
 import { CredentialRegistry } from "@/services/credentialRegistry";
 import { SchemaBasedProperties } from "@/config/designer/SchemaBasedProperties";
 import { NotificationService } from "@/services/notification";
-import { generateId } from "@/utils/helpers";
+import { useStore } from "@/store";
+// @ts-ignore
+import sha256 from "crypto-js/sha256";
 
 interface CredentialsTabProps {
   onSaved?: () => void;
 }
 
 export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
-  const [credentials, setCredentials] = useState<Credential[]>([]);
+  const credentials = useStore((state) => state.credentials);
+  const setCredentials = useStore((state) => state.setCredentials);
   const [modalOpened, setModalOpened] = useState(false);
   const [editingCredential, setEditingCredential] = useState<Credential | null>(
     null,
@@ -42,34 +44,16 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
   });
 
   const credentialRegistry = CredentialRegistry.getInstance();
-  const storageClient = new ContentStorageClient();
 
-  useEffect(() => {
-    loadCredentials();
-
-    const handleCredentialsChange = (updatedCredentials: Credential[]) => {
-      setCredentials(updatedCredentials);
-    };
-
-    const unsubscribe = storageClient.addCredentialsListener(
-      handleCredentialsChange,
-    );
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  const loadCredentials = async () => {
-    try {
-      const loadedCredentials = await storageClient.getCredentials();
-      setCredentials(loadedCredentials);
-    } catch (error) {
-      console.error("Failed to load credentials:", error);
-    }
+  const generateCredentialId = (type: string, _name: string) => {
+    const name = _name.trim();
+    const concat = `${type}:${name}`;
+    const hash = sha256(concat).toString();
+    return hash;
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.type.trim()) {
+    if (!formData.name || !formData.type.trim()) {
       NotificationService.showErrorNotification({
         title: "Please fill in the required fields",
       });
@@ -89,9 +73,20 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
         });
         return;
       }
+      const id = generateCredentialId(
+        formData.type,
+        formData.name.toLowerCase(),
+      ).substr(0, 12);
+      const credentialId = `credential-${id}`;
+      if (credentials.some((c) => c.id === credentialId)) {
+        NotificationService.showErrorNotification({
+          title: "Credential with this type and name already exists",
+        });
+        return;
+      }
 
       const credential: Credential = {
-        id: editingCredential?.id || generateId("credential"),
+        id: credentialId,
         name: formData.name,
         type: formData.type,
         description: formData.description,
@@ -104,7 +99,6 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
         ? credentials.map((c) => (c.id === credential.id ? credential : c))
         : [...credentials, credential];
 
-      await storageClient.saveCredentials(updatedCredentials);
       setCredentials(updatedCredentials);
       handleCloseModal();
       onSaved?.();
@@ -135,7 +129,6 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
 
     try {
       const updatedCredentials = credentials.filter((c) => c.id !== id);
-      await storageClient.saveCredentials(updatedCredentials);
       setCredentials(updatedCredentials);
       onSaved?.();
     } catch (error) {
@@ -306,6 +299,8 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
               setFormData((prev) => ({ ...prev, name: e.target.value }))
             }
             required
+            disabled={!!editingCredential}
+            readOnly={!!editingCredential}
           />
 
           <Textarea

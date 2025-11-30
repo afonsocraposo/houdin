@@ -9,8 +9,6 @@ import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
-import { useStore } from "@/store";
-import type { Runtime } from "webextension-polyfill";
 import { StorageMigration } from "@/services/storageMigration";
 
 let httpListener: HttpListenerWebRequest | null = null;
@@ -59,42 +57,13 @@ if (browser.webNavigation) {
 }
 
 StorageServer.getInstance();
-
 StorageMigration.runMigrations().catch((error) => {
   console.error("Storage migration failed:", error);
 });
 
 const workflowSyncer = WorkflowSyncer.getInstance();
 workflowSyncer.sync(true);
-workflowSyncer.startMessageListener();
-
-const connectedPorts = new Set<Runtime.Port>();
-
-browser.runtime.onConnect.addListener((port) => {
-  if (port.name === "store-sync") {
-    connectedPorts.add(port);
-    console.debug("Background: Store sync port connected");
-
-    port.onDisconnect.addListener(() => {
-      connectedPorts.delete(port);
-      console.debug("Background: Store sync port disconnected");
-    });
-  }
-});
-
-useStore.subscribe((state) => {
-  connectedPorts.forEach((port) => {
-    try {
-      port.postMessage({
-        type: "STORE_STATE_UPDATE",
-        state,
-      });
-    } catch (error) {
-      console.error("Background: Error sending state update to port:", error);
-      connectedPorts.delete(port);
-    }
-  });
-});
+workflowSyncer.init();
 
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {

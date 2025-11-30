@@ -4,7 +4,6 @@ import {
   ModalProps,
   Stack,
   Text,
-  Title,
   List,
   ThemeIcon,
   Box,
@@ -24,7 +23,11 @@ export default function UpgradeModal(props: ModalProps) {
   return (
     <Modal
       {...props}
-      title={<Title order={3}>Unlock the Full Power of Houdin</Title>}
+      title={
+        <Text fw="bold" size="xl">
+          Unlock the Full Power of Houdin
+        </Text>
+      }
       size="md"
     >
       <Stack gap="lg">

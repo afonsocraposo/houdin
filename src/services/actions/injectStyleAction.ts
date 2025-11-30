@@ -21,7 +21,7 @@ export class InjectStyleAction extends BaseAction<
     description: "Inject custom CSS styles",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       customStyle: codeProperty({
         label: "Custom CSS",

@@ -31,7 +31,7 @@ export class HTTPCredential extends BaseCredential<HTTPConfig, HTTPAuth> {
     description: "HTTP authentication credentials for API requests",
   };
 
-  configSchema = {
+  static readonly configSchema = {
     properties: {
       authType: selectProperty({
         label: "Authentication Type",

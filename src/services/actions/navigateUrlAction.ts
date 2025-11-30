@@ -23,7 +23,7 @@ export class NavigateUrlAction extends BaseAction<
     description: "Navigate to a specific URL",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       url: textProperty({
         label: "URL destination",

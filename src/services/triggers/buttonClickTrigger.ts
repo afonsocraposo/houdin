@@ -43,11 +43,12 @@ export class ButtonClickTrigger extends BaseTrigger<
     description: "Trigger when the injected button is clicked",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       // Component preview
       preview: customProperty({
         label: "Component Preview",
+        component: "InjectComponentPreview",
         render: (values: Record<string, any>) => {
           try {
             const previewComponent = ComponentFactory.create(

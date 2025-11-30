@@ -44,7 +44,7 @@ export class CookiesAction extends BaseAction<
       "Create, read, update, and delete items in the browser's cookies",
   };
 
-  configSchema = {
+  static readonly configSchema = {
     properties: {
       operation: selectProperty({
         label: "Operation",

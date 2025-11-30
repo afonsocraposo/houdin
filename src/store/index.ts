@@ -4,8 +4,9 @@ import { AccountSlice, createAccountSlice } from "./accountSlice";
 import { WorkflowsSlice, createWorkflowsSlice } from "./workflowsSlice";
 import { SyncSlice, createSyncSlice } from "./syncSlice";
 import browser from "@/services/browser";
+import { createCredentialsSlice, CredentialsSlice } from "./credentialsSlice";
 
-type StoreState = SyncSlice & WorkflowsSlice;
+type StoreState = SyncSlice & WorkflowsSlice & CredentialsSlice;
 type SessionStoreState = AccountSlice;
 
 const browserStorageAdapter: StateStorage = {
@@ -26,10 +27,23 @@ export const useStore = create<StoreState>()(
     (...a) => ({
       ...createSyncSlice(...a),
       ...createWorkflowsSlice(...a),
+      ...createCredentialsSlice(...a),
     }),
     {
       name: "houdin-store",
       storage: createJSONStorage(() => browserStorageAdapter),
+      partialize: (state) => ({
+        ...state,
+        pendingUpdates: Array.from(state.pendingUpdates),
+      }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as any;
+        return {
+          ...currentState,
+          ...persisted,
+          pendingUpdates: new Set(persisted.pendingUpdates || []),
+        };
+      },
     },
   ),
 );

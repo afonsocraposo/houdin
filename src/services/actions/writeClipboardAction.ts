@@ -21,7 +21,7 @@ export class WriteClipboardAction extends BaseAction<
     description: "Copy text to clipboard",
   };
 
-  readonly configSchema = {
+  static readonly configSchema = {
     properties: {
       text: textProperty({
         label: "Text to Copy",
