@@ -1,6 +1,7 @@
 import { ActionIcon, Badge, Group, Menu, Table, Text } from "@mantine/core";
 import { IconDots, IconRestore, IconTrash } from "@tabler/icons-react";
 import { DeletedWorkflow } from "@/api/schemas/types";
+import { formatTimeAgo } from "@/lib/time";
 
 interface Props {
   workflow: DeletedWorkflow;
@@ -36,6 +37,9 @@ export default function TrashWorkflowItem({
       </Table.Td>
       <Table.Td ta="center">
         <Badge variant="light">{workflow.nodes} nodes</Badge>
+      </Table.Td>
+      <Table.Td ta="center">
+        {formatTimeAgo(new Date(workflow.deletedAt))}
       </Table.Td>
       <Table.Td ta="center">
         <Group gap="xs" wrap="nowrap" justify="center">

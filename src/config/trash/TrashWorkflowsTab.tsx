@@ -89,6 +89,7 @@ export default function TrashWorkflowsTab() {
               <Table.Th>URL Pattern</Table.Th>
               <Table.Th>Description</Table.Th>
               <Table.Th ta="center">Nodes</Table.Th>
+              <Table.Th ta="center">Deleted</Table.Th>
               <Table.Th ta="center">Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
