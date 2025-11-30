@@ -19,8 +19,8 @@ import { Credential } from "@/types/credentials";
 import { CredentialRegistry } from "@/services/credentialRegistry";
 import { SchemaBasedProperties } from "@/config/designer/SchemaBasedProperties";
 import { NotificationService } from "@/services/notification";
-import { generateId } from "@/utils/helpers";
 import { useStore } from "@/store";
+import sha256 from "crypto-js/sha256";
 
 interface CredentialsTabProps {
   onSaved?: () => void;
@@ -44,8 +44,15 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
 
   const credentialRegistry = CredentialRegistry.getInstance();
 
+  const generateCredentialId = (type: string, _name: string) => {
+    const name = _name.trim();
+    const concat = `${type}:${name}`;
+    const hash = sha256(concat).toString();
+    return hash;
+  };
+
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.type.trim()) {
+    if (!formData.name || !formData.type.trim()) {
       NotificationService.showErrorNotification({
         title: "Please fill in the required fields",
       });
@@ -65,9 +72,20 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
         });
         return;
       }
+      const id = generateCredentialId(
+        formData.type,
+        formData.name.toLowerCase(),
+      ).substr(0, 12);
+      const credentialId = `credential-${id}`;
+      if (credentials.some((c) => c.id === credentialId)) {
+        NotificationService.showErrorNotification({
+          title: "Credential with this type and name already exists",
+        });
+        return;
+      }
 
       const credential: Credential = {
-        id: editingCredential?.id || generateId("credential"),
+        id: credentialId,
         name: formData.name,
         type: formData.type,
         description: formData.description,
@@ -280,6 +298,8 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
               setFormData((prev) => ({ ...prev, name: e.target.value }))
             }
             required
+            disabled={!!editingCredential}
+            readOnly={!!editingCredential}
           />
 
           <Textarea
