@@ -54,8 +54,17 @@ export class ComponentFactory {
     nodeId: string,
     data?: any,
   ): void {
-    if (typeof document === "undefined") {
-      console.warn("ComponentFactory.triggerNextAction called in non-DOM context");
+    try {
+      if (typeof document === "undefined") {
+        console.warn(
+          "ComponentFactory.triggerNextAction called in non-DOM context",
+        );
+        return;
+      }
+    } catch {
+      console.warn(
+        "ComponentFactory.triggerNextAction called in non-DOM context",
+      );
       return;
     }
     const event = new CustomEvent<ComponentTriggerEventDetail>(

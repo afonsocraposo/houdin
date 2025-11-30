@@ -35,7 +35,7 @@ browser.runtime.onInstalled.addListener(() => {
 });
 
 if (browser.action) {
-  browser.action.onClicked.addListener((_tab: any) => {});
+  browser.action.onClicked.addListener((_tab: any) => { });
 }
 
 browser.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
@@ -59,7 +59,6 @@ if (browser.webNavigation) {
 }
 
 StorageServer.getInstance();
-
 StorageMigration.runMigrations().catch((error) => {
   console.error("Storage migration failed:", error);
 });
@@ -67,34 +66,6 @@ StorageMigration.runMigrations().catch((error) => {
 const workflowSyncer = WorkflowSyncer.getInstance();
 workflowSyncer.sync(true);
 workflowSyncer.init();
-
-const connectedPorts = new Set<Runtime.Port>();
-
-browser.runtime.onConnect.addListener((port) => {
-  if (port.name === "store-sync") {
-    connectedPorts.add(port);
-    console.debug("Background: Store sync port connected");
-
-    port.onDisconnect.addListener(() => {
-      connectedPorts.delete(port);
-      console.debug("Background: Store sync port disconnected");
-    });
-  }
-});
-
-useStore.subscribe((state) => {
-  connectedPorts.forEach((port) => {
-    try {
-      port.postMessage({
-        type: "STORE_STATE_UPDATE",
-        state,
-      });
-    } catch (error) {
-      console.error("Background: Error sending state update to port:", error);
-      connectedPorts.delete(port);
-    }
-  });
-});
 
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
@@ -151,7 +122,7 @@ workflowEngine.initialize().then(() => {
               workflowId: message.data.workflowId,
               triggerNodeId: message.data.triggerNodeId,
               data,
-            }).catch(() => {});
+            }).catch(() => { });
           };
 
           httpListener.registerTrigger(

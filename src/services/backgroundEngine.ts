@@ -9,13 +9,13 @@ import {
   WorkflowDefinition,
   WorkflowNode,
 } from "@/types/workflow";
-import { initializeBackgroundActions } from "./actionInitializer";
 import { WorkflowExecutor } from "./workflow/workflow";
 import { ExecutionContext } from "./workflow/executionContext";
 import { matchesUrlPattern } from "@/utils/helpers";
 import { NotificationService } from "./notification";
 import { initializeCredentials } from "./credentialInitializer";
 import { useStore } from "@/store";
+import { initializeBackgroundActions } from "./backgroundActionInitializer";
 
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();

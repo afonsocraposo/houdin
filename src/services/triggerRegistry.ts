@@ -5,7 +5,7 @@ export class TriggerRegistry {
   private static instance: TriggerRegistry;
   private triggers = new Map<string, BaseTrigger>();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): TriggerRegistry {
     if (!TriggerRegistry.instance) {
@@ -37,6 +37,7 @@ export class TriggerRegistry {
   }
 
   getAllStatic(): Record<string, any> {
+    return {};
     const staticData: Record<string, any> = {};
     for (const trigger of this.getAllTriggers()) {
       const { icon, ...rest } = trigger.metadata;

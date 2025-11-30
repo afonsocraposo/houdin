@@ -154,7 +154,7 @@ export function initializeActions(): void {
 }
 ```
 
-If your action should run on the background script, **also** add it to `initializeBackgroundActions`:
+If your action should run on the background script, **also** add it to `initializeBackgroundActions` in `src/services/backgroundActionInitializer.ts`:
 
 ```typescript
 import { MyCustomAction } from "./actions/myCustomAction";
