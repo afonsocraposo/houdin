@@ -48,7 +48,7 @@ export default function WorkflowsTab({
   const navigate = useNavigate();
 
   useEffect(() => {
-    WorkflowSyncer.sync();
+    WorkflowSyncer.triggerSync();
   }, []);
 
   const handleCreateWorkflow = () => {

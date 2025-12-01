@@ -57,7 +57,11 @@ export default function SyncButton() {
   const canSync = useMemo(() => account && account.plan !== "free", [account]);
 
   const syncWorkflows = useCallback(async () => {
-    await WorkflowSyncer.sync();
+    try {
+      await WorkflowSyncer.triggerSync();
+    } catch (error) {
+      console.error("Manual sync failed:", error);
+    }
   }, []);
 
   const getIcon = () => {
@@ -118,8 +122,8 @@ export default function SyncButton() {
         </Tooltip>
         {canSync && (
           <Text size="xs" c="dimmed">
-            {syncResult?.timestamp
-              ? formatTimeAgo(new Date(syncResult?.timestamp))
+            {syncCompletedAt
+              ? formatTimeAgo(new Date(syncCompletedAt))
               : "Never synced"}
           </Text>
         )}

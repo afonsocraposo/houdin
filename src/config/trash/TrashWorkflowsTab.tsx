@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import TrashWorkflowItem from "./TrashWorkflowItem";
 import { DeletedWorkflow } from "@/api/schemas/types";
 import { ApiClient } from "@/api/client";
+import { WorkflowSyncer } from "@/services/workflowSyncer";
 import { useSessionStore } from "@/store";
 
 export default function TrashWorkflowsTab() {
@@ -38,6 +39,7 @@ export default function TrashWorkflowsTab() {
     setLoading(true);
     try {
       await client.restoreDeletedWorkflow(workflowId);
+      await WorkflowSyncer.triggerSync();
       fetchWorkflows();
     } finally {
       setLoading(false);

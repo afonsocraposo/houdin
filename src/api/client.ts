@@ -66,7 +66,7 @@ export class ApiClient {
     }
   }
 
-  static async pullWorkflows(since: number = 0): Promise<WorkflowPullResponse> {
+  async pullWorkflows(since: number = 0): Promise<WorkflowPullResponse> {
     const response = await fetch(
       `${API_BASE_URL}/workflows/pull?since=${since}`,
       {
@@ -81,7 +81,7 @@ export class ApiClient {
     return data as WorkflowPullResponse;
   }
 
-  static async pushWorkflows(
+  async pushWorkflows(
     updated: WorkflowDefinition[],
     deleted: WorkflowTombstone[],
   ): Promise<WorkflowPushResponse> {
