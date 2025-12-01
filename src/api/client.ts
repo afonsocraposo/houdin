@@ -1,17 +1,38 @@
+import { CustomMessage } from "@/lib/messages";
 import { AcccountSchema as AccountSchema, Account } from "./schemas/account";
 import { WorkflowPullResponse } from "./schemas/pull";
 import { WorkflowPushResponse } from "./schemas/push";
 import { DeletedWorkflow } from "./schemas/types";
 import { WorkflowDefinition, WorkflowTombstone } from "./schemas/workflows";
+import { smartFetch } from "./smartFetch";
+import browser from "@/services/browser";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://houdin.dev/api";
 
 export class ApiClient {
+  static startBackgroundProxy(): void {
+    browser.runtime.onMessage.addListener(
+      (message: CustomMessage, _sender: any) => {
+        if (message.type === "PROXY_FETCH") {
+          return (async () => {
+            const { url, options } = message.data;
+            const response = await fetch(url, options);
+            return {
+              body: await response.text(),
+              status: response.status,
+              statusText: response.statusText,
+              headers: Object.fromEntries(response.headers.entries()),
+              ok: response.ok,
+            };
+          })();
+        }
+      },
+    );
+  }
+
   static async getAccount(): Promise<Account | null> {
-    const response = await fetch(`${API_BASE_URL}/account`, {
-      credentials: "include",
-    });
+    const response = await smartFetch(`${API_BASE_URL}/account`);
     if (!response.ok) {
       if (response.status === 401) {
         return null;
@@ -24,9 +45,7 @@ export class ApiClient {
 
   static async listDeletedWorkflows(): Promise<DeletedWorkflow[]> {
     const url = new URL(`${API_BASE_URL}/workflows/trash`);
-    const response = await fetch(url, {
-      credentials: "include",
-    });
+    const response = await smartFetch(url.toString());
     if (!response.ok) {
       throw new Error(
         `Failed to fetch deleted workflows: ${response.statusText}`,
@@ -37,11 +56,10 @@ export class ApiClient {
   }
 
   static async restoreDeletedWorkflow(workflowId: string): Promise<void> {
-    const response = await fetch(
+    const response = await smartFetch(
       `${API_BASE_URL}/workflows/trash/${workflowId}`,
       {
         method: "PATCH",
-        credentials: "include",
       },
     );
     if (!response.ok) {
@@ -52,11 +70,10 @@ export class ApiClient {
   }
 
   static async permanentlyDeleteWorkflow(workflowId: string): Promise<void> {
-    const response = await fetch(
+    const response = await smartFetch(
       `${API_BASE_URL}/workflows/trash/${workflowId}`,
       {
         method: "DELETE",
-        credentials: "include",
       },
     );
     if (!response.ok) {
@@ -67,11 +84,8 @@ export class ApiClient {
   }
 
   static async pullWorkflows(since: number = 0): Promise<WorkflowPullResponse> {
-    const response = await fetch(
+    const response = await smartFetch(
       `${API_BASE_URL}/workflows/pull?since=${since}`,
-      {
-        credentials: "include",
-      },
     );
     if (!response.ok) {
       throw new Error(`Failed to pull workflows: ${response.statusText}`);
@@ -85,12 +99,11 @@ export class ApiClient {
     updated: WorkflowDefinition[],
     deleted: WorkflowTombstone[],
   ): Promise<WorkflowPushResponse> {
-    const response = await fetch(`${API_BASE_URL}/workflows/push`, {
+    const response = await smartFetch(`${API_BASE_URL}/workflows/push`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",
       body: JSON.stringify({ updated, deleted }),
     });
     if (!response.ok) {

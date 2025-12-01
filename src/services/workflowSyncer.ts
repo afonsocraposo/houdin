@@ -20,7 +20,6 @@ export class WorkflowSyncer {
   init(): void {
     browser.runtime.onMessage.addListener((message: any, _sender: any) => {
       if (message.type === "SYNC_WORKFLOWS") {
-        console.log("Received SYNC_WORKFLOWS message");
         return this.sync()
           .then(() => Promise.resolve(true))
           .catch((error) => {
@@ -179,7 +178,6 @@ export class WorkflowSyncer {
   }
 
   static async triggerSync(): Promise<void> {
-    console.log("Triggering workflow sync via message");
     return await sendMessageToBackground("SYNC_WORKFLOWS");
   }
 }

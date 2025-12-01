@@ -10,6 +10,7 @@ import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 import browser from "@/services/browser";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
 import { StorageMigration } from "@/services/storageMigration";
+import { ApiClient } from "@/api/client";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -64,6 +65,8 @@ StorageMigration.runMigrations().catch((error) => {
 const workflowSyncer = WorkflowSyncer.getInstance();
 workflowSyncer.sync(true);
 workflowSyncer.init();
+
+ApiClient.startBackgroundProxy();
 
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
