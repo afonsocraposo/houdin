@@ -22,7 +22,7 @@ export class ApiClient {
     return AccountSchema.parse(data);
   }
 
-  async listDeletedWorkflows(): Promise<DeletedWorkflow[]> {
+  static async listDeletedWorkflows(): Promise<DeletedWorkflow[]> {
     const url = new URL(`${API_BASE_URL}/workflows/trash`);
     const response = await fetch(url, {
       credentials: "include",
@@ -36,7 +36,7 @@ export class ApiClient {
     return deleted as DeletedWorkflow[];
   }
 
-  async restoreDeletedWorkflow(workflowId: string): Promise<void> {
+  static async restoreDeletedWorkflow(workflowId: string): Promise<void> {
     const response = await fetch(
       `${API_BASE_URL}/workflows/trash/${workflowId}`,
       {
@@ -51,7 +51,7 @@ export class ApiClient {
     }
   }
 
-  async permanentlyDeleteWorkflow(workflowId: string): Promise<void> {
+  static async permanentlyDeleteWorkflow(workflowId: string): Promise<void> {
     const response = await fetch(
       `${API_BASE_URL}/workflows/trash/${workflowId}`,
       {
@@ -66,7 +66,7 @@ export class ApiClient {
     }
   }
 
-  async pullWorkflows(since: number = 0): Promise<WorkflowPullResponse> {
+  static async pullWorkflows(since: number = 0): Promise<WorkflowPullResponse> {
     const response = await fetch(
       `${API_BASE_URL}/workflows/pull?since=${since}`,
       {
@@ -81,7 +81,7 @@ export class ApiClient {
     return data as WorkflowPullResponse;
   }
 
-  async pushWorkflows(
+  static async pushWorkflows(
     updated: WorkflowDefinition[],
     deleted: WorkflowTombstone[],
   ): Promise<WorkflowPushResponse> {

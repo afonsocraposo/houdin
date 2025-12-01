@@ -9,11 +9,6 @@ const PERIODIC_SYNC_MINUTES = 15;
 export class WorkflowSyncer {
   static instance: WorkflowSyncer = new WorkflowSyncer();
   private static syncPromise: Promise<void> | null = null;
-  private client: ApiClient;
-
-  constructor() {
-    this.client = new ApiClient();
-  }
 
   static getInstance(): WorkflowSyncer {
     if (!WorkflowSyncer.instance) {
@@ -111,7 +106,7 @@ export class WorkflowSyncer {
   private async pull(): Promise<void> {
     const lastServerTime = useStore.getState().lastServerTime;
     const { updated, deleted, serverTime } =
-      await this.client.pullWorkflows(lastServerTime);
+      await ApiClient.pullWorkflows(lastServerTime);
     const workflows = useStore.getState().workflows;
     const workflowsMap = new Map(workflows.map((wf) => [wf.id, wf]));
     const tombstones = useStore.getState().tombstones;
@@ -156,7 +151,7 @@ export class WorkflowSyncer {
     if (updated.length === 0 && deleted.length === 0) {
       return;
     }
-    const response = await this.client.pushWorkflows(updated, deleted);
+    const response = await ApiClient.pushWorkflows(updated, deleted);
     useStore.getState().clearPendingUpdates();
     useStore.getState().clearPendingDeletes();
     for (const workflowId of response.permanentlyDeleted) {

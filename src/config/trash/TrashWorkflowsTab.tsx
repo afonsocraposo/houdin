@@ -29,16 +29,14 @@ export default function TrashWorkflowsTab() {
       return;
     }
     setLoading(true);
-    const client = new ApiClient();
-    const deleted = await client.listDeletedWorkflows();
+    const deleted = await ApiClient.listDeletedWorkflows();
     setWorkflows(deleted);
     setLoading(false);
   };
   const handleRestoreWorkflow = async (workflowId: string) => {
-    const client = new ApiClient();
     setLoading(true);
     try {
-      await client.restoreDeletedWorkflow(workflowId);
+      await ApiClient.restoreDeletedWorkflow(workflowId);
       await WorkflowSyncer.triggerSync();
       fetchWorkflows();
     } finally {
@@ -46,10 +44,9 @@ export default function TrashWorkflowsTab() {
     }
   };
   const handleDeleteWorkflow = async (workflowId: string) => {
-    const client = new ApiClient();
     setLoading(true);
     try {
-      await client.permanentlyDeleteWorkflow(workflowId);
+      await ApiClient.permanentlyDeleteWorkflow(workflowId);
       fetchWorkflows();
     } finally {
       setLoading(false);
