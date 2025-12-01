@@ -62,7 +62,7 @@ StorageMigration.runMigrations().catch((error) => {
 });
 
 const workflowSyncer = WorkflowSyncer.getInstance();
-workflowSyncer.sync(true);
+WorkflowSyncer.sync(true);
 workflowSyncer.init();
 
 const workflowEngine = new BackgroundWorkflowEngine();
