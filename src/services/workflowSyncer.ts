@@ -9,42 +9,19 @@ const PERIODIC_SYNC_MINUTES = 15;
 export class WorkflowSyncer {
   static instance: WorkflowSyncer = new WorkflowSyncer();
   private static syncPromise: Promise<void> | null = null;
-  private client: ApiClient;
-
-  constructor() {
-    this.client = new ApiClient();
-  }
-
-  static getInstance(): WorkflowSyncer {
-    if (!WorkflowSyncer.instance) {
-      WorkflowSyncer.instance = new WorkflowSyncer();
-    }
-    return WorkflowSyncer.instance;
-  }
 
   init(): void {
-    browser.runtime.onMessage.addListener((message: any, _sender: any) => {
-      if (message.type === "SYNC_WORKFLOWS") {
-        console.log("Received SYNC_WORKFLOWS message");
-        return this.sync()
-          .then(() => Promise.resolve(true))
-          .catch((error) => {
-            console.error("Error during workflow sync:", error);
-            return Promise.reject(error);
-          });
-      }
-    });
     browser.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === "workflowSyncAlarm") {
         console.debug("Performing periodic workflow sync");
-        this.sync().catch((error) => {
+        WorkflowSyncer.sync().catch((error) => {
           console.error("Error during scheduled workflow sync:", error);
         });
       }
     });
   }
 
-  private async canUserSync(): Promise<boolean> {
+  private static async canUserSync(): Promise<boolean> {
     try {
       const account = await ApiClient.getAccount();
       return account?.plan !== "free";
@@ -54,7 +31,7 @@ export class WorkflowSyncer {
     }
   }
 
-  async sync(failQuiet: boolean = false): Promise<void> {
+  public static async sync(failQuiet: boolean = false): Promise<void> {
     const canSync = await this.canUserSync();
     if (!canSync) {
       const error = new Error(
@@ -104,14 +81,10 @@ export class WorkflowSyncer {
     }
   }
 
-  async throttledSync(): Promise<void> {
-    await this.sync();
-  }
-
-  private async pull(): Promise<void> {
+  private static async pull(): Promise<void> {
     const lastServerTime = useStore.getState().lastServerTime;
     const { updated, deleted, serverTime } =
-      await this.client.pullWorkflows(lastServerTime);
+      await ApiClient.pullWorkflows(lastServerTime);
     const workflows = useStore.getState().workflows;
     const workflowsMap = new Map(workflows.map((wf) => [wf.id, wf]));
     const tombstones = useStore.getState().tombstones;
@@ -142,7 +115,7 @@ export class WorkflowSyncer {
     useStore.getState().setLastServerTime(serverTime);
   }
 
-  private async push(): Promise<void> {
+  private static async push(): Promise<void> {
     const workflows = useStore.getState().workflows;
     const workflowMap = new Map(workflows.map((wf) => [wf.id, wf]));
     const updated = Array.from(useStore.getState().pendingUpdates)
@@ -156,7 +129,7 @@ export class WorkflowSyncer {
     if (updated.length === 0 && deleted.length === 0) {
       return;
     }
-    const response = await this.client.pushWorkflows(updated, deleted);
+    const response = await ApiClient.pushWorkflows(updated, deleted);
     useStore.getState().clearPendingUpdates();
     useStore.getState().clearPendingDeletes();
     for (const workflowId of response.permanentlyDeleted) {
@@ -165,12 +138,12 @@ export class WorkflowSyncer {
     }
   }
 
-  private async performSync(): Promise<void> {
+  private static async performSync(): Promise<void> {
     await this.pull();
     await this.push();
   }
 
-  private async setAlarm() {
+  private static async setAlarm() {
     const alarm = await browser.alarms.get("workflowSyncAlarm");
     if (!alarm || alarm.periodInMinutes !== PERIODIC_SYNC_MINUTES) {
       browser.alarms.create("workflowSyncAlarm", {
@@ -179,7 +152,7 @@ export class WorkflowSyncer {
     }
   }
 
-  private deleteAlarm(): void {
+  private static deleteAlarm(): void {
     browser.alarms.clear("workflowSyncAlarm");
   }
 
