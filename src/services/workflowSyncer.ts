@@ -10,25 +10,7 @@ export class WorkflowSyncer {
   static instance: WorkflowSyncer = new WorkflowSyncer();
   private static syncPromise: Promise<void> | null = null;
 
-  static getInstance(): WorkflowSyncer {
-    if (!WorkflowSyncer.instance) {
-      WorkflowSyncer.instance = new WorkflowSyncer();
-    }
-    return WorkflowSyncer.instance;
-  }
-
   init(): void {
-    browser.runtime.onMessage.addListener((message: any, _sender: any) => {
-      if (message.type === "SYNC_WORKFLOWS") {
-        console.log("Received SYNC_WORKFLOWS message");
-        return WorkflowSyncer.sync()
-          .then(() => Promise.resolve(true))
-          .catch((error) => {
-            console.error("Error during workflow sync:", error);
-            return Promise.reject(error);
-          });
-      }
-    });
     browser.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === "workflowSyncAlarm") {
         console.debug("Performing periodic workflow sync");

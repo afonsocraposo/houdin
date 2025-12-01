@@ -61,9 +61,8 @@ StorageMigration.runMigrations().catch((error) => {
   console.error("Storage migration failed:", error);
 });
 
-const workflowSyncer = WorkflowSyncer.getInstance();
 WorkflowSyncer.sync(true);
-workflowSyncer.init();
+new WorkflowSyncer().init();
 
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
