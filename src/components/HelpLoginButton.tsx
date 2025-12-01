@@ -43,8 +43,10 @@ export default function HelpLoginButton() {
                 logging in there.
               </ListItem>
             </List>
-            After every attempt, please refresh the extension page to see if
-            you're logged in.
+            <Text>
+              After every attempt, please refresh the extension page to see if
+              you're logged in.
+            </Text>
           </Stack>
         </Container>
       </Modal>

@@ -7,7 +7,7 @@ import { WorkflowDefinition } from "@/types/workflow";
 const PERIODIC_SYNC_MINUTES = 15;
 
 export class WorkflowSyncer {
-  static instance: WorkflowSyncer = new WorkflowSyncer();
+  private static instance: WorkflowSyncer = new WorkflowSyncer();
   private static syncPromise: Promise<void> | null = null;
 
   static getInstance(): WorkflowSyncer {
@@ -96,10 +96,6 @@ export class WorkflowSyncer {
       WorkflowSyncer.syncPromise = null;
       clearTimeout(failsafeTimeout);
     }
-  }
-
-  async throttledSync(): Promise<void> {
-    await this.sync();
   }
 
   private async pull(): Promise<void> {
