@@ -1,6 +1,5 @@
 import { StateCreator } from "zustand";
 import { WorkflowDefinition } from "@/types/workflow";
-import { WorkflowTombstone } from "@/api/schemas/workflows";
 
 export interface WorkflowsSlice {
   workflows: WorkflowDefinition[];
@@ -10,9 +9,6 @@ export interface WorkflowsSlice {
   deleteWorkflow: (workflowId: string) => void;
   applyServerUpdate: (workflow: WorkflowDefinition) => void;
   applyServerDelete: (workflowId: string) => void;
-  tombstones: WorkflowTombstone[];
-  addTombstone: (tombstone: WorkflowTombstone) => void;
-  removeTombstone: (workflowId: string) => void;
   lastServerTime: number;
   setLastServerTime: (timestamp: number) => void;
   pendingUpdates: Set<string>;
@@ -78,15 +74,6 @@ export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (set) => ({
   applyServerDelete: (workflowId: string) =>
     set((state) => ({
       workflows: state.workflows.filter((w) => w.id !== workflowId),
-    })),
-  tombstones: [],
-  addTombstone: (tombstone: WorkflowTombstone) =>
-    set((state) => ({
-      tombstones: [...state.tombstones, tombstone],
-    })),
-  removeTombstone: (workflowId: string) =>
-    set((state) => ({
-      tombstones: state.tombstones.filter((t) => t.id !== workflowId),
     })),
   lastServerTime: 0,
   setLastServerTime: (timestamp: number) =>

@@ -1,6 +1,8 @@
-export function isBackgroundContext(): boolean {
+import browser from "@/services/browser";
+export async function isBackgroundContext(): Promise<boolean> {
   try {
-    return typeof window === "undefined" || !window.document;
+    const background = await browser.runtime.getBackgroundPage();
+    return window === background;
   } catch {
     return true;
   }
