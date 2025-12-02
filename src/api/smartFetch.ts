@@ -13,7 +13,7 @@ export async function smartFetch(
   url: string,
   options?: RequestInit,
 ): Promise<Response> {
-  if (isBackgroundContext()) {
+  if (await isBackgroundContext()) {
     return fetch(url, options);
   }
 
