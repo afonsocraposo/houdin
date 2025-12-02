@@ -3,6 +3,7 @@ import browser from "./browser";
 import { sendMessageToBackground } from "@/lib/messages";
 import { useStore } from "@/store";
 import { WorkflowDefinition } from "@/types/workflow";
+import { WorkflowTombstone } from "@/api/schemas/workflows";
 
 const PERIODIC_SYNC_MINUTES = 15;
 
@@ -104,12 +105,11 @@ export class WorkflowSyncer {
       await ApiClient.pullWorkflows(lastServerTime);
     const workflows = useStore.getState().workflows;
     const workflowsMap = new Map(workflows.map((wf) => [wf.id, wf]));
-    const tombstones = useStore.getState().tombstones;
-    const tombstonesMap = new Map(tombstones.map((t) => [t.id, t]));
+    const pendingDeletes = useStore.getState().pendingDeletes;
 
     for (const workflow of updated) {
-      const tombstone = tombstonesMap.get(workflow.id);
-      if (tombstone && workflow.modifiedAt <= tombstone.deletedAt) {
+      const tombstone = pendingDeletes[workflow.id];
+      if (tombstone && workflow.modifiedAt <= tombstone) {
         // Skip applying this update since we have a newer tombstone
         continue;
       }
@@ -139,10 +139,13 @@ export class WorkflowSyncer {
       .map((id) => workflowMap.get(id))
       .filter((wf): wf is WorkflowDefinition => wf !== undefined);
     const pendingDeletes = useStore.getState().pendingDeletes;
-    const deleted = Object.entries(pendingDeletes).map(([id, deletedAt]) => ({
-      id,
-      deletedAt,
-    }));
+    const deleted = Object.entries(pendingDeletes).map(
+      ([id, deletedAt]) =>
+        ({
+          id,
+          deletedAt,
+        }) as WorkflowTombstone,
+    );
     if (updated.length === 0 && deleted.length === 0) {
       return;
     }
