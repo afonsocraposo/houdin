@@ -267,13 +267,16 @@ export class WorkflowExecutor {
           executeActionCommand.nodeId,
           this.tabId,
         )
-        .then((result) =>
+        .then((result) => {
+          if (!result.success) {
+            throw new Error(result.error?.message || "Unknown error");
+          }
           resolve({
             success: true,
             data: result.data,
             outputHandle: result.outputHandle,
-          }),
-        )
+          });
+        })
         .catch((error) => {
           NotificationService.showErrorNotificationFromBackground({
             title: `Error executing ${executeActionCommand.nodeId}`,
