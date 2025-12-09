@@ -113,4 +113,34 @@ export class ApiClient {
     const data = (await response.json()).data;
     return data as WorkflowPushResponse;
   }
+
+  static async action<T>(actionType: string, payload: any): Promise<T> {
+    const response = await smartFetch(`${API_BASE_URL}/actions/${actionType}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const json = await response.json().catch(() => null);
+      const error = json?.error?.message;
+      switch (response.status) {
+        case 400:
+          throw new Error(`Bad Request: ${error}`);
+        case 401:
+          throw new Error(`Unauthorized: ${error}`);
+        case 403:
+          throw new Error(`Forbidden: ${error}`);
+        case 404:
+          throw new Error(`Not Found: ${error}`);
+        case 500:
+          throw new Error(`Internal Server Error: ${error}`);
+        default:
+          throw new Error(`Failed to perform action: ${error}`);
+      }
+    }
+    const data = (await response.json()).data;
+    return data as T;
+  }
 }

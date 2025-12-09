@@ -9,6 +9,7 @@ import {
 import { OpenAIService } from "@/services/openai";
 import { NotificationService } from "@/services/notification";
 import { IconBrandOpenai } from "@tabler/icons-react";
+import { ApiClient } from "@/api/client";
 
 interface LLMOpenAIActionConfig {
   credentialId: string;
@@ -43,8 +44,10 @@ export class LLMOpenAIAction extends BaseAction<
         credentialType: "openai",
         label: "OpenAI Credential",
         placeholder: "Select an OpenAI API key",
-        description: "Choose the OpenAI API credential to use",
+        description:
+          "Choose the OpenAI API credential to use or pick 'Houdin Plus' if you're subscribed",
         required: true,
+        houdin: true,
       }),
       model: selectProperty({
         label: "Model",
@@ -128,33 +131,53 @@ export class LLMOpenAIAction extends BaseAction<
       return;
     }
 
-    try {
-      // Show loading notification
+    if (credentialId === "houdin") {
       NotificationService.showNotificationFromBackground({
-        title: "Calling OpenAI API...",
+        message: "Calling Houdin API..",
         timeout: 1000,
       });
 
-      const selectedModel = model === "custom" ? (customModel ?? "") : model;
+      try {
+        const response = await ApiClient.action<LLMOpenAIActionOutput>(
+          this.metadata.type,
+          {
+            model: model === "custom" ? (customModel ?? "") : model,
+            prompt,
+          },
+        );
+        onSuccess(response);
+      } catch (error: any) {
+        onError(error as Error);
+      }
+    } else {
+      try {
+        // Show loading notification
+        NotificationService.showNotificationFromBackground({
+          title: "Calling OpenAI API...",
+          timeout: 1000,
+        });
 
-      // Call OpenAI API
-      const response = await OpenAIService.callChatCompletion(
-        credentialId,
-        selectedModel,
-        prompt,
-        maxTokens,
-        temperature,
-      );
+        const selectedModel = model === "custom" ? (customModel ?? "") : model;
 
-      // Store the response in the execution context
-      onSuccess({
-        response,
-        model: selectedModel,
-        tokensUsed: undefined, // OpenAI service doesn't return token count currently
-      });
-    } catch (error: any) {
-      // Store empty response on error
-      onError(error as Error);
+        // Call OpenAI API
+        const response = await OpenAIService.callChatCompletion(
+          credentialId,
+          selectedModel,
+          prompt,
+          maxTokens,
+          temperature,
+        );
+
+        // Store the response in the execution context
+        onSuccess({
+          response,
+          model: selectedModel,
+          tokensUsed: undefined, // OpenAI service doesn't return token count currently
+        });
+      } catch (error: any) {
+        // Store empty response on error
+        onError(error as Error);
+      }
     }
   }
 }

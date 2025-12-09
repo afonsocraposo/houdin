@@ -11,6 +11,7 @@ interface CredentialsSelectProps {
   onChange: (value: string | null) => void;
   required?: boolean;
   credentialType?: string; // Updated to use credentialType instead of service
+  houdin?: boolean;
 }
 
 export const CredentialsSelect: React.FC<CredentialsSelectProps> = ({
@@ -21,6 +22,7 @@ export const CredentialsSelect: React.FC<CredentialsSelectProps> = ({
   onChange,
   required,
   credentialType,
+  houdin,
 }) => {
   const [loading, setLoading] = useState(true);
   const [options, setOptions] = useState<{ value: string; label: string }[]>(
@@ -46,6 +48,13 @@ export const CredentialsSelect: React.FC<CredentialsSelectProps> = ({
         value: cred.id,
         label: cred.name,
       }));
+
+      if (houdin) {
+        credentialOptions.unshift({
+          value: "houdin",
+          label: "Houdin Plus 🪄",
+        });
+      }
 
       setOptions(credentialOptions);
     } catch (error) {

@@ -192,6 +192,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
               onChange={(val) => onChange(key, val)}
               required={property.required}
               credentialType={property.credentialType}
+              houdin={property.houdin}
             />
             {errorMessage && (
               <Text size="xs" c="red" mt="xs">

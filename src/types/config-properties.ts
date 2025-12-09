@@ -65,6 +65,7 @@ export interface CustomConfigProperty extends BaseConfigProperty {
 export interface CredentialsConfigProperty extends BaseConfigProperty {
   type: "credentials";
   credentialType?: string; // Updated to use credentialType instead of service
+  houdin?: boolean;
 }
 
 // Union type for all config properties
