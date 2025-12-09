@@ -133,7 +133,7 @@ export class LLMOpenAIAction extends BaseAction<
 
     if (credentialId === "houdin") {
       NotificationService.showNotificationFromBackground({
-        message: "Calling Houdin API..",
+        message: "Calling Houdin API...",
         timeout: 1000,
       });
 
