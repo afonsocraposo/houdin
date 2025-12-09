@@ -134,6 +134,8 @@ export class ApiClient {
           throw new Error(`Forbidden: ${error}`);
         case 404:
           throw new Error(`Not Found: ${error}`);
+        case 426:
+          throw new Error(`Upgrade Required: ${error}`);
         case 500:
           throw new Error(`Internal Server Error: ${error}`);
         default:
