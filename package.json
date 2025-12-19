@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:preview": "vite --mode preview",
     "dev:firefox": "TARGET=firefox vite build --watch",
     "build": "vite build",
     "build:firefox": "TARGET=firefox vite build",
