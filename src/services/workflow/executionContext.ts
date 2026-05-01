@@ -27,10 +27,11 @@ export class ExecutionContext implements WorkflowExecutionContext {
     return this.env[key];
   }
 
-  interpolateVariables(text: string): string {
+  interpolateVariables(text: string, prevOutput?: any): string {
     if (!text) return text;
     const context = {
       ...this.outputs,
+      prev: prevOutput,
       env: this.env,
       meta: this.metadata,
     };

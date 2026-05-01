@@ -14,6 +14,7 @@ import { useLastFocusedInput } from "@/utils/hooks";
 import { ActionIcon, Code, Group, Menu, Text, Tooltip } from "@mantine/core";
 import { IconVariable } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { aliasVars } from "./variableAliases";
 
 interface NodeOutputs {
   nodeId: string;
@@ -25,6 +26,7 @@ interface VariablesButtonProps {
   nodes: WorkflowNode[];
   workflowVars: Record<string, any>;
 }
+
 export default function VariablesButton({
   nodes,
   workflowVars,
@@ -181,6 +183,22 @@ export default function VariablesButton({
         <Menu.Label>Nodes Outputs</Menu.Label>
         {nodeOutputs.map((node) => (
           <div key={node.nodeId}>{getOutputMenu(node)}</div>
+        ))}
+
+        <Menu.Divider />
+        <Menu.Label>Alias</Menu.Label>
+        {Object.entries(aliasVars).map(([key, alias]) => (
+          <Tooltip
+            key={key}
+            label={<Text size="xs">{alias.description}</Text>}
+            withArrow
+            position="left"
+            color="dark"
+          >
+            <Menu.Item onClick={() => handleVariableClick(alias.value)}>
+              <Code>{key}</Code>
+            </Menu.Item>
+          </Tooltip>
         ))}
 
         <Menu.Divider />

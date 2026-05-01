@@ -78,7 +78,7 @@ export interface WorkflowExecutionContext {
   outputs: Record<string, any>;
   setOutput(nodeId: string, value: any): void;
   getOutput(nodeId: string): any;
-  interpolateVariables(text: string): string;
+  interpolateVariables(text: string, prevOutput?: any): string;
 }
 
 // Trigger type definitions
