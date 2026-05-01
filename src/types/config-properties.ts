@@ -34,7 +34,7 @@ export interface TextareaConfigProperty extends BaseConfigProperty {
 
 export interface SelectConfigProperty extends BaseConfigProperty {
   type: "select";
-  options: { value: string; label: string }[] | string[];
+  options: ({ value: string; label: string } | string)[];
 }
 
 export interface NumberConfigProperty extends BaseConfigProperty {

@@ -31,6 +31,9 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
   onChange,
   errors = {},
 }) => {
+  const getResolvedValue = (key: string) =>
+    values[key] ?? defaultConfig[key] ?? "";
+
   // Check if a property should be shown based on showWhen condition
   const shouldShowProperty = (property: ConfigProperty): boolean => {
     if (!property.showWhen) return true;
@@ -40,7 +43,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
       : [property.showWhen];
 
     return conditions.every(({ field, value: conditionValue }) => {
-      const fieldValue = values[field];
+      const fieldValue = getResolvedValue(field);
 
       if (Array.isArray(conditionValue)) {
         return conditionValue.includes(fieldValue);
@@ -56,7 +59,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
     errors: string[],
   ) => {
     const errorMessage = errors && errors.length > 0 ? errors[0] : null;
-    const value = values[key] ?? property.defaultValue ?? "";
+    const value = getResolvedValue(key) || property.defaultValue || "";
 
     switch (property.type) {
       case "text":
