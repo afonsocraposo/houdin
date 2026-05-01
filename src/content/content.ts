@@ -70,9 +70,16 @@ if ((window as any).houdinExtensionInitialized) {
         _sender,
         sendResponse: (response: ReadinessResponse) => void,
       ) => {
-        if (message.type === WorkflowCommandType.CHECK_READINESS) {
-          console.debug("Content: Received readiness check");
+        if (message.type === "START_ELEMENT_SELECTION") {
+          if (!isFullyInitialized) {
+            initFullContentScript();
+          }
 
+          sendResponse({ ready: true } as any);
+          return true;
+        }
+
+        if (message.type === WorkflowCommandType.CHECK_READINESS) {
           if (!isFullyInitialized) {
             initFullContentScript();
           }
@@ -94,10 +101,6 @@ if ((window as any).houdinExtensionInitialized) {
           event.source === window &&
           event.data.type === "workflow-script-response"
         ) {
-          console.debug(
-            "Content: Received workflow script response:",
-            event.data,
-          );
           // Forward the message to the extension
           sendMessageToBackground<WorkflowScriptMessage>(
             "workflow-script-response",
@@ -121,10 +124,6 @@ if ((window as any).houdinExtensionInitialized) {
     browser.runtime.onMessage.addListener(
       (message: CustomMessage<NotificationProps>, _sender, _sendResponse) => {
         if (message.type === "SHOW_NOTIFICATION") {
-          console.debug(
-            "Content: Received notification message from background:",
-            message.data,
-          );
           NotificationService.showNotification(message.data);
         }
       },
