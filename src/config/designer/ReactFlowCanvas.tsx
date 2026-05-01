@@ -66,6 +66,11 @@ interface ReactFlowCanvasProps {
   hasPrevious: boolean;
 }
 
+interface PendingConnection {
+  sourceNodeId: string;
+  sourceHandle: string;
+}
+
 export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
   useEffect(() => {
     // Initialize registries to ensure they're loaded
@@ -100,7 +105,18 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const colorScheme = useComputedColorScheme();
   const reactFlowInstance = useReactFlow();
   const [opened, setOpened] = useState(false);
+  const [pendingConnection, setPendingConnection] =
+    useState<PendingConnection | null>(null);
   const panToShowNode = panToShowNodeCallback(reactFlowInstance);
+  const lastActionNodeId = useMemo(() => {
+    for (let index = workflowNodes.length - 1; index >= 0; index -= 1) {
+      if (workflowNodes[index].type === "action") {
+        return workflowNodes[index].id;
+      }
+    }
+
+    return null;
+  }, [workflowNodes]);
 
   // Convert workflow nodes to React Flow nodes
   const reactFlowNodes: Node[] = useMemo(() => {
@@ -109,13 +125,18 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       type: "custom",
       position: node.position,
       selected: selectedNode?.id === node.id,
-      data: {
-        ...node.data,
-        ...node,
-        onDeleteNode: onNodeDelete,
-        onCopyNode: () => {
-          const newPosition = getNewNodePosition(workflowNodes);
-          onNodeDuplicate(node.id, newPosition);
+        data: {
+          ...node.data,
+          ...node,
+          onDeleteNode: onNodeDelete,
+          alwaysShowAddButton: node.id === lastActionNodeId,
+          onAddNodeFromHandle: (sourceNodeId: string, sourceHandle: string) => {
+            setPendingConnection({ sourceNodeId, sourceHandle });
+            setOpened(true);
+          },
+          onCopyNode: () => {
+            const newPosition = getNewNodePosition(workflowNodes);
+            onNodeDuplicate(node.id, newPosition);
         },
         error: errors[node.id] !== undefined,
       },
@@ -124,6 +145,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     workflowNodes, // This is already optimized to only change on structural changes
     selectedNode?.id, // Only depend on the ID, not the full node object
     errors,
+    lastActionNodeId,
     onNodeDelete,
     onNodeDuplicate,
   ]);
@@ -324,9 +346,20 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
       onNodeCreate(newNode);
 
+      if (pendingConnection) {
+        onConnectionCreate({
+          id: generateId("conn"),
+          source: pendingConnection.sourceNodeId,
+          target: newNode.id,
+          sourceHandle: pendingConnection.sourceHandle,
+          targetHandle: "input",
+        });
+        setPendingConnection(null);
+      }
+
       panToShowNode(newPosition);
     },
-    [workflowNodes, onNodeCreate],
+    [workflowNodes, onNodeCreate, onConnectionCreate, pendingConnection],
   );
 
   const onNodeCopy = onNodeCopyCallback(selectedNode);
@@ -419,7 +452,12 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       <AddNodeList
         createNode={createNode}
         opened={opened}
-        onChange={(value) => setOpened(value)}
+        onChange={(value) => {
+          setOpened(value);
+          if (!value) {
+            setPendingConnection(null);
+          }
+        }}
       />
     </Box>
   );

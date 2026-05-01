@@ -23,6 +23,7 @@ interface CanvasNodeProps {
     WorkflowNode & {
       onDeleteNode?: (id: string) => void;
       onAddNodeFromHandle?: (nodeId: string, sourceHandle: string) => void;
+      alwaysShowAddButton?: boolean;
       error: boolean;
       onCopyNode?: (id: string) => void;
     };
@@ -279,7 +280,7 @@ export default function CanvasNode({
           nodeId={id}
           percentage={(index + 1) / (nodeData.outputs!.length + 1)}
           label={(nodeData.outputs?.length ?? 0) > 1 ? output : undefined}
-          showButton={hovered}
+          showButton={hovered || Boolean(nodeData.alwaysShowAddButton)}
           onAddNodeFromHandle={nodeData.onAddNodeFromHandle}
         />
       ))}
