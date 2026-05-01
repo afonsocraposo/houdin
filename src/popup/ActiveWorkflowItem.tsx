@@ -46,10 +46,10 @@ export default function ActiveWorkflowItem({
   };
 
   const handleWorkflowClick = (workflow: WorkflowDefinition) => {
-    // Open workflow designer in new tab
-    const designerUrl = browser.runtime.getURL(
-      `src/config/index.html#/designer/${workflow.id}`,
-    );
+    // Build the extension page URL first, then append the hash route.
+    const designerUrl =
+      browser.runtime.getURL("src/config/index.html") +
+      `#/designer/${workflow.id}`;
     browser.tabs.create({ url: designerUrl });
     window.close();
   };
