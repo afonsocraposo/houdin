@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   ActionNodeData,
   TriggerNodeData,
@@ -10,13 +10,19 @@ import { ActionRegistry } from "@/services/actionRegistry";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import { ActionIcon, Card, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { Handle, Position } from "@xyflow/react";
-import { IconAlertCircle, IconCopy, IconTrash } from "@tabler/icons-react";
+import {
+  IconAlertCircle,
+  IconCopy,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useHover } from "@mantine/hooks";
 
 interface CanvasNodeProps {
   data: WorkflowNode["data"] &
     WorkflowNode & {
       onDeleteNode?: (id: string) => void;
+      onAddNodeFromHandle?: (nodeId: string, sourceHandle: string) => void;
       error: boolean;
       onCopyNode?: (id: string) => void;
     };
@@ -30,73 +36,25 @@ function NodeHandle({
   id,
   percentage = 0.5,
   label,
+  showButton = false,
+  nodeId,
+  onAddNodeFromHandle,
 }: {
   type: "source" | "target";
   position: Position;
   id: string;
   percentage?: number;
   label?: string;
+  showButton?: boolean;
+  nodeId: string;
+  onAddNodeFromHandle?: (nodeId: string, sourceHandle: string) => void;
 }) {
-  if (label) {
-    // When there's a label, make the label itself the interactive handle
-    const circleHandle = (
-      <div
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: "50%",
-          background: "#adb5bd",
-          border: "2px solid #fff",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "#495057";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "#adb5bd";
-        }}
-      />
-    );
-    return (
-      <Handle
-        key={id}
-        type={type}
-        position={position}
-        id={id}
-        style={{
-          position: "absolute",
-          top: `${percentage * 100}%`,
-          background: "transparent",
-          border: "none",
-          width: "auto",
-          height: "auto",
-          maxWidth: "100px",
-          padding: "0px 8px",
-          minWidth: "20px",
-          fontSize: "13px",
-          fontWeight: 500,
-          color: "#6c757d",
-          right: position === Position.Right ? "0" : "auto",
-          left: position === Position.Left ? "0" : "auto",
-          transform: `translateX(${
-            position === Position.Right
-              ? "calc(100% - 16px)"
-              : "calc(-100% + 16px)"
-          }) translateY(-50%)`,
-          borderRadius: "12px",
-          transition: "all 0.2s ease",
-        }}
-      >
-        <Group gap="xs" style={{ pointerEvents: "none" }}>
-          {position === Position.Left ? label : null}
-          {circleHandle}
-          {position === Position.Right ? label : null}
-        </Group>
-      </Handle>
-    );
-  }
+  const isOutputHandle = type === "source" && position === Position.Right;
+  const isRight = position === Position.Right;
+  const [handleHovered, setHandleHovered] = useState(false);
+  const showHandleButton =
+    isOutputHandle && onAddNodeFromHandle ? showButton || handleHovered : false;
 
-  // Default circle handle when no label
   return (
     <Handle
       key={id}
@@ -104,20 +62,87 @@ function NodeHandle({
       position={position}
       id={id}
       style={{
+        position: "absolute",
+        top: `${percentage * 100}%`,
+        right: isRight ? 0 : "auto",
+        left: isRight ? "auto" : 0,
+        transform: `translate(${isRight ? "50%" : "-50%"}, -50%)`,
         width: 16,
         height: 16,
-        top: `${percentage * 100}%`,
         background: "#adb5bd",
         border: "2px solid #fff",
+        borderRadius: "50%",
         transition: "all 0.2s ease",
+        overflow: "visible",
+        zIndex: 3,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = "#495057";
+        if (isOutputHandle) {
+          setHandleHovered(true);
+        }
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = "#adb5bd";
+        if (isOutputHandle) {
+          setHandleHovered(false);
+        }
       }}
-    />
+    >
+      {(label || showHandleButton) && (
+        <Group
+          gap="xs"
+          wrap="nowrap"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: isRight ? "100%" : "auto",
+            right: isRight ? "auto" : "100%",
+            transform: "translateY(-50%)",
+            paddingLeft: isRight ? 8 : 0,
+            paddingRight: isRight ? 0 : 8,
+            pointerEvents: "all",
+          }}
+          onMouseEnter={() => {
+            if (isOutputHandle) {
+              setHandleHovered(true);
+            }
+          }}
+          onMouseLeave={() => {
+            if (isOutputHandle) {
+              setHandleHovered(false);
+            }
+          }}
+        >
+          {!isRight && label ? (
+            <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+              {label}
+            </Text>
+          ) : null}
+
+          {isRight && label ? (
+            <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+              {label}
+            </Text>
+          ) : null}
+
+          {showHandleButton ? (
+            <ActionIcon
+              size="sm"
+              radius="xl"
+              variant="light"
+              aria-label={`Add node from ${id}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAddNodeFromHandle?.(nodeId, id);
+              }}
+            >
+              <IconPlus size={12} />
+            </ActionIcon>
+          ) : null}
+        </Group>
+      )}
+    </Handle>
   );
 }
 
@@ -232,26 +257,32 @@ export default function CanvasNode({
       withBorder
     >
       {/* Input handles */}
-      {(nodeData.inputs || []).map((input: string, index: number) =>
-        NodeHandle({
-          type: "target",
-          position: Position.Left,
-          id: input,
-          percentage: (index + 1) / (nodeData.inputs!.length + 1),
-          label: (nodeData.inputs?.length ?? 0) > 1 ? input : undefined,
-        }),
-      )}
+      {(nodeData.inputs || []).map((input: string, index: number) => (
+        <NodeHandle
+          key={input}
+          type="target"
+          position={Position.Left}
+          id={input}
+          nodeId={id}
+          percentage={(index + 1) / (nodeData.inputs!.length + 1)}
+          label={(nodeData.inputs?.length ?? 0) > 1 ? input : undefined}
+        />
+      ))}
 
       {/* Output handles */}
-      {(nodeData.outputs || []).map((output: string, index: number) =>
-        NodeHandle({
-          type: "source",
-          position: Position.Right,
-          id: output,
-          percentage: (index + 1) / (nodeData.outputs!.length + 1),
-          label: (nodeData.outputs?.length ?? 0) > 1 ? output : undefined,
-        }),
-      )}
+      {(nodeData.outputs || []).map((output: string, index: number) => (
+        <NodeHandle
+          key={output}
+          type="source"
+          position={Position.Right}
+          id={output}
+          nodeId={id}
+          percentage={(index + 1) / (nodeData.outputs!.length + 1)}
+          label={(nodeData.outputs?.length ?? 0) > 1 ? output : undefined}
+          showButton={hovered}
+          onAddNodeFromHandle={nodeData.onAddNodeFromHandle}
+        />
+      ))}
 
       <Stack>
         <Stack gap="xs">
