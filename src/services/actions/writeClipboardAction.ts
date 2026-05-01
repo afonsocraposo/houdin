@@ -1,9 +1,10 @@
 import { BaseAction, ActionMetadata } from "@/types/actions";
-import { copyToClipboard } from "@/utils/helpers";
-import { textProperty } from "@/types/config-properties";
+import { writeClipboard } from "@/utils/helpers";
+import { booleanProperty, textProperty } from "@/types/config-properties";
 
 interface WriteClipboardActionConfig {
   text: string;
+  richText?: boolean;
 }
 
 interface WriteClipboardActionOutput {
@@ -28,6 +29,13 @@ export class WriteClipboardAction extends BaseAction<
         description: "Text content to write to clipboard",
         required: true,
       }),
+      richText: booleanProperty({
+        label: "Rich Text",
+        description:
+          "Preserve HTML so rich text editors can paste formatted content",
+        required: false,
+        defaultValue: false,
+      }),
     },
   };
 
@@ -42,9 +50,9 @@ export class WriteClipboardAction extends BaseAction<
     onSuccess: (data?: WriteClipboardActionOutput) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
-    const { text } = config;
+    const { text, richText = false } = config;
 
-    const success = await copyToClipboard(text);
+    const success = await writeClipboard(text, richText);
     if (!success) {
       console.error("Failed to write to clipboard");
       onError(new Error("Failed to write to clipboard"));

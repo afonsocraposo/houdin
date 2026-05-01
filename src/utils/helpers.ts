@@ -28,6 +28,45 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 
+const stripHtmlToText = (html: string): string => {
+  if (typeof DOMParser !== "undefined") {
+    const document = new DOMParser().parseFromString(html, "text/html");
+    return document.body.textContent || "";
+  }
+
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return div.textContent || div.innerText || "";
+};
+
+export const writeClipboard = async (
+  text: string,
+  richText: boolean = false,
+): Promise<boolean> => {
+  if (!richText) {
+    return copyToClipboard(text);
+  }
+
+  const plainText = stripHtmlToText(text);
+
+  try {
+    if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([text], { type: "text/html" }),
+          "text/plain": new Blob([plainText], { type: "text/plain" }),
+        }),
+      ]);
+      return true;
+    }
+
+    return await copyToClipboard(plainText);
+  } catch (error) {
+    console.error("Failed to write rich clipboard content:", error);
+    return copyToClipboard(plainText);
+  }
+};
+
 export const generateId = (prefix: string = "", len: number = 6): string => {
   const makeId = customAlphabet(ALPHANUM, len);
   if (prefix) {
