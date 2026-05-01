@@ -80,10 +80,10 @@ export class AIAction extends BaseAction<AIActionConfig, AIActionOutput> {
       openAIModel: selectProperty({
         label: "Model",
         options: [
-          { label: "gpt-5", value: "gpt-5" },
-          { label: "gpt-4o-mini", value: "gpt-4o-mini" },
-          { label: "gpt-4o", value: "gpt-4o" },
-          { label: "gpt-3.5-turbo", value: "gpt-3.5-turbo" },
+          "gpt-5",
+          "gpt-4o-mini",
+          "gpt-4o",
+          "gpt-3.5-turbo",
           { label: "Other", value: "custom" },
         ],
         defaultValue: "gpt-4o-mini",
@@ -114,19 +114,14 @@ export class AIAction extends BaseAction<AIActionConfig, AIActionOutput> {
       openRouterModel: selectProperty({
         label: "Model",
         options: [
-          { label: "openai/gpt-4o-mini", value: "openai/gpt-4o-mini" },
-          { label: "openai/gpt-4o", value: "openai/gpt-4o" },
-          {
-            label: "anthropic/claude-3.5-sonnet",
-            value: "anthropic/claude-3.5-sonnet",
-          },
-          {
-            label: "google/gemini-2.0-flash-001",
-            value: "google/gemini-2.0-flash-001",
-          },
+          "openai/gpt-4o-mini",
+          "openai/gpt-4o",
+          "openai/gpt-oss-120b:free",
+          "anthropic/claude-3.5-sonnet",
+          "google/gemini-2.0-flash-001",
           { label: "Other", value: "custom" },
         ],
-        defaultValue: "openai/gpt-4o-mini",
+        defaultValue: "openai/gpt-oss-120b:free",
         description:
           "Choose a common OpenRouter model or select 'Other' to enter a custom one.",
         required: true,
