@@ -24,6 +24,7 @@ import { CookiesAction } from "./actions/cookiesAction";
 import { IfAction } from "./actions/ifAction";
 import { FillFormAction } from "./actions/fillFormAction";
 import { CreateVariableAction } from "./actions/createVariableAction";
+import { OpenUrlAction } from "./actions/openUrlAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -51,6 +52,7 @@ export function initializeActions(): void {
   registry.register(HttpRequestAction);
   registry.register(WaitAction);
   registry.register(NavigateUrlAction);
+  registry.register(OpenUrlAction);
   registry.register(PressKeyAction);
   registry.register(TypeTextAction);
   registry.register(InputAction);
