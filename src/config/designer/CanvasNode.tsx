@@ -280,31 +280,35 @@ export default function CanvasNode({
           </div>
         </Stack>
         <Group justify="end" gap="xs">
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            onClick={copyNode}
-            aria-label="Copy Node"
-            style={{
-              opacity: hovered || selected ? 1 : 0,
-              transition: "opacity 0.2s",
-            }}
-          >
-            <IconCopy size={14} />
-          </ActionIcon>
-          <ActionIcon
-            size="sm"
-            color="red"
-            variant="subtle"
-            onClick={deleteNode}
-            aria-label="Delete Node"
-            style={{
-              opacity: hovered || selected ? 1 : 0,
-              transition: "opacity 0.2s",
-            }}
-          >
-            <IconTrash size={14} />
-          </ActionIcon>
+          <Tooltip label="Duplicate node" withArrow>
+            <ActionIcon
+              size="sm"
+              variant="subtle"
+              onClick={copyNode}
+              aria-label="Duplicate node"
+              style={{
+                opacity: hovered || selected ? 1 : 0,
+                transition: "opacity 0.2s",
+              }}
+            >
+              <IconCopy size={14} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Delete node" withArrow>
+            <ActionIcon
+              size="sm"
+              color="red"
+              variant="subtle"
+              onClick={deleteNode}
+              aria-label="Delete node"
+              style={{
+                opacity: hovered || selected ? 1 : 0,
+                transition: "opacity 0.2s",
+              }}
+            >
+              <IconTrash size={14} />
+            </ActionIcon>
+          </Tooltip>
         </Group>
       </Stack>
     </Card>
