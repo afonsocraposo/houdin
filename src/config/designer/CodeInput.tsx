@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 export interface CodeInputProps {
   label?: string;
-  description?: string;
+  description?: string | ReactNode;
   labelRightSection?: ReactNode;
   required?: boolean;
   placeholder?: string;

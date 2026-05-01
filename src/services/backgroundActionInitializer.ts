@@ -1,6 +1,7 @@
 import { ActionRegistry } from "./actionRegistry";
 import { CustomScriptAction } from "./actions/customScriptAction";
 import { LLMOpenAIAction } from "./actions/llmOpenAIAction";
+import { LLMOpenRouterAction } from "./actions/llmOpenRouterAction";
 import { WaitAction } from "./actions/waitAction";
 import { NavigateUrlAction } from "./actions/navigateUrlAction";
 import { CookiesAction } from "./actions/cookiesAction";
@@ -13,4 +14,5 @@ export function initializeBackgroundActions(): void {
   registry.register(NavigateUrlAction);
   registry.register(CookiesAction);
   registry.register(LLMOpenAIAction);
+  registry.register(LLMOpenRouterAction);
 }

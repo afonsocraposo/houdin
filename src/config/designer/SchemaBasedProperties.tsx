@@ -14,6 +14,8 @@ import { CredentialsSelect } from "@/components/CredentialsSelect";
 import PasswordInput from "@/components/PasswordInput";
 import MaximizableTextArea from "./ModalTextArea";
 import MaximizableCodeInput from "./ModalCodeInput";
+import Markdown from "react-markdown";
+import MarkdownText from "@/components/MarkdownText";
 
 interface SchemaBasedPropertiesProps {
   defaultConfig?: Record<string, any>;
@@ -58,7 +60,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <TextInput
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
             required={property.required}
@@ -70,7 +72,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <PasswordInput
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
             required={property.required}
@@ -82,7 +84,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <MaximizableTextArea
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             minRows={property.rows || 3}
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
@@ -96,7 +98,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <Select
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             data={property.options || []}
             value={value}
             onChange={(val) => onChange(key, val)}
@@ -110,7 +112,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <NumberInput
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             min={property.min}
             max={property.max}
             step={property.step}
@@ -128,7 +130,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             closeOnColorSwatchClick
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             format="hex"
             swatches={[
               "#2e2e2e",
@@ -159,7 +161,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             key={key}
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             language={property.language}
             height={property.height}
             value={value}
@@ -173,7 +175,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
         return (
           <Switch
             label={property.label}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             // labelPosition="left"
             checked={Boolean(value)}
             onChange={(e) => onChange(key, e.currentTarget.checked)}
@@ -187,7 +189,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             <CredentialsSelect
               label={property.label}
               placeholder={property.placeholder}
-              description={property.description}
+              description={<MarkdownText>{property.description}</MarkdownText>}
               value={value}
               onChange={(val) => onChange(key, val)}
               required={property.required}

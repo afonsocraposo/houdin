@@ -1,12 +1,21 @@
 import ReactMarkdown from "react-markdown";
-import { Title, Text, List, ThemeIcon, Code, Typography } from "@mantine/core";
+import {
+  Title,
+  Text,
+  List,
+  ThemeIcon,
+  Code,
+  Typography,
+  Anchor,
+} from "@mantine/core";
 import { IconCircle } from "@tabler/icons-react";
 import rehypeSanitize from "rehype-sanitize";
 import { CodeHighlight } from "@mantine/code-highlight";
-import { CSSProperties } from "react";
+import { CSSProperties, ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 interface MarkdownTextProps {
-  children: string;
+  children: string | ReactNode;
   style?: CSSProperties;
   c?: string;
 }
@@ -73,6 +82,11 @@ export default function MarkdownText({
             </List>
           ),
           li: ({ children }) => <List.Item c={c}>{children}</List.Item>,
+          a: ({ children, href }) => (
+            <Anchor href={href || ""} target="_blank">
+              {children}
+            </Anchor>
+          ),
           code: ({ children, className }) => {
             if (!children) {
               return <>{children}</>;

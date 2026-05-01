@@ -5,6 +5,7 @@ import { ShowModalAction } from "./actions/showModalAction";
 import { InjectComponentAction } from "./actions/injectComponentAction";
 import { CustomScriptAction } from "./actions/customScriptAction";
 import { LLMOpenAIAction } from "./actions/llmOpenAIAction";
+import { LLMOpenRouterAction } from "./actions/llmOpenRouterAction";
 import { InjectStyleAction } from "./actions/injectStyleAction";
 import { ClickElementAction } from "./actions/clickElementAction";
 import { ShowNotificationAction } from "./actions/showNotificationAction";
@@ -46,6 +47,7 @@ export function initializeActions(): void {
   registry.register(InjectStyleAction);
   registry.register(CustomScriptAction);
   registry.register(LLMOpenAIAction);
+  registry.register(LLMOpenRouterAction);
   registry.register(HttpRequestAction);
   registry.register(WaitAction);
   registry.register(NavigateUrlAction);
