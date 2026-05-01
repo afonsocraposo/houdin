@@ -25,6 +25,7 @@ import { IfAction } from "./actions/ifAction";
 import { FillFormAction } from "./actions/fillFormAction";
 import { CreateVariableAction } from "./actions/createVariableAction";
 import { OpenUrlAction } from "./actions/openUrlAction";
+import { PasteClipboardAction } from "./actions/pasteClipboardAction";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -65,6 +66,7 @@ export function initializeActions(): void {
   registry.register(IfAction);
   registry.register(FillFormAction);
   registry.register(CreateVariableAction);
+  registry.register(PasteClipboardAction);
 }
 
 // Export registry instance for convenience

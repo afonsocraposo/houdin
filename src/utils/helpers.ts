@@ -28,6 +28,30 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 
+export const readClipboard = async (): Promise<{
+  text: string;
+  html?: string;
+}> => {
+  if (typeof navigator.clipboard?.read === "function") {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const textType = item.types.find((type) => type === "text/plain");
+      const htmlType = item.types.find((type) => type === "text/html");
+
+      const [text, html] = await Promise.all([
+        textType ? item.getType(textType).then((blob) => blob.text()) : Promise.resolve(""),
+        htmlType ? item.getType(htmlType).then((blob) => blob.text()) : Promise.resolve(undefined),
+      ]);
+
+      if (text || html) {
+        return { text, html };
+      }
+    }
+  }
+
+  return { text: await navigator.clipboard.readText() };
+};
+
 const stripHtmlToText = (html: string): string => {
   if (typeof DOMParser !== "undefined") {
     const document = new DOMParser().parseFromString(html, "text/html");
