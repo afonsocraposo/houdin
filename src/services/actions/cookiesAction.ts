@@ -7,7 +7,14 @@ import {
 import browser from "@/services/browser";
 
 interface CookiesActionConfig {
-  operation: "create" | "read" | "update" | "delete" | "list" | "clear";
+  operation:
+    | "create"
+    | "read"
+    | "exists"
+    | "update"
+    | "delete"
+    | "list"
+    | "clear";
   key?: string; // Key for create, read, update, delete operations
   value?: string; // Value for create and update operations
   ttl?: number; // Time to live in seconds
@@ -26,6 +33,7 @@ interface CookieValue {
 interface CookiesActionOutput {
   key?: string;
   value?: CookieValue | null;
+  exists?: boolean;
   operation: string;
   data?: Record<string, CookieValue>;
   cleared?: number;
@@ -53,6 +61,7 @@ export class CookiesAction extends BaseAction<
           { label: "List", value: "list" },
           { label: "Create", value: "create" },
           { label: "Read", value: "read" },
+          { label: "Exists", value: "exists" },
           { label: "Update", value: "update" },
           { label: "Delete", value: "delete" },
           { label: "Clear", value: "clear" },
@@ -65,7 +74,7 @@ export class CookiesAction extends BaseAction<
         placeholder: "foo",
         showWhen: {
           field: "operation",
-          value: ["create", "read", "update", "delete"],
+          value: ["create", "read", "exists", "update", "delete"],
         },
         required: true,
       }),
@@ -182,6 +191,18 @@ export class CookiesAction extends BaseAction<
             return;
           }
           onSuccess({ key, value: readValue, operation });
+          return;
+        case "exists":
+          if (!key) {
+            onError(new Error("Key is required for exists operation."));
+            return;
+          }
+          const existingCookie = await browser.cookies.get({
+            url: url,
+            name: key,
+            storeId,
+          });
+          onSuccess({ key, exists: Boolean(existingCookie), operation });
           return;
         case "delete":
           if (!key) {
