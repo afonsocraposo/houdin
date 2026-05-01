@@ -14,6 +14,7 @@ export type ActionValidationResult = ValidationResult;
 export interface ActionMetadata extends BaseMetadata {
   disableTimeout?: boolean; // Whether to disable timeout for this action
   outputs?: Set<string>; // Available output handles for multiple outputs
+  hidden?: boolean;
 }
 
 // Abstract base class for all actions

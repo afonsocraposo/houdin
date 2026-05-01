@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { ReactNode, useState, useEffect } from "react";
 import { Select, Loader } from "@mantine/core";
 import { Credential } from "@/types/credentials";
 import { useStore } from "@/store";
@@ -6,7 +6,7 @@ import { useStore } from "@/store";
 interface CredentialsSelectProps {
   label: string;
   placeholder?: string;
-  description?: string;
+  description?: ReactNode;
   value: string;
   onChange: (value: string | null) => void;
   required?: boolean;

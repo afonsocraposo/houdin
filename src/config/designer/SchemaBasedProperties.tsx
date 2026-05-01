@@ -14,7 +14,6 @@ import { CredentialsSelect } from "@/components/CredentialsSelect";
 import PasswordInput from "@/components/PasswordInput";
 import MaximizableTextArea from "./ModalTextArea";
 import MaximizableCodeInput from "./ModalCodeInput";
-import Markdown from "react-markdown";
 import MarkdownText from "@/components/MarkdownText";
 
 interface SchemaBasedPropertiesProps {
@@ -36,14 +35,19 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
   const shouldShowProperty = (property: ConfigProperty): boolean => {
     if (!property.showWhen) return true;
 
-    const { field, value: conditionValue } = property.showWhen;
-    const fieldValue = values[field];
+    const conditions = Array.isArray(property.showWhen)
+      ? property.showWhen
+      : [property.showWhen];
 
-    if (Array.isArray(conditionValue)) {
-      return conditionValue.includes(fieldValue);
-    }
+    return conditions.every(({ field, value: conditionValue }) => {
+      const fieldValue = values[field];
 
-    return fieldValue === conditionValue;
+      if (Array.isArray(conditionValue)) {
+        return conditionValue.includes(fieldValue);
+      }
+
+      return fieldValue === conditionValue;
+    });
   };
 
   const renderProperty = (

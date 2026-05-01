@@ -11,11 +11,10 @@ import {
 import { IconCircle } from "@tabler/icons-react";
 import rehypeSanitize from "rehype-sanitize";
 import { CodeHighlight } from "@mantine/code-highlight";
-import { CSSProperties, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { CSSProperties } from "react";
 
 interface MarkdownTextProps {
-  children: string | ReactNode;
+  children?: string | null;
   style?: CSSProperties;
   c?: string;
 }

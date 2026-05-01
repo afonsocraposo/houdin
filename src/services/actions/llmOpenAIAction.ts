@@ -32,9 +32,9 @@ export class LLMOpenAIAction extends BaseAction<
 > {
   static readonly metadata: ActionMetadata = {
     type: "llm-openai",
-    label: "OpenAI",
+    label: "OpenAI (legacy)",
     icon: IconBrandOpenai,
-    description: "Send prompt to OpenAI and get response",
+    description: "Legacy OpenAI action kept for older workflows",
     disableTimeout: true,
   };
 
