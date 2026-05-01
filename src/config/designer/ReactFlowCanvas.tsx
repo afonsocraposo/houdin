@@ -130,6 +130,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         alwaysShowAddButton: node.id === lastActionNodeId,
         onAddNodeFromHandle: (sourceNodeId: string, sourceHandle: string) => {
           setPendingConnection({ sourceNodeId, sourceHandle });
+          onNodeSelect(null);
           setOpened(true);
         },
         onCopyNode: () => {
@@ -146,6 +147,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     lastActionNodeId,
     onNodeDelete,
     onNodeDuplicate,
+    onNodeSelect,
   ]);
 
   // Convert workflow connections to React Flow edges
@@ -453,6 +455,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       <AddNodeList
         createNode={createNode}
         opened={opened}
+        prioritizeActions={pendingConnection !== null}
         onChange={(value) => {
           setOpened(value);
           if (!value) {

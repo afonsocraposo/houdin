@@ -36,18 +36,19 @@ interface NodeMetadata {
 interface NodeCategories {
   trigger: NodeMetadata[];
   action: NodeMetadata[];
-  condition: NodeMetadata[];
 }
 
 interface AddNodeListProps {
   createNode: (type: string, category: NodeType) => void;
   opened?: boolean;
   onChange?: (opened: boolean) => void;
+  prioritizeActions?: boolean;
 }
 export default function AddNodeList({
   createNode,
   opened = false,
   onChange,
+  prioritizeActions = false,
 }: AddNodeListProps) {
   const [showNodePalette, setShowNodePalette] = useState(opened);
   const [search, setSearch] = useState("");
@@ -72,8 +73,6 @@ export default function AddNodeList({
         icon: metadata.icon,
         description: metadata.description,
       })),
-      // TODO: Add conditions when we have a condition registry
-      condition: [],
     };
   }, []);
 
@@ -109,13 +108,6 @@ export default function AddNodeList({
           item.description.toLowerCase().includes(value.toLowerCase()) ||
           item.type.toLowerCase().includes(value.toLowerCase()),
       ),
-      condition: [],
-      // condition: fullCategories.condition.filter(
-      //   (item) =>
-      //     item.label.toLowerCase().includes(value.toLowerCase()) ||
-      //     item.description.toLowerCase().includes(value.toLowerCase()) ||
-      //     item.type.toLowerCase().includes(value.toLowerCase()),
-      // ),
     };
     setNodeCategories(filteredCategories);
   }, 300);
@@ -128,6 +120,16 @@ export default function AddNodeList({
     }
     handleSearch(value);
   }, [search]);
+
+  const orderedCategories = useMemo(() => {
+    const categoryOrder = prioritizeActions
+      ? (["action", "trigger"] as const)
+      : (["trigger", "action"] as const);
+
+    return categoryOrder.map(
+      (category) => [category, nodeCategories[category]] as const,
+    );
+  }, [nodeCategories, prioritizeActions]);
 
   return (
     <>
@@ -191,7 +193,7 @@ export default function AddNodeList({
 
               <ScrollArea type="hover" flex={1}>
                 <Stack>
-                  {Object.entries(nodeCategories).map(([category, items]) => {
+                  {orderedCategories.map(([category, items]) => {
                     const nodes = items as NodeMetadata[];
                     if (nodes.length === 0) return null;
                     return (
