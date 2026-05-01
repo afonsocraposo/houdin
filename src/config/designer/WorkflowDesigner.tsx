@@ -203,9 +203,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   }, [schemaErrors]);
 
   const handleNodeCreation = useCallback(
-    (newNode: WorkflowNode) => {
+    (newNode: WorkflowNode, connection?: WorkflowConnection) => {
       const updatedNodes = [...nodesRef.current, newNode];
-      set(updatedNodes);
+      const updatedConnections = connection
+        ? [...connectionsRef.current, connection]
+        : undefined;
+
+      set(updatedNodes, updatedConnections);
       setSelectedNodeId(newNode.id);
     },
     [set],

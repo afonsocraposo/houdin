@@ -53,7 +53,7 @@ interface ReactFlowCanvasProps {
   onNodeMove: (id: string, position: { x: number; y: number }) => void;
   onConnectionCreate: (connection: WorkflowConnection) => void;
   onConnectionDelete: (id: string) => void;
-  onNodeCreate: (node: WorkflowNode) => void;
+  onNodeCreate: (node: WorkflowNode, connection?: WorkflowConnection) => void;
   onNodeDuplicate: (nodeId: string, position: { x: number; y: number }) => void;
   onBatchUpdateNodePositions: (
     positions: Record<string, { x: number; y: number }>,
@@ -110,9 +110,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const panToShowNode = panToShowNodeCallback(reactFlowInstance);
   const lastActionNodeId = useMemo(() => {
     for (let index = workflowNodes.length - 1; index >= 0; index -= 1) {
-      if (workflowNodes[index].type === "action") {
-        return workflowNodes[index].id;
-      }
+      return workflowNodes[index].id;
     }
 
     return null;
@@ -125,18 +123,18 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       type: "custom",
       position: node.position,
       selected: selectedNode?.id === node.id,
-        data: {
-          ...node.data,
-          ...node,
-          onDeleteNode: onNodeDelete,
-          alwaysShowAddButton: node.id === lastActionNodeId,
-          onAddNodeFromHandle: (sourceNodeId: string, sourceHandle: string) => {
-            setPendingConnection({ sourceNodeId, sourceHandle });
-            setOpened(true);
-          },
-          onCopyNode: () => {
-            const newPosition = getNewNodePosition(workflowNodes);
-            onNodeDuplicate(node.id, newPosition);
+      data: {
+        ...node.data,
+        ...node,
+        onDeleteNode: onNodeDelete,
+        alwaysShowAddButton: node.id === lastActionNodeId,
+        onAddNodeFromHandle: (sourceNodeId: string, sourceHandle: string) => {
+          setPendingConnection({ sourceNodeId, sourceHandle });
+          setOpened(true);
+        },
+        onCopyNode: () => {
+          const newPosition = getNewNodePosition(workflowNodes);
+          onNodeDuplicate(node.id, newPosition);
         },
         error: errors[node.id] !== undefined,
       },
@@ -344,22 +342,25 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
         outputs,
       };
 
-      onNodeCreate(newNode);
+      const newConnection = pendingConnection
+        ? {
+            id: generateId("conn"),
+            source: pendingConnection.sourceNodeId,
+            target: newNode.id,
+            sourceHandle: pendingConnection.sourceHandle,
+            targetHandle: "input",
+          }
+        : undefined;
 
-      if (pendingConnection) {
-        onConnectionCreate({
-          id: generateId("conn"),
-          source: pendingConnection.sourceNodeId,
-          target: newNode.id,
-          sourceHandle: pendingConnection.sourceHandle,
-          targetHandle: "input",
-        });
+      onNodeCreate(newNode, newConnection);
+
+      if (newConnection) {
         setPendingConnection(null);
       }
 
       panToShowNode(newPosition);
     },
-    [workflowNodes, onNodeCreate, onConnectionCreate, pendingConnection],
+    [workflowNodes, onNodeCreate, pendingConnection],
   );
 
   const onNodeCopy = onNodeCopyCallback(selectedNode);
