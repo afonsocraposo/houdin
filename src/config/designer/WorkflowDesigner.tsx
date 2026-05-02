@@ -20,6 +20,7 @@ import {
   Paper,
   Tabs,
   Text,
+  ActionIcon,
 } from "@mantine/core";
 import {
   IconDeviceFloppy,
@@ -28,6 +29,10 @@ import {
   IconHistory,
   IconVariable,
   IconInfoCircle,
+  IconCheck,
+  IconAi,
+  IconX,
+  IconRobot,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
@@ -47,6 +52,7 @@ import { useThrottledCallback } from "@mantine/hooks";
 import { newWorkflowId, generateId } from "@/utils/helpers";
 import { nodeCatalog } from "@/services/nodeCatalog";
 import { validateConfig } from "@/types/config-properties";
+import AiWorkflowChatPanel from "@/components/ai/AiWorkflowChatPanel";
 
 export const SESSION_STORAGE_KEY = "workflow-draft";
 interface WorkflowDesignerProps {
@@ -128,7 +134,23 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     return nodesWithoutConfigRef.current;
   }, [nodes]);
 
+  const currentSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        nodes,
+        connections,
+        ...form.values,
+      }),
+    [nodes, connections, form.values],
+  );
+
   const [exportModalOpened, setExportModalOpened] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">(
+    "idle",
+  );
+  const [isDirty, setIsDirty] = useState(false);
+  const savedSnapshotRef = useRef<string>("");
+  const [aiWorkflowChatOpened, setAiWorkflowChatOpened] = useState(false);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
@@ -301,11 +323,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   );
 
   const handleSave = useCallback(() => {
+    setSaveState("saving");
     readyToSave.current = false;
     const result = form.validate();
     if (result.hasErrors) {
       form.setErrors(result.errors);
       readyToSave.current = true;
+      setSaveState("idle");
       return;
     }
 
@@ -313,7 +337,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     const schemaErrors: Record<string, Record<string, string[]>> = {};
     nodes.forEach((node) => {
       if (node.type === "trigger") {
-        const trigger = nodeCatalog.triggers[(node.data as TriggerNodeData).type];
+        const trigger =
+          nodeCatalog.triggers[(node.data as TriggerNodeData).type];
         const { valid, errors } = trigger
           ? validateConfig(node.data.config, trigger.configSchema)
           : { valid: false, errors: { "": ["Trigger type not found"] } };
@@ -333,12 +358,17 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     if (Object.keys(schemaErrors).length > 0) {
       setSchemaErrors(schemaErrors);
       readyToSave.current = true;
+      setSaveState("idle");
       return;
     }
 
     const workflowDefinition = getCurrentWorkflowDefinition();
 
     onSave(workflowDefinition);
+    savedSnapshotRef.current = currentSnapshot;
+    setIsDirty(false);
+    setSaveState("saved");
+    window.setTimeout(() => setSaveState("idle"), 1500);
   }, [nodes, connections, form]);
 
   const handleExport = () => {
@@ -377,187 +407,237 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     handleAutoSave();
   }, [nodes, connections, form.values, handleAutoSave]);
 
+  useEffect(() => {
+    setIsDirty(currentSnapshot !== savedSnapshotRef.current);
+  }, [currentSnapshot]);
+
   const variablesCount = Object.keys(form.values.variables || {}).length;
 
   return (
-    <Container fluid pt="xl" px="0" h="100vh">
-      <Stack h="100%">
-        <Stack gap="lg" px="md">
-          <Group justify="space-between" align="center">
-            <Group>
-              <Title order={2}>
-                {!autoSave ? "Edit Workflow" : "Create Workflow"}
-              </Title>
-            </Group>
-            <Group>
-              <Button
-                variant="outline"
-                leftSection={<IconArrowLeft size={16} />}
-                onClick={onCancel}
-              >
-                Back to Workflows
-              </Button>
-              {workflow && (
+    <>
+      <Container fluid pt="xl" px="0" h="100vh">
+        <Stack h="100%">
+          <Stack gap="lg" px="md">
+            <Group justify="space-between" align="center">
+              <Group>
+                <Title order={2}>
+                  {!autoSave ? "Edit Workflow" : "Create Workflow"}
+                </Title>
+              </Group>
+              <Group>
+                <Button
+                  variant="subtle"
+                  leftSection={<IconArrowLeft size={16} />}
+                  onClick={onCancel}
+                >
+                  Back
+                </Button>
+                {workflow && (
+                  <Button
+                    variant="outline"
+                    leftSection={<IconHistory size={16} />}
+                    onClick={handleViewHistory}
+                  >
+                    View History
+                  </Button>
+                )}
                 <Button
                   variant="outline"
-                  leftSection={<IconHistory size={16} />}
-                  onClick={handleViewHistory}
+                  leftSection={<IconDownload size={16} />}
+                  onClick={handleExport}
                 >
-                  View History
+                  Export
                 </Button>
-              )}
-              <Button
-                variant="outline"
-                leftSection={<IconDownload size={16} />}
-                onClick={handleExport}
-              >
-                Export
-              </Button>
-              <Button
-                leftSection={<IconDeviceFloppy size={16} />}
-                onClick={handleSave}
-              >
-                Save & Apply Workflow
-              </Button>
+                <Button
+                  variant="light"
+                  leftSection={<IconRobot />}
+                  onClick={() => setAiWorkflowChatOpened((opened) => !opened)}
+                >
+                  AI Assistant
+                </Button>
+                <Button
+                  miw="6rem"
+                  leftSection={<IconDeviceFloppy size={16} />}
+                  onClick={handleSave}
+                  disabled={!isDirty || saveState === "saving"}
+                >
+                  {saveState === "saved" ? (
+                    <IconCheck size={16} />
+                  ) : saveState === "saving" ? (
+                    "Saving..."
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
+              </Group>
             </Group>
-          </Group>
-          <Card withBorder padding="md" pt="xs">
-            <Tabs defaultValue="basic">
-              <Tabs.List>
-                <Tabs.Tab value="basic">
-                  <Group gap="xs">
-                    <IconInfoCircle size={16} />
-                    <Text size="sm">Basic Info</Text>
-                  </Group>
-                </Tabs.Tab>
-                <Tabs.Tab value="variables">
-                  <Group gap="xs">
-                    <IconVariable size={16} />
-                    <Text size="sm">
-                      Variables
-                      {variablesCount > 0 ? ` (${variablesCount})` : ""}
-                    </Text>
-                  </Group>
-                </Tabs.Tab>
-              </Tabs.List>
+            <Card withBorder padding="md" pt="xs">
+              <Tabs defaultValue="basic">
+                <Tabs.List>
+                  <Tabs.Tab value="basic">
+                    <Group gap="xs">
+                      <IconInfoCircle size={16} />
+                      <Text size="sm">Basic Info</Text>
+                    </Group>
+                  </Tabs.Tab>
+                  <Tabs.Tab value="variables">
+                    <Group gap="xs">
+                      <IconVariable size={16} />
+                      <Text size="sm">
+                        Variables
+                        {variablesCount > 0 ? ` (${variablesCount})` : ""}
+                      </Text>
+                    </Group>
+                  </Tabs.Tab>
+                </Tabs.List>
 
-              <Tabs.Panel value="basic" pt="md">
-                <form>
-                  <Grid gutter="sm">
-                    <Grid.Col span={6}>
-                      <TextInput
-                        {...form.getInputProps("name")}
-                        label="Workflow Name"
-                        placeholder="Enter workflow name"
-                      />
-                    </Grid.Col>
+                <Tabs.Panel value="basic" pt="md">
+                  <form>
+                    <Grid gutter="sm">
+                      <Grid.Col span={6}>
+                        <TextInput
+                          {...form.getInputProps("name")}
+                          label="Workflow Name"
+                          placeholder="Enter workflow name"
+                        />
+                      </Grid.Col>
 
-                    <Grid.Col span={6}>
-                      <TextInput
-                        {...form.getInputProps("urlPattern")}
-                        label={
-                          <Group gap="0">
-                            <Text size="sm">URL Pattern.</Text>
-                            &nbsp;
-                            <Text size="sm" c="dimmed">
-                              Use * as wildcard
-                            </Text>
-                          </Group>
-                        }
-                        placeholder="https://example.com/*"
-                      />
-                    </Grid.Col>
+                      <Grid.Col span={6}>
+                        <TextInput
+                          {...form.getInputProps("urlPattern")}
+                          label={
+                            <Group gap="0">
+                              <Text size="sm">URL Pattern.</Text>
+                              &nbsp;
+                              <Text size="sm" c="dimmed">
+                                Use * as wildcard
+                              </Text>
+                            </Group>
+                          }
+                          placeholder="https://example.com/*"
+                        />
+                      </Grid.Col>
 
-                    <Grid.Col span={8}>
-                      <TextInput
-                        {...form.getInputProps("description")}
-                        label="Description (Optional)"
-                        placeholder="Describe what this workflow does"
-                      />
-                    </Grid.Col>
+                      <Grid.Col span={8}>
+                        <TextInput
+                          {...form.getInputProps("description")}
+                          label="Description (Optional)"
+                          placeholder="Describe what this workflow does"
+                        />
+                      </Grid.Col>
 
-                    <Grid.Col span={4}>
-                      <Switch
-                        {...form.getInputProps("enabled", { type: "checkbox" })}
-                        label={form.values.enabled ? "Active" : "Inactive"}
-                        mt="xl"
-                      />
-                    </Grid.Col>
-                  </Grid>
-                </form>
-              </Tabs.Panel>
+                      <Grid.Col span={4}>
+                        <Switch
+                          {...form.getInputProps("enabled", {
+                            type: "checkbox",
+                          })}
+                          label={form.values.enabled ? "Active" : "Inactive"}
+                          mt="xl"
+                        />
+                      </Grid.Col>
+                    </Grid>
+                  </form>
+                </Tabs.Panel>
 
-              <Tabs.Panel value="variables" pt="md">
-                <EnvironmentVariables
-                  variables={form.values.variables}
-                  onChange={(variables) =>
-                    form.setFieldValue("variables", variables)
-                  }
-                />
-              </Tabs.Panel>
-            </Tabs>
-          </Card>{" "}
-        </Stack>
+                <Tabs.Panel value="variables" pt="md">
+                  <EnvironmentVariables
+                    variables={form.values.variables}
+                    onChange={(variables) =>
+                      form.setFieldValue("variables", variables)
+                    }
+                  />
+                </Tabs.Panel>
+              </Tabs>
+            </Card>{" "}
+          </Stack>
 
-        <ExportModal
-          opened={exportModalOpened}
-          onClose={() => setExportModalOpened(false)}
-          workflow={getCurrentWorkflowDefinition()}
-        />
-
-        <Box flex={1} style={{ position: "relative", overflow: "hidden" }}>
-          <ReactFlowCanvas
-            nodes={nodesWithoutConfig}
-            connections={connections}
-            selectedNode={selectedNode}
-            onNodeSelect={setSelectedNodeId}
-            onNodeCreate={handleNodeCreation}
-            onNodeMove={handleNodeMovement}
-            onNodeDelete={handleNodeDeletion}
-            onNodeDuplicate={handleNodeDuplication}
-            onBatchUpdateNodePositions={handleBatchUpdateNodePositions}
-            onConnectionCreate={handleConnectionCreation}
-            onConnectionDelete={handleConnectionDeletion}
-            errors={schemaErrors}
-            undo={undo}
-            redo={redo}
-            hasPrevious={current > 0}
-            hasNext={current < total - 1}
+          <ExportModal
+            opened={exportModalOpened}
+            onClose={() => setExportModalOpened(false)}
+            workflow={getCurrentWorkflowDefinition()}
           />
-          {/* Drawer  */}
-          <Transition
-            mounted={selectedNodeId !== null}
-            transition="slide-left"
-            duration={200}
-            timingFunction="ease"
-          >
-            {(styles) => (
+
+          <Group flex={1} w="100%" gap="0">
+            <Box flex={1} h="100%" pos="relative">
+              <ReactFlowCanvas
+                nodes={nodesWithoutConfig}
+                connections={connections}
+                selectedNode={selectedNode}
+                onNodeSelect={setSelectedNodeId}
+                onNodeCreate={handleNodeCreation}
+                onNodeMove={handleNodeMovement}
+                onNodeDelete={handleNodeDeletion}
+                onNodeDuplicate={handleNodeDuplication}
+                onBatchUpdateNodePositions={handleBatchUpdateNodePositions}
+                onConnectionCreate={handleConnectionCreation}
+                onConnectionDelete={handleConnectionDeletion}
+                errors={schemaErrors}
+                undo={undo}
+                redo={redo}
+                hasPrevious={current > 0}
+                hasNext={current < total - 1}
+              />
+              {/* Drawer  */}
+              <Transition
+                mounted={selectedNodeId !== null}
+                transition="slide-left"
+                duration={200}
+                timingFunction="ease"
+              >
+                {(styles) => (
+                  <Paper
+                    shadow="md"
+                    p="md"
+                    h="100%"
+                    style={{
+                      ...styles,
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      width: 400,
+                      zIndex: 1,
+                    }}
+                  >
+                    <NodeProperties
+                      nodes={nodes}
+                      workflowVars={form.values.variables}
+                      node={selectedNode}
+                      onClose={() => setSelectedNodeId(null)}
+                      onNodeUpdate={handleNodeUpdate}
+                      errors={schemaErrors[selectedNode?.id || ""]}
+                    />
+                  </Paper>
+                )}
+              </Transition>
+            </Box>
+            {aiWorkflowChatOpened && (
               <Paper
                 shadow="md"
                 p="md"
                 h="100%"
+                w={{ base: "50dvw", md: "420px" }}
                 style={{
-                  ...styles,
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  width: 400,
-                  zIndex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  zIndex: 201,
                 }}
               >
-                <NodeProperties
-                  nodes={nodes}
-                  workflowVars={form.values.variables}
-                  node={selectedNode}
-                  onClose={() => setSelectedNodeId(null)}
-                  onNodeUpdate={handleNodeUpdate}
-                  errors={schemaErrors[selectedNode?.id || ""]}
-                />
+                <Group justify="space-between" mb="sm">
+                  <Text fw={600}>AI Assistant</Text>
+                  <ActionIcon
+                    variant="subtle"
+                    onClick={() => setAiWorkflowChatOpened(false)}
+                    aria-label="Close AI drawer"
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                </Group>
+                <AiWorkflowChatPanel />
               </Paper>
             )}
-          </Transition>
-        </Box>
-      </Stack>
-    </Container>
+          </Group>
+        </Stack>
+      </Container>
+    </>
   );
 };

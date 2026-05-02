@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
 import { WorkflowDefinition } from "@/types/workflow";
-import { sendMessageToBackground } from "@/lib/messages";
 import { useStore } from "@/store";
 
 interface DesignerViewProps {
@@ -73,17 +72,12 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     try {
       if (newWorkflow) {
         createWorkflow(workflow);
+        setNewWorkflow(false);
       } else {
         updateWorkflow(workflow);
       }
 
-      // Sync HTTP triggers in background script when explicitly saving
-      sendMessageToBackground("SYNC_HTTP_TRIGGERS");
-
-      // Navigate back to workflows list, preserving the current tab
-      const currentTab = searchParams.get("tab") || "workflows";
-      navigate(`/?tab=${currentTab}`);
-      setEditingWorkflow(null);
+      setEditingWorkflow(workflow);
       clearAutoSave();
     } catch (error) {
       console.error("Failed to save workflow:", error);
