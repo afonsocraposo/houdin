@@ -42,11 +42,11 @@ import {
   WorkflowConnection,
 } from "@/types/workflow";
 import { hasLength, matches, useForm } from "@mantine/form";
-import { TriggerRegistry } from "@/services/triggerRegistry";
-import { ActionRegistry } from "@/services/actionRegistry";
 import { useWorkflowState } from "./hooks";
 import { useThrottledCallback } from "@mantine/hooks";
 import { newWorkflowId, generateId } from "@/utils/helpers";
+import { nodeCatalog } from "@/services/nodeCatalog";
+import { validateConfig } from "@/types/config-properties";
 
 export const SESSION_STORAGE_KEY = "workflow-draft";
 interface WorkflowDesignerProps {
@@ -309,25 +309,22 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       return;
     }
 
-    const triggerRegistry = TriggerRegistry.getInstance();
-    const actionRegistry = ActionRegistry.getInstance();
-
     // validate workflow
     const schemaErrors: Record<string, Record<string, string[]>> = {};
     nodes.forEach((node) => {
       if (node.type === "trigger") {
-        const { valid, errors } = triggerRegistry.validateConfig(
-          (node.data as TriggerNodeData).type,
-          node.data.config,
-        );
+        const trigger = nodeCatalog.triggers[(node.data as TriggerNodeData).type];
+        const { valid, errors } = trigger
+          ? validateConfig(node.data.config, trigger.configSchema)
+          : { valid: false, errors: { "": ["Trigger type not found"] } };
         if (!valid) {
           schemaErrors[node.id] = errors;
         }
       } else if (node.type === "action") {
-        const { valid, errors } = actionRegistry.validateConfig(
-          (node.data as ActionNodeData).type,
-          node.data.config,
-        );
+        const action = nodeCatalog.actions[(node.data as ActionNodeData).type];
+        const { valid, errors } = action
+          ? validateConfig(node.data.config, action.configSchema)
+          : { valid: false, errors: { "": ["Action type not found"] } };
         if (!valid) {
           schemaErrors[node.id] = errors;
         }

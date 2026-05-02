@@ -1,9 +1,4 @@
-import { initializeActions } from "@/services/actionInitializer";
-import { ActionRegistry } from "@/services/actionRegistry";
-import {
-  initializeTriggers,
-  TriggerRegistry,
-} from "@/services/triggerInitializer";
+import { nodeCatalog } from "@/services/nodeCatalog";
 import { NodeType } from "@/types/workflow";
 import {
   ActionIcon,
@@ -54,24 +49,18 @@ export default function AddNodeList({
   const [search, setSearch] = useState("");
 
   const fullCategories = useMemo(() => {
-    initializeTriggers();
-    initializeActions();
-
-    const actionRegistry = ActionRegistry.getInstance();
-    const triggerRegistry = TriggerRegistry.getInstance();
-
     return {
-      trigger: triggerRegistry.getAllTriggerMetadata().map((metadata) => ({
-        type: metadata.type,
-        label: metadata.label,
-        icon: metadata.icon,
-        description: metadata.description,
+      trigger: Object.values(nodeCatalog.triggers).map((entry) => ({
+        type: entry.metadata.type,
+        label: entry.metadata.label,
+        icon: entry.metadata.icon,
+        description: entry.metadata.description,
       })),
-      action: actionRegistry.getAllActionMetadata().map((metadata) => ({
-        type: metadata.type,
-        label: metadata.label,
-        icon: metadata.icon,
-        description: metadata.description,
+      action: Object.values(nodeCatalog.actions).map((entry) => ({
+        type: entry.metadata.type,
+        label: entry.metadata.label,
+        icon: entry.metadata.icon,
+        description: entry.metadata.description,
       })),
     };
   }, []);

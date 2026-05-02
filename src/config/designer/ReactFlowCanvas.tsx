@@ -16,7 +16,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ActionRegistry } from "@/services/actionRegistry";
+import { nodeCatalog } from "@/services/nodeCatalog";
 import {
   Box,
   ActionIcon,
@@ -30,8 +30,6 @@ import {
   IconLayoutGrid,
 } from "@tabler/icons-react";
 import { WorkflowNode, WorkflowConnection, NodeType } from "@/types/workflow";
-import { initializeTriggers } from "@/services/triggerInitializer";
-import { initializeActions } from "@/services/actionInitializer";
 import CanvasNode from "./CanvasNode";
 import CanvasEdge from "./CanvasEdge";
 import { useHotkeys } from "@mantine/hooks";
@@ -73,9 +71,6 @@ interface PendingConnection {
 
 export const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = (props) => {
   useEffect(() => {
-    // Initialize registries to ensure they're loaded
-    initializeTriggers();
-    initializeActions();
   }, []);
   return (
     <ReactFlowProvider>
@@ -324,8 +319,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
       // Get outputs from metadata
       if (nodeType === "action") {
-        const actionRegistry = ActionRegistry.getInstance();
-        const action = actionRegistry.getAction(type);
+        const action = nodeCatalog.actions[type];
         if (action?.metadata.outputs) {
           outputs = Array.from(action.metadata.outputs);
         }

@@ -1,8 +1,7 @@
 import NodeIcon from "@/components/NodeIcon";
-import { ActionRegistry } from "@/services/actionRegistry";
 import { FormAction, FormActionConfig } from "@/services/actions/form.runtime";
 import { NotificationService } from "@/services/notification";
-import { TriggerRegistry } from "@/services/triggerRegistry";
+import { nodeCatalog } from "@/services/nodeCatalog";
 import {
   ActionNodeData,
   ExecutionMetadataExamples,
@@ -33,9 +32,6 @@ export default function VariablesButton({
 }: VariablesButtonProps) {
   const lastFocusedInput = useLastFocusedInput();
   const nodeOutputs = useMemo(() => {
-    const triggerRegistry = TriggerRegistry.getInstance();
-    const actionRegistry = ActionRegistry.getInstance();
-
     return nodes
       .sort((a, b) => (a.position.x > b.position.x ? 1 : -1))
       .map((node) => {
@@ -44,23 +40,23 @@ export default function VariablesButton({
         let icon: React.ReactNode = null;
         if (node.type === "trigger") {
           const data = node.data as TriggerNodeData;
-          if (triggerRegistry.hasTrigger(data.type)) {
-            const trigger = triggerRegistry.getTrigger(data.type);
-            outputs = trigger!.outputExample as Record<string, any>;
-            icon = <NodeIcon icon={trigger!.metadata.icon} />;
+          const trigger = nodeCatalog.triggers[data.type];
+          if (trigger) {
+            outputs = trigger.outputExample as Record<string, any>;
+            icon = <NodeIcon icon={trigger.metadata.icon} />;
           }
         } else if (node.type === "action") {
           const data = node.data as ActionNodeData;
-          if (actionRegistry.hasAction(data.type)) {
-            const action = actionRegistry.getAction(data.type);
-            if (action?.metadata.type === "form") {
+          const action = nodeCatalog.actions[data.type];
+          if (action) {
+            if (action.metadata.type === "form") {
               outputs = FormAction.getRichOutputExample(
                 data.config as FormActionConfig,
               );
             } else {
               outputs = action!.outputExample as Record<string, any>;
             }
-            icon = <NodeIcon icon={action!.metadata.icon} />;
+            icon = <NodeIcon icon={action.metadata.icon} />;
           }
         }
         return {

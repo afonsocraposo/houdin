@@ -1,12 +1,9 @@
-import { initializeActions } from "@/services/actionInitializer";
-import { ActionRegistry } from "@/services/actionRegistry";
+import { actionCatalog } from "@/services/nodeCatalog";
 import StaticRenderer from "./StaticRenderer";
 
 export default function AssetsActions() {
-  initializeActions();
-  const actionRegistry = ActionRegistry.getInstance();
   const assets = {
-    actions: actionRegistry.getAllStatic(),
+    actions: actionCatalog,
   };
   return (
     <StaticRenderer filename="actions.json">

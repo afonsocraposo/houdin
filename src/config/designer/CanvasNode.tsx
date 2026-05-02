@@ -6,8 +6,7 @@ import {
 } from "@/types/workflow";
 import { NotificationService } from "@/services/notification";
 import { copyToClipboard } from "@/utils/helpers";
-import { ActionRegistry } from "@/services/actionRegistry";
-import { TriggerRegistry } from "@/services/triggerRegistry";
+import { nodeCatalog } from "@/services/nodeCatalog";
 import { ActionIcon, Card, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { Handle, Position } from "@xyflow/react";
 import {
@@ -173,17 +172,12 @@ export default function CanvasNode({
   );
 
   const getNodeIcon = (node: WorkflowNode) => {
-    const actionRegistry = ActionRegistry.getInstance();
-    const triggerRegistry = TriggerRegistry.getInstance();
-
     if (node.type === "action") {
       const nodeType = (node.data as ActionNodeData).type;
-      const action = actionRegistry.getAction(nodeType);
-      return action?.metadata.icon || "❓";
+      return nodeCatalog.actions[nodeType]?.metadata.icon || "❓";
     } else if (node.type === "trigger") {
       const nodeType = (node.data as TriggerNodeData).type;
-      const trigger = triggerRegistry.getTrigger(nodeType);
-      return trigger?.metadata.icon || "❓";
+      return nodeCatalog.triggers[nodeType]?.metadata.icon || "❓";
     }
 
     return "❓";
@@ -199,17 +193,12 @@ export default function CanvasNode({
   };
 
   const getNodeLabel = (node: WorkflowNode) => {
-    const actionRegistry = ActionRegistry.getInstance();
-    const triggerRegistry = TriggerRegistry.getInstance();
-
     if (node.type === "action") {
       const nodeType = (node.data as ActionNodeData).type;
-      const action = actionRegistry.getAction(nodeType);
-      return action?.metadata.label || "Unknown";
+      return nodeCatalog.actions[nodeType]?.metadata.label || "Unknown";
     } else if (node.type === "trigger") {
       const nodeType = (node.data as TriggerNodeData).type;
-      const trigger = triggerRegistry.getTrigger(nodeType);
-      return trigger?.metadata.label || "Unknown";
+      return nodeCatalog.triggers[nodeType]?.metadata.label || "Unknown";
     }
 
     return "Unknown";
