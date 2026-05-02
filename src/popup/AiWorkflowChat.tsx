@@ -375,7 +375,6 @@ function AiWorkflowChat() {
                 return (
                   <Paper
                     key={message.id}
-                    withBorder={isUser}
                     p={isUser ? "sm" : 0}
                     radius="md"
                     style={{
