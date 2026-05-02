@@ -1,3 +1,4 @@
 export enum MessageType {
   POPUP_TRIGGER = "POPUP_TRIGGER",
+  AI_GENERATION_SUBMIT = "AI_GENERATION_SUBMIT",
 }

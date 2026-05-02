@@ -1,11 +1,34 @@
-import { Container, Text, Button, Stack, Divider, Tabs } from "@mantine/core";
-import { IconPointer, IconHistory, IconHome } from "@tabler/icons-react";
+import {
+  Container,
+  Text,
+  Button,
+  Stack,
+  Divider,
+  Tabs,
+  Group,
+} from "@mantine/core";
+import {
+  IconPointer,
+  IconHistory,
+  IconWand,
+  IconPlayerPlay,
+} from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import Logo from "@/components/Logo";
 import { sendMessageToContentScript } from "@/lib/messages";
 import browser from "@/services/browser";
+import AiWorkflowChat from "./AiWorkflowChat";
+
+type Size = {
+  width: number;
+  height: number;
+};
+const sizes: Record<string, Size> = {
+  ai: { width: 600, height: 600 },
+};
+const DEFAULT_SIZE: Size = { width: 320, height: 500 };
 
 function App() {
   const [currentUrl, setCurrentUrl] = useState<string>("");
@@ -80,7 +103,14 @@ function App() {
 
   return (
     <>
-      <Container size="xs" p="md" style={{ width: "320px", height: "500px" }}>
+      <Container
+        size="xs"
+        p="md"
+        style={{
+          width: sizes[activeTab]?.width || DEFAULT_SIZE.width,
+          height: sizes[activeTab]?.height || DEFAULT_SIZE.height,
+        }}
+      >
         <Stack gap="sm">
           <Stack gap={0}>
             <Logo title size={32} />
@@ -96,13 +126,29 @@ function App() {
             flex={1}
           >
             <Tabs.List grow>
-              <Tabs.Tab value="workflows" leftSection={<IconHome size={16} />}>
-                Workflows
+              <Tabs.Tab value="ai">
+                <Group wrap="nowrap" gap="xs" justify="center">
+                  <IconWand size={16} />
+                  {activeTab === "ai" && <Text>AI Builder</Text>}
+                </Group>
               </Tabs.Tab>
-              <Tabs.Tab value="history" leftSection={<IconHistory size={16} />}>
-                History
+              <Tabs.Tab value="workflows">
+                <Group wrap="nowrap" gap="xs" justify="center">
+                  <IconPlayerPlay size={16} />
+                  {activeTab === "workflows" && <Text>Workflows</Text>}
+                </Group>
+              </Tabs.Tab>
+              <Tabs.Tab value="history">
+                <Group wrap="nowrap" gap="xs" justify="center">
+                  <IconHistory size={16} />
+                  {activeTab === "history" && <Text>History</Text>}
+                </Group>
               </Tabs.Tab>
             </Tabs.List>
+
+            <Tabs.Panel value="ai" pt="sm">
+              {activeTab === "ai" && <AiWorkflowChat />}
+            </Tabs.Panel>
 
             <Tabs.Panel value="workflows" pt="sm">
               {activeTab === "workflows" && (

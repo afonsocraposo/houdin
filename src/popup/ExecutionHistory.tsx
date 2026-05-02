@@ -14,10 +14,7 @@ import {
   IconPlayerPlay,
   IconHistory,
 } from "@tabler/icons-react";
-import {
-  WorkflowExecution,
-  WorkflowExecutionStats,
-} from "@/types/workflow";
+import { WorkflowExecution, WorkflowExecutionStats } from "@/types/workflow";
 import { ContentStorageClient } from "@/services/storage";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import browser from "@/services/browser";
@@ -111,7 +108,7 @@ function ExecutionHistory() {
 
   const recentExecutions = executions.slice(0, stats.total);
   return (
-    <Stack gap="sm" h={350}>
+    <Stack gap="sm" h={340}>
       <Group gap="xs">
         <Badge color="blue" variant="light" size="sm">
           {stats.total} executed

@@ -1,6 +1,6 @@
 import NodeIcon from "@/components/NodeIcon";
 import { ActionRegistry } from "@/services/actionRegistry";
-import { FormAction, FormActionConfig } from "@/services/actions/formAction";
+import { FormAction, FormActionConfig } from "@/services/actions/form.runtime";
 import { NotificationService } from "@/services/notification";
 import { TriggerRegistry } from "@/services/triggerRegistry";
 import {
@@ -46,19 +46,19 @@ export default function VariablesButton({
           const data = node.data as TriggerNodeData;
           if (triggerRegistry.hasTrigger(data.type)) {
             const trigger = triggerRegistry.getTrigger(data.type);
-            outputs = trigger!.outputExample;
+            outputs = trigger!.outputExample as Record<string, any>;
             icon = <NodeIcon icon={trigger!.metadata.icon} />;
           }
         } else if (node.type === "action") {
           const data = node.data as ActionNodeData;
           if (actionRegistry.hasAction(data.type)) {
             const action = actionRegistry.getAction(data.type);
-            if (action?.metadata.type === FormAction.metadata.type) {
+            if (action?.metadata.type === "form") {
               outputs = FormAction.getRichOutputExample(
                 data.config as FormActionConfig,
               );
             } else {
-              outputs = action!.outputExample;
+              outputs = action!.outputExample as Record<string, any>;
             }
             icon = <NodeIcon icon={action!.metadata.icon} />;
           }

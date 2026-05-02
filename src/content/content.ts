@@ -20,6 +20,11 @@ import {
   WorkflowCommandType,
 } from "@/types/background-workflow";
 import browser from "@/services/browser";
+import {
+  PageContextSnapshot,
+  SelectedElementContext,
+  VisibleElementContext,
+} from "@/types/generation-session";
 
 console.debug("Content script loaded");
 
@@ -79,6 +84,11 @@ if ((window as any).houdinExtensionInitialized) {
           return true;
         }
 
+        if (message.type === "GET_PAGE_CONTEXT") {
+          sendResponse({ ready: true, data: getPageContextSnapshot() });
+          return true;
+        }
+
         if (message.type === WorkflowCommandType.CHECK_READINESS) {
           if (!isFullyInitialized) {
             initFullContentScript();
@@ -90,6 +100,92 @@ if ((window as any).houdinExtensionInitialized) {
         return; // Let other listeners handle other messages
       },
     );
+  };
+
+  const isElementVisible = (element: Element): boolean => {
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return false;
+    }
+
+    return (
+      rect.bottom > 0 &&
+      rect.right > 0 &&
+      rect.top < window.innerHeight &&
+      rect.left < window.innerWidth
+    );
+  };
+
+  const getElementSelector = (element: Element): string => {
+    if (element.id) {
+      return `#${element.id}`;
+    }
+
+    const classes = Array.from(element.classList || []).filter(Boolean);
+    if (classes.length > 0) {
+      return `${element.tagName.toLowerCase()}.${classes.join(".")}`;
+    }
+
+    return element.tagName.toLowerCase();
+  };
+
+  const getSelectedElementContext = (): SelectedElementContext | undefined => {
+    const active = document.activeElement as HTMLElement | null;
+    if (!active) {
+      return undefined;
+    }
+
+    return {
+      selector: getElementSelector(active),
+      tagName: active.tagName.toLowerCase(),
+      text: active.textContent?.trim() || undefined,
+      ariaLabel: active.getAttribute("aria-label") || undefined,
+      id: active.id || undefined,
+      className: active.className?.toString() || undefined,
+    };
+  };
+
+  const getVisibleElements = (): VisibleElementContext[] => {
+    const selectors = [
+      "header *",
+      "main *",
+      "button",
+      "a",
+      "input",
+      "textarea",
+      "select",
+      "[role='button']",
+      "[role='dialog']",
+      "[aria-label]",
+    ].join(", ");
+
+    const elements = Array.from(document.querySelectorAll(selectors))
+      .filter((element) => isElementVisible(element))
+      .slice(0, 24);
+
+    return elements.map((element) => {
+      const htmlElement = element as HTMLElement;
+      return {
+        selector: getElementSelector(htmlElement),
+        tagName: htmlElement.tagName.toLowerCase(),
+        text: htmlElement.textContent?.trim().slice(0, 120) || undefined,
+        ariaLabel: htmlElement.getAttribute("aria-label") || undefined,
+        role: htmlElement.getAttribute("role") || undefined,
+      };
+    });
+  };
+
+  const getPageContextSnapshot = (): PageContextSnapshot => {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim() || undefined;
+
+    return {
+      url: window.location.href,
+      title: document.title,
+      selectedText,
+      selectedElement: getSelectedElementContext(),
+      visibleElements: getVisibleElements(),
+    };
   };
 
   const setupWorkflowScriptBridge = () => {

@@ -20,7 +20,7 @@ import { CodeHighlight } from "@mantine/code-highlight";
 import VariablesButton from "./VariablesButton";
 import NodeIcon from "@/components/NodeIcon";
 import { BaseMetadata } from "@/types/base";
-import { FormAction, FormActionConfig } from "@/services/actions/formAction";
+import { FormAction, FormActionConfig } from "@/services/actions/form.runtime";
 
 interface NodePropertiesProps {
   nodes: WorkflowNode[];
@@ -135,8 +135,8 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       const schema = actionRegistry.getConfigSchema(actionType);
 
       if (action && schema) {
-        let outputExample = action.outputExample;
-        if (action.metadata.type === FormAction.metadata.type) {
+        let outputExample = action.outputExample as Record<string, any>;
+        if (action.metadata.type === "form") {
           outputExample = FormAction.getRichOutputExample(
             data.config as FormActionConfig,
           );

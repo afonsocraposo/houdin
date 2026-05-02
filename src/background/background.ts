@@ -1,9 +1,15 @@
 import { HttpListenerWebRequest } from "@/services/httpListenerWebRequest";
 import { BackgroundWorkflowEngine } from "@/services/backgroundEngine";
+import { WorkflowGenerationService } from "@/services/workflowGenerationService";
 import {
   TriggerFiredCommand,
   WorkflowCommandType,
 } from "@/types/background-workflow";
+import { MessageType } from "@/types/messages";
+import {
+  type GenerationPromptRequest,
+  type GenerationPromptResponse,
+} from "@/types/generation-session";
 import { StorageServer } from "@/services/storage";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
@@ -81,7 +87,11 @@ workflowEngine.initialize().then(() => {
 
   browser.runtime.onMessage.addListener(
     (message: CustomMessage, sender: any) => {
-      switch (message.type) {
+    switch (message.type) {
+        case MessageType.AI_GENERATION_SUBMIT:
+          return WorkflowGenerationService.getInstance().submitPrompt(
+            message.data as GenerationPromptRequest,
+          ) as Promise<GenerationPromptResponse>;
         case WorkflowCommandType.TRIGGER_FIRED:
           const tabId = sender.tab.id;
 

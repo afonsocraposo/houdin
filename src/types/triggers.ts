@@ -23,11 +23,17 @@ export abstract class BaseTrigger<
   TConfig = Record<string, any>,
   TOutput = Record<string, any>,
 > extends BaseConfigurable<TConfig> {
-  static readonly metadata: TriggerMetadata;
-  public get metadata(): TriggerMetadata {
-    return (this.constructor as typeof BaseTrigger).metadata;
+  static metadata?: TriggerMetadata;
+  static configSchema?: ConfigSchema;
+  static outputExample?: unknown;
+
+  constructor(definition: { metadata: TriggerMetadata; configSchema: ConfigSchema; outputExample: TOutput }) {
+    super(definition);
   }
-  abstract readonly outputExample: TOutput;
+
+  public get outputExample(): TOutput {
+    return (super.outputExample as TOutput) ?? (this.constructor as typeof BaseTrigger & { outputExample?: TOutput }).outputExample!;
+  }
 
   // Setup the trigger and return cleanup function
   abstract setup(

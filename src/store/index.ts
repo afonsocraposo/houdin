@@ -5,8 +5,12 @@ import { WorkflowsSlice, createWorkflowsSlice } from "./workflowsSlice";
 import { SyncSlice, createSyncSlice } from "./syncSlice";
 import browser from "@/services/browser";
 import { createCredentialsSlice, CredentialsSlice } from "./credentialsSlice";
+import {
+  createGenerationSessionSlice,
+  GenerationSessionSlice,
+} from "./generationSessionSlice";
 
-type StoreState = SyncSlice & WorkflowsSlice & CredentialsSlice;
+type StoreState = SyncSlice & WorkflowsSlice & CredentialsSlice & GenerationSessionSlice;
 type SessionStoreState = AccountSlice;
 
 const browserStorageAdapter: StateStorage = {
@@ -28,6 +32,7 @@ export const useStore = create<StoreState>()(
       ...createSyncSlice(...a),
       ...createWorkflowsSlice(...a),
       ...createCredentialsSlice(...a),
+      ...createGenerationSessionSlice(...a),
     }),
     {
       name: "houdin-store",

@@ -1,11 +1,11 @@
 import { TriggerRegistry } from "./triggerRegistry";
-import { PageLoadTrigger } from "./triggers/pageLoadTrigger";
-import { ComponentLoadTrigger } from "./triggers/componentLoadTrigger";
-import { DelayTrigger } from "./triggers/delayTrigger";
-import { KeyPressTrigger } from "./triggers/onKeyPressTrigger";
-import { HttpRequestTrigger } from "./triggers/httpRequestTrigger";
-import { ButtonClickTrigger } from "./triggers/buttonClickTrigger";
-import { PopupTrigger } from "./triggers/popupTrigger";
+import { PageLoadTrigger } from "./triggers/page-load.runtime";
+import { ComponentLoadTrigger } from "./triggers/component-load.runtime";
+import { DelayTrigger } from "./triggers/delay.runtime";
+import { KeyPressTrigger } from "./triggers/key-press.runtime";
+import { HttpRequestTrigger } from "./triggers/http-request-trigger.runtime";
+import { ButtonClickTrigger } from "./triggers/button-click.runtime";
+import { PopupTrigger } from "./triggers/popup.runtime";
 
 // Initialize and register all triggers
 export function initializeTriggers(): void {

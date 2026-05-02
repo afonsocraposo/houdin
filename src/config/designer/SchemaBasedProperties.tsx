@@ -15,6 +15,7 @@ import PasswordInput from "@/components/PasswordInput";
 import MaximizableTextArea from "./ModalTextArea";
 import MaximizableCodeInput from "./ModalCodeInput";
 import MarkdownText from "@/components/MarkdownText";
+import { customPropertyRenderers } from "./customPropertyRegistry";
 
 interface SchemaBasedPropertiesProps {
   defaultConfig?: Record<string, any>;
@@ -217,10 +218,15 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             values[configKey] = defaultConfig[configKey];
           }
         });
+        const CustomRenderer = customPropertyRenderers[property.component];
         return (
           <div>
             <InputLabel mb="xs">{property.label}</InputLabel>
-            {property.render(values, onChange)}
+            {CustomRenderer
+              ? React.createElement(CustomRenderer, { values, onChange })
+              : property.render
+                ? property.render(values, onChange)
+                : null}
             {errorMessage && (
               <Text size="xs" c="red" mt="xs">
                 {errorMessage}
