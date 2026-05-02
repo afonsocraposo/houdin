@@ -15,6 +15,7 @@ import type {
   WorkflowConnection,
   WorkflowDefinition,
   WorkflowNode,
+  WorkflowExecution,
 } from "@/types/workflow";
 import { generateId } from "@/utils/helpers";
 import {
@@ -184,6 +185,40 @@ function historyToPrompt(messages: GenerationMessage[]): string {
     .join("\n");
 }
 
+function summarizeValue(value: any): string {
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (typeof value === "string") return JSON.stringify(value.length > 80 ? `${value.slice(0, 77)}...` : value);
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) return `[Array(${value.length})]`;
+  if (typeof value === "object") return `{${Object.keys(value).slice(0, 8).join(", ")}${Object.keys(value).length > 8 ? ", ..." : ""}}`;
+  return String(value);
+}
+
+function summarizeObject(value: Record<string, any>): string {
+  return Object.entries(value)
+    .map(([key, item]) => `${key}: ${summarizeValue(item)}`)
+    .join(", ");
+}
+
+function buildNodeVariableReference(): string {
+  const actionSummaries = Object.values(nodeCatalog.actions).map((node) => {
+    const example = node.outputExample;
+    return `${node.metadata.type} -> ${typeof example === "object" && example !== null ? summarizeObject(example as Record<string, any>) : summarizeValue(example)}`;
+  });
+
+  const triggerSummaries = Object.values(nodeCatalog.triggers).map((node) => {
+    const example = node.outputExample;
+    return `${node.metadata.type} -> ${typeof example === "object" && example !== null ? summarizeObject(example as Record<string, any>) : summarizeValue(example)}`;
+  });
+
+  return [
+    "Node output reference:",
+    ...actionSummaries.map((line) => `action: ${line}`),
+    ...triggerSummaries.map((line) => `trigger: ${line}`),
+  ].join("\n");
+}
+
 function buildSystemPrompt(session: GenerationSession): string {
   const workflow = ensureDraftWorkflow(session);
   const pageContext = session.pageContext
@@ -214,6 +249,9 @@ function buildSystemPrompt(session: GenerationSession): string {
     "Use setWorkflowName, setWorkflowDescription, setUrlPattern, and setWorkflowEnabled for workflow-level changes.",
     "When the workflow is ready, set a clear workflow name and enable it.",
     "When creating nodes, use the exact node-type tool names and fields.",
+    "Workflow variables use Liquid syntax. Use '{{ variableName }}' placeholders in string fields for runtime substitution.",
+    "Liquid context includes node outputs, prev, env, and meta.",
+    buildNodeVariableReference(),
     "Node IDs are generated automatically by the app as action-* or trigger-*; do not invent node IDs.",
     "Use getNodeSchema when you need the exact config fields for a node type.",
     `Available node types: ${JSON.stringify(availableNodeTypes)}`,
@@ -242,6 +280,17 @@ function commitSession(
   useStore.getState().setActiveGenerationSession(updatedSession);
 
   return updatedSession;
+}
+
+function getLatestExecution(workflowId: string): WorkflowExecution | null {
+  const executions = useStore.getState().executions;
+  for (let index = executions.length - 1; index >= 0; index -= 1) {
+    if (executions[index]?.workflowId === workflowId) {
+      return executions[index];
+    }
+  }
+
+  return null;
 }
 
 function setWorkflowName(
@@ -715,6 +764,19 @@ export class WorkflowGenerationService {
               );
 
               return schema;
+            },
+          }),
+          getLatestExecution: tool({
+            description:
+              "Get the latest stored execution for the workflow currently being edited.",
+            inputSchema: z.object({}),
+            execute: async () => {
+              const workflowId = workingSession.draftWorkflow?.id;
+              if (!workflowId) {
+                return { execution: null };
+              }
+
+              return { execution: getLatestExecution(workflowId) };
             },
           }),
           ...buildWorkflowNodeTools({
