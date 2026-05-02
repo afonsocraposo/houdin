@@ -613,21 +613,14 @@ export class WorkflowGenerationService {
     const cleanedSession = stripPendingThinkingMessage(session);
 
     let workingWorkflow = ensureDraftWorkflow(cleanedSession);
-    let workingSession = appendMessage(
-      cleanedSession,
-      "assistant",
-      "Planning workflow changes...",
-      "plan",
-    );
-
-    commitSession(workingWorkflow, workingSession);
+    let workingSession = cleanedSession;
 
     const persist = (
       message: string,
       kind: GenerationMessage["kind"] = "tool",
     ) => {
       workingSession = appendMessage(
-        workingSession,
+        cleanedSession,
         "assistant",
         message,
         kind,

@@ -9,38 +9,36 @@ import {
   GenerationPromptRequest,
   GenerationPromptResponse,
   GenerationSession,
-  GenerationSessionStatus,
 } from "@/types/generation-session";
 import { generateId, newWorkflowId } from "@/utils/helpers";
 import {
+  ActionIcon,
   Badge,
+  Box,
   Button,
   Card,
-  Divider,
   Group,
   Paper,
   ScrollArea,
   Stack,
   Text,
   Textarea,
+  Tooltip,
 } from "@mantine/core";
 import {
-  IconArrowRight,
-  IconDeviceFloppy,
-  IconFocus2,
+  IconExternalLink,
+  IconFileSearch,
   IconRefresh,
-  IconSparkles,
+  IconSend2,
 } from "@tabler/icons-react";
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-
-const getSessionGreeting = (): GenerationMessage => ({
-  id: generateId("msg", 10),
-  role: "assistant",
-  kind: "chat",
-  content:
-    "Tell me what you want the workflow to do. I’ll keep the draft session saved as we build it.",
-  createdAt: Date.now(),
-});
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
+import { useToggle } from "@mantine/hooks";
 
 const createInitialSession = (): GenerationSession => {
   const now = Date.now();
@@ -59,22 +57,13 @@ const createInitialSession = (): GenerationSession => {
       variables: {},
       modifiedAt: now,
     },
-    messages: [getSessionGreeting()],
+    messages: [],
     pageContext: null,
     executionRefs: [],
     revision: 0,
     createdAt: now,
     updatedAt: now,
   };
-};
-
-const statusLabel: Record<GenerationSessionStatus, string> = {
-  idle: "Idle",
-  drafting: "Drafting",
-  testing: "Testing",
-  paused: "Paused",
-  completed: "Completed",
-  failed: "Failed",
 };
 
 function AiWorkflowChat() {
@@ -87,11 +76,13 @@ function AiWorkflowChat() {
   const updateActiveGenerationSession = useStore(
     (state) => state.updateActiveGenerationSession,
   );
-
   const [prompt, setPrompt] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [usePageContext, togglePageContext] = useToggle([true, false]);
 
   const session = activeGenerationSession;
+  const hasMessages = Boolean(session?.messages.length);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const draftSummary = useMemo(() => {
     if (!session?.draftWorkflow) {
@@ -119,7 +110,10 @@ function AiWorkflowChat() {
 
   const capturePageContext = async () => {
     try {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      const tabs = await browser.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       const activeTab = tabs[0];
       if (!activeTab?.id) {
         return;
@@ -176,7 +170,9 @@ function AiWorkflowChat() {
       return;
     }
 
+    setPrompt("");
     setIsSending(true);
+    await capturePageContext();
 
     try {
       const userMessage: GenerationMessage = {
@@ -191,7 +187,7 @@ function AiWorkflowChat() {
         id: generateId("msg", 10),
         role: "assistant",
         kind: "thinking",
-        content: "thinking",
+        content: "Thinking...",
         createdAt: Date.now(),
       };
 
@@ -245,155 +241,199 @@ function AiWorkflowChat() {
   const openDesigner = () => {
     const workflowId = session?.draftWorkflow?.id;
     browser.tabs.create({
-      url: browser.runtime.getURL("src/config/index.html") +
+      url:
+        browser.runtime.getURL("src/config/index.html") +
         (workflowId ? `#/designer/${workflowId}` : "#/designer"),
     });
   };
 
-  const sessionStatus = session?.status ?? "idle";
   const messages = session?.messages ?? [];
+  const displayedMessages = useMemo(() => {
+    return messages.reduce<GenerationMessage[]>((acc, message) => {
+      const last = acc[acc.length - 1];
+
+      if (
+        last &&
+        message.role === "assistant" &&
+        last.role === "assistant" &&
+        last.kind === message.kind
+      ) {
+        acc[acc.length - 1] = {
+          ...last,
+          content: `${last.content}\n${message.content}`,
+        };
+        return acc;
+      }
+
+      acc.push(message);
+      return acc;
+    }, []);
+  }, [messages]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [displayedMessages]);
+
+  const renderThinkingWave = () => (
+    <Text component="span" size="sm" c="dimmed">
+      {"Thinking...".split("").map((char, index) => (
+        <Text
+          key={`${char}-${index}`}
+          component="span"
+          size="sm"
+          c="dimmed"
+          style={{
+            display: "inline-block",
+            animation: "thinkingPulse 1.1s ease-in-out infinite",
+            animationDelay: `${index * 0.06}s`,
+          }}
+        >
+          {char === " " ? "\u00A0" : char}
+        </Text>
+      ))}
+      <style>{`
+        @keyframes thinkingPulse {
+          0%, 100% { opacity: 0.4; transform: translateY(0); }
+          50% { opacity: 1; transform: translateY(-1px); }
+        }
+      `}</style>
+    </Text>
+  );
 
   return (
-    <Stack gap="sm" h="100%">
-      <Card withBorder p="sm">
-        <Group justify="space-between" align="start" gap="xs">
-          <Stack gap={4} style={{ flex: 1 }}>
-            <Group gap="xs">
-              <IconSparkles size={16} />
-              <Text fw={600} size="sm">
-                AI Workflow
-              </Text>
-              <Badge size="sm" variant="light">
-                {statusLabel[sessionStatus]}
-              </Badge>
-            </Group>
-            <Text size="xs" c="dimmed">
-              Create and refine workflows by chatting here.
-            </Text>
-          </Stack>
-
-          <Button
-            size="xs"
-            variant="subtle"
-            leftSection={<IconRefresh size={14} />}
-            onClick={handleReset}
-          >
-            Reset
-          </Button>
-        </Group>
-      </Card>
-
+    <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
       <Card withBorder p="sm">
         <Stack gap={4}>
-          <Text size="xs" c="dimmed">
-            Draft
-          </Text>
-          <Text size="sm" fw={500} truncate>
-            {draftSummary.name}
-          </Text>
-        <Group gap="xs">
-            <Badge variant="light" color="blue" size="sm">
-              {draftSummary.nodeCount} nodes
-            </Badge>
-            <Badge variant="light" color="gray" size="sm">
-              {draftSummary.urlPattern}
-            </Badge>
-            <Badge variant="light" color={session?.pageContext ? "green" : "gray"} size="sm">
-              {session?.pageContext ? "Page context ready" : "No page context"}
-            </Badge>
+          <Group justify="space-between" align="center">
+            <Group>
+              <Text size="sm" fw={500} truncate>
+                {draftSummary.name}
+              </Text>
+              {hasMessages && (
+                <Tooltip label={"Open in designer"} withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    onClick={openDesigner}
+                    disabled={!session?.draftWorkflow}
+                    aria-label="Open in designer"
+                  >
+                    <IconExternalLink size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+              <Badge variant="light" color="blue" size="sm">
+                {draftSummary.nodeCount} nodes
+              </Badge>
+              <Badge variant="light" color="gray" size="sm">
+                {draftSummary.urlPattern}
+              </Badge>
+            </Group>
+            {hasMessages && (
+              <Tooltip label="Reset session" withArrow>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="red"
+                  leftSection={<IconRefresh size={14} />}
+                  aria-label="Reset session"
+                  onClick={handleReset}
+                >
+                  Reset
+                </Button>
+              </Tooltip>
+            )}
           </Group>
+          <Group gap="xs"></Group>
         </Stack>
       </Card>
+      <Box flex={1}>
+        <ScrollArea.Autosize mah={300} type="hover">
+          <Stack gap="xs">
+            {messages.length !== 0 &&
+              displayedMessages.map((message) => {
+                const isUser = message.role === "user";
+                const isError = message.kind === "error";
+                const isResult = message.kind === "result";
+                return (
+                  <Paper
+                    key={message.id}
+                    withBorder={isUser}
+                    p={isUser ? "sm" : 0}
+                    radius="md"
+                    style={{
+                      alignSelf: isUser ? "flex-end" : "flex-start",
+                      maxWidth: "92%",
+                      background: isUser
+                        ? "var(--mantine-color-blue-light)"
+                        : undefined,
+                    }}
+                  >
+                    <Text
+                      size="sm"
+                      style={{ whiteSpace: "pre-wrap" }}
+                      c={
+                        isUser || isResult
+                          ? "white"
+                          : isError
+                            ? "red"
+                            : "dimmed"
+                      }
+                    >
+                      {message.kind === "thinking"
+                        ? renderThinkingWave()
+                        : message.content}
+                    </Text>
+                  </Paper>
+                );
+              })}
+            <div ref={bottomRef} />
+          </Stack>
+        </ScrollArea.Autosize>
+      </Box>
 
-      <Button
-        variant="light"
-        leftSection={<IconFocus2 size={16} />}
-        onClick={capturePageContext}
+      <div
+        style={{
+          marginTop: "auto",
+          display: "flex",
+          flexDirection: "column-reverse",
+        }}
       >
-        Capture Current Page
-      </Button>
-
-      <ScrollArea h={220} type="hover">
-        <Stack gap="xs">
-          {messages.length === 0 ? (
-            <Card withBorder>
-              <Text size="sm" c="dimmed" ta="center">
-                Start the session to begin chatting.
-              </Text>
-            </Card>
-          ) : (
-            messages.map((message) => {
-              const isUser = message.role === "user";
-              const roleLabel = isUser
-                ? "You"
-                : message.kind === "tool"
-                  ? "Tool"
-                  : message.kind === "plan"
-                    ? "Assistant · Plan"
-                    : message.kind === "thinking"
-                      ? "Assistant · Thinking"
-                    : message.kind === "error"
-                      ? "Assistant · Error"
-                      : "Assistant";
-              return (
-                <Paper
-                  key={message.id}
-                  withBorder
-                  p="sm"
-                  radius="md"
-                  style={{
-                    alignSelf: isUser ? "flex-end" : "flex-start",
-                    maxWidth: "92%",
-                    background: isUser ? "var(--mantine-color-blue-light)" : undefined,
-                  }}
+        <Textarea
+          value={prompt}
+          onChange={(event) => setPrompt(event.currentTarget.value)}
+          rightSectionWidth={70}
+          rightSection={
+            <Group gap="xs" wrap="nowrap">
+              <Tooltip label="Include page context in the prompt" withArrow>
+                <ActionIcon
+                  onClick={() => togglePageContext()}
+                  color={usePageContext ? undefined : "dimmed"}
+                  variant="transparent"
+                  style={{ background: "transparent" }}
+                  aria-label="Toggle page context"
                 >
-                  <Text size="xs" c="dimmed" fw={500} mb={4}>
-                    {roleLabel}
-                  </Text>
-                  <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-                    {message.content}
-                  </Text>
-                </Paper>
-              );
-            })
-          )}
-        </Stack>
-      </ScrollArea>
-
-      <Textarea
-        value={prompt}
-        onChange={(event) => setPrompt(event.currentTarget.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Describe the workflow you want to create..."
-        autosize
-        minRows={3}
-        maxRows={5}
-      />
-
-      <Group grow gap="xs">
-        <Button
-          leftSection={<IconArrowRight size={16} />}
-          onClick={handleSend}
-          loading={isSending}
-          disabled={!prompt.trim()}
-        >
-          Send
-        </Button>
-        <Button
-          variant="light"
-          leftSection={<IconDeviceFloppy size={16} />}
-          onClick={openDesigner}
-          disabled={!session?.draftWorkflow}
-        >
-          Open Designer
-        </Button>
-      </Group>
-
-      <Divider />
-
-      <Text size="xs" c="dimmed">
-        Test and AI execution feedback will plug into this session next.
-      </Text>
+                  <IconFileSearch size={16} />
+                </ActionIcon>
+              </Tooltip>
+              <ActionIcon
+                onClick={handleSend}
+                disabled={!prompt.trim()}
+                color={!prompt.trim() ? "dimmed" : undefined}
+                variant="transparent"
+                style={{ background: "transparent" }}
+              >
+                <IconSend2 size={16} />
+              </ActionIcon>
+            </Group>
+          }
+          onKeyDown={handleKeyDown}
+          placeholder="Describe the workflow you want to create..."
+          autosize
+          size="sm"
+          minRows={1}
+          maxRows={2}
+        />
+      </div>
     </Stack>
   );
 }

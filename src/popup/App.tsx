@@ -6,6 +6,7 @@ import {
   Divider,
   Tabs,
   Group,
+  Box,
 } from "@mantine/core";
 import {
   IconPointer,
@@ -109,9 +110,11 @@ function App() {
         style={{
           width: sizes[activeTab]?.width || DEFAULT_SIZE.width,
           height: sizes[activeTab]?.height || DEFAULT_SIZE.height,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <Stack gap="sm">
+        <Stack gap="sm" h="100%">
           <Stack gap={0}>
             <Logo title size={32} />
             <Text size="sm" c="dimmed">
@@ -123,69 +126,75 @@ function App() {
             value={activeTab}
             onChange={handleTabChange}
             variant="pills"
-            flex={1}
+            h="100%"
+            display="flex"
+            style={{ flexDirection: "column" }}
           >
             <Tabs.List grow>
               <Tabs.Tab value="ai">
                 <Group wrap="nowrap" gap="xs" justify="center">
                   <IconWand size={16} />
-                  {activeTab === "ai" && <Text>AI Builder</Text>}
+                  {activeTab === "ai" && <Text size="sm">AI Builder</Text>}
                 </Group>
               </Tabs.Tab>
               <Tabs.Tab value="workflows">
                 <Group wrap="nowrap" gap="xs" justify="center">
                   <IconPlayerPlay size={16} />
-                  {activeTab === "workflows" && <Text>Workflows</Text>}
+                  {activeTab === "workflows" && (
+                    <Text size="sm">Workflows</Text>
+                  )}
                 </Group>
               </Tabs.Tab>
               <Tabs.Tab value="history">
                 <Group wrap="nowrap" gap="xs" justify="center">
                   <IconHistory size={16} />
-                  {activeTab === "history" && <Text>History</Text>}
+                  {activeTab === "history" && <Text size="sm">History</Text>}
                 </Group>
               </Tabs.Tab>
             </Tabs.List>
 
-            <Tabs.Panel value="ai" pt="sm">
-              {activeTab === "ai" && <AiWorkflowChat />}
-            </Tabs.Panel>
+            <Box flex={1}>
+              <Tabs.Panel value="ai" pt="sm" h="100%">
+                {activeTab === "ai" && <AiWorkflowChat />}
+              </Tabs.Panel>
 
-            <Tabs.Panel value="workflows" pt="sm">
-              {activeTab === "workflows" && (
-                <Stack gap="md">
-                  {/* Active Workflows Section */}
-                  <ActiveWorkflows currentUrl={currentUrl} />
+              <Tabs.Panel value="workflows" pt="sm" h="100%">
+                {activeTab === "workflows" && (
+                  <Stack gap="md">
+                    {/* Active Workflows Section */}
+                    <ActiveWorkflows currentUrl={currentUrl} />
 
-                  <Divider />
+                    <Divider />
 
-                  <Stack gap="xs">
-                    <Button variant="filled" onClick={handleClick} fullWidth>
-                      Open Configuration
-                    </Button>
+                    <Stack gap="xs">
+                      <Button variant="filled" onClick={handleClick} fullWidth>
+                        Open Configuration
+                      </Button>
 
-                    <Button
-                      variant="outline"
-                      onClick={handleSelectElement}
-                      fullWidth
-                      leftSection={<IconPointer size={16} />}
-                    >
-                      Element Inspector
-                    </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleSelectElement}
+                        fullWidth
+                        leftSection={<IconPointer size={16} />}
+                      >
+                        Element Inspector
+                      </Button>
+                    </Stack>
+
+                    {/* Current URL info */}
+                    <Text size="xs" c="dimmed" ta="center" truncate>
+                      {currentUrl
+                        ? new URL(currentUrl).hostname
+                        : "No active tab"}
+                    </Text>
                   </Stack>
+                )}
+              </Tabs.Panel>
 
-                  {/* Current URL info */}
-                  <Text size="xs" c="dimmed" ta="center" truncate>
-                    {currentUrl
-                      ? new URL(currentUrl).hostname
-                      : "No active tab"}
-                  </Text>
-                </Stack>
-              )}
-            </Tabs.Panel>
-
-            <Tabs.Panel value="history" pt="md">
-              {activeTab === "history" && <ExecutionHistory />}
-            </Tabs.Panel>
+              <Tabs.Panel value="history" pt="md" h="100%">
+                {activeTab === "history" && <ExecutionHistory />}
+              </Tabs.Panel>
+            </Box>
           </Tabs>
         </Stack>
       </Container>
