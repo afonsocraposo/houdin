@@ -1,13 +1,23 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-import { type ConfigProperty, type ConfigSchema } from "@/types/config-properties";
-import type { NodeType, WorkflowDefinition } from "@/types/workflow";
-import { actionCatalog, getNodeCatalogSummaries, triggerCatalog } from "./nodeCatalog";
+import {
+  type ConfigProperty,
+  type ConfigSchema,
+} from "@/types/config-properties";
+import type { WorkflowDefinition } from "@/types/workflow";
+import {
+  actionCatalog,
+  getNodeDefinition,
+  triggerCatalog,
+} from "./nodeCatalog";
 
 type WorkflowNodeToolContext = {
   getWorkflow: () => WorkflowDefinition;
-  createNode: (args: Record<string, any>) => { workflow: WorkflowDefinition; result: string };
+  createNode: (args: Record<string, any>) => {
+    workflow: WorkflowDefinition;
+    result: string;
+  };
   commitWorkflow: (workflow: WorkflowDefinition, message: string) => void;
 };
 
@@ -34,7 +44,9 @@ function configPropertyToZod(property: ConfigProperty) {
       const values = property.options.map((option) =>
         typeof option === "string" ? option : option.value,
       );
-      return values.length > 0 ? z.enum(values as [string, ...string[]]) : z.string();
+      return values.length > 0
+        ? z.enum(values as [string, ...string[]])
+        : z.string();
     }
     default:
       return z.any();
@@ -43,15 +55,12 @@ function configPropertyToZod(property: ConfigProperty) {
 
 function buildInputSchema(configSchema: ConfigSchema) {
   const shape: Record<string, z.ZodTypeAny> = {
-    id: z.string().optional(),
     position: z
       .object({
         x: z.number(),
         y: z.number(),
       })
       .optional(),
-    inputs: z.array(z.string()).optional(),
-    outputs: z.array(z.string()).optional(),
   };
 
   for (const [key, property] of Object.entries(configSchema.properties)) {
@@ -91,8 +100,11 @@ export function buildWorkflowNodeTools({
 }: WorkflowNodeToolContext): Record<string, any> {
   const tools: Record<string, any> = {};
 
-  for (const entry of [...Object.values(triggerCatalog), ...Object.values(actionCatalog)]) {
-      tools[entry.metadata.type] = tool({
+  for (const entry of [
+    ...Object.values(triggerCatalog),
+    ...Object.values(actionCatalog),
+  ]) {
+    tools[entry.metadata.type] = tool({
       description: `Create a ${entry.metadata.label} node.`,
       inputSchema: buildInputSchema(entry.configSchema),
       execute: async (args: Record<string, any>) => {
@@ -109,7 +121,10 @@ export function buildWorkflowNodeTools({
           config,
         });
 
-        commitWorkflow(nextWorkflow, `Created ${entry.kind} node '${nextWorkflow.nodes[nextWorkflow.nodes.length - 1]?.id ?? entry.metadata.type}' (${entry.metadata.type}).`);
+        commitWorkflow(
+          nextWorkflow,
+          `Created ${entry.kind} node '${nextWorkflow.nodes[nextWorkflow.nodes.length - 1]?.id ?? entry.metadata.type}' (${entry.metadata.type}).`,
+        );
         return { message: result, workflowId: workflow.id };
       },
     });
@@ -118,12 +133,6 @@ export function buildWorkflowNodeTools({
   return tools;
 }
 
-export function getNodeSchemaSummaries(): Array<{
-  kind: NodeType;
-  type: string;
-  label: string;
-  description: string;
-  fields: Array<{ name: string; type: string; required: boolean; defaultValue?: any }>;
-}> {
-  return getNodeCatalogSummaries();
+export function getNodeSchema(kind: "action" | "trigger", type: string) {
+  return getNodeDefinition(kind, type)?.configSchema ?? null;
 }

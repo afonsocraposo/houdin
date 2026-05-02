@@ -243,8 +243,10 @@ function AiWorkflowChat() {
   }, [session, setActiveGenerationSession]);
 
   const openDesigner = () => {
+    const workflowId = session?.draftWorkflow?.id;
     browser.tabs.create({
-      url: browser.runtime.getURL("src/config/index.html") + "#/designer",
+      url: browser.runtime.getURL("src/config/index.html") +
+        (workflowId ? `#/designer/${workflowId}` : "#/designer"),
     });
   };
 

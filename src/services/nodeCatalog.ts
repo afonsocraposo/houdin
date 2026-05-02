@@ -10,6 +10,10 @@ export const nodeCatalog = {
   triggers: triggerCatalog,
 };
 
+export function getNodeDefinition(kind: "action" | "trigger", type: string) {
+  return kind === "action" ? actionCatalog[type] : triggerCatalog[type];
+}
+
 export function getNodeCatalogSummaries(): Array<{
   kind: "action" | "trigger";
   type: string;

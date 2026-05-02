@@ -3,6 +3,7 @@ import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 
 import { useStore } from "@/store";
+import { nodeCatalog } from "./nodeCatalog";
 import {
   GenerationMessage,
   GenerationPromptRequest,
@@ -18,13 +19,12 @@ import type {
 import { generateId } from "@/utils/helpers";
 import {
   buildWorkflowNodeTools,
-  getNodeSchemaSummaries,
+  getNodeSchema,
 } from "./workflowGenerationNodeTools";
 
 const openrouter = createOpenRouter({
   apiKey:
-    import.meta.env.VITE_OPENROUTER_API_KEY ||
-    "OPENROUTER_API_KEY_PLACEHOLDER",
+    import.meta.env.VITE_OPENROUTER_API_KEY || "OPENROUTER_API_KEY_PLACEHOLDER",
   appName: "Houdin",
   appUrl: "https://houdin.dev",
 });
@@ -99,7 +99,12 @@ function asPosition(value: unknown): { x: number; y: number } | undefined {
 }
 
 function nodeTypeFromArgs(args: Record<string, any>): NodeType | null {
-  const explicit = getFirstString(args, ["nodeType", "node_type", "category", "kind"]);
+  const explicit = getFirstString(args, [
+    "nodeType",
+    "node_type",
+    "category",
+    "kind",
+  ]);
   return explicit === "trigger" || explicit === "action" ? explicit : null;
 }
 
@@ -152,7 +157,9 @@ function appendMessage(
   };
 }
 
-function stripPendingThinkingMessage(session: GenerationSession): GenerationSession {
+function stripPendingThinkingMessage(
+  session: GenerationSession,
+): GenerationSession {
   const messages = [...session.messages];
   const lastMessage = messages[messages.length - 1];
 
@@ -183,6 +190,18 @@ function buildSystemPrompt(session: GenerationSession): string {
     ? JSON.stringify(session.pageContext, null, 2)
     : "null";
   const history = historyToPrompt(session.messages);
+  const availableNodeTypes = {
+    actions: Object.values(nodeCatalog.actions).map((node) => ({
+      type: node.metadata.type,
+      label: node.metadata.label,
+      description: node.metadata.description,
+    })),
+    triggers: Object.values(nodeCatalog.triggers).map((node) => ({
+      type: node.metadata.type,
+      label: node.metadata.label,
+      description: node.metadata.description,
+    })),
+  };
 
   return [
     "You are Houdin's workflow builder.",
@@ -191,10 +210,13 @@ function buildSystemPrompt(session: GenerationSession): string {
     "Prefer small tool calls over big rewrites.",
     "If a page-specific workflow is requested, use the provided page context.",
     "",
-    "Use tools in this order when needed: create node, connect nodes, then update node config.",
+    "Use tools in this order when needed: create node, update node config, then connect nodes.",
     "Use setWorkflowName, setWorkflowDescription, setUrlPattern, and setWorkflowEnabled for workflow-level changes.",
+    "When the workflow is ready, set a clear workflow name and enable it.",
     "When creating nodes, use the exact node-type tool names and fields.",
+    "Node IDs are generated automatically by the app as action-* or trigger-*; do not invent node IDs.",
     "Use getNodeSchema when you need the exact config fields for a node type.",
+    `Available node types: ${JSON.stringify(availableNodeTypes)}`,
     "",
     `Current draft workflow: ${JSON.stringify(workflow, null, 2)}`,
     `Current page context: ${pageContext}`,
@@ -250,6 +272,39 @@ function setWorkflowEnabled(
   return { ...workflow, enabled, modifiedAt: Date.now() };
 }
 
+function deriveWorkflowName(prompt: string): string {
+  const words = prompt
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 6)
+    .join(" ");
+
+  if (!words) {
+    return "Generated workflow";
+  }
+
+  return words.length > 48 ? `${words.slice(0, 45).trimEnd()}...` : words;
+}
+
+function finalizeGeneratedWorkflow(
+  workflow: WorkflowDefinition,
+  prompt: string,
+): WorkflowDefinition {
+  let nextWorkflow = workflow;
+
+  if (!nextWorkflow.enabled) {
+    nextWorkflow = setWorkflowEnabled(nextWorkflow, true);
+  }
+
+  if (!nextWorkflow.name || nextWorkflow.name === "Untitled workflow") {
+    nextWorkflow = setWorkflowName(nextWorkflow, deriveWorkflowName(prompt));
+  }
+
+  return nextWorkflow;
+}
+
 function createNode(
   workflow: WorkflowDefinition,
   args: Record<string, any>,
@@ -263,16 +318,23 @@ function createNode(
   const nodeId =
     getFirstString(args, ["id", "nodeId", "node_id"]) ||
     generateId(nodeType, 8);
-  const position = asPosition(args.position) || getNextNodePosition(workflow.nodes);
+  const position =
+    asPosition(args.position) || getNextNodePosition(workflow.nodes);
   const config = isRecord(args.config) ? args.config : {};
-  const inputs = Array.isArray(args.inputs)
-    ? args.inputs.filter((value): value is string => typeof value === "string")
-    : nodeType === "trigger"
-      ? []
-      : ["input"];
-  const outputs = Array.isArray(args.outputs)
-    ? args.outputs.filter((value): value is string => typeof value === "string")
-    : ["output"];
+  const inputs =
+    Array.isArray(args.inputs) && args.inputs.length > 0
+      ? args.inputs.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : nodeType === "trigger"
+        ? []
+        : ["input"];
+  const outputs =
+    Array.isArray(args.outputs) && args.outputs.length > 0
+      ? args.outputs.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : ["output"];
 
   const node: WorkflowNode = {
     id: nodeId,
@@ -289,7 +351,7 @@ function createNode(
       nodes: [...workflow.nodes, node],
       modifiedAt: Date.now(),
     },
-    result: `Created ${nodeType} node '${nodeId}' (${type}).`,
+    result: `Created ${nodeType} node '${type}' (${nodeId}).`,
   };
 }
 
@@ -418,7 +480,8 @@ function deleteNode(
       ...workflow,
       nodes: workflow.nodes.filter((node) => node.id !== nodeId),
       connections: workflow.connections.filter(
-        (connection) => connection.source !== nodeId && connection.target !== nodeId,
+        (connection) =>
+          connection.source !== nodeId && connection.target !== nodeId,
       ),
       modifiedAt: Date.now(),
     },
@@ -430,8 +493,18 @@ function connectNodes(
   workflow: WorkflowDefinition,
   args: Record<string, any>,
 ): { workflow: WorkflowDefinition; result: string } {
-  const sourceId = getFirstString(args, ["sourceId", "source_id", "from", "source"]);
-  const targetId = getFirstString(args, ["targetId", "target_id", "to", "target"]);
+  const sourceId = getFirstString(args, [
+    "sourceId",
+    "source_id",
+    "from",
+    "source",
+  ]);
+  const targetId = getFirstString(args, [
+    "targetId",
+    "target_id",
+    "to",
+    "target",
+  ]);
   const sourceHandle = getFirstString(args, ["sourceHandle", "source_handle"]);
   const targetHandle = getFirstString(args, ["targetHandle", "target_handle"]);
 
@@ -440,7 +513,8 @@ function connectNodes(
   }
 
   const connection: WorkflowConnection = {
-    id: getFirstString(args, ["id", "connectionId", "connection_id"]) ||
+    id:
+      getFirstString(args, ["id", "connectionId", "connection_id"]) ||
       generateId("conn", 8),
     source: sourceId,
     target: targetId,
@@ -477,12 +551,28 @@ function disconnectNodes(
   workflow: WorkflowDefinition,
   args: Record<string, any>,
 ): { workflow: WorkflowDefinition; result: string } {
-  const connectionId = getFirstString(args, ["connectionId", "connection_id", "id"]);
-  const sourceId = getFirstString(args, ["sourceId", "source_id", "from", "source"]);
-  const targetId = getFirstString(args, ["targetId", "target_id", "to", "target"]);
+  const connectionId = getFirstString(args, [
+    "connectionId",
+    "connection_id",
+    "id",
+  ]);
+  const sourceId = getFirstString(args, [
+    "sourceId",
+    "source_id",
+    "from",
+    "source",
+  ]);
+  const targetId = getFirstString(args, [
+    "targetId",
+    "target_id",
+    "to",
+    "target",
+  ]);
 
   if (!connectionId && (!sourceId || !targetId)) {
-    throw new Error("disconnectNodes requires connectionId or sourceId and targetId");
+    throw new Error(
+      "disconnectNodes requires connectionId or sourceId and targetId",
+    );
   }
 
   return {
@@ -493,7 +583,9 @@ function disconnectNodes(
           return connection.id !== connectionId;
         }
 
-        return !(connection.source === sourceId && connection.target === targetId);
+        return !(
+          connection.source === sourceId && connection.target === targetId
+        );
       }),
       modifiedAt: Date.now(),
     },
@@ -530,12 +622,23 @@ export class WorkflowGenerationService {
 
     commitSession(workingWorkflow, workingSession);
 
-    const persist = (message: string, kind: GenerationMessage["kind"] = "tool") => {
-      workingSession = appendMessage(workingSession, "assistant", message, kind);
+    const persist = (
+      message: string,
+      kind: GenerationMessage["kind"] = "tool",
+    ) => {
+      workingSession = appendMessage(
+        workingSession,
+        "assistant",
+        message,
+        kind,
+      );
       commitSession(workingWorkflow, workingSession);
     };
 
-    const applyWorkflow = (nextWorkflow: WorkflowDefinition, message: string) => {
+    const applyWorkflow = (
+      nextWorkflow: WorkflowDefinition,
+      message: string,
+    ) => {
       workingWorkflow = nextWorkflow;
       persist(message, "tool");
     };
@@ -560,7 +663,10 @@ export class WorkflowGenerationService {
             description: "Set the workflow description.",
             inputSchema: z.object({ description: z.string() }),
             execute: async ({ description }) => {
-              const nextWorkflow = setWorkflowDescription(workingWorkflow, description);
+              const nextWorkflow = setWorkflowDescription(
+                workingWorkflow,
+                description,
+              );
               applyWorkflow(nextWorkflow, "Updated workflow description.");
               return { description };
             },
@@ -570,7 +676,10 @@ export class WorkflowGenerationService {
             inputSchema: z.object({ urlPattern: z.string().min(1) }),
             execute: async ({ urlPattern }) => {
               const nextWorkflow = setUrlPattern(workingWorkflow, urlPattern);
-              applyWorkflow(nextWorkflow, `Set URL pattern to '${urlPattern}'.`);
+              applyWorkflow(
+                nextWorkflow,
+                `Set URL pattern to '${urlPattern}'.`,
+              );
               return { urlPattern };
             },
           }),
@@ -579,7 +688,10 @@ export class WorkflowGenerationService {
             inputSchema: z.object({ enabled: z.boolean() }),
             execute: async ({ enabled }) => {
               const nextWorkflow = setWorkflowEnabled(workingWorkflow, enabled);
-              applyWorkflow(nextWorkflow, `Set workflow enabled to ${enabled}.`);
+              applyWorkflow(
+                nextWorkflow,
+                `Set workflow enabled to ${enabled}.`,
+              );
               return { enabled };
             },
           }),
@@ -590,19 +702,20 @@ export class WorkflowGenerationService {
               type: z.string().min(1),
             }),
             execute: async ({ type }) => {
-              const schema = getNodeSchemaSummaries().find(
-                (item) => item.type === type,
-              );
+              const kind = triggerNodeTypes.has(type) ? "trigger" : "action";
+              const schema = getNodeSchema(kind, type);
 
               if (!schema) {
                 throw new Error(`Node schema not found for '${type}'`);
               }
 
               persist(
-                `Schema for ${schema.kind} '${schema.type}': ${schema.fields
+                `Schema for ${kind} '${type}': ${Object.entries(
+                  schema.properties,
+                )
                   .map(
-                    (field) =>
-                      `${field.name} (${field.type}${field.required ? ", required" : ""})`,
+                    ([name, field]) =>
+                      `${name} (${field.type}${field.required ? ", required" : ""})`,
                   )
                   .join(", ")}`,
                 "tool",
@@ -635,10 +748,8 @@ export class WorkflowGenerationService {
               patch: z.record(z.string(), z.any()).optional(),
             }),
             execute: async (args) => {
-              const { workflow: nextWorkflow, result: message } = updateNodeConfig(
-                workingWorkflow,
-                args,
-              );
+              const { workflow: nextWorkflow, result: message } =
+                updateNodeConfig(workingWorkflow, args);
               applyWorkflow(nextWorkflow, message);
               return { message };
             },
@@ -714,10 +825,8 @@ export class WorkflowGenerationService {
               to: z.string().optional(),
             }),
             execute: async (args) => {
-              const { workflow: nextWorkflow, result: message } = disconnectNodes(
-                workingWorkflow,
-                args,
-              );
+              const { workflow: nextWorkflow, result: message } =
+                disconnectNodes(workingWorkflow, args);
               applyWorkflow(nextWorkflow, message);
               return { message };
             },
@@ -732,7 +841,14 @@ export class WorkflowGenerationService {
         finalText,
         "result",
       );
-      commitSession(workingWorkflow, workingSession);
+
+      workingWorkflow = finalizeGeneratedWorkflow(workingWorkflow, prompt);
+      workingSession = {
+        ...workingSession,
+        draftWorkflow: workingWorkflow,
+      };
+
+      workingSession = commitSession(workingWorkflow, workingSession);
 
       return { session: workingSession };
     } catch (error) {
@@ -746,7 +862,7 @@ export class WorkflowGenerationService {
         "error",
       );
       workingSession = { ...workingSession, status: "failed" };
-      commitSession(workingWorkflow, workingSession);
+      workingSession = commitSession(workingWorkflow, workingSession);
 
       return { session: workingSession };
     }
