@@ -39,7 +39,7 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import { useToggle } from "@mantine/hooks";
+import { useElementSize, useToggle } from "@mantine/hooks";
 
 const createInitialSession = (): GenerationSession => {
   const now = Date.now();
@@ -84,6 +84,7 @@ function AiWorkflowChat() {
   const session = activeGenerationSession;
   const hasMessages = Boolean(session?.messages.length);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const { ref: inputRef, height: inputHeight } = useElementSize();
 
   const draftSummary = useMemo(() => {
     if (!session?.draftWorkflow) {
@@ -288,7 +289,7 @@ function AiWorkflowChat() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [displayedMessages]);
+  }, [displayedMessages, inputRef.current?.rows]);
 
   const renderThinkingWave = () => (
     <Text component="span" size="sm" c="dimmed">
@@ -316,6 +317,7 @@ function AiWorkflowChat() {
     </Text>
   );
 
+  console.log(inputHeight);
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
       <Card withBorder p="sm">
@@ -363,7 +365,7 @@ function AiWorkflowChat() {
         </Stack>
       </Card>
       <Box flex={1}>
-        <ScrollArea.Autosize mah={300} type="hover">
+        <ScrollArea.Autosize mah={inputHeight > 36 ? 300 : 320} type="hover">
           <Stack gap="xs">
             {messages.length !== 0 &&
               displayedMessages.map((message) => {
@@ -415,6 +417,7 @@ function AiWorkflowChat() {
         }}
       >
         <Textarea
+          ref={inputRef}
           value={prompt}
           onChange={(event) => setPrompt(event.currentTarget.value)}
           rightSectionWidth={70}
@@ -446,6 +449,7 @@ function AiWorkflowChat() {
           placeholder="Describe the workflow you want to create..."
           autosize
           size="sm"
+          mah={56}
           minRows={1}
           maxRows={2}
         />
