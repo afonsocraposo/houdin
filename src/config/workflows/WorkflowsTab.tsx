@@ -17,14 +17,13 @@ import {
   IconUpload,
   IconChevronDown,
 } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ImportModal } from "./ImportModal";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
 import { newWorkflowId } from "@/utils/helpers";
 import { useStore } from "@/store";
-import { WorkflowSyncer } from "@/services/workflowSyncer";
 import SyncButton from "@/components/SyncButton";
 
 export default function WorkflowsTab({
@@ -46,10 +45,6 @@ export default function WorkflowsTab({
   const exampleService = useMemo(() => new ExampleService(), []);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    WorkflowSyncer.triggerSync();
-  }, []);
 
   const handleCreateWorkflow = () => {
     navigate("/designer"); // Navigate to designer without workflow ID

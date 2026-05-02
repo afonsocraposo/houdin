@@ -1,4 +1,4 @@
-import { NodeExecutionResult } from "@/types/workflow";
+import { WorkflowExecution } from "@/types/workflow";
 import {
   ActionIcon,
   Badge,
@@ -13,10 +13,14 @@ import { IconSettings } from "@tabler/icons-react";
 import { getStatusColor } from "./utils";
 
 export default function ExecutionHistoryItem({
-  node,
+  execution,
 }: {
-  node: NodeExecutionResult;
+  execution: WorkflowExecution;
 }) {
+  const node = execution.nodeResults[0];
+  if (!node) {
+    return null;
+  }
   const success = node.data && node.status === "success";
   return (
     <Table.Tr>

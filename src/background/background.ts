@@ -10,12 +10,9 @@ import {
   type GenerationPromptRequest,
   type GenerationPromptResponse,
 } from "@/types/generation-session";
-import { StorageServer } from "@/services/storage";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
-import { WorkflowSyncer } from "@/services/workflowSyncer";
-import { StorageMigration } from "@/services/storageMigration";
 import { ApiClient } from "@/api/client";
 
 let httpListener: HttpListenerWebRequest | null = null;
@@ -62,15 +59,6 @@ if (browser.webNavigation) {
     }
   });
 }
-
-StorageServer.getInstance();
-StorageMigration.runMigrations().catch((error) => {
-  console.error("Storage migration failed:", error);
-});
-
-const workflowSyncer = WorkflowSyncer.getInstance();
-workflowSyncer.sync(true);
-workflowSyncer.init();
 
 ApiClient.startBackgroundProxy();
 

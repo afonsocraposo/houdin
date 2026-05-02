@@ -3,7 +3,7 @@ import {
   WorkflowExecution,
   WorkflowExecutionStatus,
 } from "@/types/workflow";
-import { BackgroundStorageClient } from "./storage";
+import { useStore } from "@/store";
 
 export class ExecutionTracker {
   public status: WorkflowExecutionStatus = WorkflowExecutionStatus.WAITING;
@@ -41,8 +41,7 @@ export class ExecutionTracker {
 
   private async saveExecution(): Promise<void> {
     const workflowExecution: WorkflowExecution = this.getWorkflowExecution();
-    const storageClient = new BackgroundStorageClient();
-    await storageClient.saveWorkflowExecution(workflowExecution);
+    useStore.getState().addExecution(workflowExecution);
   }
 
   private getWorkflowExecution(): WorkflowExecution {

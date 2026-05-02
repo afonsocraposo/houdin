@@ -93,6 +93,11 @@ export interface WorkflowExecutionStats {
   failed: number;
 }
 
+export interface WorkflowExecutionState {
+  executions: WorkflowExecution[];
+  stats: WorkflowExecutionStats;
+}
+
 export interface ExecutionMetadata {
   workflowId: string;
   executionId: string;

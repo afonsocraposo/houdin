@@ -2,15 +2,15 @@ import { create, Mutate, StoreApi } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { AccountSlice, createAccountSlice } from "./accountSlice";
 import { WorkflowsSlice, createWorkflowsSlice } from "./workflowsSlice";
-import { SyncSlice, createSyncSlice } from "./syncSlice";
 import browser from "@/services/browser";
 import { createCredentialsSlice, CredentialsSlice } from "./credentialsSlice";
 import {
   createGenerationSessionSlice,
   GenerationSessionSlice,
 } from "./generationSessionSlice";
+import { createExecutionsSlice, ExecutionsSlice } from "./executionsSlice";
 
-type StoreState = SyncSlice & WorkflowsSlice & CredentialsSlice & GenerationSessionSlice;
+type StoreState = WorkflowsSlice & CredentialsSlice & GenerationSessionSlice & ExecutionsSlice;
 type SessionStoreState = AccountSlice;
 
 const browserStorageAdapter: StateStorage = {
@@ -29,10 +29,10 @@ const browserStorageAdapter: StateStorage = {
 export const useStore = create<StoreState>()(
   persist(
     (...a) => ({
-      ...createSyncSlice(...a),
       ...createWorkflowsSlice(...a),
       ...createCredentialsSlice(...a),
       ...createGenerationSessionSlice(...a),
+      ...createExecutionsSlice(...a),
     }),
     {
       name: "houdin-store",
