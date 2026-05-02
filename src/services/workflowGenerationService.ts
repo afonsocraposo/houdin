@@ -620,7 +620,7 @@ export class WorkflowGenerationService {
       kind: GenerationMessage["kind"] = "tool",
     ) => {
       workingSession = appendMessage(
-        cleanedSession,
+        workingSession,
         "assistant",
         message,
         kind,

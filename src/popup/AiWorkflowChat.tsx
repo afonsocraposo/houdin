@@ -10,6 +10,7 @@ import {
   GenerationPromptResponse,
   GenerationSession,
 } from "@/types/generation-session";
+import type { WorkflowDefinition } from "@/types/workflow";
 import { generateId, newWorkflowId } from "@/utils/helpers";
 import {
   ActionIcon,
@@ -127,7 +128,7 @@ function AiWorkflowChat() {
 
       const snapshot = response?.data;
       if (!snapshot) {
-        return;
+        return null;
       }
 
       updateActiveGenerationSession((current) => ({
@@ -143,6 +144,8 @@ function AiWorkflowChat() {
         content: `Captured page context for ${snapshot.title || snapshot.url}.`,
         createdAt: Date.now(),
       });
+
+      return snapshot;
     } catch (error) {
       appendMessage({
         id: generateId("msg", 10),
@@ -151,6 +154,8 @@ function AiWorkflowChat() {
         content: `Failed to capture page context: ${(error as Error).message}`,
         createdAt: Date.now(),
       });
+
+      return null;
     }
   };
 
@@ -164,6 +169,11 @@ function AiWorkflowChat() {
     return session;
   };
 
+  const ensureWorkflowEnabled = (workflow: WorkflowDefinition) => ({
+    ...workflow,
+    enabled: true,
+  });
+
   const handleSend = async () => {
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt || isSending || !session) {
@@ -172,7 +182,7 @@ function AiWorkflowChat() {
 
     setPrompt("");
     setIsSending(true);
-    await capturePageContext();
+    const pageContext = await capturePageContext();
 
     try {
       const userMessage: GenerationMessage = {
@@ -195,6 +205,7 @@ function AiWorkflowChat() {
         ...ensureSession(),
         status: "drafting" as const,
         messages: [...ensureSession().messages, userMessage, thinkingMessage],
+        pageContext: pageContext ?? ensureSession().pageContext,
         updatedAt: Date.now(),
       };
 
@@ -211,7 +222,12 @@ function AiWorkflowChat() {
       )) as GenerationPromptResponse | null;
 
       if (response?.session) {
-        setActiveGenerationSession(response.session);
+        setActiveGenerationSession({
+          ...response.session,
+          draftWorkflow: response.session.draftWorkflow
+            ? ensureWorkflowEnabled(response.session.draftWorkflow)
+            : response.session.draftWorkflow,
+        });
       }
 
       setPrompt("");
