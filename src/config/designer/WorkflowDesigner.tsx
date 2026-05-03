@@ -30,7 +30,6 @@ import {
   IconVariable,
   IconInfoCircle,
   IconCheck,
-  IconAi,
   IconX,
   IconRobot,
 } from "@tabler/icons-react";
@@ -632,7 +631,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     <IconX size={16} />
                   </ActionIcon>
                 </Group>
-                <AiWorkflowChatPanel />
+                <AiWorkflowChatPanel workflowId={currentWorkflowId} />
               </Paper>
             )}
           </Group>

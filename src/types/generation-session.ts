@@ -1,4 +1,4 @@
-import { WorkflowDefinition, WorkflowExecutionStatus } from "@/types/workflow";
+import { WorkflowExecutionStatus } from "@/types/workflow";
 
 export type GenerationSessionStatus =
   | "idle"

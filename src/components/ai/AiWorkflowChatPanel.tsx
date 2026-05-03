@@ -57,7 +57,13 @@ const createInitialSession = (): GenerationSession => {
   };
 };
 
-export default function AiWorkflowChatPanel() {
+interface AiWorkflowChatPanelProps {
+  workflowId?: string | null;
+}
+
+export default function AiWorkflowChatPanel({
+  workflowId,
+}: AiWorkflowChatPanelProps) {
   const workflows = useStore((state) => state.workflows);
   const activeGenerationWorkflowId = useStore(
     (state) => state.activeGenerationWorkflowId,
@@ -278,6 +284,22 @@ export default function AiWorkflowChatPanel() {
   };
 
   useEffect(() => {
+    if (workflowId) {
+      const existingSession = getGenerationSessionForWorkflow(workflowId);
+
+      if (existingSession) {
+        setActiveGenerationSessionForWorkflow(workflowId, existingSession);
+        return;
+      }
+
+      if (!session || session.workflowId !== workflowId) {
+        const initialSession = buildSessionForWorkflow(workflowId);
+        setActiveGenerationSessionForWorkflow(workflowId, initialSession);
+      }
+
+      return;
+    }
+
     if (!session && activeGenerationWorkflowId) {
       const initialSession = buildSessionForWorkflow(
         activeGenerationWorkflowId,
@@ -288,8 +310,10 @@ export default function AiWorkflowChatPanel() {
       );
     }
   }, [
+    workflowId,
     session,
     activeGenerationWorkflowId,
+    getGenerationSessionForWorkflow,
     setActiveGenerationSessionForWorkflow,
   ]);
 
