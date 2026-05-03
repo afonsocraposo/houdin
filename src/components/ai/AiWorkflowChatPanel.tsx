@@ -28,9 +28,11 @@ import {
 import {
   IconExternalLink,
   IconFileSearch,
+  IconPointer,
   IconRefresh,
   IconSend2,
   IconSquare,
+  IconSquareFilled,
 } from "@tabler/icons-react";
 import {
   useEffect,
@@ -62,10 +64,12 @@ const createInitialSession = (): GenerationSession => {
 
 interface AiWorkflowChatPanelProps {
   workflowId?: string | null;
+  popup?: boolean;
 }
 
 export default function AiWorkflowChatPanel({
   workflowId,
+  popup = false,
 }: AiWorkflowChatPanelProps) {
   const workflows = useStore((state) => state.workflows);
   const activeGenerationWorkflowId = useStore(
@@ -88,6 +92,7 @@ export default function AiWorkflowChatPanel({
   );
   const [prompt, setPrompt] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isSelectingElement, setIsSelectingElement] = useState(false);
   const [usePageContext, togglePageContext] = useToggle([true, false]);
   const { ref, height } = useElementSize();
   const { ref: inputRef } = useElementSize();
@@ -145,24 +150,34 @@ export default function AiWorkflowChatPanel({
     }));
   };
 
+  const getActiveTabId = async () => {
+    const tabs = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    return tabs[0]?.id ?? null;
+  };
+
+  const loadPageContext = async () => {
+    const activeTabId = await getActiveTabId();
+    if (!activeTabId) {
+      return null;
+    }
+
+    const response = await sendMessageToContentScript(
+      activeTabId,
+      "GET_PAGE_CONTEXT",
+      {},
+    );
+    return response?.data ?? null;
+  };
+
   const capturePageContext = async () => {
     if (!usePageContext) return null;
 
     try {
-      const tabs = await browser.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      const activeTab = tabs[0];
-      if (!activeTab?.id) return null;
-
-      const response = await sendMessageToContentScript(
-        activeTab.id,
-        "GET_PAGE_CONTEXT",
-        {},
-      );
-
-      const snapshot = response?.data;
+      const snapshot = await loadPageContext();
       if (!snapshot) return null;
 
       updateActiveGenerationSession((current) => ({
@@ -190,6 +205,39 @@ export default function AiWorkflowChatPanel({
       });
 
       return null;
+    }
+  };
+
+  const handleSelectElement = async () => {
+    try {
+      const activeTabId = await getActiveTabId();
+      if (!activeTabId) {
+        return;
+      }
+
+      setIsSelectingElement(true);
+      await sendMessageToContentScript(
+        activeTabId,
+        "START_ELEMENT_SELECTION",
+        {},
+      );
+      appendMessage({
+        id: generateId("msg", 10),
+        role: "assistant",
+        kind: "tool",
+        content:
+          "Click an element on the page, then return here to use it as the selected target.",
+        createdAt: Date.now(),
+      });
+    } catch (error) {
+      setIsSelectingElement(false);
+      appendMessage({
+        id: generateId("msg", 10),
+        role: "assistant",
+        kind: "error",
+        content: `Failed to start element selection: ${(error as Error).message}`,
+        createdAt: Date.now(),
+      });
     }
   };
 
@@ -378,10 +426,7 @@ export default function AiWorkflowChatPanel({
         last.kind === message.kind &&
         message.kind !== "tool";
 
-      if (
-        last &&
-        canMergeAssistantMessages
-      ) {
+      if (last && canMergeAssistantMessages) {
         acc[acc.length - 1] = {
           ...last,
           content: `${last.content}\n${message.content}`,
@@ -398,6 +443,36 @@ export default function AiWorkflowChatPanel({
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }, 10);
   }, [displayedMessages, prompt]);
+
+  useEffect(() => {
+    if (!isSelectingElement) {
+      return;
+    }
+
+    const handleFocus = async () => {
+      const snapshot = await loadPageContext();
+      if (!snapshot?.selectedElement) {
+        return;
+      }
+
+      updateActiveGenerationSession((current) => ({
+        ...current,
+        pageContext: snapshot,
+        updatedAt: Date.now(),
+      }));
+      appendMessage({
+        id: generateId("msg", 10),
+        role: "assistant",
+        kind: "result",
+        content: `Selected element: ${snapshot.selectedElement.selector}`,
+        createdAt: Date.now(),
+      });
+      setIsSelectingElement(false);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [isSelectingElement, updateActiveGenerationSession]);
 
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
@@ -519,20 +594,35 @@ export default function AiWorkflowChatPanel({
           value={prompt}
           mah={56}
           onChange={(event) => setPrompt(event.currentTarget.value)}
-          rightSectionWidth={70}
+          rightSectionWidth={popup ? 100 : undefined}
           rightSection={
-            <Group gap="xs" wrap="nowrap">
-              <Tooltip label="Include page context in the prompt" withArrow>
-                <ActionIcon
-                  onClick={() => togglePageContext()}
-                  color={usePageContext ? undefined : "dimmed"}
-                  variant="transparent"
-                  style={{ background: "transparent" }}
-                  aria-label="Toggle page context"
-                >
-                  <IconFileSearch size={16} />
-                </ActionIcon>
-              </Tooltip>
+            <Group gap="4" wrap="nowrap">
+              {popup && (
+                <>
+                  <Tooltip label="Include page context in the prompt" withArrow>
+                    <ActionIcon
+                      onClick={() => togglePageContext()}
+                      color={usePageContext ? undefined : "dimmed"}
+                      variant="transparent"
+                      style={{ background: "transparent" }}
+                      aria-label="Toggle page context"
+                    >
+                      <IconFileSearch size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Select page element" withArrow>
+                    <ActionIcon
+                      onClick={handleSelectElement}
+                      color={isSelectingElement ? "blue" : undefined}
+                      variant="transparent"
+                      style={{ background: "transparent" }}
+                      aria-label="Select page element"
+                    >
+                      <IconPointer size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </>
+              )}
               <ActionIcon
                 onClick={isSending ? handleStop : handleSend}
                 disabled={!isSending && !prompt.trim()}
@@ -547,7 +637,11 @@ export default function AiWorkflowChatPanel({
                 style={{ background: "transparent" }}
                 aria-label={isSending ? "Stop generation" : "Send prompt"}
               >
-                {isSending ? <IconSquare size={14} /> : <IconSend2 size={16} />}
+                {isSending ? (
+                  <IconSquareFilled size={14} />
+                ) : (
+                  <IconSend2 size={16} />
+                )}
               </ActionIcon>
             </Group>
           }

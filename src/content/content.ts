@@ -37,12 +37,24 @@ if ((window as any).houdinExtensionInitialized) {
   let contentInjector: ContentInjector;
   let isFullyInitialized = false;
   let isInitializing = false;
+  let lastSelectedElement: SelectedElementContext | undefined;
+
+  interface ElementSelectedDetail {
+    selector: string;
+    element: {
+      tagName: string;
+      className: string;
+      id: string;
+      textContent: string | null;
+    };
+  }
 
   const initMinimalContentScript = () => {
     console.debug("Houdin extension minimal initialization");
 
     // Set up readiness check listener
     setupReadinessCheckListener();
+    setupElementSelectionBridge();
   };
 
   const initFullContentScript = () => {
@@ -130,8 +142,30 @@ if ((window as any).houdinExtensionInitialized) {
   };
 
   const getSelectedElementContext = (): SelectedElementContext | undefined => {
+    if (lastSelectedElement) {
+      return lastSelectedElement;
+    }
+
+    const selection = window.getSelection();
+    const selectionNode = selection?.anchorNode;
+    const selectionElement =
+      selectionNode instanceof Element
+        ? selectionNode
+        : selectionNode?.parentElement;
+
+    if (selectionElement instanceof HTMLElement) {
+      return {
+        selector: getElementSelector(selectionElement),
+        tagName: selectionElement.tagName.toLowerCase(),
+        text: selectionElement.textContent?.trim() || undefined,
+        ariaLabel: selectionElement.getAttribute("aria-label") || undefined,
+        id: selectionElement.id || undefined,
+        className: selectionElement.className?.toString() || undefined,
+      };
+    }
+
     const active = document.activeElement as HTMLElement | null;
-    if (!active) {
+    if (!active || active === document.body || active === document.documentElement) {
       return undefined;
     }
 
@@ -186,6 +220,28 @@ if ((window as any).houdinExtensionInitialized) {
       selectedElement: getSelectedElementContext(),
       visibleElements: getVisibleElements(),
     };
+  };
+
+  const setupElementSelectionBridge = () => {
+    window.addEventListener("modalDispatch", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        type: string;
+        data: ElementSelectedDetail;
+      }>;
+
+      if (customEvent.detail?.type !== "elementSelected") {
+        return;
+      }
+
+      const selected = customEvent.detail.data;
+      lastSelectedElement = {
+        selector: selected.selector,
+        tagName: selected.element.tagName.toLowerCase(),
+        text: selected.element.textContent?.trim() || undefined,
+        id: selected.element.id || undefined,
+        className: selected.element.className || undefined,
+      };
+    });
   };
 
   const setupWorkflowScriptBridge = () => {

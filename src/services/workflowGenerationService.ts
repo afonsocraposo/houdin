@@ -180,6 +180,7 @@ function buildSystemPrompt(session: GenerationSession): string {
     "Do not return workflow JSON.",
     "Prefer small tool calls over big rewrites.",
     "If a page-specific workflow is requested, use the provided page context.",
+    "If selectedElement is present in the page context, prefer it as the primary target for page interactions and injected components.",
     "",
     "Use tools in this order when needed: create node, update node config, then connect nodes.",
     "Use setWorkflowName, setWorkflowDescription, setUrlPattern, and setWorkflowEnabled for workflow-level changes.",

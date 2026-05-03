@@ -129,7 +129,7 @@ function App() {
               variant="pills"
               h="100%"
               display="flex"
-               style={{ flexDirection: "column", minHeight: 0 }}
+              style={{ flexDirection: "column", minHeight: 0 }}
             >
               <Tabs.List grow>
                 <Tabs.Tab value="ai">
@@ -156,7 +156,7 @@ function App() {
 
               <Box flex={1} style={{ minHeight: 0 }}>
                 <Tabs.Panel value="ai" pt="sm" h="100%">
-                  {activeTab === "ai" && <AiWorkflowChatPanel />}
+                  {activeTab === "ai" && <AiWorkflowChatPanel popup />}
                 </Tabs.Panel>
 
                 <Tabs.Panel value="workflows" pt="sm" h="100%">
