@@ -39,8 +39,12 @@ export const readClipboard = async (): Promise<{
       const htmlType = item.types.find((type) => type === "text/html");
 
       const [text, html] = await Promise.all([
-        textType ? item.getType(textType).then((blob) => blob.text()) : Promise.resolve(""),
-        htmlType ? item.getType(htmlType).then((blob) => blob.text()) : Promise.resolve(undefined),
+        textType
+          ? item.getType(textType).then((blob) => blob.text())
+          : Promise.resolve(""),
+        htmlType
+          ? item.getType(htmlType).then((blob) => blob.text())
+          : Promise.resolve(undefined),
       ]);
 
       if (text || html) {
@@ -105,6 +109,9 @@ export function newWorkflowId(): string {
 export function newExecutionId(): string {
   return generateId("exec", 12);
 }
+export const newTriggerId = () => generateId("trigger");
+export const newActionId = () => generateId("action");
+export const newConnectionId = () => generateId("conn");
 
 export const getElement = (
   selector: string,

@@ -1,4 +1,4 @@
-import { WorkflowDefinition, WorkflowExecutionStatus } from "@/types/workflow";
+import { WorkflowExecutionStatus } from "@/types/workflow";
 
 export type GenerationSessionStatus =
   | "idle"
@@ -65,7 +65,7 @@ export interface GenerationExecutionRef {
 export interface GenerationSession {
   id: string;
   status: GenerationSessionStatus;
-  draftWorkflow: WorkflowDefinition | null;
+  workflowId: string | null;
   messages: GenerationMessage[];
   pageContext: PageContextSnapshot | null;
   executionRefs: GenerationExecutionRef[];

@@ -1,9 +1,9 @@
 import { WorkflowDefinition } from "@/types/workflow";
-import { generateId } from "@/utils/helpers";
+import { newActionId, newConnectionId, newTriggerId } from "@/utils/helpers";
 
-const triggerId = generateId("trigger");
-const actionId = generateId("action");
-const connId = generateId("conn");
+const triggerId = newTriggerId();
+const actionId = newActionId();
+const connId = newConnectionId();
 
 export const welcomeMessage: WorkflowDefinition = {
   id: "example-welcome-message",

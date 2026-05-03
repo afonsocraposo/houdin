@@ -281,11 +281,11 @@ export default function AiWorkflowChatPanel() {
 
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
-      <Card withBorder p="sm">
+      <Card p="sm">
         <Stack gap={4}>
           <Group justify="space-between" align="center">
             <Group>
-              <Text size="sm" fw={500} truncate>
+              <Text size="sm" fw={500} truncate maw={200}>
                 {draftSummary.name}
               </Text>
               {hasMessages && (
@@ -335,7 +335,7 @@ export default function AiWorkflowChatPanel() {
                   <Card
                     key={message.id}
                     p={isUser ? "sm" : 0}
-                    radius={isUser ? "lg" : 0}
+                    radius={isUser ? undefined : 0}
                     bg={isUser ? undefined : "transparent"}
                     shadow={isUser ? "sm" : "none"}
                     style={{

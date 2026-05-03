@@ -1,11 +1,11 @@
 import { WorkflowDefinition } from "@/types/workflow";
-import { generateId } from "@/utils/helpers";
+import { newActionId, newConnectionId, newTriggerId } from "@/utils/helpers";
 
-const triggerId = generateId("trigger");
-const textInputActionId = generateId("action");
-const submitActionId = generateId("action");
-const conn1Id = generateId("conn");
-const conn2Id = generateId("conn");
+const triggerId = newTriggerId();
+const textInputActionId = newActionId();
+const submitActionId = newActionId();
+const conn1Id = newConnectionId();
+const conn2Id = newConnectionId();
 
 export const formFiller: WorkflowDefinition = {
   id: "example-form-filler",

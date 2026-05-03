@@ -1,11 +1,11 @@
 import { WorkflowDefinition } from "@/types/workflow";
-import { generateId } from "@/utils/helpers";
+import { newActionId, newConnectionId, newTriggerId } from "@/utils/helpers";
 
-const triggerId = generateId("trigger");
-const waitActionId = generateId("action");
-const clickActionId = generateId("action");
-const conn1Id = generateId("conn");
-const conn2Id = generateId("conn");
+const triggerId = newTriggerId();
+const waitActionId = newActionId();
+const clickActionId = newActionId();
+const conn1Id = newConnectionId();
+const conn2Id = newConnectionId();
 
 export const buttonClicker: WorkflowDefinition = {
   id: "example-button-clicker",
