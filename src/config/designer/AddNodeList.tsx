@@ -15,6 +15,7 @@ import {
 import { useDebouncedCallback } from "@mantine/hooks";
 import {
   IconArrowBarToRight,
+  IconMinus,
   IconPlus,
   IconSearch,
   IconX,
@@ -79,7 +80,7 @@ export default function AddNodeList({
     }
   }, [showNodePalette]);
 
-  useEffect(() => {}, []);
+  useEffect(() => { }, []);
 
   const colorScheme = useComputedColorScheme();
 
@@ -140,27 +141,33 @@ export default function AddNodeList({
           <Paper
             shadow="md"
             p="sm"
+            m="sm"
+            mah="98%"
             style={{
               ...styles,
               position: "absolute",
               top: 0,
               right: 0,
-              height: "100%",
               width: 300,
               zIndex: 1,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <Stack h="100%">
-              <Group>
+            <Stack
+              style={{ flex: "1 1 auto", minHeight: 0, maxHeight: "100%" }}
+            >
+              <Group justify="space-between">
+                <Text fw={500}>Add Node</Text>
                 <ActionIcon
                   onClick={() => setShowNodePalette(false)}
                   variant="subtle"
                   c="dimmed"
                   aria-label="Close node palette"
                 >
-                  <IconArrowBarToRight />
+                  <IconMinus />
                 </ActionIcon>
-                <Text fw={500}>Add Node</Text>
               </Group>
               <TextInput
                 value={search}
@@ -180,7 +187,11 @@ export default function AddNodeList({
                 }
               />
 
-              <ScrollArea type="hover" flex={1}>
+              <ScrollArea.Autosize
+                type="hover"
+                mah="100%"
+                style={{ minHeight: 0 }}
+              >
                 <Stack>
                   {orderedCategories.map(([category, items]) => {
                     const nodes = items as NodeMetadata[];
@@ -246,7 +257,7 @@ export default function AddNodeList({
                     );
                   })}
                 </Stack>
-              </ScrollArea>
+              </ScrollArea.Autosize>
             </Stack>
           </Paper>
         )}

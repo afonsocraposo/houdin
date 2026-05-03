@@ -30,8 +30,10 @@ import {
   IconVariable,
   IconInfoCircle,
   IconCheck,
-  IconX,
   IconRobot,
+  IconLine,
+  IconLayoutSidebarRightCollapseFilled,
+  IconLayoutSidebarRightCollapse,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
@@ -149,27 +151,46 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   );
   const [isDirty, setIsDirty] = useState(false);
   const savedSnapshotRef = useRef<string>("");
+  const syncedWorkflowSnapshotRef = useRef<string>("");
   const [aiWorkflowChatOpened, setAiWorkflowChatOpened] = useState(false);
 
   // Update state when workflow prop changes (e.g., when loading from URL)
   useEffect(() => {
     if (workflow) {
-      if (currentWorkflowId === workflow.id) return;
+      const incomingWorkflowSnapshot = JSON.stringify({
+        nodes: workflow.nodes || [],
+        connections: workflow.connections || [],
+        name: workflow.name || "",
+        description: workflow.description || "",
+        urlPattern: workflow.urlPattern || "https://*",
+        enabled: workflow.enabled ?? true,
+        variables: workflow.variables || {},
+      });
 
-      // Only update nodes if this is actually a new/different workflow
-      // Don't reset nodes when just re-rendering the same workflow
+      if (
+        workflow.id === currentWorkflowId &&
+        incomingWorkflowSnapshot === syncedWorkflowSnapshotRef.current
+      ) {
+        return;
+      }
+
       setCurrentWorkflowId(workflow.id);
-      form.values.name = workflow.name || "";
-      form.values.description = workflow.description || "";
-      form.values.urlPattern = workflow.urlPattern || "https://*";
-      form.values.enabled = workflow.enabled ?? true;
-      form.values.variables = workflow.variables || {};
+      form.setValues({
+        name: workflow.name || "",
+        description: workflow.description || "",
+        urlPattern: workflow.urlPattern || "https://*",
+        enabled: workflow.enabled ?? true,
+        variables: workflow.variables || {},
+      });
       set(workflow.nodes || [], workflow.connections || []);
       setSelectedNodeId(null);
+      savedSnapshotRef.current = incomingWorkflowSnapshot;
+      syncedWorkflowSnapshotRef.current = incomingWorkflowSnapshot;
     } else {
       setCurrentWorkflowId(newWorkflowId());
+      syncedWorkflowSnapshotRef.current = "";
     }
-  }, [workflow]); // Removed selectedNode and nodes from dependencies
+  }, [workflow, currentWorkflowId, form, set]);
 
   const clearSelectedNodeErrors = useCallback(() => {
     // clear selected node schema errors
@@ -587,7 +608,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                   <Paper
                     shadow="md"
                     p="md"
-                    h="100%"
+                    m="sm"
+                    mah="98%"
                     style={{
                       ...styles,
                       position: "absolute",
@@ -595,6 +617,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                       right: 0,
                       width: 400,
                       zIndex: 1,
+                      overflow: "hidden",
+                      display: "flex",
+                      flexDirection: "column",
                     }}
                   >
                     <NodeProperties
@@ -611,9 +636,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
             </Box>
             {aiWorkflowChatOpened && (
               <Paper
-                shadow="md"
                 p="md"
                 h="100%"
+                radius={0}
                 w={{ base: "50dvw", md: "420px" }}
                 style={{
                   display: "flex",
@@ -622,13 +647,16 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 }}
               >
                 <Group justify="space-between" mb="sm">
-                  <Text fw={600}>AI Assistant</Text>
+                  <Group>
+                    <IconRobot />
+                    <Text fw={600}>AI Assistant</Text>
+                  </Group>
                   <ActionIcon
                     variant="subtle"
                     onClick={() => setAiWorkflowChatOpened(false)}
                     aria-label="Close AI drawer"
                   >
-                    <IconX size={16} />
+                    <IconLayoutSidebarRightCollapse />
                   </ActionIcon>
                 </Group>
                 <AiWorkflowChatPanel workflowId={currentWorkflowId} />

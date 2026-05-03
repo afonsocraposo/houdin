@@ -14,7 +14,7 @@ import {
 } from "@/types/workflow";
 import { nodeCatalog } from "@/services/nodeCatalog";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import { IconArrowBarToRight } from "@tabler/icons-react";
+import { IconLayoutSidebarRightCollapse, IconMinus } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 import VariablesButton from "./VariablesButton";
 import NodeIcon from "@/components/NodeIcon";
@@ -103,7 +103,11 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
                 </Text>
                 <CodeHighlight
                   language="json"
-                  code={JSON.stringify(trigger.outputExample as Record<string, any>, null, 2)}
+                  code={JSON.stringify(
+                    trigger.outputExample as Record<string, any>,
+                    null,
+                    2,
+                  )}
                 />
               </Stack>
             )}
@@ -216,32 +220,30 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   };
 
   return (
-    <>
+    <Stack style={{ flex: "1 1 auto", minHeight: 0, maxHeight: "100%" }}>
       <Group mb="md" justify="space-between">
+        <Text fw={500} c={getNodeTypeColor(node.type)}>
+          {getNodeTitle(node)}
+        </Text>
         <Group>
+          <VariablesButton nodes={nodes} workflowVars={workflowVars} />
           <ActionIcon
             onClick={onClose}
             variant="subtle"
             c="dimmed"
             aria-label="Close node properties"
           >
-            <IconArrowBarToRight />
+            <IconMinus />
           </ActionIcon>
-          <Text fw={500} c={getNodeTypeColor(node.type)}>
-            {getNodeTitle(node)}
-          </Text>
-        </Group>
-        <Group>
-          <VariablesButton nodes={nodes} workflowVars={workflowVars} />
         </Group>
       </Group>
-      <ScrollArea h="95%" type="scroll" style={{ overflowY: "auto" }}>
+      <ScrollArea.Autosize flex={1} type="scroll" style={{ minHeight: 0 }}>
         <Stack gap="md">
           {node.type === "trigger" &&
             renderTriggerProperties(node.data, errors)}
           {node.type === "action" && renderActionProperties(node.data, errors)}
         </Stack>
-      </ScrollArea>
-    </>
+      </ScrollArea.Autosize>
+    </Stack>
   );
 };

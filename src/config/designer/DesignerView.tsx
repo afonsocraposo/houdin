@@ -54,6 +54,12 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     }
   }, [workflowId, location.state]);
 
+  useEffect(() => {
+    if (workflowId) {
+      loadWorkflow(workflowId);
+    }
+  }, [workflowId, loadWorkflow]);
+
   const clearAutoSave = () => {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
   };
