@@ -86,3 +86,8 @@ export interface GenerationPromptResponse {
 export interface StopGenerationRequest {
   sessionId: string;
 }
+
+export interface SelectedElementMessage {
+  source: "inspector" | "ai-chat";
+  selectedElement: SelectedElementContext;
+}

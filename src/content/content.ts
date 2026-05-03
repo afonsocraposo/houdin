@@ -20,8 +20,10 @@ import {
   WorkflowCommandType,
 } from "@/types/background-workflow";
 import browser from "@/services/browser";
+import { MessageType } from "@/types/messages";
 import {
   PageContextSnapshot,
+  SelectedElementMessage,
   SelectedElementContext,
   VisibleElementContext,
 } from "@/types/generation-session";
@@ -41,6 +43,7 @@ if ((window as any).houdinExtensionInitialized) {
 
   interface ElementSelectedDetail {
     selector: string;
+    source?: "inspector" | "ai-chat";
     element: {
       tagName: string;
       className: string;
@@ -141,6 +144,15 @@ if ((window as any).houdinExtensionInitialized) {
     return element.tagName.toLowerCase();
   };
 
+  const getElementText = (element: HTMLElement): string | undefined => {
+    const text = element.textContent?.trim();
+    if (!text) {
+      return undefined;
+    }
+
+    return text.slice(0, 50);
+  };
+
   const getSelectedElementContext = (): SelectedElementContext | undefined => {
     if (lastSelectedElement) {
       return lastSelectedElement;
@@ -157,7 +169,7 @@ if ((window as any).houdinExtensionInitialized) {
       return {
         selector: getElementSelector(selectionElement),
         tagName: selectionElement.tagName.toLowerCase(),
-        text: selectionElement.textContent?.trim() || undefined,
+        text: getElementText(selectionElement),
         ariaLabel: selectionElement.getAttribute("aria-label") || undefined,
         id: selectionElement.id || undefined,
         className: selectionElement.className?.toString() || undefined,
@@ -172,7 +184,7 @@ if ((window as any).houdinExtensionInitialized) {
     return {
       selector: getElementSelector(active),
       tagName: active.tagName.toLowerCase(),
-      text: active.textContent?.trim() || undefined,
+      text: getElementText(active),
       ariaLabel: active.getAttribute("aria-label") || undefined,
       id: active.id || undefined,
       className: active.className?.toString() || undefined,
@@ -237,10 +249,20 @@ if ((window as any).houdinExtensionInitialized) {
       lastSelectedElement = {
         selector: selected.selector,
         tagName: selected.element.tagName.toLowerCase(),
-        text: selected.element.textContent?.trim() || undefined,
+        text: selected.element.textContent?.trim().slice(0, 50) || undefined,
         id: selected.element.id || undefined,
         className: selected.element.className || undefined,
       };
+
+      sendMessageToBackground<SelectedElementMessage>(
+        MessageType.AI_ELEMENT_SELECTED,
+        {
+          source: selected.source === "ai-chat" ? "ai-chat" : "inspector",
+          selectedElement: lastSelectedElement,
+        },
+      ).catch((error) => {
+        console.error("Failed to notify background about selected element:", error);
+      });
     });
   };
 

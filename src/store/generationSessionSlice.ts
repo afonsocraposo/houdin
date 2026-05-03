@@ -44,7 +44,11 @@ export const createGenerationSessionSlice: StateCreator<
   getActiveGenerationSession: () => {
     const state = useStore.getState() as GenerationSessionSlice;
     const workflowId = state.activeGenerationWorkflowId;
-    return workflowId ? state.sessions[workflowId] || null : null;
+    if (typeof workflowId !== "string") {
+      return null;
+    }
+
+    return state.sessions[workflowId] || null;
   },
   setActiveGenerationSessionForWorkflow: (
     workflowId: string,
@@ -77,7 +81,7 @@ export const createGenerationSessionSlice: StateCreator<
   ) =>
     set((state) => {
       const workflowId = state.activeGenerationWorkflowId;
-      if (!workflowId) {
+      if (typeof workflowId !== "string") {
         return {};
       }
 

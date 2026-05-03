@@ -94,7 +94,9 @@ function App() {
         currentWindow: true,
       });
       if (tabs.length > 0 && tabs[0].id) {
-        sendMessageToContentScript(tabs[0].id, "START_ELEMENT_SELECTION", {});
+        sendMessageToContentScript(tabs[0].id, "START_ELEMENT_SELECTION", {
+          source: "inspector",
+        });
       }
       window.close();
     } catch (error) {
@@ -184,14 +186,14 @@ function App() {
                         >
                           Element Inspector
                         </Button>
-                      </Stack>
 
-                      {/* Current URL info */}
-                      <Text size="xs" c="dimmed" ta="center" truncate>
-                        {currentUrl
-                          ? new URL(currentUrl).hostname
-                          : "No active tab"}
-                      </Text>
+                        {/* Current URL info */}
+                        <Text size="xs" c="dimmed" ta="center" truncate>
+                          {currentUrl
+                            ? new URL(currentUrl).hostname
+                            : "No active tab"}
+                        </Text>
+                      </Stack>
                     </Stack>
                   )}
                 </Tabs.Panel>

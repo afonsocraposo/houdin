@@ -31,7 +31,6 @@ import {
   IconPointer,
   IconRefresh,
   IconSend2,
-  IconSquare,
   IconSquareFilled,
 } from "@tabler/icons-react";
 import {
@@ -45,6 +44,8 @@ import { useElementSize, useToggle } from "@mantine/hooks";
 import ThinkingWave from "./ThinkingWave";
 import { MessageType } from "@/types/messages";
 import MarkdownText from "../MarkdownText";
+
+const PENDING_AI_SELECTED_ELEMENT_KEY = "pending-ai-selected-element";
 
 const createInitialSession = (): GenerationSession => {
   const now = Date.now();
@@ -100,6 +101,10 @@ export default function AiWorkflowChatPanel({
   const session = getActiveGenerationSession();
   const hasMessages = Boolean(session?.messages.length);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const normalizedActiveWorkflowValue =
+    typeof activeGenerationWorkflowId === "string"
+      ? activeGenerationWorkflowId
+      : null;
 
   const draftSummary = useMemo(() => {
     const workflow = session?.workflowId
@@ -117,30 +122,41 @@ export default function AiWorkflowChatPanel({
     };
   }, [session, workflows]);
 
-  const activeWorkflowValue = activeGenerationWorkflowId;
+  const activeWorkflow = useMemo(
+    () =>
+      normalizedActiveWorkflowValue
+        ? workflows.find((workflow) => workflow.id === normalizedActiveWorkflowValue)
+        : null,
+    [workflows, normalizedActiveWorkflowValue],
+  );
+
+  const hasNamedActiveWorkflow = Boolean(
+    activeWorkflow?.name && activeWorkflow.name !== "Untitled workflow",
+  );
+
+  const activeWorkflowValue = hasNamedActiveWorkflow
+    ? normalizedActiveWorkflowValue
+    : "__new__";
+
   const workflowOptions = useMemo(() => {
     const w = [
-      ...workflows.map((workflow) => ({
+      {
+        value: "__new__",
+        label: "Start new workflow",
+      },
+      ...workflows
+      .filter(
+        (workflow) =>
+          typeof workflow.id === "string" && typeof workflow.name === "string",
+      )
+      .map((workflow) => ({
         value: workflow.id,
         label: workflow.name,
       })),
     ];
 
-    if (!workflows.some((wf) => wf.id === activeWorkflowValue)) {
-      w.unshift({
-        value: activeWorkflowValue!,
-        label:
-          workflows.find((wf) => wf.id === activeWorkflowValue)?.name ||
-          "Start new workflow",
-      });
-    } else {
-      w.unshift({
-        value: "__new__",
-        label: "Start new workflow",
-      });
-    }
     return w;
-  }, [workflows, activeWorkflowValue]);
+  }, [workflows]);
 
   const appendMessage = (message: GenerationMessage) => {
     updateActiveGenerationSession((current) => ({
@@ -148,6 +164,16 @@ export default function AiWorkflowChatPanel({
       messages: [...current.messages, message],
       updatedAt: Date.now(),
     }));
+  };
+
+  const ensureCurrentSession = () => {
+    if (session) {
+      return session;
+    }
+
+    const nextSession = createInitialSession();
+    setActiveGenerationSession(nextSession);
+    return nextSession;
   };
 
   const getActiveTabId = async () => {
@@ -215,11 +241,12 @@ export default function AiWorkflowChatPanel({
         return;
       }
 
+      ensureCurrentSession();
       setIsSelectingElement(true);
       await sendMessageToContentScript(
         activeTabId,
         "START_ELEMENT_SELECTION",
-        {},
+        { source: "ai-chat" },
       );
       appendMessage({
         id: generateId("msg", 10),
@@ -229,6 +256,9 @@ export default function AiWorkflowChatPanel({
           "Click an element on the page, then return here to use it as the selected target.",
         createdAt: Date.now(),
       });
+      if (popup) {
+        window.close();
+      }
     } catch (error) {
       setIsSelectingElement(false);
       appendMessage({
@@ -445,6 +475,52 @@ export default function AiWorkflowChatPanel({
   }, [displayedMessages, prompt]);
 
   useEffect(() => {
+    if (!popup) {
+      return;
+    }
+
+    const consumePendingSelection = async () => {
+      const result = await browser.storage.local.get([PENDING_AI_SELECTED_ELEMENT_KEY]);
+      const pendingSelection = result[PENDING_AI_SELECTED_ELEMENT_KEY];
+      if (!pendingSelection) {
+        return;
+      }
+
+      await browser.storage.local.remove([PENDING_AI_SELECTED_ELEMENT_KEY]);
+
+      const snapshot = await loadPageContext();
+      const nextPageContext = snapshot ?? {
+        url: "",
+        title: "",
+        selectedElement: pendingSelection,
+        visibleElements: [],
+      };
+
+      ensureCurrentSession();
+      updateActiveGenerationSession((current) => ({
+        ...current,
+        pageContext: {
+          ...nextPageContext,
+          selectedElement: nextPageContext.selectedElement ?? pendingSelection,
+        },
+        updatedAt: Date.now(),
+      }));
+      appendMessage({
+        id: generateId("msg", 10),
+        role: "assistant",
+        kind: "result",
+        content: `Selected element: ${(nextPageContext.selectedElement ?? pendingSelection).selector}`,
+        createdAt: Date.now(),
+      });
+      setIsSelectingElement(false);
+    };
+
+    consumePendingSelection().catch((error) => {
+      console.error("Failed to consume pending selected element:", error);
+    });
+  }, [popup]);
+
+  useEffect(() => {
     if (!isSelectingElement) {
       return;
     }
@@ -480,10 +556,10 @@ export default function AiWorkflowChatPanel({
         <Stack gap="xs">
           <Group justify="space-between" align="center" wrap="nowrap">
             <Group gap="xs" wrap="nowrap" flex={1} miw={0}>
-              <Select
-                value={activeWorkflowValue}
-                onChange={handleWorkflowSelect}
-                data={workflowOptions}
+                <Select
+                  value={activeWorkflowValue}
+                  onChange={handleWorkflowSelect}
+                  data={workflowOptions}
                 size="xs"
                 aria-label="Active workflow draft"
                 style={{ flex: 1, minWidth: 0 }}

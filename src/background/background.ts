@@ -9,12 +9,15 @@ import { MessageType } from "@/types/messages";
 import {
   type GenerationPromptRequest,
   type GenerationPromptResponse,
+  type SelectedElementMessage,
   type StopGenerationRequest,
 } from "@/types/generation-session";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
 import { ApiClient } from "@/api/client";
+
+const PENDING_AI_SELECTED_ELEMENT_KEY = "pending-ai-selected-element";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -86,6 +89,29 @@ workflowEngine.initialize().then(() => {
             WorkflowGenerationService.getInstance().stopPrompt(
               message.data as StopGenerationRequest,
             ),
+          );
+        case MessageType.AI_ELEMENT_SELECTED:
+          return Promise.resolve(
+            (async () => {
+              const data = message.data as SelectedElementMessage;
+              if (data.source !== "ai-chat") {
+                return { stored: false };
+              }
+
+              await browser.storage.local.set({
+                [PENDING_AI_SELECTED_ELEMENT_KEY]: data.selectedElement,
+              });
+
+              if (browser.action?.openPopup) {
+                try {
+                  await browser.action.openPopup();
+                } catch (error) {
+                  console.error("Failed to reopen popup after element selection:", error);
+                }
+              }
+
+              return { stored: true };
+            })(),
           );
         case WorkflowCommandType.TRIGGER_FIRED:
           const tabId = sender.tab.id;
