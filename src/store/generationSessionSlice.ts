@@ -1,51 +1,107 @@
 import { StateCreator } from "zustand";
 import { GenerationSession } from "@/types/generation-session";
+import { useStore } from "@/store";
 
 export interface GenerationSessionSlice {
   sessions: Record<string, GenerationSession>;
-  activeGenerationSession: string | null;
+  activeGenerationWorkflowId: string | null;
   setActiveGenerationSession: (session: GenerationSession | null) => void;
+  getActiveGenerationSession: () => GenerationSession | null;
+  setActiveGenerationSessionForWorkflow: (
+    workflowId: string,
+    session: GenerationSession | null,
+  ) => void;
+  getGenerationSessionForWorkflow: (
+    workflowId: string,
+  ) => GenerationSession | null;
   updateActiveGenerationSession: (
     updater: (session: GenerationSession) => GenerationSession,
   ) => void;
   clearActiveGenerationSession: () => void;
+  clearAllGenerationSessions: () => void;
+  clearGenerationSessionForWorkflow: (workflowId: string) => void;
 }
 
 export const createGenerationSessionSlice: StateCreator<
   GenerationSessionSlice
 > = (set) => ({
   sessions: {},
-  activeGenerationSession: null,
+  activeGenerationWorkflowId: null,
   setActiveGenerationSession: (session: GenerationSession | null) =>
     set((state) => {
-      const sessions = { ...state.sessions };
-      if (Object.keys(sessions).length > 10) {
-        // Limit to 10 sessions, remove the oldest one
-        let oldestSessionId = null;
-        let oldestTimestamp = Infinity;
-        for (const [id, session] of Object.entries(sessions)) {
-          if (session.createdAt < oldestTimestamp) {
-            oldestTimestamp = session.createdAt;
-            oldestSessionId = id;
-          }
-        }
-        delete sessions[oldestSessionId!];
+      if (!session) {
+        return { activeGenerationWorkflowId: null };
       }
-      return { activeGenerationSession: session?.id };
+
+      return {
+        sessions: {
+          ...state.sessions,
+          [session.workflowId || session.id]: session,
+        },
+        activeGenerationWorkflowId: session.workflowId || session.id,
+      };
     }),
+  getActiveGenerationSession: () => {
+    const state = useStore.getState() as GenerationSessionSlice;
+    const workflowId = state.activeGenerationWorkflowId;
+    return workflowId ? state.sessions[workflowId] || null : null;
+  },
+  setActiveGenerationSessionForWorkflow: (
+    workflowId: string,
+    session: GenerationSession | null,
+  ) =>
+    set((state) => {
+      if (!session) {
+        const sessions = { ...state.sessions };
+        delete sessions[workflowId];
+        return {
+          sessions,
+          activeGenerationWorkflowId:
+            state.activeGenerationWorkflowId === workflowId
+              ? null
+              : state.activeGenerationWorkflowId,
+        };
+      }
+
+      return {
+        sessions: { ...state.sessions, [workflowId]: session },
+        activeGenerationWorkflowId: workflowId,
+      };
+    }),
+  getGenerationSessionForWorkflow: (workflowId: string) => {
+    const state = useStore.getState() as GenerationSessionSlice;
+    return state.sessions[workflowId] || null;
+  },
   updateActiveGenerationSession: (
     updater: (session: GenerationSession) => GenerationSession,
   ) =>
     set((state) => {
-      if (!state.activeGenerationSession) {
+      const workflowId = state.activeGenerationWorkflowId;
+      if (!workflowId) {
+        return {};
+      }
+
+      const currentSession = state.sessions[workflowId];
+      if (!currentSession) {
         return {};
       }
 
       return {
-        activeGenerationSession: updater(
-          state.sessions[state.activeGenerationSession],
-        ).id,
+        sessions: { ...state.sessions, [workflowId]: updater(currentSession) },
       };
     }),
-  clearActiveGenerationSession: () => set({ activeGenerationSession: null }),
+  clearActiveGenerationSession: () => set({ activeGenerationWorkflowId: null }),
+  clearAllGenerationSessions: () => set({ sessions: {}, activeGenerationWorkflowId: null }),
+  clearGenerationSessionForWorkflow: (workflowId: string) =>
+    set((state) => {
+      const sessions = { ...state.sessions };
+      delete sessions[workflowId];
+      return {
+        sessions,
+        activeGenerationWorkflowId:
+          state.activeGenerationWorkflowId === workflowId
+            ? null
+            : state.activeGenerationWorkflowId,
+      };
+    }),
 });

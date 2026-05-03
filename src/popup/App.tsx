@@ -18,9 +18,9 @@ import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import Logo from "@/components/Logo";
+import AiWorkflowChatPanel from "@/components/ai/AiWorkflowChatPanel";
 import { sendMessageToContentScript } from "@/lib/messages";
 import browser from "@/services/browser";
-import AiWorkflowChat from "./AiWorkflowChat";
 
 type Size = {
   width: number;
@@ -122,80 +122,86 @@ function App() {
             </Text>
           </Stack>
 
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="pills"
-            h="100%"
-            display="flex"
-            style={{ flexDirection: "column" }}
-          >
-            <Tabs.List grow>
-              <Tabs.Tab value="ai">
-                <Group wrap="nowrap" gap="xs" justify="center">
-                  <IconWand size={16} />
-                  {activeTab === "ai" && <Text size="sm">AI Builder</Text>}
-                </Group>
-              </Tabs.Tab>
-              <Tabs.Tab value="workflows">
-                <Group wrap="nowrap" gap="xs" justify="center">
-                  <IconPlayerPlay size={16} />
+          <Box flex={1}>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              variant="pills"
+              h="100%"
+              display="flex"
+              style={{ flexDirection: "column" }}
+            >
+              <Tabs.List grow>
+                <Tabs.Tab value="ai">
+                  <Group wrap="nowrap" gap="xs" justify="center">
+                    <IconWand size={16} />
+                    {activeTab === "ai" && <Text size="sm">AI Builder</Text>}
+                  </Group>
+                </Tabs.Tab>
+                <Tabs.Tab value="workflows">
+                  <Group wrap="nowrap" gap="xs" justify="center">
+                    <IconPlayerPlay size={16} />
+                    {activeTab === "workflows" && (
+                      <Text size="sm">Workflows</Text>
+                    )}
+                  </Group>
+                </Tabs.Tab>
+                <Tabs.Tab value="history">
+                  <Group wrap="nowrap" gap="xs" justify="center">
+                    <IconHistory size={16} />
+                    {activeTab === "history" && <Text size="sm">History</Text>}
+                  </Group>
+                </Tabs.Tab>
+              </Tabs.List>
+
+              <Box flex={1}>
+                <Tabs.Panel value="ai" pt="sm" h="100%">
+                  {activeTab === "ai" && <AiWorkflowChatPanel />}
+                </Tabs.Panel>
+
+                <Tabs.Panel value="workflows" pt="sm" h="100%">
                   {activeTab === "workflows" && (
-                    <Text size="sm">Workflows</Text>
-                  )}
-                </Group>
-              </Tabs.Tab>
-              <Tabs.Tab value="history">
-                <Group wrap="nowrap" gap="xs" justify="center">
-                  <IconHistory size={16} />
-                  {activeTab === "history" && <Text size="sm">History</Text>}
-                </Group>
-              </Tabs.Tab>
-            </Tabs.List>
+                    <Stack gap="md">
+                      {/* Active Workflows Section */}
+                      <ActiveWorkflows currentUrl={currentUrl} />
 
-            <Box flex={1}>
-              <Tabs.Panel value="ai" pt="sm" h="100%">
-                {activeTab === "ai" && <AiWorkflowChat />}
-              </Tabs.Panel>
+                      <Divider />
 
-              <Tabs.Panel value="workflows" pt="sm" h="100%">
-                {activeTab === "workflows" && (
-                  <Stack gap="md">
-                    {/* Active Workflows Section */}
-                    <ActiveWorkflows currentUrl={currentUrl} />
+                      <Stack gap="xs">
+                        <Button
+                          variant="filled"
+                          onClick={handleClick}
+                          fullWidth
+                        >
+                          Open Configuration
+                        </Button>
 
-                    <Divider />
+                        <Button
+                          variant="outline"
+                          onClick={handleSelectElement}
+                          fullWidth
+                          leftSection={<IconPointer size={16} />}
+                        >
+                          Element Inspector
+                        </Button>
+                      </Stack>
 
-                    <Stack gap="xs">
-                      <Button variant="filled" onClick={handleClick} fullWidth>
-                        Open Configuration
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        onClick={handleSelectElement}
-                        fullWidth
-                        leftSection={<IconPointer size={16} />}
-                      >
-                        Element Inspector
-                      </Button>
+                      {/* Current URL info */}
+                      <Text size="xs" c="dimmed" ta="center" truncate>
+                        {currentUrl
+                          ? new URL(currentUrl).hostname
+                          : "No active tab"}
+                      </Text>
                     </Stack>
+                  )}
+                </Tabs.Panel>
 
-                    {/* Current URL info */}
-                    <Text size="xs" c="dimmed" ta="center" truncate>
-                      {currentUrl
-                        ? new URL(currentUrl).hostname
-                        : "No active tab"}
-                    </Text>
-                  </Stack>
-                )}
-              </Tabs.Panel>
-
-              <Tabs.Panel value="history" pt="md" h="100%">
-                {activeTab === "history" && <ExecutionHistory />}
-              </Tabs.Panel>
-            </Box>
-          </Tabs>
+                <Tabs.Panel value="history" pt="md" h="100%">
+                  {activeTab === "history" && <ExecutionHistory />}
+                </Tabs.Panel>
+              </Box>
+            </Tabs>
+          </Box>
         </Stack>
       </Container>
     </>

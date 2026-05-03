@@ -10,7 +10,6 @@ import {
   GenerationPromptResponse,
   GenerationSession,
 } from "@/types/generation-session";
-import type { WorkflowDefinition } from "@/types/workflow";
 import { generateId, newWorkflowId } from "@/utils/helpers";
 import {
   ActionIcon,
@@ -19,7 +18,7 @@ import {
   Button,
   Card,
   Group,
-  Paper,
+  Select,
   ScrollArea,
   Stack,
   Text,
@@ -40,6 +39,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { useElementSize, useToggle } from "@mantine/hooks";
+import ThinkingWave from "./ThinkingWave";
 
 const createInitialSession = (): GenerationSession => {
   const now = Date.now();
@@ -47,17 +47,7 @@ const createInitialSession = (): GenerationSession => {
   return {
     id: generateId("session", 10),
     status: "idle",
-    draftWorkflow: {
-      id: newWorkflowId(),
-      name: "Untitled workflow",
-      description: "",
-      urlPattern: "https://*",
-      nodes: [],
-      connections: [],
-      enabled: false,
-      variables: {},
-      modifiedAt: now,
-    },
+    workflowId: null,
     messages: [],
     pageContext: null,
     executionRefs: [],
@@ -68,11 +58,21 @@ const createInitialSession = (): GenerationSession => {
 };
 
 export default function AiWorkflowChatPanel() {
-  const activeGenerationSession = useStore(
-    (state) => state.activeGenerationSession,
+  const workflows = useStore((state) => state.workflows);
+  const activeGenerationWorkflowId = useStore(
+    (state) => state.activeGenerationWorkflowId,
+  );
+  const setActiveGenerationSessionForWorkflow = useStore(
+    (state) => state.setActiveGenerationSessionForWorkflow,
+  );
+  const getGenerationSessionForWorkflow = useStore(
+    (state) => state.getGenerationSessionForWorkflow,
   );
   const setActiveGenerationSession = useStore(
     (state) => state.setActiveGenerationSession,
+  );
+  const getActiveGenerationSession = useStore(
+    (state) => state.getActiveGenerationSession,
   );
   const updateActiveGenerationSession = useStore(
     (state) => state.updateActiveGenerationSession,
@@ -80,23 +80,53 @@ export default function AiWorkflowChatPanel() {
   const [prompt, setPrompt] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [usePageContext, togglePageContext] = useToggle([true, false]);
-
-  const session = activeGenerationSession;
-  const hasMessages = Boolean(session?.messages.length);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const { ref, height } = useElementSize();
   const { ref: inputRef, height: inputHeight } = useElementSize();
 
+  const session = getActiveGenerationSession();
+  const hasMessages = Boolean(session?.messages.length);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
   const draftSummary = useMemo(() => {
-    if (!session?.draftWorkflow) {
+    const workflow = session?.workflowId
+      ? workflows.find((item) => item.id === session.workflowId)
+      : null;
+
+    if (!workflow) {
       return { name: "No draft yet", urlPattern: "—", nodeCount: 0 };
     }
 
     return {
-      name: session.draftWorkflow.name,
-      urlPattern: session.draftWorkflow.urlPattern,
-      nodeCount: session.draftWorkflow.nodes.length,
+      name: workflow.name,
+      urlPattern: workflow.urlPattern,
+      nodeCount: workflow.nodes.length,
     };
-  }, [session]);
+  }, [session, workflows]);
+
+  const activeWorkflowValue = activeGenerationWorkflowId;
+  const workflowOptions = useMemo(() => {
+    const w = [
+      ...workflows.map((workflow) => ({
+        value: workflow.id,
+        label: workflow.name,
+      })),
+    ];
+
+    if (!workflows.some((wf) => wf.id === activeWorkflowValue)) {
+      w.unshift({
+        value: activeWorkflowValue!,
+        label:
+          workflows.find((wf) => wf.id === activeWorkflowValue)?.name ||
+          "Start new workflow",
+      });
+    } else {
+      w.unshift({
+        value: "__new__",
+        label: "Start new workflow",
+      });
+    }
+    return w;
+  }, [workflows, activeWorkflowValue]);
 
   const appendMessage = (message: GenerationMessage) => {
     updateActiveGenerationSession((current) => ({
@@ -154,24 +184,30 @@ export default function AiWorkflowChatPanel() {
     }
   };
 
-  const ensureSession = () => {
-    if (!session) {
-      const initialSession = createInitialSession();
-      setActiveGenerationSession(initialSession);
-      return initialSession;
-    }
+  const buildSessionForWorkflow = (workflowId: string): GenerationSession => {
+    const now = Date.now();
 
-    return session;
+    return {
+      id: generateId("session", 10),
+      status: "idle",
+      workflowId,
+      messages: [],
+      pageContext: null,
+      executionRefs: [],
+      revision: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
   };
-
-  const ensureWorkflowEnabled = (workflow: WorkflowDefinition) => ({
-    ...workflow,
-    enabled: true,
-  });
 
   const handleSend = async () => {
     const trimmedPrompt = prompt.trim();
-    if (!trimmedPrompt || isSending || !session) return;
+    if (!trimmedPrompt || isSending) return;
+
+    const currentSession = session ?? createInitialSession();
+    if (!session) {
+      setActiveGenerationSession(currentSession);
+    }
 
     setPrompt("");
     setIsSending(true);
@@ -195,10 +231,10 @@ export default function AiWorkflowChatPanel() {
       };
 
       const sessionWithPendingMessages = {
-        ...ensureSession(),
+        ...currentSession,
         status: "drafting" as const,
-        messages: [...ensureSession().messages, userMessage, thinkingMessage],
-        pageContext: pageContext ?? ensureSession().pageContext,
+        messages: [...currentSession.messages, userMessage, thinkingMessage],
+        pageContext: pageContext ?? currentSession.pageContext,
         updatedAt: Date.now(),
       };
 
@@ -217,9 +253,7 @@ export default function AiWorkflowChatPanel() {
       if (response?.session) {
         setActiveGenerationSession({
           ...response.session,
-          draftWorkflow: response.session.draftWorkflow
-            ? ensureWorkflowEnabled(response.session.draftWorkflow)
-            : response.session.draftWorkflow,
+          workflowId: response.session.workflowId,
         });
       }
 
@@ -237,20 +271,62 @@ export default function AiWorkflowChatPanel() {
   };
 
   const handleReset = () => {
-    setActiveGenerationSession(createInitialSession());
+    if (session?.workflowId) {
+      setActiveGenerationSessionForWorkflow(session.workflowId, null);
+    }
     setPrompt("");
   };
 
   useEffect(() => {
-    if (!session) setActiveGenerationSession(createInitialSession());
-  }, [session, setActiveGenerationSession]);
+    if (!session && activeGenerationWorkflowId) {
+      const initialSession = buildSessionForWorkflow(
+        activeGenerationWorkflowId,
+      );
+      setActiveGenerationSessionForWorkflow(
+        activeGenerationWorkflowId,
+        initialSession,
+      );
+    }
+  }, [
+    session,
+    activeGenerationWorkflowId,
+    setActiveGenerationSessionForWorkflow,
+  ]);
 
   const openDesigner = () => {
-    const workflowId = session?.draftWorkflow?.id;
+    const workflowId = session?.workflowId;
     browser.tabs.create({
       url:
         browser.runtime.getURL("src/config/index.html") +
         (workflowId ? `#/designer/${workflowId}` : "#/designer"),
+    });
+  };
+
+  const handleWorkflowSelect = (value: string | null) => {
+    if (!value || value === "__new__") {
+      const workflowId = newWorkflowId();
+      const newSession = buildSessionForWorkflow(workflowId);
+      setActiveGenerationSessionForWorkflow(workflowId, newSession);
+      return;
+    }
+
+    const existingSession = getGenerationSessionForWorkflow(value);
+    if (existingSession) {
+      setActiveGenerationSessionForWorkflow(value, existingSession);
+      return;
+    }
+
+    const now = Date.now();
+    setActiveGenerationSessionForWorkflow(value, {
+      id: generateId("session", 10),
+      status: "idle",
+      workflowId: value,
+      messages: [],
+      pageContext: null,
+      executionRefs: [],
+      revision: 0,
+      createdAt: now,
+      updatedAt: now,
     });
   };
 
@@ -285,9 +361,13 @@ export default function AiWorkflowChatPanel() {
         <Stack gap={4}>
           <Group justify="space-between" align="center">
             <Group>
-              <Text size="sm" fw={500} truncate maw={200}>
-                {draftSummary.name}
-              </Text>
+              <Select
+                value={activeWorkflowValue}
+                onChange={handleWorkflowSelect}
+                data={workflowOptions}
+                size="xs"
+                w={180}
+              />
               {hasMessages && (
                 <Tooltip label="Open in designer" withArrow>
                   <ActionIcon
@@ -323,8 +403,8 @@ export default function AiWorkflowChatPanel() {
           </Group>
         </Stack>
       </Card>
-      <Box flex={1}>
-        <ScrollArea.Autosize type="hover">
+      <Box flex={1} ref={ref}>
+        <ScrollArea.Autosize type="hover" mah={height}>
           <Stack gap="xs">
             {messages.length !== 0 &&
               displayedMessages.map((message) => {
@@ -357,9 +437,11 @@ export default function AiWorkflowChatPanel() {
                             : "dimmed"
                       }
                     >
-                      {message.kind === "thinking"
-                        ? "Thinking..."
-                        : message.content}
+                      {message.kind === "thinking" ? (
+                        <ThinkingWave />
+                      ) : (
+                        message.content
+                      )}
                     </Text>
                   </Card>
                 );
@@ -378,6 +460,7 @@ export default function AiWorkflowChatPanel() {
         <Textarea
           ref={inputRef}
           value={prompt}
+          mah={56}
           onChange={(event) => setPrompt(event.currentTarget.value)}
           rightSectionWidth={70}
           rightSection={
