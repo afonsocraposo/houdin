@@ -81,7 +81,7 @@ export default function AiWorkflowChatPanel() {
   const [isSending, setIsSending] = useState(false);
   const [usePageContext, togglePageContext] = useToggle([true, false]);
   const { ref, height } = useElementSize();
-  const { ref: inputRef, height: inputHeight } = useElementSize();
+  const { ref: inputRef } = useElementSize();
 
   const session = getActiveGenerationSession();
   const hasMessages = Boolean(session?.messages.length);
@@ -352,8 +352,10 @@ export default function AiWorkflowChatPanel() {
   }, [messages]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [displayedMessages]);
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, 10);
+  }, [displayedMessages, prompt]);
 
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
@@ -403,8 +405,8 @@ export default function AiWorkflowChatPanel() {
           </Group>
         </Stack>
       </Card>
-      <Box flex={1} ref={ref}>
-        <ScrollArea.Autosize type="hover" mah={height}>
+      <Box flex={1} ref={ref} style={{ minHeight: 0 }}>
+        <ScrollArea h={height} type="hover">
           <Stack gap="xs">
             {messages.length !== 0 &&
               displayedMessages.map((message) => {
@@ -448,7 +450,7 @@ export default function AiWorkflowChatPanel() {
               })}
             <div ref={bottomRef} />
           </Stack>
-        </ScrollArea.Autosize>
+        </ScrollArea>
       </Box>
       <div
         style={{

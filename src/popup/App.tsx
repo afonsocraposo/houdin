@@ -114,7 +114,7 @@ function App() {
           flexDirection: "column",
         }}
       >
-        <Stack gap="sm" h="100%">
+        <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
           <Stack gap={0}>
             <Logo title size={32} />
             <Text size="sm" c="dimmed">
@@ -122,14 +122,14 @@ function App() {
             </Text>
           </Stack>
 
-          <Box flex={1}>
+          <Box flex={1} style={{ minHeight: 0 }}>
             <Tabs
               value={activeTab}
               onChange={handleTabChange}
               variant="pills"
               h="100%"
               display="flex"
-              style={{ flexDirection: "column" }}
+               style={{ flexDirection: "column", minHeight: 0 }}
             >
               <Tabs.List grow>
                 <Tabs.Tab value="ai">
@@ -154,7 +154,7 @@ function App() {
                 </Tabs.Tab>
               </Tabs.List>
 
-              <Box flex={1}>
+              <Box flex={1} style={{ minHeight: 0 }}>
                 <Tabs.Panel value="ai" pt="sm" h="100%">
                   {activeTab === "ai" && <AiWorkflowChatPanel />}
                 </Tabs.Panel>
