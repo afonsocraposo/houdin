@@ -82,3 +82,7 @@ export interface GenerationPromptRequest {
 export interface GenerationPromptResponse {
   session: GenerationSession;
 }
+
+export interface StopGenerationRequest {
+  sessionId: string;
+}

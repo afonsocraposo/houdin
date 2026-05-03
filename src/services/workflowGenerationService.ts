@@ -9,6 +9,7 @@ import {
   GenerationPromptRequest,
   GenerationPromptResponse,
   GenerationSession,
+  StopGenerationRequest,
 } from "@/types/generation-session";
 import type { WorkflowDefinition } from "@/types/workflow";
 import { generateId, newWorkflowId } from "@/utils/helpers";
@@ -252,6 +253,7 @@ function deriveWorkflowName(prompt: string): string {
 
 export class WorkflowGenerationService {
   private static instance: WorkflowGenerationService | null = null;
+  private activeRuns = new Map<string, AbortController>();
 
   static getInstance(): WorkflowGenerationService {
     if (!WorkflowGenerationService.instance) {
@@ -261,19 +263,38 @@ export class WorkflowGenerationService {
     return WorkflowGenerationService.instance;
   }
 
+  stopPrompt(request: StopGenerationRequest): { stopped: boolean } {
+    const controller = this.activeRuns.get(request.sessionId);
+    if (!controller) {
+      return { stopped: false };
+    }
+
+    controller.abort();
+    return { stopped: true };
+  }
+
   async submitPrompt(
     request: GenerationPromptRequest,
   ): Promise<GenerationPromptResponse> {
     const { session, prompt } = request;
     const cleanedSession = stripPendingThinkingMessage(session);
+    const controller = new AbortController();
+    this.activeRuns.set(cleanedSession.id, controller);
 
     let workflow = ensureWorkflow(cleanedSession);
     let workingSession = cleanedSession;
+
+    const ensureNotAborted = () => {
+      if (controller.signal.aborted) {
+        throw new Error("AI generation stopped.");
+      }
+    };
 
     const persist = (
       message: string,
       kind: GenerationMessage["kind"] = "tool",
     ) => {
+      ensureNotAborted();
       workingSession = appendMessage(
         workingSession,
         "assistant",
@@ -287,6 +308,7 @@ export class WorkflowGenerationService {
       nextWorkflow: WorkflowDefinition,
       message: string,
     ) => {
+      ensureNotAborted();
       workflow = nextWorkflow;
       persist(message, "tool");
     };
@@ -296,12 +318,14 @@ export class WorkflowGenerationService {
         model,
         system: buildSystemPrompt(workingSession),
         prompt,
+        abortSignal: controller.signal,
         stopWhen: stepCountIs(10),
         tools: {
           setWorkflowName: tool({
             description: "Set the workflow name.",
             inputSchema: z.object({ name: z.string().min(1) }),
             execute: async ({ name }) => {
+              ensureNotAborted();
               const nextWorkflow = setWorkflowName(workflow, name);
               applyWorkflow(nextWorkflow, `Set workflow name to '${name}'.`);
               return { name };
@@ -311,6 +335,7 @@ export class WorkflowGenerationService {
             description: "Set the workflow description.",
             inputSchema: z.object({ description: z.string() }),
             execute: async ({ description }) => {
+              ensureNotAborted();
               const nextWorkflow = setWorkflowDescription(
                 workflow,
                 description,
@@ -323,6 +348,7 @@ export class WorkflowGenerationService {
             description: "Set the workflow URL pattern.",
             inputSchema: z.object({ urlPattern: z.string().min(1) }),
             execute: async ({ urlPattern }) => {
+              ensureNotAborted();
               const nextWorkflow = setUrlPattern(workflow, urlPattern);
               applyWorkflow(
                 nextWorkflow,
@@ -335,6 +361,7 @@ export class WorkflowGenerationService {
             description: "Enable or disable the workflow.",
             inputSchema: z.object({ enabled: z.boolean() }),
             execute: async ({ enabled }) => {
+              ensureNotAborted();
               const nextWorkflow = setWorkflowEnabled(workflow, enabled);
               applyWorkflow(
                 nextWorkflow,
@@ -350,6 +377,7 @@ export class WorkflowGenerationService {
               type: z.string().min(1),
             }),
             execute: async ({ type }) => {
+              ensureNotAborted();
               const kind = inferNodeType(type, {});
               const schema = getNodeSchema(kind, type);
 
@@ -377,6 +405,7 @@ export class WorkflowGenerationService {
               "Get the latest stored execution for the workflow currently being edited.",
             inputSchema: z.object({}),
             execute: async () => {
+              ensureNotAborted();
               const workflowId = workingSession.workflowId;
               if (!workflowId) {
                 return { execution: null };
@@ -389,6 +418,7 @@ export class WorkflowGenerationService {
             getWorkflow: () => workflow,
             createNode: (args) => createNode(workflow, args),
             commitWorkflow: (nextWorkflow, message) => {
+              ensureNotAborted();
               workflow = nextWorkflow;
               persist(message, "tool");
               workingSession = {
@@ -408,6 +438,7 @@ export class WorkflowGenerationService {
               patch: z.record(z.string(), z.any()).optional(),
             }),
             execute: async (args) => {
+              ensureNotAborted();
               const { workflow: nextWorkflow, result: message } =
                 updateNodeConfig(workflow, args);
               applyWorkflow(nextWorkflow, message);
@@ -424,6 +455,7 @@ export class WorkflowGenerationService {
               position: z.object({ x: z.number(), y: z.number() }),
             }),
             execute: async (args) => {
+              ensureNotAborted();
               const { workflow: nextWorkflow, result: message } = moveNode(
                 workflow,
                 args,
@@ -441,6 +473,7 @@ export class WorkflowGenerationService {
               id: z.string().optional(),
             }),
             execute: async (args) => {
+              ensureNotAborted();
               const { workflow: nextWorkflow, result: message } = deleteNode(
                 workflow,
                 args,
@@ -463,6 +496,7 @@ export class WorkflowGenerationService {
               id: z.string().optional(),
             }),
             execute: async (args) => {
+              ensureNotAborted();
               const { workflow: nextWorkflow, result: message } = connectNodes(
                 workflow,
                 args,
@@ -485,6 +519,7 @@ export class WorkflowGenerationService {
               to: z.string().optional(),
             }),
             execute: async (args) => {
+              ensureNotAborted();
               const { workflow: nextWorkflow, result: message } =
                 disconnectNodes(workflow, args);
               applyWorkflow(nextWorkflow, message);
@@ -494,6 +529,7 @@ export class WorkflowGenerationService {
         },
       });
 
+      ensureNotAborted();
       const finalText = result.text.trim() || "Workflow updated.";
       workingSession = appendMessage(
         workingSession,
@@ -511,6 +547,16 @@ export class WorkflowGenerationService {
 
       return { session: workingSession };
     } catch (error) {
+      if (controller.signal.aborted) {
+        workingSession = {
+          ...stripPendingThinkingMessage(workingSession),
+          status: "idle",
+          updatedAt: Date.now(),
+        };
+        workingSession = commitSession(workflow, workingSession);
+        return { session: workingSession };
+      }
+
       const errorMessage =
         error instanceof Error ? error.message : "Failed to generate workflow.";
 
@@ -524,6 +570,8 @@ export class WorkflowGenerationService {
       workingSession = commitSession(workflow, workingSession);
 
       return { session: workingSession };
+    } finally {
+      this.activeRuns.delete(cleanedSession.id);
     }
   }
 }

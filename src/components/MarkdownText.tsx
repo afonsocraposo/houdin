@@ -17,12 +17,14 @@ interface MarkdownTextProps {
   children?: string | null;
   style?: CSSProperties;
   c?: string;
+  compact?: boolean;
 }
 
 export default function MarkdownText({
   children,
   style,
   c,
+  compact = false,
 }: MarkdownTextProps) {
   return (
     <Typography style={style}>
@@ -62,7 +64,7 @@ export default function MarkdownText({
             </Title>
           ),
           p: ({ children }) => (
-            <Text mb="sm" size="sm" c={c}>
+            <Text size="sm" c={c} m={0}>
               {children}
             </Text>
           ),
@@ -75,7 +77,7 @@ export default function MarkdownText({
                   <IconCircle size={6} />
                 </ThemeIcon>
               }
-              mb="sm"
+              mb={compact ? 0 : "sm"}
             >
               {children}
             </List>

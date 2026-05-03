@@ -9,6 +9,7 @@ import { MessageType } from "@/types/messages";
 import {
   type GenerationPromptRequest,
   type GenerationPromptResponse,
+  type StopGenerationRequest,
 } from "@/types/generation-session";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
@@ -80,6 +81,12 @@ workflowEngine.initialize().then(() => {
           return WorkflowGenerationService.getInstance().submitPrompt(
             message.data as GenerationPromptRequest,
           ) as Promise<GenerationPromptResponse>;
+        case MessageType.AI_GENERATION_STOP:
+          return Promise.resolve(
+            WorkflowGenerationService.getInstance().stopPrompt(
+              message.data as StopGenerationRequest,
+            ),
+          );
         case WorkflowCommandType.TRIGGER_FIRED:
           const tabId = sender.tab.id;
 

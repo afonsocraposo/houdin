@@ -14,7 +14,6 @@ import {
 } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
 import {
-  IconArrowBarToRight,
   IconMinus,
   IconPlus,
   IconSearch,
@@ -156,7 +155,12 @@ export default function AddNodeList({
             }}
           >
             <Stack
-              style={{ flex: "1 1 auto", minHeight: 0, maxHeight: "100%" }}
+              style={{
+                flex: "1 1 auto",
+                minHeight: 0,
+                maxHeight: "100%",
+                minWidth: 0,
+              }}
             >
               <Group justify="space-between">
                 <Text fw={500}>Add Node</Text>
@@ -190,9 +194,14 @@ export default function AddNodeList({
               <ScrollArea.Autosize
                 type="hover"
                 mah="100%"
-                style={{ minHeight: 0 }}
+                style={{ minHeight: 0, minWidth: 0 }}
+                styles={{
+                  viewport: {
+                    overflowX: "hidden",
+                  },
+                }}
               >
-                <Stack>
+                <Stack style={{ minWidth: 0 }}>
                   {orderedCategories.map(([category, items]) => {
                     const nodes = items as NodeMetadata[];
                     if (nodes.length === 0) return null;
@@ -213,6 +222,7 @@ export default function AddNodeList({
                             variant="subtle"
                             fullWidth
                             justify="start"
+                            style={{ minWidth: 0 }}
                             leftSection={
                               typeof item.icon === "string" ? (
                                 <Text size="lg">{item.icon}</Text>
@@ -238,8 +248,15 @@ export default function AddNodeList({
                               createNode(item.type, category as NodeType)
                             }
                           >
-                            <Stack align="flex-start" gap={0} w="100%">
-                              <Text size="sm">{item.label}</Text>
+                            <Stack
+                              align="flex-start"
+                              gap={0}
+                              w="100%"
+                              style={{ minWidth: 0 }}
+                            >
+                              <Text size="sm" truncate="end" w="100%">
+                                {item.label}
+                              </Text>
                               <Text
                                 w="100%"
                                 size="xs"

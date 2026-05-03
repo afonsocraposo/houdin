@@ -14,7 +14,7 @@ import {
 } from "@/types/workflow";
 import { nodeCatalog } from "@/services/nodeCatalog";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import { IconLayoutSidebarRightCollapse, IconMinus } from "@tabler/icons-react";
+import { IconMinus } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 import VariablesButton from "./VariablesButton";
 import NodeIcon from "@/components/NodeIcon";
@@ -101,14 +101,23 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
                 <Text size="sm" c="dimmed">
                   Example output:
                 </Text>
-                <CodeHighlight
-                  language="json"
-                  code={JSON.stringify(
-                    trigger.outputExample as Record<string, any>,
-                    null,
-                    2,
-                  )}
-                />
+                <div style={{ maxWidth: "100%" }}>
+                  <CodeHighlight
+                    language="json"
+                    code={JSON.stringify(
+                      trigger.outputExample as Record<string, any>,
+                      null,
+                      2,
+                    )}
+                    styles={{
+                      pre: {
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word",
+                      },
+                    }}
+                  />
+                </div>
               </Stack>
             )}
           </Stack>
@@ -163,10 +172,19 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
                 <Text size="sm" c="dimmed">
                   Example output:
                 </Text>
-                <CodeHighlight
-                  language="json"
-                  code={JSON.stringify(outputExample, null, 2)}
-                />
+                <div style={{ maxWidth: "100%" }}>
+                  <CodeHighlight
+                    language="json"
+                    code={JSON.stringify(outputExample, null, 2)}
+                    styles={{
+                      pre: {
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word",
+                      },
+                    }}
+                  />
+                </div>
               </Stack>
             )}
           </Stack>
@@ -220,7 +238,14 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   };
 
   return (
-    <Stack style={{ flex: "1 1 auto", minHeight: 0, maxHeight: "100%" }}>
+    <Stack
+      style={{
+        flex: "1 1 auto",
+        minHeight: 0,
+        maxHeight: "100%",
+        minWidth: 0,
+      }}
+    >
       <Group mb="md" justify="space-between">
         <Text fw={500} c={getNodeTypeColor(node.type)}>
           {getNodeTitle(node)}
@@ -237,8 +262,17 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
           </ActionIcon>
         </Group>
       </Group>
-      <ScrollArea.Autosize flex={1} type="scroll" style={{ minHeight: 0 }}>
-        <Stack gap="md">
+      <ScrollArea.Autosize
+        flex={1}
+        type="scroll"
+        style={{ minHeight: 0, minWidth: 0 }}
+        styles={{
+          viewport: {
+            overflowX: "hidden",
+          },
+        }}
+      >
+        <Stack gap="md" style={{ minWidth: 0 }}>
           {node.type === "trigger" &&
             renderTriggerProperties(node.data, errors)}
           {node.type === "action" && renderActionProperties(node.data, errors)}

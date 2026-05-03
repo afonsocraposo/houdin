@@ -30,6 +30,7 @@ import {
   IconFileSearch,
   IconRefresh,
   IconSend2,
+  IconSquare,
 } from "@tabler/icons-react";
 import {
   useEffect,
@@ -40,6 +41,8 @@ import {
 } from "react";
 import { useElementSize, useToggle } from "@mantine/hooks";
 import ThinkingWave from "./ThinkingWave";
+import { MessageType } from "@/types/messages";
+import MarkdownText from "../MarkdownText";
 
 const createInitialSession = (): GenerationSession => {
   const now = Date.now();
@@ -283,6 +286,17 @@ export default function AiWorkflowChatPanel({
     setPrompt("");
   };
 
+  const handleStop = async () => {
+    if (!session || !isSending) {
+      return;
+    }
+
+    await sendMessageToBackground(MessageType.AI_GENERATION_STOP, {
+      sessionId: session.id,
+    });
+    setIsSending(false);
+  };
+
   useEffect(() => {
     if (workflowId) {
       const existingSession = getGenerationSessionForWorkflow(workflowId);
@@ -358,11 +372,15 @@ export default function AiWorkflowChatPanel({
   const displayedMessages = useMemo(() => {
     return messages.reduce<GenerationMessage[]>((acc, message) => {
       const last = acc[acc.length - 1];
+      const canMergeAssistantMessages =
+        message.role === "assistant" &&
+        last?.role === "assistant" &&
+        last.kind === message.kind &&
+        message.kind !== "tool";
+
       if (
         last &&
-        message.role === "assistant" &&
-        last.role === "assistant" &&
-        last.kind === message.kind
+        canMergeAssistantMessages
       ) {
         acc[acc.length - 1] = {
           ...last,
@@ -384,15 +402,16 @@ export default function AiWorkflowChatPanel({
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
       <Card p="sm">
-        <Stack gap={4}>
-          <Group justify="space-between" align="center">
-            <Group>
+        <Stack gap="xs">
+          <Group justify="space-between" align="center" wrap="nowrap">
+            <Group gap="xs" wrap="nowrap" flex={1} miw={0}>
               <Select
                 value={activeWorkflowValue}
                 onChange={handleWorkflowSelect}
                 data={workflowOptions}
                 size="xs"
-                w={180}
+                aria-label="Active workflow draft"
+                style={{ flex: 1, minWidth: 0 }}
               />
               {hasMessages && (
                 <Tooltip label="Open in designer" withArrow>
@@ -400,17 +419,12 @@ export default function AiWorkflowChatPanel({
                     variant="subtle"
                     onClick={openDesigner}
                     aria-label="Open in designer"
+                    size="input-sm"
                   >
                     <IconExternalLink size={16} />
                   </ActionIcon>
                 </Tooltip>
               )}
-              <Badge variant="light" color="blue" size="sm">
-                {draftSummary.nodeCount} nodes
-              </Badge>
-              <Badge variant="light" color="gray" size="sm">
-                {draftSummary.urlPattern}
-              </Badge>
             </Group>
             {hasMessages && (
               <Tooltip label="Reset session" withArrow>
@@ -421,11 +435,29 @@ export default function AiWorkflowChatPanel({
                   leftSection={<IconRefresh size={14} />}
                   aria-label="Reset session"
                   onClick={handleReset}
+                  style={{ flexShrink: 0 }}
                 >
                   Reset
                 </Button>
               </Tooltip>
             )}
+          </Group>
+          <Group gap="xs" wrap="wrap">
+            <Badge variant="light" color="blue" size="sm" radius="sm">
+              {draftSummary.nodeCount} node
+              {draftSummary.nodeCount === 1 ? "" : "s"}
+            </Badge>
+            <Badge
+              variant="light"
+              color="grape"
+              size="sm"
+              radius="sm"
+              maw="100%"
+            >
+              <Text size="xs" truncate="end">
+                {draftSummary.urlPattern}
+              </Text>
+            </Badge>
           </Group>
         </Stack>
       </Card>
@@ -452,23 +484,22 @@ export default function AiWorkflowChatPanel({
                         : undefined,
                     }}
                   >
-                    <Text
-                      size="sm"
-                      style={{ whiteSpace: "pre-wrap" }}
-                      c={
-                        isUser || isResult
-                          ? "white"
-                          : isError
-                            ? "red"
-                            : "dimmed"
-                      }
-                    >
-                      {message.kind === "thinking" ? (
-                        <ThinkingWave />
-                      ) : (
-                        message.content
-                      )}
-                    </Text>
+                    {message.kind === "thinking" ? (
+                      <ThinkingWave />
+                    ) : (
+                      <MarkdownText
+                        compact
+                        c={
+                          isUser || isResult
+                            ? "white"
+                            : isError
+                              ? "red"
+                              : "dimmed"
+                        }
+                      >
+                        {message.content}
+                      </MarkdownText>
+                    )}
                   </Card>
                 );
               })}
@@ -503,13 +534,20 @@ export default function AiWorkflowChatPanel({
                 </ActionIcon>
               </Tooltip>
               <ActionIcon
-                onClick={handleSend}
-                disabled={!prompt.trim()}
-                color={!prompt.trim() ? "dimmed" : undefined}
+                onClick={isSending ? handleStop : handleSend}
+                disabled={!isSending && !prompt.trim()}
+                color={
+                  !isSending && !prompt.trim()
+                    ? "dimmed"
+                    : isSending
+                      ? "red"
+                      : undefined
+                }
                 variant="transparent"
                 style={{ background: "transparent" }}
+                aria-label={isSending ? "Stop generation" : "Send prompt"}
               >
-                <IconSend2 size={16} />
+                {isSending ? <IconSquare size={14} /> : <IconSend2 size={16} />}
               </ActionIcon>
             </Group>
           }

@@ -31,8 +31,6 @@ import {
   IconInfoCircle,
   IconCheck,
   IconRobot,
-  IconLine,
-  IconLayoutSidebarRightCollapseFilled,
   IconLayoutSidebarRightCollapse,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
@@ -516,6 +514,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     <Grid gutter="sm">
                       <Grid.Col span={6}>
                         <TextInput
+                          key={form.key("name")}
                           {...form.getInputProps("name")}
                           label="Workflow Name"
                           placeholder="Enter workflow name"
@@ -524,6 +523,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
                       <Grid.Col span={6}>
                         <TextInput
+                          key={form.key("urlPattern")}
                           {...form.getInputProps("urlPattern")}
                           label={
                             <Group gap="0">
@@ -540,6 +540,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
                       <Grid.Col span={8}>
                         <TextInput
+                          key={form.key("description")}
                           {...form.getInputProps("description")}
                           label="Description (Optional)"
                           placeholder="Describe what this workflow does"
@@ -548,6 +549,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
                       <Grid.Col span={4}>
                         <Switch
+                          key={form.key("enabled")}
                           {...form.getInputProps("enabled", {
                             type: "checkbox",
                           })}
