@@ -63,7 +63,7 @@ export default function MarkdownText({
             </Title>
           ),
           p: ({ children }) => (
-            <Text size="sm" c={c} m={0}>
+            <Text size="sm" c={c} m={0} style={{ whiteSpace: "pre-wrap" }}>
               {children}
             </Text>
           ),

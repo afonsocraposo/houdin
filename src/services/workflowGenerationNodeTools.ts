@@ -121,9 +121,31 @@ export function buildWorkflowNodeTools({
           config,
         });
 
+        const nodeId = nextWorkflow.nodes[nextWorkflow.nodes.length - 1]?.id ?? entry.metadata.type;
+        const formatValue = (v: unknown): string => {
+          if (typeof v === "string") {
+            const truncated = v.length > 200 ? `${v.slice(0, 197)}...` : v;
+            const lines = truncated.split("\n");
+            if (lines.length > 1) {
+              return `\n${lines.map((l) => `    ${l}`).join("\n")}`;
+            }
+            return ` ${JSON.stringify(truncated)}`;
+          }
+          const formatted = JSON.stringify(v, null, 2);
+          const lines = formatted.split("\n");
+          if (lines.length > 1) {
+            return `\n${lines.map((l) => `    ${l}`).join("\n")}`;
+          }
+          return ` ${formatted}`;
+        };
+        const configSummary = Object.entries(config)
+          .filter(([, v]) => v !== undefined && v !== "")
+          .map(([k, v]) => `${k}:${formatValue(v)}`)
+          .join("\n");
+
         commitWorkflow(
           nextWorkflow,
-          `Created ${entry.kind} node '${nextWorkflow.nodes[nextWorkflow.nodes.length - 1]?.id ?? entry.metadata.type}' (${entry.metadata.type}).`,
+          `Created ${entry.kind} node '${nodeId}' (${entry.metadata.type})\n${configSummary || ""}`,
         );
         return { message: result, workflowId: workflow.id };
       },
