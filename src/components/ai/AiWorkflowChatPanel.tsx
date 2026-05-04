@@ -45,6 +45,7 @@ import { useElementSize, useToggle } from "@mantine/hooks";
 import ThinkingWave from "./ThinkingWave";
 import { MessageType } from "@/types/messages";
 import MarkdownText from "../MarkdownText";
+import WorkingWave from "./WorkingWave";
 
 const PENDING_AI_SELECTED_ELEMENT_KEY = "pending-ai-selected-element";
 
@@ -684,6 +685,9 @@ export default function AiWorkflowChatPanel({
                   </Card>
                 );
               })}
+            {isSending &&
+              displayedMessages[displayedMessages.length - 1]?.kind !==
+                "thinking" && <WorkingWave />}
             <div ref={bottomRef} />
           </Stack>
         </ScrollArea>
