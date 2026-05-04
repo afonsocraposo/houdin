@@ -218,6 +218,7 @@ function ExecutionHistoryPage() {
                       <Table.Td>
                         <ActionIcon
                           variant="subtle"
+                          className="expander"
                           onClick={() => toggleExpanded(execution.id)}
                         >
                           {expanded.includes(execution.id) ? (

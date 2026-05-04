@@ -152,8 +152,8 @@ test.describe("Execution history", () => {
 
     // Check clipboard content
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`{
-  "content": "Hello from Houdin workflow",
-  "title": "Workflow Result"
+  "title": "Workflow Result",
+  "content": "Hello from Houdin workflow"
 }`);
 
     // Check that popup shows history as well

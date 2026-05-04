@@ -134,13 +134,13 @@ function App() {
               style={{ flexDirection: "column", minHeight: 0 }}
             >
               <Tabs.List grow>
-                <Tabs.Tab value="ai">
+                <Tabs.Tab value="ai" aria-label="AI Builder">
                   <Group wrap="nowrap" gap="xs" justify="center">
                     <IconWand size={16} />
                     {activeTab === "ai" && <Text size="sm">AI Builder</Text>}
                   </Group>
                 </Tabs.Tab>
-                <Tabs.Tab value="workflows">
+                <Tabs.Tab value="workflows" aria-label="Workflows">
                   <Group wrap="nowrap" gap="xs" justify="center">
                     <IconPlayerPlay size={16} />
                     {activeTab === "workflows" && (
@@ -148,7 +148,7 @@ function App() {
                     )}
                   </Group>
                 </Tabs.Tab>
-                <Tabs.Tab value="history">
+                <Tabs.Tab value="history" aria-label="History">
                   <Group wrap="nowrap" gap="xs" justify="center">
                     <IconHistory size={16} />
                     {activeTab === "history" && <Text size="sm">History</Text>}
