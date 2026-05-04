@@ -76,6 +76,12 @@ jobs:
       - name: Run e2e tests (chrome)
         run: npm run test:e2e:headless
 
+      - name: Generate node definitions
+        run: npm run generate-definitions
+
+      - name: Copy node definitions for release
+        run: cp dist/node-definitions.json node-definitions.json
+
       - name: Prepare Chrome build
         run: mv dist dist-chrome
 
@@ -117,6 +123,7 @@ jobs:
           files: |
             extension-chrome-${{ steps.check-tag.outputs.tag }}.zip
             extension-firefox-${{ steps.check-tag.outputs.tag }}.zip
+            node-definitions.json
           body: |
             🚀 **Browser Extension Release ${{ steps.check-tag.outputs.tag }}**
 

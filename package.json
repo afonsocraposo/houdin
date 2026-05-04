@@ -1,6 +1,6 @@
 {
   "name": "Houdin",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "Browser automation that feels like magic. Inject code, run scripts, and automate tasks with a user-friendly interface.",
   "type": "module",
   "scripts": {
@@ -17,7 +17,8 @@
     "test:e2e:ui": "playwright test --ui --project=chrome",
     "test:e2e:headless": "CI=1 playwright test --project=chrome",
     "screenshots": "npm run build && HEADLESS=true node scripts/capture-screenshots.js",
-    "screenshots:dev": "npm run build && HEADLESS=false node scripts/capture-screenshots.js"
+    "screenshots:dev": "npm run build && HEADLESS=false node scripts/capture-screenshots.js",
+    "generate-definitions": "tsx scripts/generate-definitions.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
@@ -33,6 +34,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.7",
+    "tsx": "^4.21.0",
     "typescript": "^5.5.3",
     "vite": "^5.3.3",
     "vite-plugin-web-extension": "^4.1.6"
