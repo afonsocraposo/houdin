@@ -24,6 +24,7 @@ export class ComponentFactory {
           onClick: () => {
             this.triggerNextAction(workflowId, nodeId);
           },
+          preview,
         });
       case "input":
         return InputFactory({
@@ -31,6 +32,7 @@ export class ComponentFactory {
           onSubmit: (text: string) => {
             this.triggerNextAction(workflowId, nodeId, { text });
           },
+          preview,
         });
       case "fab":
         return FloatingActionButtonFactory({

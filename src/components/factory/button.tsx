@@ -4,9 +4,10 @@ import { CSSProperties } from "react";
 interface ButtonProps {
   recipe: any;
   onClick?: () => void;
+  preview?: boolean;
 }
 
-export default function ButtonFactory({ recipe, onClick }: ButtonProps) {
+export default function ButtonFactory({ recipe, onClick, preview = false }: ButtonProps) {
   // Build styles object from recipe properties
   const buttonStyle: CSSProperties = {};
   const textStyle: CSSProperties = {};
@@ -25,6 +26,16 @@ export default function ButtonFactory({ recipe, onClick }: ButtonProps) {
   if (recipe.customStyle) {
     try {
       // Simple CSS parser for the custom styles
+      const positioningProps = new Set([
+        "position",
+        "top",
+        "bottom",
+        "left",
+        "right",
+        "z-index",
+        "zIndex",
+      ]);
+
       const customStyles = recipe.customStyle
         .split(";")
         .filter((style: string) => style.trim())
@@ -37,10 +48,17 @@ export default function ButtonFactory({ recipe, onClick }: ButtonProps) {
             const camelCaseProperty = property.replace(/-([a-z])/g, (g) =>
               g[1].toUpperCase(),
             );
+            if (preview && positioningProps.has(property)) {
+              return acc;
+            }
             acc[camelCaseProperty] = value;
           }
           return acc;
         }, {});
+
+      if (preview) {
+        customStyles.position = "relative";
+      }
 
       Object.assign(buttonStyle, customStyles);
     } catch (error) {

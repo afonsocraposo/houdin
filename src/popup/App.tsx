@@ -107,7 +107,6 @@ function App() {
   return (
     <>
       <Container
-        size="xs"
         p="md"
         style={{
           width: sizes[activeTab]?.width || DEFAULT_SIZE.width,

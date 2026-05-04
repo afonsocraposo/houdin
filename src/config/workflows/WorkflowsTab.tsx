@@ -9,7 +9,6 @@ import {
   Text,
   Title,
   Menu,
-  LoadingOverlay,
 } from "@mantine/core";
 import {
   IconNetwork,
@@ -25,6 +24,7 @@ import { ExportModal } from "./ExportModal";
 import { newWorkflowId } from "@/utils/helpers";
 import { useStore } from "@/store";
 import SyncButton from "@/components/SyncButton";
+import { NotificationService } from "@/services/notification";
 
 export default function WorkflowsTab({
   setSaved,
@@ -39,8 +39,6 @@ export default function WorkflowsTab({
   const [exportModalOpened, setExportModalOpened] = useState(false);
   const [workflowToExport, setWorkflowToExport] =
     useState<WorkflowDefinition | null>(null);
-
-  // const isSyncing = useStore((state) => state.isSyncing);
 
   const exampleService = useMemo(() => new ExampleService(), []);
 
@@ -59,12 +57,7 @@ export default function WorkflowsTab({
       lastExecuted: undefined,
     };
 
-    // Pass the example as state to the designer
     navigate("/designer", { state: { exampleWorkflow: newWorkflow } });
-  };
-  const handleCreateBlankWorkflow = () => {
-    // Pass the example as state to the designer
-    navigate("/designer", { state: { blank: true } });
   };
 
   const handleEditWorkflow = (workflow: WorkflowDefinition) => {
@@ -74,8 +67,10 @@ export default function WorkflowsTab({
   const handleDeleteWorkflow = async (id: string) => {
     try {
       deleteWorkflow(id);
-    } catch (error) {
-      console.error("Failed to delete workflow:", error);
+    } catch {
+      NotificationService.showErrorNotification({
+        message: "Couldn't delete workflow. Please try again.",
+      });
     }
   };
 
@@ -86,8 +81,10 @@ export default function WorkflowsTab({
         enabled: !workflow.enabled,
         modifiedAt: Date.now(),
       });
-    } catch (error) {
-      console.error("Failed to toggle workflow:", error);
+    } catch {
+      NotificationService.showErrorNotification({
+        message: "Couldn't update workflow. Please try again.",
+      });
     }
   };
 
@@ -109,9 +106,10 @@ export default function WorkflowsTab({
       createWorkflow(newWorkflow);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (error) {
-      console.error("Failed to duplicate workflow:", error);
-      alert("Failed to duplicate workflow. Please try again.");
+    } catch {
+      NotificationService.showErrorNotification({
+        message: "Couldn't duplicate workflow. Please try again.",
+      });
     }
   };
 
@@ -127,16 +125,16 @@ export default function WorkflowsTab({
       createWorkflow(newWorkflow);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (error) {
-      console.error("Failed to import workflow:", error);
-      alert("Failed to import workflow. Please try again.");
+    } catch {
+      NotificationService.showErrorNotification({
+        message: "Couldn't import workflow. Check the file and try again.",
+      });
     }
   };
 
   return (
     <>
-      <Card withBorder padding="lg" pos="relative">
-        <LoadingOverlay visible={false} loaderProps={{ type: "dots" }} />
+      <Card withBorder padding="lg">
         <Group justify="space-between" mb="md">
           <Group>
             <Title order={3}>Workflows</Title>
@@ -170,10 +168,6 @@ export default function WorkflowsTab({
                 </Menu.Target>
 
                 <Menu.Dropdown>
-                  <Menu.Item onClick={handleCreateBlankWorkflow}>
-                    Create Blank Workflow
-                  </Menu.Item>
-                  <Menu.Divider />
                   <Menu.Label>Start from Example</Menu.Label>
                   {exampleService.getExamples().map((example) => (
                     <Menu.Item
@@ -191,10 +185,10 @@ export default function WorkflowsTab({
 
         {workflows.length === 0 ? (
           <Stack align="center" py="xl">
-            <IconNetwork size={64} color="gray" />
-            <Text c="dimmed" ta="center">
-              No workflows created yet. Visual workflows provide an intuitive
-              way to create complex automations.
+            <IconNetwork size={64} />
+            <Text c="dimmed" ta="center" maw={400}>
+              No workflows yet. Create your first one to automate browser tasks
+              visually.
             </Text>
             <Button onClick={handleCreateWorkflow} mt="md">
               Create Your First Workflow
