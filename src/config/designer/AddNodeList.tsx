@@ -1,3 +1,4 @@
+import NodeIcon from "@/components/NodeIcon";
 import { nodeCatalog } from "@/services/nodeCatalog";
 import { NodeType } from "@/types/workflow";
 import {
@@ -75,8 +76,6 @@ export default function AddNodeList({
   }, [showNodePalette]);
 
   useEffect(() => {}, []);
-
-  const colorScheme = useComputedColorScheme();
 
   const handleSearch = useDebouncedCallback((value: string) => {
     const filteredCategories = {
@@ -219,24 +218,7 @@ export default function AddNodeList({
                             justify="start"
                             style={{ minWidth: 0 }}
                             leftSection={
-                              typeof item.icon === "string" ? (
-                                <Text size="lg">{item.icon}</Text>
-                              ) : (
-                                (() => {
-                                  const IconComponent =
-                                    item.icon as React.ComponentType<any>;
-                                  return (
-                                    <IconComponent
-                                      size={22}
-                                      color={
-                                        colorScheme === "dark"
-                                          ? "white"
-                                          : "black"
-                                      }
-                                    />
-                                  );
-                                })()
-                              )
+                              <NodeIcon icon={item.icon} size={22} />
                             }
                             mb="xs"
                             onClick={() =>

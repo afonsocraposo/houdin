@@ -16,6 +16,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useHover } from "@mantine/hooks";
+import NodeIcon from "@/components/NodeIcon";
 
 interface CanvasNodeProps {
   data: WorkflowNode["data"] &
@@ -183,15 +184,6 @@ export default function CanvasNode({
     return "❓";
   };
 
-  const renderNodeIcon = (icon: string | React.ComponentType<any>) => {
-    if (typeof icon === "string") {
-      return <Text size="xl">{icon}</Text>;
-    } else {
-      const IconComponent = icon;
-      return <IconComponent size={33} />;
-    }
-  };
-
   const getNodeLabel = (node: WorkflowNode) => {
     if (node.type === "action") {
       const nodeType = (node.data as ActionNodeData).type;
@@ -277,7 +269,7 @@ export default function CanvasNode({
       <Stack>
         <Stack gap="xs">
           <Group justify="space-between" mih={28}>
-            {renderNodeIcon(getNodeIcon(nodeData))}
+            <NodeIcon icon={getNodeIcon(nodeData)} size={33} />
             {nodeData.error && <IconAlertCircle color="red" />}
           </Group>
           <div>
