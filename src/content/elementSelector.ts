@@ -5,6 +5,7 @@ import browser from "@/services/browser";
 
 interface ElementSelectedDetail {
   selector: string;
+  source?: "inspector" | "ai-chat";
   element: {
     tagName: string;
     className: string;
@@ -16,6 +17,7 @@ interface ElementSelectedDetail {
 let isSelecting = false;
 let highlightedElement: HTMLElement | null = null;
 let overlay: HTMLDivElement | null = null;
+let selectionSource: "inspector" | "ai-chat" = "inspector";
 
 // Create overlay element for highlighting
 function createOverlay(): HTMLDivElement {
@@ -120,6 +122,7 @@ function showSelectedElement(selector: string, element: HTMLElement) {
       type: "elementSelected",
       data: {
         selector: selector,
+        source: selectionSource,
         element: {
           tagName: element.tagName,
           className: element.className,
@@ -208,6 +211,7 @@ function initSelector() {
 browser.runtime.onMessage.addListener(
   (message: CustomMessage, _, sendResponse: (a: any) => void) => {
     if (message.type === "START_ELEMENT_SELECTION") {
+      selectionSource = message.data?.source === "ai-chat" ? "ai-chat" : "inspector";
       initSelector();
       sendResponse({ status: "selector_started" });
     }

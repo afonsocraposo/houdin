@@ -89,7 +89,7 @@ export class WorkflowExecutor {
         (n) => n.id === connection.target,
       );
       if (actionNode && actionNode.type === "action") {
-        this.executeAction(actionNode);
+        this.executeAction(actionNode, connection.source);
       }
     }
   }
@@ -139,19 +139,25 @@ export class WorkflowExecutor {
       );
       if (actionNode && actionNode.type === "action") {
         // This will throw an error if the action fails, stopping the workflow
-        this.executeAction(actionNode);
+        this.executeAction(actionNode, connection.source);
       }
     }
     this.nodesProcessing.delete(nodeId);
   }
 
-  private async executeAction(node: WorkflowNode): Promise<void> {
+  private async executeAction(
+    node: WorkflowNode,
+    previousNodeId?: string,
+  ): Promise<void> {
     try {
       this.nodesProcessing.add(node.id);
       const actionRegistry = ActionRegistry.getInstance();
       // Access trigger type correctly - it's stored as triggerType, not type
       const actionType = (node.data as ActionNodeData)?.type;
       const actionConfig = cloneDeep(node.data?.config || {});
+      const prevOutput = previousNodeId
+        ? this.context.getOutput(previousNodeId)
+        : undefined;
 
       try {
         // iterate object properties and interpolate variables
@@ -159,7 +165,10 @@ export class WorkflowExecutor {
           if (actionConfig.hasOwnProperty(key)) {
             const value = actionConfig[key];
             if (typeof value === "string") {
-              actionConfig[key] = this.context.interpolateVariables(value);
+              actionConfig[key] = this.context.interpolateVariables(
+                value,
+                prevOutput,
+              );
             }
           }
         }

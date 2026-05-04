@@ -1,16 +1,23 @@
 import { HttpListenerWebRequest } from "@/services/httpListenerWebRequest";
 import { BackgroundWorkflowEngine } from "@/services/backgroundEngine";
+import { WorkflowGenerationService } from "@/services/workflowGenerationService";
 import {
   TriggerFiredCommand,
   WorkflowCommandType,
 } from "@/types/background-workflow";
-import { StorageServer } from "@/services/storage";
+import { MessageType } from "@/types/messages";
+import {
+  type GenerationPromptRequest,
+  type GenerationPromptResponse,
+  type SelectedElementMessage,
+  type StopGenerationRequest,
+} from "@/types/generation-session";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
-import { WorkflowSyncer } from "@/services/workflowSyncer";
-import { StorageMigration } from "@/services/storageMigration";
 import { ApiClient } from "@/api/client";
+
+const PENDING_AI_SELECTED_ELEMENT_KEY = "pending-ai-selected-element";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -57,15 +64,6 @@ if (browser.webNavigation) {
   });
 }
 
-StorageServer.getInstance();
-StorageMigration.runMigrations().catch((error) => {
-  console.error("Storage migration failed:", error);
-});
-
-const workflowSyncer = WorkflowSyncer.getInstance();
-workflowSyncer.sync(true);
-workflowSyncer.init();
-
 ApiClient.startBackgroundProxy();
 
 const workflowEngine = new BackgroundWorkflowEngine();
@@ -81,7 +79,40 @@ workflowEngine.initialize().then(() => {
 
   browser.runtime.onMessage.addListener(
     (message: CustomMessage, sender: any) => {
-      switch (message.type) {
+    switch (message.type) {
+        case MessageType.AI_GENERATION_SUBMIT:
+          return WorkflowGenerationService.getInstance().submitPrompt(
+            message.data as GenerationPromptRequest,
+          ) as Promise<GenerationPromptResponse>;
+        case MessageType.AI_GENERATION_STOP:
+          return Promise.resolve(
+            WorkflowGenerationService.getInstance().stopPrompt(
+              message.data as StopGenerationRequest,
+            ),
+          );
+        case MessageType.AI_ELEMENT_SELECTED:
+          return Promise.resolve(
+            (async () => {
+              const data = message.data as SelectedElementMessage;
+              if (data.source !== "ai-chat") {
+                return { stored: false };
+              }
+
+              await browser.storage.local.set({
+                [PENDING_AI_SELECTED_ELEMENT_KEY]: data.selectedElement,
+              });
+
+              if (browser.action?.openPopup) {
+                try {
+                  await browser.action.openPopup();
+                } catch (error) {
+                  console.error("Failed to reopen popup after element selection:", error);
+                }
+              }
+
+              return { stored: true };
+            })(),
+          );
         case WorkflowCommandType.TRIGGER_FIRED:
           const tabId = sender.tab.id;
 

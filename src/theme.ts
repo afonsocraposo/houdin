@@ -7,7 +7,7 @@ export const mantineTheme = createTheme({
     to: "#f59e0b",
     deg: 45,
   },
-  defaultRadius: "sm",
+  defaultRadius: "lg",
   colors: {
     // Define a custom primary color scale (you can adjust shades as needed)
     primary: [

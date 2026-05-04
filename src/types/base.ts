@@ -6,6 +6,7 @@ import {
   generateDefaultConfig,
 } from "./config-properties";
 import { ComponentType } from "react";
+import type { NodeDefinition } from "@/services/node-definitions/types";
 
 // Common metadata interface that all registrable types share
 export interface BaseMetadata {
@@ -13,20 +14,71 @@ export interface BaseMetadata {
   label: string;
   icon: string | ComponentType<any>;
   description: string;
+  disableTimeout?: boolean;
+  outputs?: Set<string>;
+  hidden?: boolean;
 }
 
 // Abstract base class for all configurable types (actions, triggers, credentials)
 export abstract class BaseConfigurable<TConfig = Record<string, any>> {
-  static readonly metadata: BaseMetadata;
+  static metadata?: BaseMetadata;
+  static configSchema?: ConfigSchema;
+  static outputExample?: unknown;
+
+  protected readonly definition?: Pick<
+    NodeDefinition,
+    "metadata" | "configSchema" | "outputExample"
+  >;
+
+  constructor(
+    definition?: Pick<
+      NodeDefinition,
+      "metadata" | "configSchema" | "outputExample"
+    >,
+  ) {
+    this.definition = definition;
+    if (definition) {
+      const ctor = this.constructor as typeof BaseConfigurable & {
+        metadata?: BaseMetadata;
+        configSchema?: ConfigSchema;
+        outputExample?: unknown;
+      };
+      ctor.metadata = definition.metadata;
+      ctor.configSchema = definition.configSchema;
+      ctor.outputExample = definition.outputExample;
+    }
+  }
+
   public get metadata(): BaseMetadata {
-    return (this.constructor as typeof BaseConfigurable).metadata;
+    return (
+      this.definition?.metadata ??
+      (
+        this.constructor as typeof BaseConfigurable & {
+          metadata?: BaseMetadata;
+        }
+      ).metadata!
+    );
   }
 
   // Get the configuration schema
-  static readonly configSchema: ConfigSchema;
   public get configSchema(): ConfigSchema<TConfig> {
-    return (this.constructor as typeof BaseConfigurable)
-      .configSchema as ConfigSchema<TConfig>;
+    return (this.definition?.configSchema ??
+      (
+        this.constructor as typeof BaseConfigurable & {
+          configSchema?: ConfigSchema;
+        }
+      ).configSchema) as ConfigSchema<TConfig>;
+  }
+
+  public get outputExample(): unknown {
+    return (
+      this.definition?.outputExample ??
+      (
+        this.constructor as typeof BaseConfigurable & {
+          outputExample?: unknown;
+        }
+      ).outputExample
+    );
   }
 
   // Get default configuration values (defaults to schema defaults)

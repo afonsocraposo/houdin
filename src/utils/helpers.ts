@@ -28,6 +28,73 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 
+export const readClipboard = async (): Promise<{
+  text: string;
+  html?: string;
+}> => {
+  if (typeof navigator.clipboard?.read === "function") {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const textType = item.types.find((type) => type === "text/plain");
+      const htmlType = item.types.find((type) => type === "text/html");
+
+      const [text, html] = await Promise.all([
+        textType
+          ? item.getType(textType).then((blob) => blob.text())
+          : Promise.resolve(""),
+        htmlType
+          ? item.getType(htmlType).then((blob) => blob.text())
+          : Promise.resolve(undefined),
+      ]);
+
+      if (text || html) {
+        return { text, html };
+      }
+    }
+  }
+
+  return { text: await navigator.clipboard.readText() };
+};
+
+const stripHtmlToText = (html: string): string => {
+  if (typeof DOMParser !== "undefined") {
+    const document = new DOMParser().parseFromString(html, "text/html");
+    return document.body.textContent || "";
+  }
+
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return div.textContent || div.innerText || "";
+};
+
+export const writeClipboard = async (
+  text: string,
+  richText: boolean = false,
+): Promise<boolean> => {
+  if (!richText) {
+    return copyToClipboard(text);
+  }
+
+  const plainText = stripHtmlToText(text);
+
+  try {
+    if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([text], { type: "text/html" }),
+          "text/plain": new Blob([plainText], { type: "text/plain" }),
+        }),
+      ]);
+      return true;
+    }
+
+    return await copyToClipboard(plainText);
+  } catch (error) {
+    console.error("Failed to write rich clipboard content:", error);
+    return copyToClipboard(plainText);
+  }
+};
+
 export const generateId = (prefix: string = "", len: number = 6): string => {
   const makeId = customAlphabet(ALPHANUM, len);
   if (prefix) {
@@ -42,6 +109,9 @@ export function newWorkflowId(): string {
 export function newExecutionId(): string {
   return generateId("exec", 12);
 }
+export const newTriggerId = () => generateId("trigger");
+export const newActionId = () => generateId("action");
+export const newConnectionId = () => generateId("conn");
 
 export const getElement = (
   selector: string,

@@ -73,6 +73,7 @@ export interface ReadinessCheckCommand {
 
 export interface ReadinessResponse {
   ready: boolean;
+  data?: any;
 }
 
 export interface HttpTriggerRegistration {

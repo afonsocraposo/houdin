@@ -20,6 +20,13 @@ import {
   WorkflowCommandType,
 } from "@/types/background-workflow";
 import browser from "@/services/browser";
+import { MessageType } from "@/types/messages";
+import {
+  PageContextSnapshot,
+  SelectedElementMessage,
+  SelectedElementContext,
+  VisibleElementContext,
+} from "@/types/generation-session";
 
 console.debug("Content script loaded");
 
@@ -32,12 +39,25 @@ if ((window as any).houdinExtensionInitialized) {
   let contentInjector: ContentInjector;
   let isFullyInitialized = false;
   let isInitializing = false;
+  let lastSelectedElement: SelectedElementContext | undefined;
+
+  interface ElementSelectedDetail {
+    selector: string;
+    source?: "inspector" | "ai-chat";
+    element: {
+      tagName: string;
+      className: string;
+      id: string;
+      textContent: string | null;
+    };
+  }
 
   const initMinimalContentScript = () => {
     console.debug("Houdin extension minimal initialization");
 
     // Set up readiness check listener
     setupReadinessCheckListener();
+    setupElementSelectionBridge();
   };
 
   const initFullContentScript = () => {
@@ -70,9 +90,21 @@ if ((window as any).houdinExtensionInitialized) {
         _sender,
         sendResponse: (response: ReadinessResponse) => void,
       ) => {
-        if (message.type === WorkflowCommandType.CHECK_READINESS) {
-          console.debug("Content: Received readiness check");
+        if (message.type === "START_ELEMENT_SELECTION") {
+          if (!isFullyInitialized) {
+            initFullContentScript();
+          }
 
+          sendResponse({ ready: true } as any);
+          return true;
+        }
+
+        if (message.type === "GET_PAGE_CONTEXT") {
+          sendResponse({ ready: true, data: getPageContextSnapshot() });
+          return true;
+        }
+
+        if (message.type === WorkflowCommandType.CHECK_READINESS) {
           if (!isFullyInitialized) {
             initFullContentScript();
           }
@@ -85,6 +117,155 @@ if ((window as any).houdinExtensionInitialized) {
     );
   };
 
+  const isElementVisible = (element: Element): boolean => {
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return false;
+    }
+
+    return (
+      rect.bottom > 0 &&
+      rect.right > 0 &&
+      rect.top < window.innerHeight &&
+      rect.left < window.innerWidth
+    );
+  };
+
+  const getElementSelector = (element: Element): string => {
+    if (element.id) {
+      return `#${element.id}`;
+    }
+
+    const classes = Array.from(element.classList || []).filter(Boolean);
+    if (classes.length > 0) {
+      return `${element.tagName.toLowerCase()}.${classes.join(".")}`;
+    }
+
+    return element.tagName.toLowerCase();
+  };
+
+  const getElementText = (element: HTMLElement): string | undefined => {
+    const text = element.textContent?.trim();
+    if (!text) {
+      return undefined;
+    }
+
+    return text.slice(0, 50);
+  };
+
+  const getSelectedElementContext = (): SelectedElementContext | undefined => {
+    if (lastSelectedElement) {
+      return lastSelectedElement;
+    }
+
+    const selection = window.getSelection();
+    const selectionNode = selection?.anchorNode;
+    const selectionElement =
+      selectionNode instanceof Element
+        ? selectionNode
+        : selectionNode?.parentElement;
+
+    if (selectionElement instanceof HTMLElement) {
+      return {
+        selector: getElementSelector(selectionElement),
+        tagName: selectionElement.tagName.toLowerCase(),
+        text: getElementText(selectionElement),
+        ariaLabel: selectionElement.getAttribute("aria-label") || undefined,
+        id: selectionElement.id || undefined,
+        className: selectionElement.className?.toString() || undefined,
+      };
+    }
+
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || active === document.body || active === document.documentElement) {
+      return undefined;
+    }
+
+    return {
+      selector: getElementSelector(active),
+      tagName: active.tagName.toLowerCase(),
+      text: getElementText(active),
+      ariaLabel: active.getAttribute("aria-label") || undefined,
+      id: active.id || undefined,
+      className: active.className?.toString() || undefined,
+    };
+  };
+
+  const getVisibleElements = (): VisibleElementContext[] => {
+    const selectors = [
+      "header *",
+      "main *",
+      "button",
+      "a",
+      "input",
+      "textarea",
+      "select",
+      "[role='button']",
+      "[role='dialog']",
+      "[aria-label]",
+    ].join(", ");
+
+    const elements = Array.from(document.querySelectorAll(selectors))
+      .filter((element) => isElementVisible(element))
+      .slice(0, 24);
+
+    return elements.map((element) => {
+      const htmlElement = element as HTMLElement;
+      return {
+        selector: getElementSelector(htmlElement),
+        tagName: htmlElement.tagName.toLowerCase(),
+        text: htmlElement.textContent?.trim().slice(0, 120) || undefined,
+        ariaLabel: htmlElement.getAttribute("aria-label") || undefined,
+        role: htmlElement.getAttribute("role") || undefined,
+      };
+    });
+  };
+
+  const getPageContextSnapshot = (): PageContextSnapshot => {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim() || undefined;
+
+    return {
+      url: window.location.href,
+      title: document.title,
+      selectedText,
+      selectedElement: getSelectedElementContext(),
+      visibleElements: getVisibleElements(),
+    };
+  };
+
+  const setupElementSelectionBridge = () => {
+    window.addEventListener("modalDispatch", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        type: string;
+        data: ElementSelectedDetail;
+      }>;
+
+      if (customEvent.detail?.type !== "elementSelected") {
+        return;
+      }
+
+      const selected = customEvent.detail.data;
+      lastSelectedElement = {
+        selector: selected.selector,
+        tagName: selected.element.tagName.toLowerCase(),
+        text: selected.element.textContent?.trim().slice(0, 50) || undefined,
+        id: selected.element.id || undefined,
+        className: selected.element.className || undefined,
+      };
+
+      sendMessageToBackground<SelectedElementMessage>(
+        MessageType.AI_ELEMENT_SELECTED,
+        {
+          source: selected.source === "ai-chat" ? "ai-chat" : "inspector",
+          selectedElement: lastSelectedElement,
+        },
+      ).catch((error) => {
+        console.error("Failed to notify background about selected element:", error);
+      });
+    });
+  };
+
   const setupWorkflowScriptBridge = () => {
     // Listen for workflow script responses from the main world
     window.addEventListener(
@@ -94,10 +275,6 @@ if ((window as any).houdinExtensionInitialized) {
           event.source === window &&
           event.data.type === "workflow-script-response"
         ) {
-          console.debug(
-            "Content: Received workflow script response:",
-            event.data,
-          );
           // Forward the message to the extension
           sendMessageToBackground<WorkflowScriptMessage>(
             "workflow-script-response",
@@ -121,10 +298,6 @@ if ((window as any).houdinExtensionInitialized) {
     browser.runtime.onMessage.addListener(
       (message: CustomMessage<NotificationProps>, _sender, _sendResponse) => {
         if (message.type === "SHOW_NOTIFICATION") {
-          console.debug(
-            "Content: Received notification message from background:",
-            message.data,
-          );
           NotificationService.showNotification(message.data);
         }
       },

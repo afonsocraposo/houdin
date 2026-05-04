@@ -7,7 +7,7 @@ import { WorkflowDefinition, WorkflowTombstone } from "./schemas/workflows";
 import { smartFetch } from "./smartFetch";
 import browser from "@/services/browser";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://houdin.dev/api";
 
 export class ApiClient {

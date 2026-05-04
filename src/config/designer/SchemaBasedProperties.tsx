@@ -14,6 +14,8 @@ import { CredentialsSelect } from "@/components/CredentialsSelect";
 import PasswordInput from "@/components/PasswordInput";
 import MaximizableTextArea from "./ModalTextArea";
 import MaximizableCodeInput from "./ModalCodeInput";
+import MarkdownText from "@/components/MarkdownText";
+import { customPropertyRenderers } from "./customPropertyRegistry";
 
 interface SchemaBasedPropertiesProps {
   defaultConfig?: Record<string, any>;
@@ -30,18 +32,26 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
   onChange,
   errors = {},
 }) => {
+  const getResolvedValue = (key: string) =>
+    values[key] ?? defaultConfig[key] ?? "";
+
   // Check if a property should be shown based on showWhen condition
   const shouldShowProperty = (property: ConfigProperty): boolean => {
     if (!property.showWhen) return true;
 
-    const { field, value: conditionValue } = property.showWhen;
-    const fieldValue = values[field];
+    const conditions = Array.isArray(property.showWhen)
+      ? property.showWhen
+      : [property.showWhen];
 
-    if (Array.isArray(conditionValue)) {
-      return conditionValue.includes(fieldValue);
-    }
+    return conditions.every(({ field, value: conditionValue }) => {
+      const fieldValue = getResolvedValue(field);
 
-    return fieldValue === conditionValue;
+      if (Array.isArray(conditionValue)) {
+        return conditionValue.includes(fieldValue);
+      }
+
+      return fieldValue === conditionValue;
+    });
   };
 
   const renderProperty = (
@@ -50,7 +60,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
     errors: string[],
   ) => {
     const errorMessage = errors && errors.length > 0 ? errors[0] : null;
-    const value = values[key] ?? property.defaultValue ?? "";
+    const value = getResolvedValue(key) || property.defaultValue || "";
 
     switch (property.type) {
       case "text":
@@ -58,7 +68,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <TextInput
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
             required={property.required}
@@ -70,7 +80,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <PasswordInput
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
             required={property.required}
@@ -82,7 +92,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <MaximizableTextArea
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             minRows={property.rows || 3}
             value={value}
             onChange={(e) => onChange(key, e.target.value)}
@@ -96,7 +106,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <Select
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             data={property.options || []}
             value={value}
             onChange={(val) => onChange(key, val)}
@@ -110,7 +120,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
           <NumberInput
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             min={property.min}
             max={property.max}
             step={property.step}
@@ -128,7 +138,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             closeOnColorSwatchClick
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             format="hex"
             swatches={[
               "#2e2e2e",
@@ -159,7 +169,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             key={key}
             label={property.label}
             placeholder={property.placeholder}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             language={property.language}
             height={property.height}
             value={value}
@@ -173,7 +183,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
         return (
           <Switch
             label={property.label}
-            description={property.description}
+            description={<MarkdownText>{property.description}</MarkdownText>}
             // labelPosition="left"
             checked={Boolean(value)}
             onChange={(e) => onChange(key, e.currentTarget.checked)}
@@ -187,7 +197,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             <CredentialsSelect
               label={property.label}
               placeholder={property.placeholder}
-              description={property.description}
+              description={<MarkdownText>{property.description}</MarkdownText>}
               value={value}
               onChange={(val) => onChange(key, val)}
               required={property.required}
@@ -208,10 +218,15 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             values[configKey] = defaultConfig[configKey];
           }
         });
+        const CustomRenderer = customPropertyRenderers[property.component];
         return (
           <div>
             <InputLabel mb="xs">{property.label}</InputLabel>
-            {property.render(values, onChange)}
+            {CustomRenderer
+              ? React.createElement(CustomRenderer, { values, onChange })
+              : property.render
+                ? property.render(values, onChange)
+                : null}
             {errorMessage && (
               <Text size="xs" c="red" mt="xs">
                 {errorMessage}

@@ -7,10 +7,15 @@ interface BaseConfigProperty {
   description?: string;
   required?: boolean;
   defaultValue?: any;
-  showWhen?: {
-    field: string;
-    value: string | string[];
-  };
+  showWhen?:
+    | {
+        field: string;
+        value: string | string[];
+      }
+    | Array<{
+        field: string;
+        value: string | string[];
+      }>;
 }
 
 // Specific property types using discriminated unions
@@ -29,7 +34,7 @@ export interface TextareaConfigProperty extends BaseConfigProperty {
 
 export interface SelectConfigProperty extends BaseConfigProperty {
   type: "select";
-  options: { value: string; label: string }[] | string[];
+  options: ({ value: string; label: string } | string)[];
 }
 
 export interface NumberConfigProperty extends BaseConfigProperty {
@@ -56,7 +61,7 @@ export interface CodeConfigProperty extends BaseConfigProperty {
 export interface CustomConfigProperty extends BaseConfigProperty {
   type: "custom";
   component: string;
-  render: (
+  render?: (
     values: Record<string, any>,
     onChange: (key: string, value: any) => void,
   ) => ReactElement | null;
@@ -116,20 +121,31 @@ export function validateConfig(
 ): ValidationResult {
   const errors: Record<string, string[]> = {};
 
+  const isPropertyVisible = (property: ConfigProperty): boolean => {
+    if (!property.showWhen) {
+      return true;
+    }
+
+    const conditions = Array.isArray(property.showWhen)
+      ? property.showWhen
+      : [property.showWhen];
+
+    return conditions.every(({ field, value: conditionValue }) => {
+      const fieldValue = config[field];
+
+      if (Array.isArray(conditionValue)) {
+        return conditionValue.includes(fieldValue);
+      }
+
+      return fieldValue === conditionValue;
+    });
+  };
+
   Object.entries(schema.properties).forEach(([key, property]) => {
     const value = config[key];
     const propertyErrors: string[] = [];
 
-    const visible = property.showWhen
-      ? (() => {
-          const { field, value: conditionValue } = property.showWhen!;
-          const fieldValue = config[field];
-          if (Array.isArray(conditionValue)) {
-            return conditionValue.includes(fieldValue);
-          }
-          return fieldValue === conditionValue;
-        })()
-      : true;
+    const visible = isPropertyVisible(property);
     if (!visible) {
       return; // Skip validation for hidden fields
     }

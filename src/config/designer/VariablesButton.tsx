@@ -1,8 +1,7 @@
 import NodeIcon from "@/components/NodeIcon";
-import { ActionRegistry } from "@/services/actionRegistry";
-import { FormAction, FormActionConfig } from "@/services/actions/formAction";
+import { FormAction, FormActionConfig } from "@/services/actions/form.runtime";
 import { NotificationService } from "@/services/notification";
-import { TriggerRegistry } from "@/services/triggerRegistry";
+import { nodeCatalog } from "@/services/nodeCatalog";
 import {
   ActionNodeData,
   ExecutionMetadataExamples,
@@ -14,6 +13,7 @@ import { useLastFocusedInput } from "@/utils/hooks";
 import { ActionIcon, Code, Group, Menu, Text, Tooltip } from "@mantine/core";
 import { IconVariable } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { aliasVars } from "./variableAliases";
 
 interface NodeOutputs {
   nodeId: string;
@@ -25,15 +25,13 @@ interface VariablesButtonProps {
   nodes: WorkflowNode[];
   workflowVars: Record<string, any>;
 }
+
 export default function VariablesButton({
   nodes,
   workflowVars,
 }: VariablesButtonProps) {
   const lastFocusedInput = useLastFocusedInput();
   const nodeOutputs = useMemo(() => {
-    const triggerRegistry = TriggerRegistry.getInstance();
-    const actionRegistry = ActionRegistry.getInstance();
-
     return nodes
       .sort((a, b) => (a.position.x > b.position.x ? 1 : -1))
       .map((node) => {
@@ -42,23 +40,23 @@ export default function VariablesButton({
         let icon: React.ReactNode = null;
         if (node.type === "trigger") {
           const data = node.data as TriggerNodeData;
-          if (triggerRegistry.hasTrigger(data.type)) {
-            const trigger = triggerRegistry.getTrigger(data.type);
-            outputs = trigger!.outputExample;
-            icon = <NodeIcon icon={trigger!.metadata.icon} />;
+          const trigger = nodeCatalog.triggers[data.type];
+          if (trigger) {
+            outputs = trigger.outputExample as Record<string, any>;
+            icon = <NodeIcon icon={trigger.metadata.icon} />;
           }
         } else if (node.type === "action") {
           const data = node.data as ActionNodeData;
-          if (actionRegistry.hasAction(data.type)) {
-            const action = actionRegistry.getAction(data.type);
-            if (action?.metadata.type === FormAction.metadata.type) {
+          const action = nodeCatalog.actions[data.type];
+          if (action) {
+            if (action.metadata.type === "form") {
               outputs = FormAction.getRichOutputExample(
                 data.config as FormActionConfig,
               );
             } else {
-              outputs = action!.outputExample;
+              outputs = action!.outputExample as Record<string, any>;
             }
-            icon = <NodeIcon icon={action!.metadata.icon} />;
+            icon = <NodeIcon icon={action.metadata.icon} />;
           }
         }
         return {
@@ -181,6 +179,22 @@ export default function VariablesButton({
         <Menu.Label>Nodes Outputs</Menu.Label>
         {nodeOutputs.map((node) => (
           <div key={node.nodeId}>{getOutputMenu(node)}</div>
+        ))}
+
+        <Menu.Divider />
+        <Menu.Label>Alias</Menu.Label>
+        {Object.entries(aliasVars).map(([key, alias]) => (
+          <Tooltip
+            key={key}
+            label={<Text size="xs">{alias.description}</Text>}
+            withArrow
+            position="left"
+            color="dark"
+          >
+            <Menu.Item onClick={() => handleVariableClick(alias.value)}>
+              <Code>{key}</Code>
+            </Menu.Item>
+          </Tooltip>
         ))}
 
         <Menu.Divider />

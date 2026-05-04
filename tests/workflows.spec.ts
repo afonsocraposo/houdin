@@ -60,7 +60,7 @@ test.describe("Workflows creation, design and execution", () => {
 
     // Expect to see node properties drawer with description of Page Load
     await expect(
-      page.getByText("Trigger when page finishes loading"),
+      page.getByText("Trigger when page finishes loading").first(),
     ).toBeVisible();
     // Expect to see React Flow Node, class .react-flow__node, with text "Page Load"
     await expect(
@@ -70,7 +70,7 @@ test.describe("Workflows creation, design and execution", () => {
     // Close drawer, button aria-label="Close node properties"
     await page.getByRole("button", { name: "Close node properties" }).click();
     await expect(
-      page.getByText("Trigger when page finishes loading"),
+      page.getByText("Trigger when page finishes loading").first(),
     ).not.toBeVisible();
 
     // Click on add node button, #add-node-button
@@ -178,9 +178,12 @@ test.describe("Workflows creation, design and execution", () => {
     await page.getByRole("button", { name: "Close" }).click();
 
     // Save the workflow
-    await page.getByRole("button", { name: "Save & Apply Workflow" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
-    // Expect to be back in the workflows tab
+    // Navigate back to workflows tab
+    await page.getByRole("button", { name: "Back" }).click();
+
+    // Expect to be in the workflows tab
     await expect(
       page.getByRole("heading", { name: "Workflows", level: 3 }),
     ).toBeVisible();

@@ -1,9 +1,4 @@
-import { initializeActions } from "@/services/actionInitializer";
-import { ActionRegistry } from "@/services/actionRegistry";
-import {
-  initializeTriggers,
-  TriggerRegistry,
-} from "@/services/triggerInitializer";
+import { nodeCatalog } from "@/services/nodeCatalog";
 import { NodeType } from "@/types/workflow";
 import {
   ActionIcon,
@@ -18,12 +13,7 @@ import {
   useComputedColorScheme,
 } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
-import {
-  IconArrowBarToRight,
-  IconPlus,
-  IconSearch,
-  IconX,
-} from "@tabler/icons-react";
+import { IconMinus, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface NodeMetadata {
@@ -36,44 +26,37 @@ interface NodeMetadata {
 interface NodeCategories {
   trigger: NodeMetadata[];
   action: NodeMetadata[];
-  condition: NodeMetadata[];
 }
 
 interface AddNodeListProps {
   createNode: (type: string, category: NodeType) => void;
   opened?: boolean;
   onChange?: (opened: boolean) => void;
+  prioritizeActions?: boolean;
 }
 export default function AddNodeList({
   createNode,
   opened = false,
   onChange,
+  prioritizeActions = false,
 }: AddNodeListProps) {
   const [showNodePalette, setShowNodePalette] = useState(opened);
   const [search, setSearch] = useState("");
 
   const fullCategories = useMemo(() => {
-    initializeTriggers();
-    initializeActions();
-
-    const actionRegistry = ActionRegistry.getInstance();
-    const triggerRegistry = TriggerRegistry.getInstance();
-
     return {
-      trigger: triggerRegistry.getAllTriggerMetadata().map((metadata) => ({
-        type: metadata.type,
-        label: metadata.label,
-        icon: metadata.icon,
-        description: metadata.description,
+      trigger: Object.values(nodeCatalog.triggers).map((entry) => ({
+        type: entry.metadata.type,
+        label: entry.metadata.label,
+        icon: entry.metadata.icon,
+        description: entry.metadata.description,
       })),
-      action: actionRegistry.getAllActionMetadata().map((metadata) => ({
-        type: metadata.type,
-        label: metadata.label,
-        icon: metadata.icon,
-        description: metadata.description,
+      action: Object.values(nodeCatalog.actions).map((entry) => ({
+        type: entry.metadata.type,
+        label: entry.metadata.label,
+        icon: entry.metadata.icon,
+        description: entry.metadata.description,
       })),
-      // TODO: Add conditions when we have a condition registry
-      condition: [],
     };
   }, []);
 
@@ -109,13 +92,6 @@ export default function AddNodeList({
           item.description.toLowerCase().includes(value.toLowerCase()) ||
           item.type.toLowerCase().includes(value.toLowerCase()),
       ),
-      condition: [],
-      // condition: fullCategories.condition.filter(
-      //   (item) =>
-      //     item.label.toLowerCase().includes(value.toLowerCase()) ||
-      //     item.description.toLowerCase().includes(value.toLowerCase()) ||
-      //     item.type.toLowerCase().includes(value.toLowerCase()),
-      // ),
     };
     setNodeCategories(filteredCategories);
   }, 300);
@@ -128,6 +104,16 @@ export default function AddNodeList({
     }
     handleSearch(value);
   }, [search]);
+
+  const orderedCategories = useMemo(() => {
+    const categoryOrder = prioritizeActions
+      ? (["action", "trigger"] as const)
+      : (["trigger", "action"] as const);
+
+    return categoryOrder.map(
+      (category) => [category, nodeCategories[category]] as const,
+    );
+  }, [nodeCategories, prioritizeActions]);
 
   return (
     <>
@@ -149,27 +135,38 @@ export default function AddNodeList({
           <Paper
             shadow="md"
             p="sm"
+            m="sm"
+            mah="98%"
             style={{
               ...styles,
               position: "absolute",
               top: 0,
               right: 0,
-              height: "100%",
               width: 300,
               zIndex: 1,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <Stack h="100%">
-              <Group>
+            <Stack
+              style={{
+                flex: "1 1 auto",
+                minHeight: 0,
+                maxHeight: "100%",
+                minWidth: 0,
+              }}
+            >
+              <Group justify="space-between">
+                <Text fw={500}>Add Node</Text>
                 <ActionIcon
                   onClick={() => setShowNodePalette(false)}
                   variant="subtle"
                   c="dimmed"
                   aria-label="Close node palette"
                 >
-                  <IconArrowBarToRight />
+                  <IconMinus />
                 </ActionIcon>
-                <Text fw={500}>Add Node</Text>
               </Group>
               <TextInput
                 value={search}
@@ -189,9 +186,18 @@ export default function AddNodeList({
                 }
               />
 
-              <ScrollArea type="hover" flex={1}>
-                <Stack>
-                  {Object.entries(nodeCategories).map(([category, items]) => {
+              <ScrollArea.Autosize
+                type="hover"
+                mah="100%"
+                style={{ minHeight: 0, minWidth: 0 }}
+                styles={{
+                  viewport: {
+                    overflowX: "hidden",
+                  },
+                }}
+              >
+                <Stack style={{ minWidth: 0 }}>
+                  {orderedCategories.map(([category, items]) => {
                     const nodes = items as NodeMetadata[];
                     if (nodes.length === 0) return null;
                     return (
@@ -211,6 +217,7 @@ export default function AddNodeList({
                             variant="subtle"
                             fullWidth
                             justify="start"
+                            style={{ minWidth: 0 }}
                             leftSection={
                               typeof item.icon === "string" ? (
                                 <Text size="lg">{item.icon}</Text>
@@ -236,8 +243,20 @@ export default function AddNodeList({
                               createNode(item.type, category as NodeType)
                             }
                           >
-                            <Stack align="flex-start" gap={0} w="100%">
-                              <Text size="sm">{item.label}</Text>
+                            <Stack
+                              align="start"
+                              gap={0}
+                              w="100%"
+                              style={{ minWidth: 0 }}
+                            >
+                              <Text
+                                ta="start"
+                                size="sm"
+                                truncate="end"
+                                w="100%"
+                              >
+                                {item.label}
+                              </Text>
                               <Text
                                 w="100%"
                                 size="xs"
@@ -255,7 +274,7 @@ export default function AddNodeList({
                     );
                   })}
                 </Stack>
-              </ScrollArea>
+              </ScrollArea.Autosize>
             </Stack>
           </Paper>
         )}

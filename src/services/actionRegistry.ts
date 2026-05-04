@@ -37,6 +37,7 @@ export class ActionRegistry {
   // Get all action metadata for UI
   getAllActionMetadata(): ActionMetadata[] {
     return this.getAllActions()
+      .filter((action) => !action.metadata.hidden)
       .map((action) => action.metadata)
       .sort((a, b) => a.label.localeCompare(b.label));
   }
@@ -159,12 +160,14 @@ export class ActionRegistry {
   // Get action categories for UI (compatible with existing NODE_CATEGORIES)
   getActionCategories() {
     return {
-      actions: this.getAllActions().map((action) => ({
-        type: action.metadata.type,
-        label: action.metadata.label,
-        icon: action.metadata.icon,
-        description: action.metadata.description,
-      })),
+      actions: this.getAllActions()
+        .filter((action) => !action.metadata.hidden)
+        .map((action) => ({
+          type: action.metadata.type,
+          label: action.metadata.label,
+          icon: action.metadata.icon,
+          description: action.metadata.description,
+        })),
     };
   }
 }

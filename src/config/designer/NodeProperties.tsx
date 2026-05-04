@@ -12,15 +12,14 @@ import {
   TriggerNodeData,
   WorkflowNode,
 } from "@/types/workflow";
-import { ActionRegistry } from "@/services/actionRegistry";
-import { TriggerRegistry } from "@/services/triggerRegistry";
+import { nodeCatalog } from "@/services/nodeCatalog";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
-import { IconArrowBarToRight } from "@tabler/icons-react";
+import { IconMinus } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 import VariablesButton from "./VariablesButton";
 import NodeIcon from "@/components/NodeIcon";
 import { BaseMetadata } from "@/types/base";
-import { FormAction, FormActionConfig } from "@/services/actions/formAction";
+import { FormAction, FormActionConfig } from "@/services/actions/form.runtime";
 
 interface NodePropertiesProps {
   nodes: WorkflowNode[];
@@ -69,19 +68,17 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     data: any,
     errors: Record<string, string[]> | undefined,
   ) => {
-    const triggerRegistry = TriggerRegistry.getInstance();
     const triggerType = data.type;
 
     if (!triggerType) {
       return <Text c="red">No trigger type found</Text>;
     }
 
-    // Use schema-based rendering for triggers that have been migrated
-    if (triggerRegistry.hasTrigger(triggerType)) {
-      const trigger = triggerRegistry.getTrigger(triggerType);
-      const schema = triggerRegistry.getConfigSchema(triggerType);
+    const trigger = nodeCatalog.triggers[triggerType];
+    if (trigger) {
+      const schema = trigger.configSchema;
 
-      if (trigger && schema) {
+      if (schema) {
         return (
           <Stack gap="md">
             {/* Trigger description */}
@@ -91,7 +88,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
             {/* Configuration */}
             <SchemaBasedProperties
-              defaultConfig={trigger.getDefaultConfig()}
+              defaultConfig={undefined}
               schema={schema}
               values={data.config}
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
@@ -99,15 +96,28 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
             />
 
             {/* Example output */}
-            {trigger.outputExample && (
+            {Boolean(trigger.outputExample) && (
               <Stack gap="xs" mt="md">
                 <Text size="sm" c="dimmed">
                   Example output:
                 </Text>
-                <CodeHighlight
-                  language="json"
-                  code={JSON.stringify(trigger.outputExample, null, 2)}
-                />
+                <div style={{ maxWidth: "100%" }}>
+                  <CodeHighlight
+                    language="json"
+                    code={JSON.stringify(
+                      trigger.outputExample as Record<string, any>,
+                      null,
+                      2,
+                    )}
+                    styles={{
+                      pre: {
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word",
+                      },
+                    }}
+                  />
+                </div>
               </Stack>
             )}
           </Stack>
@@ -122,7 +132,6 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     data: any,
     errors: Record<string, string[]> | undefined,
   ) => {
-    const actionRegistry = ActionRegistry.getInstance();
     const actionType = data.type;
 
     if (!actionType) {
@@ -130,13 +139,13 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     }
 
     // Use schema-based rendering for actions that have been migrated
-    if (actionRegistry.hasAction(actionType)) {
-      const action = actionRegistry.getAction(actionType);
-      const schema = actionRegistry.getConfigSchema(actionType);
+    const action = nodeCatalog.actions[actionType];
+    if (action) {
+      const schema = action.configSchema;
 
-      if (action && schema) {
-        let outputExample = action.outputExample;
-        if (action.metadata.type === FormAction.metadata.type) {
+      if (schema) {
+        let outputExample = action.outputExample as Record<string, any>;
+        if (action.metadata.type === "form") {
           outputExample = FormAction.getRichOutputExample(
             data.config as FormActionConfig,
           );
@@ -150,7 +159,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
             {/* Configuration */}
             <SchemaBasedProperties
-              defaultConfig={action.getDefaultConfig()}
+              defaultConfig={undefined}
               schema={schema}
               values={data.config}
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
@@ -163,10 +172,19 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
                 <Text size="sm" c="dimmed">
                   Example output:
                 </Text>
-                <CodeHighlight
-                  language="json"
-                  code={JSON.stringify(outputExample, null, 2)}
-                />
+                <div style={{ maxWidth: "100%" }}>
+                  <CodeHighlight
+                    language="json"
+                    code={JSON.stringify(outputExample, null, 2)}
+                    styles={{
+                      pre: {
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word",
+                      },
+                    }}
+                  />
+                </div>
               </Stack>
             )}
           </Stack>
@@ -194,8 +212,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     let metadata: BaseMetadata;
     if (node.type === "trigger") {
       const triggerType = (node.data as TriggerNodeData).type;
-      const triggerRegistry = TriggerRegistry.getInstance();
-      const trigger = triggerRegistry.getTrigger(triggerType);
+      const trigger = nodeCatalog.triggers[triggerType];
       if (trigger) {
         metadata = trigger.metadata;
       } else {
@@ -203,8 +220,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       }
     } else if (node.type === "action") {
       const actionType = (node.data as ActionNodeData).type;
-      const actionRegistry = ActionRegistry.getInstance();
-      const action = actionRegistry.getAction(actionType);
+      const action = nodeCatalog.actions[actionType];
       if (action) {
         metadata = action.metadata;
       } else {
@@ -222,32 +238,46 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   };
 
   return (
-    <>
+    <Stack
+      style={{
+        flex: "1 1 auto",
+        minHeight: 0,
+        maxHeight: "100%",
+        minWidth: 0,
+      }}
+    >
       <Group mb="md" justify="space-between">
+        <Text fw={500} c={getNodeTypeColor(node.type)}>
+          {getNodeTitle(node)}
+        </Text>
         <Group>
+          <VariablesButton nodes={nodes} workflowVars={workflowVars} />
           <ActionIcon
             onClick={onClose}
             variant="subtle"
             c="dimmed"
             aria-label="Close node properties"
           >
-            <IconArrowBarToRight />
+            <IconMinus />
           </ActionIcon>
-          <Text fw={500} c={getNodeTypeColor(node.type)}>
-            {getNodeTitle(node)}
-          </Text>
-        </Group>
-        <Group>
-          <VariablesButton nodes={nodes} workflowVars={workflowVars} />
         </Group>
       </Group>
-      <ScrollArea h="95%" type="scroll" style={{ overflowY: "auto" }}>
-        <Stack gap="md">
+      <ScrollArea.Autosize
+        flex={1}
+        type="scroll"
+        style={{ minHeight: 0, minWidth: 0 }}
+        styles={{
+          viewport: {
+            overflowX: "hidden",
+          },
+        }}
+      >
+        <Stack gap="md" style={{ minWidth: 0 }}>
           {node.type === "trigger" &&
             renderTriggerProperties(node.data, errors)}
           {node.type === "action" && renderActionProperties(node.data, errors)}
         </Stack>
-      </ScrollArea>
-    </>
+      </ScrollArea.Autosize>
+    </Stack>
   );
 };

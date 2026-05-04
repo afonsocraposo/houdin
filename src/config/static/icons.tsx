@@ -1,17 +1,10 @@
-import { initializeActions } from "@/services/actionInitializer";
-import { initializeTriggers } from "@/services/triggerInitializer";
-import { ActionRegistry } from "@/services/actionRegistry";
-import { TriggerRegistry } from "@/services/triggerRegistry";
+import { actionCatalog, triggerCatalog } from "@/services/nodeCatalog";
 import StaticRenderer from "./StaticRenderer";
 
 export default function AssetsIcons() {
-  initializeActions();
-  initializeTriggers();
-  const actionRegistry = ActionRegistry.getInstance();
-  const triggerRegistry = TriggerRegistry.getInstance();
   const nodes = [
-    ...Object.values(actionRegistry.getAllStatic()),
-    ...Object.values(triggerRegistry.getAllStatic()),
+    ...Object.values(actionCatalog),
+    ...Object.values(triggerCatalog),
   ];
   const icons = new Set<string>();
   nodes.forEach((node) => {

@@ -12,7 +12,7 @@ interface SecretAuth {
 export class SecretCredential extends BaseCredential<SecretConfig, SecretAuth> {
   static readonly metadata: CredentialMetadata = {
     type: "secret",
-    label: "Secret/Token",
+    label: "API Key/Secret/Token",
     icon: "IconKey",
     description: "Generic secret storage for API keys, tokens, passwords, etc.",
   };

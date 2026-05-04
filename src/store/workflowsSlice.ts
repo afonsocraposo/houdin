@@ -5,6 +5,7 @@ export interface WorkflowsSlice {
   workflows: WorkflowDefinition[];
   setWorkflows: (workflows: WorkflowDefinition[]) => void;
   createWorkflow: (workflow: WorkflowDefinition) => void;
+  readWorkflow: (workflowId: string) => WorkflowDefinition | undefined;
   updateWorkflow: (workflow: WorkflowDefinition) => void;
   deleteWorkflow: (workflowId: string) => void;
   applyServerUpdate: (workflow: WorkflowDefinition) => void;
@@ -17,7 +18,10 @@ export interface WorkflowsSlice {
   clearPendingDeletes: () => void;
 }
 
-export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (set) => ({
+export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (
+  set,
+  get,
+) => ({
   workflows: [],
   setWorkflows: (workflows: WorkflowDefinition[]) => set({ workflows }),
   createWorkflow: (workflow: WorkflowDefinition) =>
@@ -29,6 +33,8 @@ export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (set) => ({
         pendingUpdates: newSet,
       };
     }),
+  readWorkflow: (workflowId: string) =>
+    get().workflows.find((w) => w.id === workflowId),
   updateWorkflow: (updatedWorkflow: WorkflowDefinition) =>
     set((state) => {
       const newSet = new Set(state.pendingUpdates);

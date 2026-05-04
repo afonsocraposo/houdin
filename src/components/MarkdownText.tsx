@@ -1,20 +1,30 @@
 import ReactMarkdown from "react-markdown";
-import { Title, Text, List, ThemeIcon, Code, Typography } from "@mantine/core";
+import {
+  Title,
+  Text,
+  List,
+  ThemeIcon,
+  Code,
+  Typography,
+  Anchor,
+} from "@mantine/core";
 import { IconCircle } from "@tabler/icons-react";
 import rehypeSanitize from "rehype-sanitize";
 import { CodeHighlight } from "@mantine/code-highlight";
 import { CSSProperties } from "react";
 
 interface MarkdownTextProps {
-  children: string;
+  children?: string | null;
   style?: CSSProperties;
   c?: string;
+  compact?: boolean;
 }
 
 export default function MarkdownText({
   children,
   style,
   c,
+  compact = false,
 }: MarkdownTextProps) {
   return (
     <Typography style={style}>
@@ -54,7 +64,7 @@ export default function MarkdownText({
             </Title>
           ),
           p: ({ children }) => (
-            <Text mb="sm" size="sm" c={c}>
+            <Text size="sm" c={c} m={0}>
               {children}
             </Text>
           ),
@@ -67,12 +77,27 @@ export default function MarkdownText({
                   <IconCircle size={6} />
                 </ThemeIcon>
               }
-              mb="sm"
+              mb={compact ? 0 : "sm"}
+            >
+              {children}
+            </List>
+          ),
+          ol: ({ children }) => (
+            <List
+              type="ordered"
+              spacing="xs"
+              size="sm"
+              mb={compact ? 0 : "sm"}
             >
               {children}
             </List>
           ),
           li: ({ children }) => <List.Item c={c}>{children}</List.Item>,
+          a: ({ children, href }) => (
+            <Anchor href={href || ""} target="_blank">
+              {children}
+            </Anchor>
+          ),
           code: ({ children, className }) => {
             if (!children) {
               return <>{children}</>;

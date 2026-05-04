@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import {
   Stack,
   Text,
@@ -14,55 +14,19 @@ import {
   IconPlayerPlay,
   IconHistory,
 } from "@tabler/icons-react";
-import {
-  WorkflowExecution,
-  WorkflowExecutionStats,
-} from "@/types/workflow";
-import { ContentStorageClient } from "@/services/storage";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import browser from "@/services/browser";
 import { useStore } from "@/store";
 
 function ExecutionHistory() {
-  const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const workflows = useStore((state) => state.workflows);
-  const [stats, setStats] = useState<WorkflowExecutionStats>({
-    total: 0,
-    successful: 0,
-    failed: 0,
-  });
+  const executions = useStore((state) => state.executions);
+  const stats = useStore((state) => state.executionStats);
 
-  const storageClient = new ContentStorageClient();
-
-  const loadExecutions = async () => {
-    try {
-      const executions = await storageClient.getWorkflowExecutions({
-        limit: 5,
-      });
-      setExecutions(executions);
-    } catch (error) {
-      console.error("Failed to load executions:", error);
-      setExecutions([]);
-    }
-  };
-
-  const loadSessionStats = async () => {
-    try {
-      const stats = await storageClient.getSessionWorkflowExecutionStats();
-      setStats(stats);
-    } catch (error) {
-      console.error("Failed to load session stats:", error);
-    }
-  };
-
-  useEffect(() => {
-    loadExecutions();
-    loadSessionStats();
-
-    // Set up periodic refresh to get real-time updates
-    const interval = setInterval(loadExecutions, 5000); // Reduced frequency to 5 seconds
-    return () => clearInterval(interval);
-  }, []);
+  const recentExecutions = useMemo(
+    () => executions.slice(-5).reverse(),
+    [executions],
+  );
 
   const getWorkflowName = (workflowId: string): string => {
     const workflow = workflows.find((w) => w.id === workflowId);
@@ -109,9 +73,8 @@ function ExecutionHistory() {
     browser.tabs.create({ url: configUrl });
   };
 
-  const recentExecutions = executions.slice(0, stats.total);
   return (
-    <Stack gap="sm" h={350}>
+    <Stack gap="sm" h={340}>
       <Group gap="xs">
         <Badge color="blue" variant="light" size="sm">
           {stats.total} executed

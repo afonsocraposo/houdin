@@ -14,6 +14,7 @@ export type ActionValidationResult = ValidationResult;
 export interface ActionMetadata extends BaseMetadata {
   disableTimeout?: boolean; // Whether to disable timeout for this action
   outputs?: Set<string>; // Available output handles for multiple outputs
+  hidden?: boolean;
 }
 
 // Abstract base class for all actions
@@ -21,12 +22,25 @@ export abstract class BaseAction<
   TConfig = Record<string, any>,
   TOutput = Record<string, any>,
 > extends BaseConfigurable<TConfig> {
-  static readonly metadata: ActionMetadata;
-  public get metadata(): ActionMetadata {
-    return (this.constructor as typeof BaseAction).metadata;
+  static metadata?: ActionMetadata;
+  static configSchema?: ConfigSchema;
+  static outputExample?: unknown;
+
+  constructor(definition: {
+    metadata: ActionMetadata;
+    configSchema: ConfigSchema;
+    outputExample: TOutput;
+  }) {
+    super(definition);
   }
 
-  abstract readonly outputExample: TOutput;
+  public get outputExample(): TOutput {
+    return (
+      (super.outputExample as TOutput) ??
+      (this.constructor as typeof BaseAction & { outputExample?: TOutput })
+        .outputExample!
+    );
+  }
 
   // Execute the action
   abstract execute(

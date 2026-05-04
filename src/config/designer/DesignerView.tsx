@@ -2,11 +2,25 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
 import { WorkflowDefinition } from "@/types/workflow";
-import { sendMessageToBackground } from "@/lib/messages";
 import { useStore } from "@/store";
+import { newWorkflowId } from "@/utils/helpers";
 
 interface DesignerViewProps {
   workflowId?: string;
+}
+
+function createBlankWorkflow(): WorkflowDefinition {
+  return {
+    id: newWorkflowId(),
+    name: "",
+    description: "",
+    urlPattern: "https://*",
+    nodes: [],
+    connections: [],
+    enabled: true,
+    variables: {},
+    modifiedAt: Date.now(),
+  };
 }
 
 function DesignerView({ workflowId }: DesignerViewProps) {
@@ -47,13 +61,31 @@ function DesignerView({ workflowId }: DesignerViewProps) {
       setNewWorkflow(false);
     } else if (!workflowId) {
       if (blankWorkflow) {
-        setEditingWorkflow(null);
+        setEditingWorkflow(createBlankWorkflow());
         clearAutoSave();
       } else {
         restoreAutoSaveWorkflow();
       }
     }
   }, [workflowId, location.state]);
+
+  useEffect(() => {
+    if (workflowId) {
+      loadWorkflow(workflowId);
+    }
+  }, [workflowId, loadWorkflow]);
+
+  useEffect(() => {
+    const currentId = editingWorkflow?.id;
+    if (!currentId) {
+      return;
+    }
+
+    const storeWorkflow = workflows.find((w) => w.id === currentId);
+    if (storeWorkflow && storeWorkflow !== editingWorkflow) {
+      setEditingWorkflow(storeWorkflow);
+    }
+  }, [workflows, editingWorkflow]);
 
   const clearAutoSave = () => {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
@@ -65,7 +97,7 @@ function DesignerView({ workflowId }: DesignerViewProps) {
       const workflow = JSON.parse(autoSaved) as WorkflowDefinition;
       setEditingWorkflow(workflow);
     } else {
-      setEditingWorkflow(null);
+      setEditingWorkflow(createBlankWorkflow());
     }
   };
 
@@ -73,17 +105,12 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     try {
       if (newWorkflow) {
         createWorkflow(workflow);
+        setNewWorkflow(false);
       } else {
         updateWorkflow(workflow);
       }
 
-      // Sync HTTP triggers in background script when explicitly saving
-      sendMessageToBackground("SYNC_HTTP_TRIGGERS");
-
-      // Navigate back to workflows list, preserving the current tab
-      const currentTab = searchParams.get("tab") || "workflows";
-      navigate(`/?tab=${currentTab}`);
-      setEditingWorkflow(null);
+      setEditingWorkflow(workflow);
       clearAutoSave();
     } catch (error) {
       console.error("Failed to save workflow:", error);
