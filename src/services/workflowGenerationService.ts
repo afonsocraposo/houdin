@@ -38,7 +38,7 @@ const houdinAI = createOpenAI({
   apiKey: "houdin-client",
 });
 
-const model = houdinAI.chat("openai/gpt-oss-120b:free");
+const model = houdinAI.chat("");
 
 function createBaseWorkflow(): WorkflowDefinition {
   return {
