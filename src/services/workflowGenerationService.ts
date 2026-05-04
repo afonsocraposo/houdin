@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { API_BASE_URL } from "@/api/client";
 import { useStore } from "@/store";
-import { nodeCatalog } from "./nodeCatalog";
+import { getNodeDefinition, nodeCatalog } from "./nodeCatalog";
 import {
   GenerationMessage,
   GenerationPromptRequest,
@@ -152,7 +152,12 @@ function buildNodeVariableReference(): string {
   });
 
   return [
-    "Node output reference:",
+    "CRITICAL: To reference another node's output in a config field, ALWAYS use {{prev}} (the node directly before this one) or the node's actual ID like {{action-abc123}} or {{action-abc123.propertyName}}.",
+    "NEVER reference by the node's type name (e.g. 'http-request', 'http-response', 'show-modal' are NOT valid variables).",
+    "NEVER invent property names — use getNodeSchema on the source node's type to see its output structure and pick the correct property.",
+    "env.* and meta.* are also available (e.g. {{meta.url}}).",
+    "",
+    "Output shapes by node type:",
     ...actionSummaries.map((line) => `action: ${line}`),
     ...triggerSummaries.map((line) => `trigger: ${line}`),
   ].join("\n");
@@ -183,17 +188,18 @@ function buildSystemPrompt(session: GenerationSession): string {
     "Do not return workflow JSON.",
     "Prefer small tool calls over big rewrites.",
     "If a page-specific workflow is requested, use the provided page context.",
-    "If selectedElement is present in the page context, prefer it as the primary target for page interactions and injected components.",
+    "If selectedElement is present in the page context, prefer it as the primary target for page interactions and provided components.",
     "",
-    "Use tools in this order when needed: create node, update node config, then connect nodes.",
+    "Diagnosing issues: When the user asks why a workflow didn't work, asks to check the execution, or reports unexpected behavior: call getLatestExecution before touching anything else. Do NOT skip to getNodeSchema or updateNodeConfig until after you've checked the execution.",
+    "",
+    "Building workflows: Use tools in this order when needed: create node, update node config, then connect nodes.",
     "Use setWorkflowName, setWorkflowDescription, setUrlPattern, and setWorkflowEnabled for workflow-level changes.",
     "When the workflow is ready, set a clear workflow name and enable it.",
     "When creating nodes, use the exact node-type tool names and fields.",
     "Workflow variables use Liquid syntax. Use '{{ variableName }}' placeholders in string fields for runtime substitution.",
-    "Liquid context includes node outputs, prev, env, and meta.",
     buildNodeVariableReference(),
     "Node IDs are generated automatically by the app as action-* or trigger-*; do not invent node IDs.",
-    "Use getNodeSchema when you need the exact config fields for a node type.",
+    "Use getNodeSchema to inspect a node type's config fields AND its output structure. Call it on the source node's type when you need to know what properties to reference in a Liquid variable (e.g. getNodeSchema for 'http-request' shows the output has status, data, headers, etc. so you can use {{action-abc.data}}).",
     `Available node types: ${JSON.stringify(availableNodeTypes)}`,
     "",
     `Current workflow: ${JSON.stringify(workflow, null, 2)}`,
@@ -202,7 +208,7 @@ function buildSystemPrompt(session: GenerationSession): string {
     "",
     "For createNode, use: type, nodeType ('trigger' or 'action'), id, position, config, inputs, outputs.",
     "For updateNodeConfig/moveNode/deleteNode, use nodeId.",
-    "For connectNodes, use sourceId and targetId.",
+    "For connectNodes, use sourceId, targetId, sourceHandle (must match source node's outputs — typically 'output'), targetHandle (must match target node's inputs — typically 'input'). Do NOT invent handle names like 'success' or 'error'.",
   ].join("\n");
 }
 
@@ -399,37 +405,44 @@ export class WorkflowGenerationService {
           }),
           getNodeSchema: tool({
             description:
-              "Inspect the exact config schema for a trigger or action type before creating a node.",
+              "Inspect a node type's config fields AND its output structure. Use this when you need to know what properties are available in a node's output for variable referencing.",
             inputSchema: z.object({
               type: z.string().min(1),
             }),
             execute: async ({ type }) => {
               ensureNotAborted();
               const kind = inferNodeType(type, {});
+              const definition = getNodeDefinition(kind, type);
               const schema = getNodeSchema(kind, type);
 
-              if (!schema) {
+              if (!schema || !definition) {
                 throw new Error(`Node schema not found for '${type}'`);
               }
 
+              const outputShape =
+                definition.outputExample != null
+                  ? `Output example: ${JSON.stringify(definition.outputExample, null, 2)}`
+                  : "Output example: (none)";
+
               persist(
-                `Schema for ${kind} '${type}': ${Object.entries(
-                  schema.properties,
-                )
-                  .map(
+                [
+                  `Config fields for ${kind} '${type}':`,
+                  ...Object.entries(schema.properties).map(
                     ([name, field]) =>
-                      `${name} (${field.type}${field.required ? ", required" : ""})`,
-                  )
-                  .join(", ")}`,
+                      `  ${name} (${field.type}${field.required ? ", required" : ""})`,
+                  ),
+                  "",
+                  outputShape,
+                ].join("\n"),
                 "tool",
               );
 
-              return schema;
+              return { configSchema: schema, outputExample: definition.outputExample };
             },
           }),
           getLatestExecution: tool({
             description:
-              "Get the latest stored execution for the workflow currently being edited.",
+              "Check the latest workflow execution. Returns nodeResults (per-node status, data, errors) so you can see which nodes failed and why. Use this to answer questions like 'why didn't it work', 'check the execution', 'what went wrong', 'did it run successfully'. Do NOT skip this and jump to getNodeSchema.",
             inputSchema: z.object({}),
             execute: async () => {
               ensureNotAborted();

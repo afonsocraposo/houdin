@@ -23,7 +23,7 @@ export const apiTriggerYoutube: WorkflowDefinition = {
           method: "POST",
           urlPattern: "https://www.youtube.com/api/stats/*",
         },
-        type: "http-request",
+        type: "http-trigger",
       },
       id: "trigger-Ul2GI0",
       inputs: [],

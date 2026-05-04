@@ -7,7 +7,7 @@ export const DEMO_HTTP_REQUEST_TRIGGER_WORKFLOW = {
           method: "GET",
           urlPattern: "https://api.ipify.org",
         },
-        type: "http-request",
+        type: "http-trigger",
       },
       id: "trigger-x51I5j",
       inputs: [],

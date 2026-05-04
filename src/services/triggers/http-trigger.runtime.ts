@@ -1,4 +1,4 @@
-import definition from "./http-request-trigger.definition";
+import definition from "./http-trigger.definition";
 import { BaseTrigger } from "@/types/triggers";
 import { sendMessageToBackground, CustomMessage } from "@/lib/messages";
 import { HttpTriggerFiredMessage } from "@/types/background-workflow";
@@ -15,7 +15,7 @@ interface HttpRequestTriggerOutput {
   body?: any;
 }
 
-export class HttpRequestTrigger extends BaseTrigger<
+export default class HttpTrigger extends BaseTrigger<
   HttpRequestTriggerConfig,
   HttpRequestTriggerOutput
 > {

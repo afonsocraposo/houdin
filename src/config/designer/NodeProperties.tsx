@@ -14,6 +14,7 @@ import {
 } from "@/types/workflow";
 import { nodeCatalog } from "@/services/nodeCatalog";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
+import { generateDefaultConfig } from "@/types/config-properties";
 import { IconMinus } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 import VariablesButton from "./VariablesButton";
@@ -79,6 +80,8 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       const schema = trigger.configSchema;
 
       if (schema) {
+        const defaultConfig = generateDefaultConfig(schema);
+
         return (
           <Stack gap="md">
             {/* Trigger description */}
@@ -88,7 +91,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
             {/* Configuration */}
             <SchemaBasedProperties
-              defaultConfig={undefined}
+              defaultConfig={defaultConfig}
               schema={schema}
               values={data.config}
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}
@@ -144,6 +147,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       const schema = action.configSchema;
 
       if (schema) {
+        const defaultConfig = generateDefaultConfig(schema);
         let outputExample = action.outputExample as Record<string, any>;
         if (action.metadata.type === "form") {
           outputExample = FormAction.getRichOutputExample(
@@ -159,7 +163,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
 
             {/* Configuration */}
             <SchemaBasedProperties
-              defaultConfig={undefined}
+              defaultConfig={defaultConfig}
               schema={schema}
               values={data.config}
               onChange={(key, value) => updateNodeData(`config.${key}`, value)}

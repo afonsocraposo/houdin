@@ -18,6 +18,10 @@ import jsonLang from "highlight.js/lib/languages/json";
 import { mantineTheme } from "@/theme";
 
 hljs.registerLanguage("json", jsonLang);
+hljs.registerLanguage("plaintext", () => ({
+  name: "plaintext",
+  contains: [],
+}));
 
 const highlightJsAdapter = createHighlightJsAdapter(hljs);
 

@@ -35,6 +35,7 @@ import CanvasEdge from "./CanvasEdge";
 import { useHotkeys } from "@mantine/hooks";
 import AddNodeList from "./AddNodeList";
 import { generateId } from "@/utils/helpers";
+import { generateDefaultConfig } from "@/types/config-properties";
 import {
   getLayoutedElementsCallback,
   getNewNodePosition,
@@ -314,17 +315,22 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
 
   const createNode = useCallback(
     (type: string, nodeType: NodeType) => {
-      let defaultConfig = {};
-      let outputs: string[] = ["output"]; // default
+      let defaultConfig: Record<string, any> = {};
+      let outputs: string[] = ["output"];
 
-      // Get outputs from metadata
-      if (nodeType === "action") {
-        const action = nodeCatalog.actions[type];
-        if (action?.metadata.outputs) {
-          outputs = Array.from(action.metadata.outputs);
+      if (nodeType === "trigger") {
+        const def = nodeCatalog.triggers[type];
+        if (def) {
+          defaultConfig = generateDefaultConfig(def.configSchema);
         }
-      } else if (nodeType === "trigger") {
-        outputs = ["output"]; // triggers always have single output
+      } else if (nodeType === "action") {
+        const def = nodeCatalog.actions[type];
+        if (def) {
+          defaultConfig = generateDefaultConfig(def.configSchema);
+          if (def.metadata.outputs) {
+            outputs = Array.from(def.metadata.outputs);
+          }
+        }
       }
 
       const newPosition = getNewNodePosition(workflowNodes);
