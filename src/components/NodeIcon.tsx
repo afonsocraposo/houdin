@@ -1,4 +1,4 @@
-import { Text } from "@mantine/core";
+import { Box, Text } from "@mantine/core";
 import { lazy, Suspense, ComponentType, memo } from "react";
 
 interface NodeIconProps {
@@ -38,7 +38,11 @@ const NodeIcon = ({
 }: NodeIconProps) => {
   if (typeof icon === "string") {
     if (icon.startsWith("Icon")) {
-      return <DynamicTablerIcon name={icon} size={size} color={color} />;
+      return (
+        <Box h={size}>
+          <DynamicTablerIcon name={icon} size={size} color={color} />
+        </Box>
+      );
     }
     return (
       <Text fz={size * 0.9} style={{ lineHeight: size + "px" }}>
