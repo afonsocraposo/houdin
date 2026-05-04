@@ -1,7 +1,8 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 
+import { API_BASE_URL } from "@/api/client";
 import { useStore } from "@/store";
 import { nodeCatalog } from "./nodeCatalog";
 import {
@@ -32,17 +33,12 @@ import {
   updateNodeConfig,
 } from "./workflowTools";
 
-const openrouter = createOpenRouter({
-  apiKey:
-    import.meta.env.VITE_OPENROUTER_API_KEY || "OPENROUTER_API_KEY_PLACEHOLDER",
-  appName: "Houdin",
-  appUrl: "https://houdin.dev",
+const houdinAI = createOpenAI({
+  baseURL: `${API_BASE_URL}/ai`,
+  apiKey: "houdin-client",
 });
 
-const model = openrouter.chat("openai/gpt-oss-120b:free", {
-  temperature: 0.2,
-  maxTokens: 2000,
-});
+const model = houdinAI.chat("");
 
 function createBaseWorkflow(): WorkflowDefinition {
   return {
@@ -252,6 +248,16 @@ function deriveWorkflowName(prompt: string): string {
   return words.length > 48 ? `${words.slice(0, 45).trimEnd()}...` : words;
 }
 
+function buildAIRequestMetadata(session: GenerationSession) {
+  const workflowId = session.workflowId ?? "new-workflow";
+
+  return {
+    source: "workflow-builder",
+    sessionId: session.id,
+    workflowId,
+  };
+}
+
 export class WorkflowGenerationService {
   private static instance: WorkflowGenerationService | null = null;
   private activeRuns = new Map<string, AbortController>();
@@ -281,6 +287,7 @@ export class WorkflowGenerationService {
     const cleanedSession = stripPendingThinkingMessage(session);
     const controller = new AbortController();
     this.activeRuns.set(cleanedSession.id, controller);
+    const requestMetadata = buildAIRequestMetadata(cleanedSession);
 
     let workflow = ensureWorkflow(cleanedSession);
     let workingSession = cleanedSession;
@@ -320,6 +327,18 @@ export class WorkflowGenerationService {
         system: buildSystemPrompt(workingSession),
         prompt,
         abortSignal: controller.signal,
+        temperature: 0.2,
+        maxOutputTokens: 2000,
+        headers: {
+          "X-Houdin-AI-Source": requestMetadata.source,
+          "X-Houdin-AI-Session-Id": requestMetadata.sessionId,
+          "X-Houdin-AI-Workflow-Id": requestMetadata.workflowId,
+        },
+        providerOptions: {
+          openai: {
+            metadata: requestMetadata,
+          },
+        },
         stopWhen: stepCountIs(10),
         tools: {
           setWorkflowName: tool({

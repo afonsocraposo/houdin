@@ -13,12 +13,7 @@ import {
   useComputedColorScheme,
 } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
-import {
-  IconMinus,
-  IconPlus,
-  IconSearch,
-  IconX,
-} from "@tabler/icons-react";
+import { IconMinus, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface NodeMetadata {
@@ -79,7 +74,7 @@ export default function AddNodeList({
     }
   }, [showNodePalette]);
 
-  useEffect(() => { }, []);
+  useEffect(() => {}, []);
 
   const colorScheme = useComputedColorScheme();
 
@@ -249,12 +244,17 @@ export default function AddNodeList({
                             }
                           >
                             <Stack
-                              align="flex-start"
+                              align="start"
                               gap={0}
                               w="100%"
                               style={{ minWidth: 0 }}
                             >
-                              <Text size="sm" truncate="end" w="100%">
+                              <Text
+                                ta="start"
+                                size="sm"
+                                truncate="end"
+                                w="100%"
+                              >
                                 {item.label}
                               </Text>
                               <Text

@@ -7,7 +7,7 @@ import { WorkflowDefinition, WorkflowTombstone } from "./schemas/workflows";
 import { smartFetch } from "./smartFetch";
 import browser from "@/services/browser";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://houdin.dev/api";
 
 export class ApiClient {
@@ -144,50 +144,5 @@ export class ApiClient {
     }
     const data = (await response.json()).data;
     return data as T;
-  }
-
-  static async actionAI<
-    T = { response: string; model: string | null; tokensUsed?: number },
-  >(
-    prompt: string,
-    model: string = "openai/gpt-oss-120b:free",
-    apiKey: string =
-      import.meta.env.VITE_OPENROUTER_API_KEY ||
-      "OPENROUTER_API_KEY_PLACEHOLDER",
-  ): Promise<T> {
-    const response = await smartFetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          "HTTP-Referer": "https://houdin.dev",
-          "X-Title": "Houdin",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const error = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to call OpenRouter: ${error}`);
-    }
-
-    const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new Error("No response from OpenRouter");
-    }
-
-    return {
-      response: content,
-      model: data?.model ?? model,
-      tokensUsed: data?.usage?.total_tokens,
-    } as T;
   }
 }

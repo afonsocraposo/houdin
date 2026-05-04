@@ -1,6 +1,6 @@
 import definition from "./ai.definition";
-import { ApiClient } from "@/api/client";
 import { ChatCompletionService } from "@/services/chatCompletion";
+import { HoudinAIService } from "@/services/houdin-ai";
 import { NotificationService } from "@/services/notification";
 import { OpenAIService } from "@/services/openai";
 import { BaseAction } from "@/types/actions";
@@ -89,7 +89,7 @@ export class AIAction extends BaseAction<AIActionConfig, AIActionOutput> {
             timeout: 1000,
           });
 
-          const response = await OpenAIService.callChatCompletion(
+          const result = await OpenAIService.callChatCompletion(
             openAICredentialId,
             selectedModel ?? "",
             prompt,
@@ -97,7 +97,11 @@ export class AIAction extends BaseAction<AIActionConfig, AIActionOutput> {
             temperature,
           );
 
-          onSuccess({ response, model: selectedModel, tokensUsed: undefined });
+          onSuccess({
+            response: result.response,
+            model: selectedModel,
+            tokensUsed: result.tokensUsed,
+          });
           return;
         }
 
@@ -115,7 +119,7 @@ export class AIAction extends BaseAction<AIActionConfig, AIActionOutput> {
             timeout: 1000,
           });
 
-          const response = await ChatCompletionService.callChatCompletion({
+          const result = await ChatCompletionService.callChatCompletion({
             providerName: "OpenRouter",
             credentialType: "secret",
             credentialId: openRouterCredentialId,
@@ -133,7 +137,11 @@ export class AIAction extends BaseAction<AIActionConfig, AIActionOutput> {
             invalidAuthMessage: "Invalid OpenRouter secret configuration",
           });
 
-          onSuccess({ response, model: selectedModel, tokensUsed: undefined });
+          onSuccess({
+            response: result.response,
+            model: selectedModel,
+            tokensUsed: result.tokensUsed,
+          });
           return;
         }
 
@@ -143,15 +151,17 @@ export class AIAction extends BaseAction<AIActionConfig, AIActionOutput> {
             timeout: 1000,
           });
 
-          const response = await ApiClient.action<AIActionOutput>(
-            "llm-openai",
-            {
-              model: null,
-              prompt,
-            },
+          const result = await HoudinAIService.callChatCompletion(
+            prompt,
+            maxTokens,
+            temperature,
           );
 
-          onSuccess(response);
+          onSuccess({
+            response: result.response,
+            model: selectedModel ?? "houdin-plus",
+            tokensUsed: result.tokensUsed,
+          });
           return;
         }
 

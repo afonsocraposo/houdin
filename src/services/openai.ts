@@ -1,4 +1,4 @@
-import { ChatCompletionService } from "./chatCompletion";
+import { ChatCompletionResult, ChatCompletionService } from "./chatCompletion";
 
 export class OpenAIService {
   static async callChatCompletion(
@@ -7,7 +7,7 @@ export class OpenAIService {
     prompt: string,
     maxTokens?: number,
     temperature?: number,
-  ): Promise<string> {
+  ): Promise<ChatCompletionResult> {
     return ChatCompletionService.callChatCompletion({
       providerName: "OpenAI",
       credentialType: "openai",

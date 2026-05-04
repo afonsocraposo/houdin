@@ -79,7 +79,7 @@ function getNextNodePosition(nodes: WorkflowNode[]): { x: number; y: number } {
     nodes.reduce((sum, node) => sum + node.position.y, 0) / nodes.length;
 
   return {
-    x: rightmostX + 240,
+    x: rightmostX + 300,
     y: Math.max(80, Math.round(averageY)),
   };
 }

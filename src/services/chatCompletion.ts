@@ -1,45 +1,34 @@
+import { createOpenAI } from "@ai-sdk/openai";
+import { generateText } from "ai";
+
 import { CredentialRegistry } from "./credentialRegistry";
-import { HttpClientService } from "./httpClient";
 import { useStore } from "@/store";
-
-export interface ChatCompletionRequest {
-  model: string;
-  messages: Array<{
-    role: "system" | "user" | "assistant";
-    content: string;
-  }>;
-  max_tokens?: number;
-  temperature?: number;
-}
-
-export interface ChatCompletionResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
-  }>;
-}
 
 interface ChatCompletionOptions<TAuth extends Record<string, any>> {
   providerName: string;
-  credentialType: string;
-  credentialId: string;
+  credentialType?: string;
+  credentialId?: string;
   baseUrl: string;
   model: string;
   prompt: string;
   maxTokens?: number;
   temperature?: number;
-  validateAuth: (auth: TAuth) => boolean;
-  buildHeaders: (auth: TAuth) => Record<string, string>;
-  invalidAuthMessage: string;
+  validateAuth?: (auth: TAuth) => boolean;
+  buildHeaders?: (auth: TAuth) => Record<string, string>;
+  invalidAuthMessage?: string;
+  headers?: Record<string, string>;
+  metadata?: Record<string, string>;
+}
+
+export interface ChatCompletionResult {
+  response: string;
+  tokensUsed?: number;
 }
 
 export class ChatCompletionService {
-  private static httpClient = HttpClientService.getInstance();
-
   static async callChatCompletion<TAuth extends Record<string, any>>(
     options: ChatCompletionOptions<TAuth>,
-  ): Promise<string> {
+  ): Promise<ChatCompletionResult> {
     const {
       providerName,
       credentialType,
@@ -52,64 +41,74 @@ export class ChatCompletionService {
       validateAuth,
       buildHeaders,
       invalidAuthMessage,
+      headers: staticHeaders,
+      metadata,
     } = options;
 
-    const credentialRegistry = CredentialRegistry.getInstance();
-    const credentials = useStore.getState().credentials;
-    const credential = credentials.find((c) => c.id === credentialId);
+    let authHeaders: Record<string, string> = {};
 
-    if (!credential) {
-      throw new Error(`${providerName} credential not found`);
-    }
+    if (credentialId && credentialType) {
+      const credentialRegistry = CredentialRegistry.getInstance();
+      const credentials = useStore.getState().credentials;
+      const credential = credentials.find((c) => c.id === credentialId);
 
-    if (credential.type !== credentialType) {
-      throw new Error(`Invalid credential: not a ${providerName} credential`);
-    }
+      if (!credential) {
+        throw new Error(`${providerName} credential not found`);
+      }
 
-    const auth = credentialRegistry.getAuth(
-      credential.type,
-      credential.config,
-    ) as TAuth;
+      if (credential.type !== credentialType) {
+        throw new Error(`Invalid credential: not a ${providerName} credential`);
+      }
 
-    if (!auth || !validateAuth(auth)) {
-      throw new Error(invalidAuthMessage);
-    }
+      const auth = credentialRegistry.getAuth(
+        credential.type,
+        credential.config,
+      ) as TAuth;
 
-    const requestBody: ChatCompletionRequest = {
-      model,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    };
+      if (!auth || !validateAuth || !validateAuth(auth)) {
+        throw new Error(
+          invalidAuthMessage || `Invalid ${providerName} credential configuration`,
+        );
+      }
 
-    if (maxTokens !== undefined) {
-      requestBody.max_tokens = maxTokens;
-    }
-
-    if (temperature !== undefined) {
-      requestBody.temperature = temperature;
+      authHeaders = buildHeaders ? buildHeaders(auth) : {};
     }
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json",
-      ...buildHeaders(auth),
+      ...authHeaders,
+      ...staticHeaders,
     };
 
     const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
-    const data = await this.httpClient.postJson<ChatCompletionResponse>(
-      `${normalizedBaseUrl}/chat/completions`,
-      requestBody,
-      { headers },
-    );
+    const provider = createOpenAI({
+      baseURL: normalizedBaseUrl,
+      apiKey: headers.Authorization?.replace(/^Bearer\s+/, "") || "houdin-client",
+      headers,
+    });
 
-    if (!data.choices || data.choices.length === 0) {
+    const result = await generateText({
+      model: provider.chat(model),
+      prompt,
+      temperature,
+      maxOutputTokens: maxTokens,
+      providerOptions: metadata
+        ? {
+            openai: {
+              metadata,
+            },
+          }
+        : undefined,
+    });
+
+    if (!result.text?.trim()) {
       throw new Error(`No response from ${providerName} API`);
     }
 
-    return data.choices[0].message.content;
+    return {
+      response: result.text,
+      tokensUsed: result.usage?.totalTokens,
+    };
   }
 }

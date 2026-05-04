@@ -18,7 +18,6 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconX,
-  IconRefresh,
   IconTrash,
   IconSearch,
 } from "@tabler/icons-react";
@@ -31,31 +30,22 @@ import { useStore } from "@/store";
 
 function ExecutionHistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const executionId = searchParams.get("execution");
   const workflowId = searchParams.get("workflow");
   const [expanded, setExpanded] = useState<string[]>(
     executionId ? [executionId] : [],
   );
   const workflows = useStore((state) => state.workflows);
-  const storeExecutions = useStore((state) => state.executions);
+  const executions = useStore((state) => state.executions);
   const clearExecutions = useStore((state) => state.clearExecutions);
-  const [filteredExecutions, setFilteredExecutions] = useState<WorkflowExecution[]>([]);
+  const [filteredExecutions, setFilteredExecutions] = useState<
+    WorkflowExecution[]
+  >([]);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchFilter, setSearchFilter] = useState<string>(executionId || "");
 
-  const loadExecutions = async () => {
-    setExecutions(storeExecutions);
-  };
-
   useEffect(() => {
-    loadExecutions();
-    const interval = setInterval(loadExecutions, 2000);
-    return () => clearInterval(interval);
-  }, [executionId, workflowId, storeExecutions]);
-
-  useEffect(() => {
-    let filtered = executions;
+    let filtered = [...executions].reverse();
 
     if (workflowId) {
       filtered = filtered.filter((e) => e.workflowId === workflowId);
@@ -93,13 +83,13 @@ function ExecutionHistoryPage() {
 
   const clearHistory = async () => {
     clearExecutions();
-    setExecutions([]);
     setFilteredExecutions([]);
   };
 
   const getStats = () => ({
     total: filteredExecutions.length,
-    completed: filteredExecutions.filter((e) => e.status === "completed").length,
+    completed: filteredExecutions.filter((e) => e.status === "completed")
+      .length,
     failed: filteredExecutions.filter((e) => e.status === "failed").length,
   });
 
@@ -120,17 +110,29 @@ function ExecutionHistoryPage() {
           </Stack>
           <Stack align="end" gap="lg">
             <Group>
-              <Button leftSection={<IconTrash size={16} />} color="red" variant="outline" onClick={clearHistory}>
+              <Button
+                leftSection={<IconTrash size={16} />}
+                color="red"
+                variant="outline"
+                onClick={clearHistory}
+              >
                 Clear History
-              </Button>
-              <Button leftSection={<IconRefresh size={16} />} variant="light" onClick={loadExecutions}>
-                Refresh
               </Button>
             </Group>
             <Group gap="xs">
-              <Badge color="blue" variant="light" size="lg">{stats.total} total</Badge>
-              {stats.completed > 0 && <Badge color="green" size="lg">{stats.completed} completed</Badge>}
-              {stats.failed > 0 && <Badge color="red" size="lg">{stats.failed} failed</Badge>}
+              <Badge color="blue" variant="light" size="lg">
+                {stats.total} total
+              </Badge>
+              {stats.completed > 0 && (
+                <Badge color="green" size="lg">
+                  {stats.completed} completed
+                </Badge>
+              )}
+              {stats.failed > 0 && (
+                <Badge color="red" size="lg">
+                  {stats.failed} failed
+                </Badge>
+              )}
             </Group>
           </Stack>
         </Group>
@@ -145,7 +147,12 @@ function ExecutionHistoryPage() {
               style={{ flex: 1 }}
               rightSection={
                 searchFilter && (
-                  <ActionIcon size="sm" onClick={() => setSearchFilter("")} title="Clear search" variant="subtle">
+                  <ActionIcon
+                    size="sm"
+                    onClick={() => setSearchFilter("")}
+                    title="Clear search"
+                    variant="subtle"
+                  >
                     <IconX size={16} />
                   </ActionIcon>
                 )
@@ -184,7 +191,9 @@ function ExecutionHistoryPage() {
           {filteredExecutions.length === 0 ? (
             <Card withBorder>
               <Text size="sm" c="dimmed" ta="center" p="xl">
-                {executions.length === 0 ? "No executions yet" : "No executions match your filters"}
+                {executions.length === 0
+                  ? "No executions yet"
+                  : "No executions match your filters"}
               </Text>
             </Card>
           ) : (
@@ -207,21 +216,43 @@ function ExecutionHistoryPage() {
                   <React.Fragment key={execution.id}>
                     <Table.Tr>
                       <Table.Td>
-                        <ActionIcon variant="subtle" onClick={() => toggleExpanded(execution.id)}>
-                          {expanded.includes(execution.id) ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => toggleExpanded(execution.id)}
+                        >
+                          {expanded.includes(execution.id) ? (
+                            <IconChevronDown size={16} />
+                          ) : (
+                            <IconChevronRight size={16} />
+                          )}
                         </ActionIcon>
                       </Table.Td>
                       <Table.Td>{execution.id}</Table.Td>
-                      <Table.Td>{getWorkflowName(execution.workflowId)}</Table.Td>
                       <Table.Td>
-                        <Badge size="sm" color={getStatusColor(execution.status)} leftSection={getStatusIcon(execution.status)}>
+                        {getWorkflowName(execution.workflowId)}
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge
+                          size="sm"
+                          color={getStatusColor(execution.status)}
+                          leftSection={getStatusIcon(execution.status)}
+                        >
                           {execution.status}
                         </Badge>
                       </Table.Td>
                       <Table.Td>{execution.triggerType}</Table.Td>
-                      <Table.Td><TimeAgoText timestamp={execution.startedAt} size="sm" /></Table.Td>
+                      <Table.Td>
+                        <TimeAgoText
+                          timestamp={execution.startedAt}
+                          size="sm"
+                        />
+                      </Table.Td>
                       <Table.Td>{formatDuration(execution)}</Table.Td>
-                      <Table.Td>{execution.url}</Table.Td>
+                      <Table.Td>
+                        <Text maw={300} truncate="end" title={execution.url}>
+                          {execution.url}
+                        </Text>
+                      </Table.Td>
                       <Table.Td>{execution.nodeResults.length}</Table.Td>
                     </Table.Tr>
                     {expanded.includes(execution.id) && (
