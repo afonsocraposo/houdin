@@ -10,6 +10,7 @@ import {
 } from "@mantine/core";
 import { IconCircle } from "@tabler/icons-react";
 import rehypeSanitize from "rehype-sanitize";
+import { CodeHighlight } from "@mantine/code-highlight";
 import { CSSProperties } from "react";
 
 interface MarkdownTextProps {
@@ -63,7 +64,7 @@ export default function MarkdownText({
             </Title>
           ),
           p: ({ children }) => (
-            <Text size="sm" c={c} m={0} style={{ whiteSpace: "pre-wrap" }}>
+            <Text size="sm" c={c} m={0}>
               {children}
             </Text>
           ),
@@ -99,7 +100,17 @@ export default function MarkdownText({
             if (typeof children === "string" && !children.includes("\n")) {
               return <Code c={c}>{children}</Code>;
             }
-            return <Code block>{children}</Code>;
+            // NOTE Languages are passed down through the class name with `react-markdown`
+            const [, language] = className?.split("-") || [];
+            return (
+              <CodeHighlight
+                my="xs"
+                code={String(children).replace(/\n$/, "")}
+                defaultExpanded={true}
+                expanded={true}
+                language={language || "text"}
+              />
+            );
           },
         }}
       >
