@@ -96,27 +96,162 @@ npm run build
 
 The built extension will be in the `dist/` directory.
 
-## 🎯 Available Actions
+## Adding a New Action or Trigger
 
-- **Click Element**: Simulate clicks on page elements
-- **Type Text**: Input text into form fields
-- **Copy Content**: Extract text content from elements
-- **Navigate URL**: Navigate to different pages
-- **HTTP Request**: Make API calls with credential support
-- **Custom Script**: Execute arbitrary JavaScript code
-- **Form Actions**: Complex form interactions and submissions
-- **Wait Actions**: Wait for page changes or time delays
-- **Modal & Notifications**: Display custom UI overlays
-- **Style & Component Injection**: Modify page appearance
+Every node (action or trigger) follows a split pattern: a **definition** file (metadata, config schema, output shape) and a **runtime** file (execution logic).
 
-## 🔧 Available Triggers
+### 1. Create the definition file
 
-- **Page Load**: Execute when a page finishes loading
-- **Button Click**: Respond to clicks on specific elements
-- **Key Press**: Trigger on keyboard shortcuts
-- **Component Load**: Execute when elements appear on the page
-- **HTTP Request**: Listen for specific network requests
-- **Delay**: Time-based triggers
+Define the node's metadata, configuration schema, and example output.
+
+**`src/services/actions/my-action.definition.ts`** (or `src/services/triggers/my-trigger.definition.ts`):
+
+```ts
+import type { NodeDefinition } from "../node-definitions/types";
+import { textProperty, selectProperty } from "@/types/config-properties";
+
+const definition = {
+  kind: "action",
+  metadata: {
+    type: "my-action",
+    label: "My Action",
+    icon: "⚡",
+    description: "Description of what this action does",
+    disableTimeout: true, // optional: disables timeout for long-running actions
+    outputs: new Set(["true", "false"]), // optional: for branching nodes like "if"
+  },
+  configSchema: {
+    properties: {
+      myField: textProperty({
+        label: "My Field",
+        placeholder: "Enter value",
+        description: "What this field does",
+        required: true,
+        defaultValue: "hello",
+      }),
+      myChoice: selectProperty({
+        label: "My Choice",
+        options: [
+          { label: "Option A", value: "a" },
+          { label: "Option B", value: "b" },
+        ],
+        defaultValue: "a",
+      }),
+    },
+  },
+  outputExample: {
+    result: "Sample output data",
+  },
+} satisfies NodeDefinition;
+
+export default definition;
+```
+
+Available property builders (from `@/types/config-properties`):
+| Function | Type |
+|---|---|
+| `textProperty()` | Single-line text |
+| `textareaProperty()` | Multi-line text |
+| `numberProperty()` | Numeric input |
+| `selectProperty()` | Dropdown with options |
+| `booleanProperty()` | Toggle/checkbox |
+| `colorProperty()` | Color picker |
+| `codeProperty()` | Code editor (with `language` and `height`) |
+| `credentialsProperty()` | Credential selector (with `credentialType`) |
+| `customProperty()` | Custom React component (with `component`) |
+
+All properties support `showWhen` for conditional visibility.
+
+### 2. Create the runtime file
+
+Implement the execution logic by extending `BaseAction` or `BaseTrigger`.
+
+**`src/services/actions/my-action.runtime.ts`**:
+
+```ts
+import definition from "./my-action.definition";
+import { BaseAction } from "@/types/actions";
+
+interface MyActionConfig {
+  myField: string;
+  myChoice: string;
+}
+
+interface MyActionOutput {
+  result: string;
+}
+
+export class MyAction extends BaseAction<MyActionConfig, MyActionOutput> {
+  constructor() {
+    super(definition);
+  }
+
+  async execute(
+    config: MyActionConfig,
+    workflowId: string,
+    nodeId: string,
+    onSuccess: (data?: MyActionOutput) => void,
+    onError: (error: Error) => void,
+  ): Promise<void> {
+    try {
+      const result = `You chose: ${config.myChoice}`;
+      onSuccess({ result });
+    } catch (err) {
+      onError(err as Error);
+    }
+  }
+}
+```
+
+For triggers, extend `BaseTrigger` and implement the `setup` method instead:
+
+```ts
+import definition from "./my-trigger.definition";
+import { BaseTrigger } from "@/types/triggers";
+
+export class MyTrigger extends BaseTrigger<MyTriggerConfig, MyTriggerOutput> {
+  constructor() {
+    super(definition);
+  }
+
+  async setup(
+    config: MyTriggerConfig,
+    workflowId: string,
+    nodeId: string,
+    onTrigger: (data: MyTriggerOutput) => Promise<void>,
+  ): Promise<void> {
+    // Set up event listeners, observers, etc.
+    // Call onTrigger(data) when the event occurs
+  }
+}
+```
+
+### 3. Register the runtime
+
+Add the import and registration to the appropriate initializer.
+
+**`src/services/actionInitializer.ts`** (or `src/services/triggerInitializer.ts`):
+
+```ts
+import { MyAction } from "./actions/my-action.runtime";
+// ...
+registry.register(MyAction);
+```
+
+### 4. Add to the node catalog
+
+Import the definition in the catalog index.
+
+**`src/services/node-definitions/actions.ts`** (or `src/services/node-definitions/triggers.ts`):
+
+```ts
+import my_action from "../actions/my-action.definition";
+// ...
+export const actions: NodeDefinitionRecord = {
+  // ...
+  "my-action": my_action,
+};
+```
 
 ## 🛠 Development Scripts
 
@@ -126,6 +261,7 @@ The built extension will be in the `dist/` directory.
 - `npm run build:firefox` - Build for Firefox
 - `npm run type-check` - Run TypeScript type checking
 - `npm run preview` - Preview production build locally
+- `npm run generate-definitions` - Generate `dist/node-definitions.json` from all defintion files
 
 ## 🏗 Architecture
 
