@@ -24,7 +24,7 @@ interface ConfigWorkflowItemProps {
   handleEditWorkflow: (workflow: WorkflowDefinition) => void;
   handleDeleteWorkflow: (workflowId: string) => void;
   handleDuplicateWorkflow: (workflow: WorkflowDefinition) => void;
-  handleToggleWorkflow: (workflowId: string) => void;
+  handleToggleWorkflow: () => void;
   handleExportWorkflow: (workflow: WorkflowDefinition) => void;
 }
 export default function ConfigWorkflowItem({
@@ -65,7 +65,7 @@ export default function ConfigWorkflowItem({
         <Center>
           <Switch
             checked={workflow.enabled}
-            onChange={() => handleToggleWorkflow(workflow.id)}
+            onChange={handleToggleWorkflow}
             size="sm"
           />
         </Center>

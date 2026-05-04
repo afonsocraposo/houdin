@@ -137,20 +137,20 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           style={{
-            border: `2px dashed ${dragActive ? "#228be6" : "#dee2e6"}`,
-            borderRadius: "8px",
+            border: `2px dashed ${dragActive ? "var(--mantine-color-blue-6)" : "var(--mantine-color-default-border)"}`,
+            borderRadius: "var(--mantine-radius-sm)",
             padding: "20px",
             textAlign: "center",
-            backgroundColor: dragActive ? "#f8f9fa" : "transparent",
+            backgroundColor: dragActive ? "var(--mantine-color-blue-0)" : "transparent",
             cursor: "pointer",
-            transition: "all 0.2s ease",
+            transition: "border-color 0.2s ease, background-color 0.2s ease",
           }}
           onClick={() => fileInputRef.current?.click()}
         >
           <Stack align="center" gap="xs">
             <IconFileImport
               size={32}
-              color={dragActive ? "#228be6" : "#adb5bd"}
+              color={dragActive ? "var(--mantine-color-blue-6)" : "var(--mantine-color-gray-5)"}
             />
             <Text size="sm" c="dimmed">
               {dragActive
