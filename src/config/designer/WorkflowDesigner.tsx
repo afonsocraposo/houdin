@@ -610,7 +610,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     shadow="md"
                     p="md"
                     m="sm"
-                    mah="98%"
+                    mah="calc(100% - var(--mantine-spacing-sm) - var(--mantine-spacing-sm))"
                     style={{
                       ...styles,
                       position: "absolute",
