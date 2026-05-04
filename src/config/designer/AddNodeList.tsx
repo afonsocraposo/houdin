@@ -11,7 +11,6 @@ import {
   Text,
   TextInput,
   Transition,
-  useComputedColorScheme,
 } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
 import { IconMinus, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
