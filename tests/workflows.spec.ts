@@ -23,7 +23,7 @@ test.describe("Workflows creation, design and execution", () => {
     page,
   }) => {
     // expect to see no workflows message
-    await expect(page.getByText("No workflows created yet.")).toBeVisible();
+    await expect(page.getByText("No workflows yet.")).toBeVisible();
 
     // Click on Create workflow button
     await page
@@ -163,6 +163,7 @@ test.describe("Workflows creation, design and execution", () => {
     const actionData = actionNode?.data as ActionNodeData;
     expect(actionData.type).toBe("show-modal");
     expect(actionData.config).toEqual({
+      modalTitle: "Workflow Result",
       modalContent: "Hello from Houdin workflow",
     });
 
