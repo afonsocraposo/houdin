@@ -10,6 +10,7 @@ import {
   GenerationPromptResponse,
   GenerationSession,
 } from "@/types/generation-session";
+import { WorkflowDefinition } from "@/types/workflow";
 import { generateId, newWorkflowId } from "@/utils/helpers";
 import {
   ActionIcon,
@@ -66,11 +67,13 @@ const createInitialSession = (): GenerationSession => {
 interface AiWorkflowChatPanelProps {
   workflowId?: string | null;
   popup?: boolean;
+  workflow?: WorkflowDefinition;
 }
 
 export default function AiWorkflowChatPanel({
   workflowId,
   popup = false,
+  workflow,
 }: AiWorkflowChatPanelProps) {
   const workflows = useStore((state) => state.workflows);
   const activeGenerationWorkflowId = useStore(
@@ -105,6 +108,8 @@ export default function AiWorkflowChatPanel({
     typeof activeGenerationWorkflowId === "string"
       ? activeGenerationWorkflowId
       : null;
+  const isScopedToWorkflow =
+    typeof workflowId === "string" && workflowId.length > 0;
 
   const draftSummary = useMemo(() => {
     const workflow = session?.workflowId
@@ -124,39 +129,58 @@ export default function AiWorkflowChatPanel({
 
   const activeWorkflow = useMemo(
     () =>
-      normalizedActiveWorkflowValue
-        ? workflows.find((workflow) => workflow.id === normalizedActiveWorkflowValue)
+      (isScopedToWorkflow ? workflowId : normalizedActiveWorkflowValue)
+        ? workflows.find(
+            (workflow) =>
+              workflow.id ===
+              (isScopedToWorkflow ? workflowId : normalizedActiveWorkflowValue),
+          )
         : null,
-    [workflows, normalizedActiveWorkflowValue],
+    [workflows, normalizedActiveWorkflowValue, isScopedToWorkflow, workflowId],
   );
 
   const hasNamedActiveWorkflow = Boolean(
     activeWorkflow?.name && activeWorkflow.name !== "Untitled workflow",
   );
 
-  const activeWorkflowValue = hasNamedActiveWorkflow
-    ? normalizedActiveWorkflowValue
-    : "__new__";
+  const activeWorkflowValue = isScopedToWorkflow
+    ? workflowId
+    : hasNamedActiveWorkflow
+      ? normalizedActiveWorkflowValue
+      : "__new__";
 
   const workflowOptions = useMemo(() => {
+    if (isScopedToWorkflow) {
+      return [
+        {
+          value: workflowId,
+          label:
+            activeWorkflow?.name && activeWorkflow.name !== "Untitled workflow"
+              ? activeWorkflow.name
+              : "Current workflow",
+        },
+      ];
+    }
+
     const w = [
       {
         value: "__new__",
         label: "Start new workflow",
       },
       ...workflows
-      .filter(
-        (workflow) =>
-          typeof workflow.id === "string" && typeof workflow.name === "string",
-      )
-      .map((workflow) => ({
-        value: workflow.id,
-        label: workflow.name,
-      })),
+        .filter(
+          (workflow) =>
+            typeof workflow.id === "string" &&
+            typeof workflow.name === "string",
+        )
+        .map((workflow) => ({
+          value: workflow.id,
+          label: workflow.name,
+        })),
     ];
 
     return w;
-  }, [workflows]);
+  }, [workflows, isScopedToWorkflow, workflowId, activeWorkflow]);
 
   const appendMessage = (message: GenerationMessage) => {
     updateActiveGenerationSession((current) => ({
@@ -243,11 +267,9 @@ export default function AiWorkflowChatPanel({
 
       ensureCurrentSession();
       setIsSelectingElement(true);
-      await sendMessageToContentScript(
-        activeTabId,
-        "START_ELEMENT_SELECTION",
-        { source: "ai-chat" },
-      );
+      await sendMessageToContentScript(activeTabId, "START_ELEMENT_SELECTION", {
+        source: "ai-chat",
+      });
       appendMessage({
         id: generateId("msg", 10),
         role: "assistant",
@@ -330,6 +352,7 @@ export default function AiWorkflowChatPanel({
       const request: GenerationPromptRequest = {
         prompt: trimmedPrompt,
         session: sessionWithPendingMessages,
+        workflow,
       };
 
       const response = (await sendMessageToBackground(
@@ -419,6 +442,10 @@ export default function AiWorkflowChatPanel({
   };
 
   const handleWorkflowSelect = (value: string | null) => {
+    if (isScopedToWorkflow) {
+      return;
+    }
+
     if (!value || value === "__new__") {
       const workflowId = newWorkflowId();
       const newSession = buildSessionForWorkflow(workflowId);
@@ -480,7 +507,9 @@ export default function AiWorkflowChatPanel({
     }
 
     const consumePendingSelection = async () => {
-      const result = await browser.storage.local.get([PENDING_AI_SELECTED_ELEMENT_KEY]);
+      const result = await browser.storage.local.get([
+        PENDING_AI_SELECTED_ELEMENT_KEY,
+      ]);
       const pendingSelection = result[PENDING_AI_SELECTED_ELEMENT_KEY];
       if (!pendingSelection) {
         return;
@@ -556,12 +585,13 @@ export default function AiWorkflowChatPanel({
         <Stack gap="xs">
           <Group justify="space-between" align="center" wrap="nowrap">
             <Group gap="xs" wrap="nowrap" flex={1} miw={0}>
-                <Select
-                  value={activeWorkflowValue}
-                  onChange={handleWorkflowSelect}
-                  data={workflowOptions}
+              <Select
+                value={activeWorkflowValue}
+                onChange={handleWorkflowSelect}
+                data={workflowOptions}
                 size="xs"
                 aria-label="Active workflow draft"
+                disabled={isScopedToWorkflow}
                 style={{ flex: 1, minWidth: 0 }}
               />
               {hasMessages && (

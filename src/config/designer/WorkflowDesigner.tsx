@@ -185,7 +185,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       savedSnapshotRef.current = incomingWorkflowSnapshot;
       syncedWorkflowSnapshotRef.current = incomingWorkflowSnapshot;
     } else {
-      setCurrentWorkflowId(newWorkflowId());
       syncedWorkflowSnapshotRef.current = "";
     }
   }, [workflow, currentWorkflowId, form, set]);
@@ -661,7 +660,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                     <IconLayoutSidebarRightCollapse />
                   </ActionIcon>
                 </Group>
-                <AiWorkflowChatPanel workflowId={currentWorkflowId} />
+                <AiWorkflowChatPanel
+                  workflowId={currentWorkflowId}
+                  workflow={getCurrentWorkflowDefinition()}
+                />
               </Paper>
             )}
           </Group>

@@ -38,7 +38,7 @@ const houdinAI = createOpenAI({
   apiKey: "houdin-client",
 });
 
-const model = houdinAI.chat("");
+const model = houdinAI.chat("openai/gpt-oss-120b:free");
 
 function createBaseWorkflow(): WorkflowDefinition {
   return {
@@ -54,7 +54,14 @@ function createBaseWorkflow(): WorkflowDefinition {
   };
 }
 
-function ensureWorkflow(session: GenerationSession): WorkflowDefinition {
+function ensureWorkflow(
+  session: GenerationSession,
+  requestWorkflow?: WorkflowDefinition,
+): WorkflowDefinition {
+  if (requestWorkflow) {
+    return requestWorkflow;
+  }
+
   if (!session.workflowId) {
     return createBaseWorkflow();
   }
@@ -283,13 +290,13 @@ export class WorkflowGenerationService {
   async submitPrompt(
     request: GenerationPromptRequest,
   ): Promise<GenerationPromptResponse> {
-    const { session, prompt } = request;
+    const { session, prompt, workflow: requestWorkflow } = request;
     const cleanedSession = stripPendingThinkingMessage(session);
     const controller = new AbortController();
     this.activeRuns.set(cleanedSession.id, controller);
     const requestMetadata = buildAIRequestMetadata(cleanedSession);
 
-    let workflow = ensureWorkflow(cleanedSession);
+    let workflow = ensureWorkflow(cleanedSession, requestWorkflow);
     let workingSession = cleanedSession;
 
     const ensureNotAborted = () => {

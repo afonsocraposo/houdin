@@ -47,7 +47,7 @@ export default function WorkflowsTab({
   const navigate = useNavigate();
 
   const handleCreateWorkflow = () => {
-    navigate("/designer"); // Navigate to designer without workflow ID
+    navigate("/designer", { state: { blank: true } });
   };
 
   const handleCreateFromExample = (example: WorkflowDefinition) => {

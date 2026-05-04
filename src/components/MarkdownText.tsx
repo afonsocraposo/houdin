@@ -82,6 +82,16 @@ export default function MarkdownText({
               {children}
             </List>
           ),
+          ol: ({ children }) => (
+            <List
+              type="ordered"
+              spacing="xs"
+              size="sm"
+              mb={compact ? 0 : "sm"}
+            >
+              {children}
+            </List>
+          ),
           li: ({ children }) => <List.Item c={c}>{children}</List.Item>,
           a: ({ children, href }) => (
             <Anchor href={href || ""} target="_blank">
