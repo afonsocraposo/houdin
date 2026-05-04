@@ -16,6 +16,7 @@ import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
 import { ApiClient } from "@/api/client";
+import { WorkflowSyncer } from "@/services/workflowSyncer";
 
 const PENDING_AI_SELECTED_ELEMENT_KEY = "pending-ai-selected-element";
 
@@ -63,6 +64,10 @@ if (browser.webNavigation) {
     }
   });
 }
+
+const workflowSyncer = WorkflowSyncer.getInstance();
+workflowSyncer.sync(true);
+workflowSyncer.init();
 
 ApiClient.startBackgroundProxy();
 

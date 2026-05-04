@@ -1,17 +1,106 @@
-import { useSessionStore } from "@/store";
-import { ActionIcon, Group, Text, Tooltip } from "@mantine/core";
-import { IconRefresh } from "@tabler/icons-react";
+import { useSessionStore, useStore } from "@/store";
+import { formatTimeAgo } from "@/lib/time";
+import { WorkflowSyncer } from "@/services/workflowSyncer";
+import { ActionIcon, Group, Loader, Text, Tooltip } from "@mantine/core";
+import { IconCheck, IconRefresh, IconAlertCircle } from "@tabler/icons-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDisclosure } from "@mantine/hooks";
 import UpgradeModal from "./modals/upgradeModal";
 
 export default function SyncButton() {
   const account = useSessionStore((state) => state.account);
   const [opened, { open, close }] = useDisclosure(false);
+  const syncResult = useStore((state) => state.syncResult);
+  const syncStartedAt = useStore((state) => state.syncStartedAt);
+  const syncCompletedAt = useStore((state) => state.syncCompletedAt);
+  const [status, setStatus] = useState<
+    "idle" | "syncing" | "success" | "error"
+  >("idle");
 
-  const canSync = account && account.plan !== "free";
+  useEffect(() => {
+    if (
+      syncStartedAt &&
+      (!syncCompletedAt || syncStartedAt > syncCompletedAt)
+    ) {
+      setStatus("syncing");
+    }
+  }, [syncStartedAt, syncCompletedAt]);
+
+  useEffect(() => {
+    if (!syncResult) {
+      if (
+        syncStartedAt &&
+        (!syncCompletedAt || syncStartedAt > syncCompletedAt)
+      ) {
+        setStatus("syncing");
+        return;
+      }
+      setStatus("idle");
+      return;
+    }
+    if (
+      status === "idle" &&
+      syncCompletedAt &&
+      syncCompletedAt < Date.now() - 1000
+    ) {
+      return;
+    }
+    setStatus(syncResult.success ? "success" : "error");
+    const timeout = setTimeout(() => {
+      if (syncStartedAt && syncCompletedAt && syncStartedAt < syncCompletedAt) {
+        setStatus("idle");
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [syncResult]);
+
+  const canSync = useMemo(() => account && account.plan !== "free", [account]);
+
+  const syncWorkflows = useCallback(async () => {
+    try {
+      await WorkflowSyncer.triggerSync();
+    } catch (error) {
+      console.error("Manual sync failed:", error);
+    }
+  }, []);
+
+  const getIcon = () => {
+    switch (status) {
+      case "syncing":
+        return <Loader size={16} />;
+      case "success":
+        return <IconCheck size={16} />;
+      case "error":
+        return <IconAlertCircle size={16} />;
+      default:
+        return <IconRefresh size={16} />;
+    }
+  };
+
+  const getColor = () => {
+    switch (status) {
+      case "success":
+        return "teal";
+      case "error":
+        return "red";
+      default:
+        return undefined;
+    }
+  };
 
   const getTooltip = () => {
-    return "Sync is managed automatically.";
+    switch (status) {
+      case "syncing":
+        return "Syncing workflows...";
+      case "success":
+        return "Sync successful";
+      case "error":
+        return "Sync failed. Click to retry.";
+      default:
+        return syncCompletedAt
+          ? `Last synced: ${new Date(syncCompletedAt).toLocaleString()}`
+          : "Never synced. Click to sync.";
+    }
   };
 
   if (account === null) {
@@ -23,15 +112,19 @@ export default function SyncButton() {
       <Group gap="xs">
         <Tooltip label={getTooltip()} position="bottom">
           <ActionIcon
-            onClick={canSync ? open : undefined}
-            variant="subtle"
+            onClick={canSync ? syncWorkflows : open}
+            disabled={status === "syncing"}
+            color={getColor()}
+            variant={status === "idle" ? "subtle" : "light"}
           >
-            <IconRefresh size={16} />
+            {getIcon()}
           </ActionIcon>
         </Tooltip>
         {canSync && (
           <Text size="xs" c="dimmed">
-            Auto-sync disabled
+            {syncCompletedAt
+              ? formatTimeAgo(new Date(syncCompletedAt))
+              : "Never synced"}
           </Text>
         )}
       </Group>
