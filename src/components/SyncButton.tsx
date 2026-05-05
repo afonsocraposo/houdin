@@ -9,6 +9,7 @@ import UpgradeModal from "./modals/upgradeModal";
 
 export default function SyncButton() {
   const account = useSessionStore((state) => state.account);
+  const syncEnabled = useStore((state) => state.settings.syncEnabled);
   const [opened, { open, close }] = useDisclosure(false);
   const syncResult = useStore((state) => state.syncResult);
   const syncStartedAt = useStore((state) => state.syncStartedAt);
@@ -89,6 +90,9 @@ export default function SyncButton() {
   };
 
   const getTooltip = () => {
+    if (!syncEnabled) {
+      return "Workflow sync is disabled in settings.";
+    }
     switch (status) {
       case "syncing":
         return "Syncing workflows...";
@@ -113,7 +117,7 @@ export default function SyncButton() {
         <Tooltip label={getTooltip()} position="bottom">
           <ActionIcon
             onClick={canSync ? syncWorkflows : open}
-            disabled={status === "syncing"}
+            disabled={status === "syncing" || !syncEnabled}
             color={getColor()}
             variant={status === "idle" ? "subtle" : "light"}
           >

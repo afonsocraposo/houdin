@@ -49,7 +49,14 @@ export class WorkflowSyncer {
     }
   }
 
+  private isSyncEnabled(): boolean {
+    return useStore.getState().settings.syncEnabled;
+  }
+
   async sync(failQuiet: boolean = false): Promise<void> {
+    if (!this.isSyncEnabled()) {
+      return;
+    }
     const canSync = await this.canUserSync();
     if (!canSync) {
       const error = new Error(
