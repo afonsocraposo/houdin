@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { API_BASE_URL } from "@/api/client";
 import { useStore } from "@/store";
+import { getLayoutedElements } from "@/config/designer/ReactFlowCanvasCallbacks";
 import { getNodeDefinition, nodeCatalog } from "./nodeCatalog";
 import {
   GenerationMessage,
@@ -200,6 +201,7 @@ function buildSystemPrompt(
     "Diagnosing issues: When the user asks why a workflow didn't work, asks to check the execution, or reports unexpected behavior: call getLatestExecution before touching anything else. Do NOT skip to getNodeSchema or updateNodeConfig until after you've checked the execution.",
     "",
     "Building workflows: Use tools in this order when needed: create node, update node config, then connect nodes.",
+    "After creating or rewiring nodes, call autoArrangeNodes once the intended structure is in place so the workflow ends in a clean layout.",
     "Use setWorkflowName, setWorkflowDescription, setUrlPattern, and setWorkflowEnabled for workflow-level changes.",
     "When the workflow is ready, set a clear workflow name and enable it.",
     "When creating nodes, use the exact node-type tool names and fields.",
@@ -250,6 +252,16 @@ function finalizeGeneratedWorkflow(
   }
 
   return nextWorkflow;
+}
+
+function autoArrangeWorkflow(workflow: WorkflowDefinition): WorkflowDefinition {
+  const { nodes } = getLayoutedElements(workflow.nodes, workflow.connections);
+
+  return {
+    ...workflow,
+    nodes,
+    modifiedAt: Date.now(),
+  };
 }
 
 function deriveWorkflowName(prompt: string): string {
@@ -411,6 +423,19 @@ export class WorkflowGenerationService {
                 `Set workflow enabled to ${enabled}.`,
               );
               return { enabled };
+            },
+          }),
+          autoArrangeNodes: tool({
+            description:
+              "Automatically arrange workflow nodes using the same layout as the designer auto-arrange action.",
+            inputSchema: z.object({}),
+            execute: async () => {
+              ensureNotAborted();
+              const nextWorkflow = autoArrangeWorkflow(workflow);
+              applyWorkflow(nextWorkflow, "Auto-arranged workflow nodes.");
+              return {
+                nodeCount: nextWorkflow.nodes.length,
+              };
             },
           }),
           getNodeSchema: tool({

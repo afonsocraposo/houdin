@@ -9,106 +9,104 @@ import {
   ReactFlowInstance,
 } from "@xyflow/react";
 
-export const getLayoutedElementsCallback = () =>
-  useCallback((nodes: WorkflowNode[], edges: WorkflowConnection[]) => {
-    // Separate connected and disconnected nodes
-    const connectedNodeIds = new Set();
-    edges.forEach((edge) => {
-      connectedNodeIds.add(edge.source);
-      connectedNodeIds.add(edge.target);
+export function getLayoutedElements(
+  nodes: WorkflowNode[],
+  edges: WorkflowConnection[],
+) {
+  const connectedNodeIds = new Set<string>();
+  edges.forEach((edge) => {
+    connectedNodeIds.add(edge.source);
+    connectedNodeIds.add(edge.target);
+  });
+
+  const connectedNodes = nodes.filter((node) => connectedNodeIds.has(node.id));
+  const disconnectedNodes = nodes.filter(
+    (node) => !connectedNodeIds.has(node.id),
+  );
+
+  let layoutedConnectedNodes: WorkflowNode[] = [];
+  let rightmostX = 0;
+
+  if (connectedNodes.length > 0) {
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    dagreGraph.setGraph({
+      rankdir: "LR",
+      nodesep: 100,
+      ranksep: 100,
+      marginx: 20,
+      marginy: 20,
+      acyclicer: "greedy",
+      ranker: "network-simplex",
     });
 
-    const connectedNodes = nodes.filter((node) =>
-      connectedNodeIds.has(node.id),
-    );
-    const disconnectedNodes = nodes.filter(
-      (node) => !connectedNodeIds.has(node.id),
-    );
+    connectedNodes.forEach((node) => {
+      dagreGraph.setNode(node.id, { width: 200, height: 150 });
+    });
 
-    let layoutedConnectedNodes: WorkflowNode[] = [];
-    let rightmostX = 0;
-
-    // Layout connected nodes using dagre if there are any
-    if (connectedNodes.length > 0) {
-      const dagreGraph = new dagre.graphlib.Graph();
-      dagreGraph.setDefaultEdgeLabel(() => ({}));
-      dagreGraph.setGraph({
-        rankdir: "LR", // Left to right layout
-        nodesep: 100, // Increased horizontal spacing between nodes
-        ranksep: 100, // Increased vertical spacing between ranks/levels
-        marginx: 20, // Margin around the graph
-        marginy: 20,
-        acyclicer: "greedy", // Algorithm for handling cycles
-        ranker: "network-simplex", // Try tight-tree for better crossing reduction
+    const sortedEdges = edges
+      .filter(
+        (edge) =>
+          connectedNodeIds.has(edge.source) &&
+          connectedNodeIds.has(edge.target),
+      )
+      .sort((a, b) => {
+        const sourceNodeA = connectedNodes.find((n) => n.id === a.source);
+        const sourceNodeB = connectedNodes.find((n) => n.id === b.source);
+        const handleIndexA =
+          sourceNodeA?.outputs?.indexOf(a.sourceHandle || "output") || 0;
+        const handleIndexB =
+          sourceNodeB?.outputs?.indexOf(b.sourceHandle || "output") || 0;
+        return handleIndexA - handleIndexB;
       });
 
-      connectedNodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: 200, height: 150 });
+    sortedEdges.forEach((edge) => {
+      const sourceNode = connectedNodes.find((n) => n.id === edge.source);
+      const handleIndex =
+        sourceNode?.outputs?.indexOf(edge.sourceHandle || "output") || 0;
+
+      dagreGraph.setEdge(edge.source, edge.target, {
+        weight: Math.max(1, 15 - handleIndex * 5),
+        minlen: 1 + handleIndex,
       });
+    });
 
-      // Sort edges by handle index to process in order
-      const sortedEdges = edges
-        .filter(
-          (edge) =>
-            connectedNodeIds.has(edge.source) &&
-            connectedNodeIds.has(edge.target),
-        )
-        .sort((a, b) => {
-          const sourceNodeA = connectedNodes.find((n) => n.id === a.source);
-          const sourceNodeB = connectedNodes.find((n) => n.id === b.source);
-          const handleIndexA =
-            sourceNodeA?.outputs?.indexOf(a.sourceHandle || "output") || 0;
-          const handleIndexB =
-            sourceNodeB?.outputs?.indexOf(b.sourceHandle || "output") || 0;
-          return handleIndexA - handleIndexB;
-        });
+    dagre.layout(dagreGraph);
 
-      sortedEdges.forEach((edge) => {
-        // Add edge with weight based on handle to influence layout
-        const sourceNode = connectedNodes.find((n) => n.id === edge.source);
-        const handleIndex =
-          sourceNode?.outputs?.indexOf(edge.sourceHandle || "output") || 0;
-
-        dagreGraph.setEdge(edge.source, edge.target, {
-          weight: Math.max(1, 15 - handleIndex * 5), // Even stronger weight difference
-          minlen: 1 + handleIndex, // Minimum edge length based on handle position
-        });
-      });
-
-      dagre.layout(dagreGraph);
-
-      // Apply dagre positions to connected nodes
-      layoutedConnectedNodes = connectedNodes.map((node) => {
-        const nodeWithPosition = dagreGraph.node(node.id);
-        const newX = nodeWithPosition.x - 100; // Center the node (width/2)
-        rightmostX = Math.max(rightmostX, newX);
-        return {
-          ...node,
-          position: {
-            x: newX,
-            y: nodeWithPosition.y - 75, // Center the node (height/2)
-          },
-        };
-      });
-    }
-
-    // Position disconnected nodes to the right of connected nodes
-    const layoutedDisconnectedNodes = disconnectedNodes.map((node, index) => {
+    layoutedConnectedNodes = connectedNodes.map((node) => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+      const newX = nodeWithPosition.x - 100;
+      rightmostX = Math.max(rightmostX, newX);
       return {
         ...node,
         position: {
-          x: rightmostX + 300 + index * 300, // Start 300px to the right, then space by 300px
-          y: 0, // Vertical spacing for multiple disconnected nodes
+          x: newX,
+          y: nodeWithPosition.y - 75,
         },
       };
     });
+  }
 
-    const allLayoutedNodes = [
-      ...layoutedConnectedNodes,
-      ...layoutedDisconnectedNodes,
-    ];
-    return { nodes: allLayoutedNodes, edges };
-  }, []);
+  const layoutedDisconnectedNodes = disconnectedNodes.map((node, index) => ({
+    ...node,
+    position: {
+      x: rightmostX + 300 + index * 300,
+      y: 0,
+    },
+  }));
+
+  return {
+    nodes: [...layoutedConnectedNodes, ...layoutedDisconnectedNodes],
+    edges,
+  };
+}
+
+export const getLayoutedElementsCallback = () =>
+  useCallback(
+    (nodes: WorkflowNode[], edges: WorkflowConnection[]) =>
+      getLayoutedElements(nodes, edges),
+    [],
+  );
 
 export const onNodeDuplicateCallback = ({
   workflowNodes,
