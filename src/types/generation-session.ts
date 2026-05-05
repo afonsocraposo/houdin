@@ -1,4 +1,4 @@
-import { WorkflowDefinition, WorkflowExecutionStatus } from "@/types/workflow";
+import { WorkflowExecutionStatus } from "@/types/workflow";
 
 export type GenerationSessionStatus =
   | "idle"
@@ -75,9 +75,8 @@ export interface GenerationSession {
 }
 
 export interface GenerationPromptRequest {
+  workflowId: string;
   prompt: string;
-  session: GenerationSession;
-  workflow?: WorkflowDefinition;
 }
 
 export interface GenerationPromptResponse {
@@ -85,7 +84,7 @@ export interface GenerationPromptResponse {
 }
 
 export interface StopGenerationRequest {
-  sessionId: string;
+  workflowId: string;
 }
 
 export interface SelectedElementMessage {

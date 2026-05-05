@@ -662,7 +662,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 </Group>
                 <AiWorkflowChatPanel
                   workflowId={currentWorkflowId}
-                  workflow={getCurrentWorkflowDefinition()}
                 />
               </Paper>
             )}

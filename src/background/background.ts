@@ -71,6 +71,8 @@ workflowSyncer.init();
 
 ApiClient.startBackgroundProxy();
 
+const activeRuns = new Map<string, WorkflowGenerationService>();
+
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
   browser.webNavigation.onCompleted.addListener(
@@ -86,15 +88,32 @@ workflowEngine.initialize().then(() => {
     (message: CustomMessage, sender: any) => {
     switch (message.type) {
         case MessageType.AI_GENERATION_SUBMIT:
-          return WorkflowGenerationService.getInstance().submitPrompt(
-            message.data as GenerationPromptRequest,
-          ) as Promise<GenerationPromptResponse>;
+          return (async () => {
+            const request = message.data as GenerationPromptRequest;
+            const service = new WorkflowGenerationService(request.workflowId);
+            activeRuns.set(request.workflowId, service);
+
+            try {
+              return await service.submitPrompt(
+                request.prompt,
+              ) as GenerationPromptResponse;
+            } finally {
+              if (activeRuns.get(request.workflowId) === service) {
+                activeRuns.delete(request.workflowId);
+              }
+            }
+          })();
         case MessageType.AI_GENERATION_STOP:
-          return Promise.resolve(
-            WorkflowGenerationService.getInstance().stopPrompt(
-              message.data as StopGenerationRequest,
-            ),
-          );
+          return Promise.resolve((() => {
+            const request = message.data as StopGenerationRequest;
+            const service = activeRuns.get(request.workflowId);
+            if (!service) {
+              return { stopped: false };
+            }
+
+            activeRuns.delete(request.workflowId);
+            return service.stop();
+          })());
         case MessageType.AI_ELEMENT_SELECTED:
           return Promise.resolve(
             (async () => {

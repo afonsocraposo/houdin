@@ -7,10 +7,8 @@ import { useStore } from "@/store";
 import { getNodeDefinition, nodeCatalog } from "./nodeCatalog";
 import {
   GenerationMessage,
-  GenerationPromptRequest,
   GenerationPromptResponse,
   GenerationSession,
-  StopGenerationRequest,
 } from "@/types/generation-session";
 import type { WorkflowDefinition } from "@/types/workflow";
 import { generateId, newWorkflowId } from "@/utils/helpers";
@@ -54,20 +52,27 @@ function createBaseWorkflow(): WorkflowDefinition {
   };
 }
 
-function ensureWorkflow(
-  session: GenerationSession,
-  requestWorkflow?: WorkflowDefinition,
-): WorkflowDefinition {
-  if (requestWorkflow) {
-    return requestWorkflow;
-  }
+function createInitialSession(workflowId: string): GenerationSession {
+  const now = Date.now();
 
-  if (!session.workflowId) {
-    return createBaseWorkflow();
-  }
-  return (
-    useStore.getState().readWorkflow(session.workflowId) || createBaseWorkflow()
-  );
+  return {
+    id: generateId("session", 10),
+    status: "idle",
+    workflowId,
+    messages: [],
+    pageContext: null,
+    executionRefs: [],
+    revision: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function ensureWorkflow(workflowId: string): WorkflowDefinition {
+  return useStore.getState().readWorkflow(workflowId) || {
+    ...createBaseWorkflow(),
+    id: workflowId,
+  };
 }
 
 function appendMessage(
@@ -163,8 +168,10 @@ function buildNodeVariableReference(): string {
   ].join("\n");
 }
 
-function buildSystemPrompt(session: GenerationSession): string {
-  const workflow = ensureWorkflow(session);
+function buildSystemPrompt(
+  session: GenerationSession,
+  workflow: WorkflowDefinition,
+): string {
   const pageContext = session.pageContext
     ? JSON.stringify(session.pageContext, null, 2)
     : "null";
@@ -223,7 +230,7 @@ function commitSession(
   } as GenerationSession;
 
   useStore.getState().updateWorkflow(nextWorkflow);
-  useStore.getState().setActiveGenerationSession(updatedSession);
+  useStore.getState().setSessionForWorkflow(nextWorkflow.id, updatedSession);
 
   return updatedSession;
 }
@@ -272,37 +279,40 @@ function buildAIRequestMetadata(session: GenerationSession) {
 }
 
 export class WorkflowGenerationService {
-  private static instance: WorkflowGenerationService | null = null;
-  private activeRuns = new Map<string, AbortController>();
+  private readonly workflowId: string;
 
-  static getInstance(): WorkflowGenerationService {
-    if (!WorkflowGenerationService.instance) {
-      WorkflowGenerationService.instance = new WorkflowGenerationService();
+  private abortController: AbortController | null = null;
+
+  constructor(workflowId: string) {
+    this.workflowId = workflowId;
+
+    const store = useStore.getState();
+    if (!store.getGenerationSessionForWorkflow(workflowId)) {
+      store.setSessionForWorkflow(workflowId, createInitialSession(workflowId));
     }
-
-    return WorkflowGenerationService.instance;
   }
 
-  stopPrompt(request: StopGenerationRequest): { stopped: boolean } {
-    const controller = this.activeRuns.get(request.sessionId);
-    if (!controller) {
+  stop(): { stopped: boolean } {
+    if (!this.abortController) {
       return { stopped: false };
     }
 
-    controller.abort();
+    this.abortController.abort();
     return { stopped: true };
   }
 
-  async submitPrompt(
-    request: GenerationPromptRequest,
-  ): Promise<GenerationPromptResponse> {
-    const { session, prompt, workflow: requestWorkflow } = request;
-    const cleanedSession = stripPendingThinkingMessage(session);
+  async submitPrompt(prompt: string): Promise<GenerationPromptResponse> {
+    const currentSession = useStore
+      .getState()
+      .getGenerationSessionForWorkflow(this.workflowId);
+    const cleanedSession = stripPendingThinkingMessage(
+      currentSession ?? createInitialSession(this.workflowId),
+    );
     const controller = new AbortController();
-    this.activeRuns.set(cleanedSession.id, controller);
+    this.abortController = controller;
     const requestMetadata = buildAIRequestMetadata(cleanedSession);
 
-    let workflow = ensureWorkflow(cleanedSession, requestWorkflow);
+    let workflow = ensureWorkflow(this.workflowId);
     let workingSession = cleanedSession;
 
     const ensureNotAborted = () => {
@@ -337,7 +347,7 @@ export class WorkflowGenerationService {
     try {
       const result = await generateText({
         model,
-        system: buildSystemPrompt(workingSession),
+        system: buildSystemPrompt(workingSession, workflow),
         prompt,
         abortSignal: controller.signal,
         temperature: 0.2,
@@ -611,7 +621,7 @@ export class WorkflowGenerationService {
 
       return { session: workingSession };
     } finally {
-      this.activeRuns.delete(cleanedSession.id);
+      this.abortController = null;
     }
   }
 }
