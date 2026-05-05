@@ -21,6 +21,7 @@ import paste_clipboard from "../actions/paste-clipboard.definition";
 import press_key from "../actions/press-key.definition";
 import remove_element from "../actions/remove-element.definition";
 import session_storage from "../actions/session-storage.definition";
+import select_element from "../actions/select-element.definition";
 import show_modal from "../actions/show-modal.definition";
 import show_notification from "../actions/show-notification.definition";
 import type_text from "../actions/type-text.definition";
@@ -50,6 +51,7 @@ export const actions: NodeDefinitionRecord = {
   "press-key": press_key,
   "remove-element": remove_element,
   "session-storage": session_storage,
+  "select-element": select_element,
   "show-modal": show_modal,
   "show-notification": show_notification,
   "type-text": type_text,

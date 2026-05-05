@@ -1,23 +1,21 @@
 // Element selector content script
 import { CustomMessage } from "@/lib/messages";
+import type {
+  ElementSelectionPayload,
+  ElementSelectionResponse,
+  ElementSelectedDetail,
+} from "@/types/element-selection";
 
 import browser from "@/services/browser";
-
-interface ElementSelectedDetail {
-  selector: string;
-  source?: "inspector" | "ai-chat";
-  element: {
-    tagName: string;
-    className: string;
-    id: string;
-    textContent: string | null;
-  };
-}
 
 let isSelecting = false;
 let highlightedElement: HTMLElement | null = null;
 let overlay: HTMLDivElement | null = null;
-let selectionSource: "inspector" | "ai-chat" = "inspector";
+let selectionSource: "inspector" | "ai-chat" | "workflow-action" = "inspector";
+let isSilent = false;
+let pendingMessageResponder:
+  | ((response: ElementSelectionResponse) => void)
+  | null = null;
 
 // Create overlay element for highlighting
 function createOverlay(): HTMLDivElement {
@@ -110,29 +108,55 @@ function handleClick(event: MouseEvent) {
 
   showSelectedElement(selector, highlightedElement);
 
-  cleanup();
+  cleanupWithoutCancelEvent();
 }
 
 function showSelectedElement(selector: string, element: HTMLElement) {
-  const event = new CustomEvent<{
-    type: string;
-    data: ElementSelectedDetail;
-  }>("modalDispatch", {
-    detail: {
-      type: "elementSelected",
-      data: {
-        selector: selector,
-        source: selectionSource,
-        element: {
-          tagName: element.tagName,
-          className: element.className,
-          id: element.id,
-          textContent: element.textContent,
-        },
-      },
+  const detail: ElementSelectedDetail = {
+    selector,
+    source: selectionSource,
+    silent: isSilent,
+    element: {
+      tagName: element.tagName,
+      className: element.className,
+      id: element.id,
+      textContent: element.textContent,
     },
-  });
-  window.dispatchEvent(event);
+  };
+
+  window.dispatchEvent(
+    new CustomEvent<{
+      type: string;
+      data: ElementSelectedDetail;
+    }>("houdinElementSelected", {
+      detail: {
+        type: "elementSelected",
+        data: detail,
+      },
+    }),
+  );
+
+  if (!isSilent) {
+    const event = new CustomEvent<{
+      type: string;
+      data: ElementSelectedDetail;
+    }>("modalDispatch", {
+      detail: {
+        type: "elementSelected",
+        data: detail,
+      },
+    });
+    window.dispatchEvent(event);
+  }
+
+  if (pendingMessageResponder) {
+    pendingMessageResponder({
+      ok: true,
+      canceled: false,
+      data: detail,
+    });
+    pendingMessageResponder = null;
+  }
 }
 
 // Escape key handler
@@ -144,6 +168,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 // Cleanup function
 function cleanup() {
+  const wasSelecting = isSelecting;
   isSelecting = false;
 
   if (overlay) {
@@ -156,6 +181,40 @@ function cleanup() {
   document.removeEventListener("keydown", handleKeydown);
 
   document.body.style.cursor = "";
+
+  if (wasSelecting) {
+    if (pendingMessageResponder) {
+      pendingMessageResponder({ ok: true, canceled: true });
+      pendingMessageResponder = null;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("houdinElementSelectionCanceled", {
+        detail: { source: selectionSource },
+      }),
+    );
+  }
+}
+
+function cleanupWithoutCancelEvent() {
+  isSelecting = false;
+
+  if (overlay) {
+    overlay.remove();
+    overlay = null;
+  }
+
+  document.removeEventListener("mousemove", handleMouseMove);
+  document.removeEventListener("click", handleClick, true);
+  document.removeEventListener("keydown", handleKeydown);
+
+  document.body.style.cursor = "";
+}
+
+function startSelection(payload?: ElementSelectionPayload) {
+  selectionSource = payload?.source ?? "inspector";
+  isSilent = payload?.silent === true;
+  initSelector();
 }
 
 // Initialize selector
@@ -211,9 +270,25 @@ function initSelector() {
 browser.runtime.onMessage.addListener(
   (message: CustomMessage, _, sendResponse: (a: any) => void) => {
     if (message.type === "START_ELEMENT_SELECTION") {
-      selectionSource = message.data?.source === "ai-chat" ? "ai-chat" : "inspector";
-      initSelector();
-      sendResponse({ status: "selector_started" });
+      const payload = (message.data || {}) as ElementSelectionPayload;
+
+      if (pendingMessageResponder) {
+        pendingMessageResponder({ ok: true, canceled: true });
+        pendingMessageResponder = null;
+      }
+
+      if (isSelecting) {
+        cleanup();
+      }
+
+      pendingMessageResponder = sendResponse;
+      startSelection(payload);
+      return true;
     }
   },
 );
+
+window.addEventListener("houdinStartElementSelection", (event: Event) => {
+  const customEvent = event as CustomEvent<ElementSelectionPayload>;
+  startSelection(customEvent.detail);
+});

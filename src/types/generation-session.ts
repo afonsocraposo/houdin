@@ -77,8 +77,3 @@ export interface GenerationPromptResponse {
 export interface StopGenerationRequest {
   workflowId: string;
 }
-
-export interface SelectedElementMessage {
-  source: "inspector" | "ai-chat";
-  selectedElement: SelectedElementContext;
-}

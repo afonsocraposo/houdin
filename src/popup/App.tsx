@@ -19,7 +19,7 @@ import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import Logo from "@/components/Logo";
 import AiWorkflowChatPanel from "@/components/ai/AiWorkflowChatPanel";
-import { sendMessageToContentScript } from "@/lib/messages";
+import { selectElementInTab } from "@/services/elementSelectionService";
 import browser from "@/services/browser";
 
 type Size = {
@@ -94,11 +94,14 @@ function App() {
         currentWindow: true,
       });
       if (tabs.length > 0 && tabs[0].id) {
-        sendMessageToContentScript(tabs[0].id, "START_ELEMENT_SELECTION", {
+        selectElementInTab(tabs[0].id, {
           source: "inspector",
+          silent: false,
+        }).catch((error) => {
+          console.error("Failed to start element selector:", error);
         });
+        window.close();
       }
-      window.close();
     } catch (error) {
       console.error("Error in handleSelectElement:", error);
     }

@@ -20,10 +20,8 @@ import {
   WorkflowCommandType,
 } from "@/types/background-workflow";
 import browser from "@/services/browser";
-import { MessageType } from "@/types/messages";
 import {
   PageContextSnapshot,
-  SelectedElementMessage,
   SelectedElementContext,
   VisibleElementContext,
 } from "@/types/generation-session";
@@ -43,7 +41,8 @@ if ((window as any).houdinExtensionInitialized) {
 
   interface ElementSelectedDetail {
     selector: string;
-    source?: "inspector" | "ai-chat";
+    source?: "inspector" | "ai-chat" | "workflow-action";
+    silent?: boolean;
     element: {
       tagName: string;
       className: string;
@@ -90,15 +89,6 @@ if ((window as any).houdinExtensionInitialized) {
         _sender,
         sendResponse: (response: ReadinessResponse) => void,
       ) => {
-        if (message.type === "START_ELEMENT_SELECTION") {
-          if (!isFullyInitialized) {
-            initFullContentScript();
-          }
-
-          sendResponse({ ready: true } as any);
-          return true;
-        }
-
         if (message.type === "GET_PAGE_CONTEXT") {
           sendResponse({ ready: true, data: getPageContextSnapshot() });
           return true;
@@ -235,7 +225,7 @@ if ((window as any).houdinExtensionInitialized) {
   };
 
   const setupElementSelectionBridge = () => {
-    window.addEventListener("modalDispatch", (event: Event) => {
+    window.addEventListener("houdinElementSelected", (event: Event) => {
       const customEvent = event as CustomEvent<{
         type: string;
         data: ElementSelectedDetail;
@@ -253,16 +243,6 @@ if ((window as any).houdinExtensionInitialized) {
         id: selected.element.id || undefined,
         className: selected.element.className || undefined,
       };
-
-      sendMessageToBackground<SelectedElementMessage>(
-        MessageType.AI_ELEMENT_SELECTED,
-        {
-          source: selected.source === "ai-chat" ? "ai-chat" : "inspector",
-          selectedElement: lastSelectedElement,
-        },
-      ).catch((error) => {
-        console.error("Failed to notify background about selected element:", error);
-      });
     });
   };
 

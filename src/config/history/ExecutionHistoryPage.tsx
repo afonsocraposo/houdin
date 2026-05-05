@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Container,
   Title,
@@ -43,6 +43,14 @@ function ExecutionHistoryPage() {
   >([]);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchFilter, setSearchFilter] = useState<string>(executionId || "");
+  const workflowNames = useMemo(
+    () =>
+      workflows.reduce(
+        (acc, w) => ({ ...acc, [w.id]: w.name }),
+        {} as Record<string, string>,
+      ),
+    [workflows],
+  );
 
   useEffect(() => {
     let filtered = [...executions].reverse();
@@ -94,8 +102,7 @@ function ExecutionHistoryPage() {
   });
 
   const getWorkflowName = (workflowId: string) => {
-    const workflow = workflows.find((w) => w.id === workflowId);
-    return workflow?.name || `Workflow ${workflowId}`;
+    return workflowNames[workflowId] || workflowId;
   };
 
   const stats = getStats();

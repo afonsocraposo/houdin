@@ -22,7 +22,11 @@ export default function ModalDispatcher() {
     const handleModalDispatch = (event: CustomEventInit<ModalEventDetail>) => {
       const customEvent = event as CustomEvent;
       const modal = customEvent.detail;
-      if (modal.type === "elementSelected" && modal.data?.source === "ai-chat") {
+      if (
+        modal.type === "elementSelected" &&
+        (modal.data?.source === "ai-chat" ||
+          modal.data?.source === "workflow-action")
+      ) {
         return;
       }
 

@@ -3,6 +3,7 @@ import {
   sendMessageToBackground,
   sendMessageToContentScript,
 } from "@/lib/messages";
+import { selectElementInTab } from "@/services/elementSelectionService";
 import { useStore } from "@/store";
 import {
   GenerationMessage,
@@ -44,8 +45,6 @@ import ThinkingWave from "./ThinkingWave";
 import { MessageType } from "@/types/messages";
 import MarkdownText from "../MarkdownText";
 import WorkingWave from "./WorkingWave";
-
-const PENDING_AI_SELECTED_ELEMENT_KEY = "pending-ai-selected-element";
 
 interface AiWorkflowChatPanelProps {
   workflowId?: string | null;
@@ -242,20 +241,60 @@ export default function AiWorkflowChatPanel({
 
       ensureCurrentSession();
       setIsSelectingElement(true);
-      await sendMessageToContentScript(activeTabId, "START_ELEMENT_SELECTION", {
+      const response = await selectElementInTab(activeTabId, {
         source: "ai-chat",
+        silent: true,
       });
+
+      if (!response?.ok) {
+        throw new Error(response?.error || "Failed to start element selection");
+      }
+
+      if (response.canceled || !response.data) {
+        appendMessage({
+          id: generateId("msg", 10),
+          role: "assistant",
+          kind: "tool",
+          content: "Element selection canceled.",
+          createdAt: Date.now(),
+        });
+        setIsSelectingElement(false);
+        return;
+      }
+
+      const selectedElement = {
+        selector: response.data.selector,
+        tagName: response.data.element.tagName.toLowerCase(),
+        text: response.data.element.textContent?.trim().slice(0, 50) || undefined,
+        id: response.data.element.id || undefined,
+        className: response.data.element.className || undefined,
+      };
+
+      const snapshot = await loadPageContext();
+      const nextPageContext = snapshot ?? {
+        url: "",
+        title: "",
+        selectedElement,
+        visibleElements: [],
+      };
+
+      updateSessionForWorkflow(currentWorkflowId, (current) => ({
+        ...current,
+        pageContext: {
+          ...nextPageContext,
+          selectedElement,
+        },
+        updatedAt: Date.now(),
+      }));
+
       appendMessage({
         id: generateId("msg", 10),
         role: "assistant",
-        kind: "tool",
-        content:
-          "Click an element on the page, then return here to use it as the selected target.",
+        kind: "result",
+        content: `Selected element: ${selectedElement.selector}`,
         createdAt: Date.now(),
       });
-      if (popup) {
-        window.close();
-      }
+      setIsSelectingElement(false);
     } catch (error) {
       setIsSelectingElement(false);
       appendMessage({
@@ -421,54 +460,6 @@ export default function AiWorkflowChatPanel({
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }, 10);
   }, [displayedMessages, prompt]);
-
-  useEffect(() => {
-    if (!popup) {
-      return;
-    }
-
-    const consumePendingSelection = async () => {
-      const result = await browser.storage.local.get([
-        PENDING_AI_SELECTED_ELEMENT_KEY,
-      ]);
-      const pendingSelection = result[PENDING_AI_SELECTED_ELEMENT_KEY];
-      if (!pendingSelection) {
-        return;
-      }
-
-      await browser.storage.local.remove([PENDING_AI_SELECTED_ELEMENT_KEY]);
-
-      const snapshot = await loadPageContext();
-      const nextPageContext = snapshot ?? {
-        url: "",
-        title: "",
-        selectedElement: pendingSelection,
-        visibleElements: [],
-      };
-
-      ensureCurrentSession();
-      updateSessionForWorkflow(currentWorkflowId, (current) => ({
-        ...current,
-        pageContext: {
-          ...nextPageContext,
-          selectedElement: nextPageContext.selectedElement ?? pendingSelection,
-        },
-        updatedAt: Date.now(),
-      }));
-      appendMessage({
-        id: generateId("msg", 10),
-        role: "assistant",
-        kind: "result",
-        content: `Selected element: ${(nextPageContext.selectedElement ?? pendingSelection).selector}`,
-        createdAt: Date.now(),
-      });
-      setIsSelectingElement(false);
-    };
-
-    consumePendingSelection().catch((error) => {
-      console.error("Failed to consume pending selected element:", error);
-    });
-  }, [popup]);
 
   useEffect(() => {
     if (!isSelectingElement) {
