@@ -18,6 +18,7 @@ import {
   IconKey,
   IconClock,
   IconTrash,
+  IconSettings,
 } from "@tabler/icons-react";
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -32,12 +33,14 @@ import { useSessionStore } from "@/store";
 import TrashWorkflowsTab from "./trash/TrashWorkflowsTab";
 import { useDisclosure } from "@mantine/hooks";
 import UpgradeModal from "@/components/modals/upgradeModal";
+import SettingsTab from "./settings/SettingsTab";
 
 enum TabOption {
   Workflows = "workflows",
   Trash = "trash",
   Credentials = "credentials",
   History = "history",
+  Settings = "settings",
 }
 
 function ConfigInterface() {
@@ -164,6 +167,12 @@ function ConfigInterface() {
                 >
                   Trash
                 </Tabs.Tab>
+                <Tabs.Tab
+                  value={TabOption.Settings}
+                  leftSection={<IconSettings size={16} />}
+                >
+                  Settings
+                </Tabs.Tab>
               </Tabs.List>
               <LoginButton />
             </Group>
@@ -182,6 +191,9 @@ function ConfigInterface() {
 
               <Tabs.Panel value={TabOption.History}>
                 <ExecutionHistoryPage />
+              </Tabs.Panel>
+              <Tabs.Panel value={TabOption.Settings}>
+                <SettingsTab />
               </Tabs.Panel>
             </Box>
           </Tabs>
