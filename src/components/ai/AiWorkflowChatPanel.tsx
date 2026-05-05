@@ -7,7 +7,6 @@ import { useStore } from "@/store";
 import {
   GenerationMessage,
   GenerationPromptRequest,
-  GenerationPromptResponse,
   GenerationSession,
 } from "@/types/generation-session";
 import { generateId, newWorkflowId } from "@/utils/helpers";
@@ -109,9 +108,7 @@ export default function AiWorkflowChatPanel({
   const activeWorkflow = useMemo(
     () =>
       currentWorkflowId
-        ? workflows.find(
-            (workflow) => workflow.id === currentWorkflowId,
-          )
+        ? workflows.find((workflow) => workflow.id === currentWorkflowId)
         : null,
     [workflows, currentWorkflowId],
   );
@@ -123,8 +120,8 @@ export default function AiWorkflowChatPanel({
   const activeWorkflowValue = isScopedToWorkflow
     ? workflowId
     : hasNamedActiveWorkflow
-        ? currentWorkflowId
-        : "__new__";
+      ? currentWorkflowId
+      : "__new__";
 
   const workflowOptions = useMemo(() => {
     if (isScopedToWorkflow) {
@@ -208,11 +205,11 @@ export default function AiWorkflowChatPanel({
       const snapshot = await loadPageContext();
       if (!snapshot) return null;
 
-       updateSessionForWorkflow(currentWorkflowId, (current) => ({
-         ...current,
-         pageContext: snapshot,
-         updatedAt: Date.now(),
-       }));
+      updateSessionForWorkflow(currentWorkflowId, (current) => ({
+        ...current,
+        pageContext: snapshot,
+        updatedAt: Date.now(),
+      }));
 
       appendMessage({
         id: generateId("msg", 10),
@@ -276,7 +273,6 @@ export default function AiWorkflowChatPanel({
 
     return {
       id: generateId("session", 10),
-      status: "idle",
       workflowId,
       messages: [],
       pageContext: null,
@@ -291,7 +287,8 @@ export default function AiWorkflowChatPanel({
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt || isSending) return;
 
-    const currentSession = session ?? buildSessionForWorkflow(currentWorkflowId);
+    const currentSession =
+      session ?? buildSessionForWorkflow(currentWorkflowId);
     if (!session) {
       setSessionForWorkflow(currentWorkflowId, currentSession);
     }
@@ -309,41 +306,23 @@ export default function AiWorkflowChatPanel({
         createdAt: Date.now(),
       };
 
-      const thinkingMessage: GenerationMessage = {
-        id: generateId("msg", 10),
-        role: "assistant",
-        kind: "thinking",
-        content: "Thinking...",
-        createdAt: Date.now(),
-      };
-
       const sessionWithPendingMessages = {
         ...currentSession,
-        status: "drafting" as const,
-        messages: [...currentSession.messages, userMessage, thinkingMessage],
+        messages: [...currentSession.messages, userMessage],
         pageContext: pageContext ?? currentSession.pageContext,
         updatedAt: Date.now(),
       };
 
       setSessionForWorkflow(currentWorkflowId, sessionWithPendingMessages);
+      // wait 10ms to ensure store is updated
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const request: GenerationPromptRequest = {
         workflowId: currentWorkflowId,
         prompt: trimmedPrompt,
       };
 
-      const response = (await sendMessageToBackground(
-        "AI_GENERATION_SUBMIT",
-        request,
-      )) as GenerationPromptResponse | null;
-
-      if (response?.session) {
-        const updatedSession = {
-          ...response.session,
-          workflowId: response.session.workflowId,
-        };
-        setSessionForWorkflow(currentWorkflowId, updatedSession);
-      }
+      await sendMessageToBackground(MessageType.AI_GENERATION_SUBMIT, request);
 
       setPrompt("");
     } finally {
@@ -383,11 +362,7 @@ export default function AiWorkflowChatPanel({
       const initialSession = buildSessionForWorkflow(currentWorkflowId);
       setSessionForWorkflow(currentWorkflowId, initialSession);
     }
-  }, [
-    currentWorkflowId,
-    session,
-    setSessionForWorkflow,
-  ]);
+  }, [currentWorkflowId, session, setSessionForWorkflow]);
 
   const openDesigner = () => {
     const workflowId = session?.workflowId;
@@ -589,7 +564,7 @@ export default function AiWorkflowChatPanel({
         </Stack>
       </Card>
       <Box flex={1} ref={ref} style={{ minHeight: 0 }}>
-        <ScrollArea h={height} type="hover">
+        <ScrollArea h={height} type="scroll">
           <Stack gap="xs">
             {messages.length !== 0 &&
               displayedMessages.map((message) => {
@@ -631,8 +606,11 @@ export default function AiWorkflowChatPanel({
                 );
               })}
             {isSending &&
-              displayedMessages[displayedMessages.length - 1]?.kind !==
-                "thinking" && <WorkingWave />}
+              displayedMessages[displayedMessages.length - 1]?.role ===
+                "user" && <ThinkingWave />}
+            {isSending &&
+              displayedMessages[displayedMessages.length - 1]?.role !==
+                "user" && <WorkingWave />}
             <div ref={bottomRef} />
           </Stack>
         </ScrollArea>

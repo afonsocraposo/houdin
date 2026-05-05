@@ -6,7 +6,7 @@ interface OpenAIConfig {
   organizationId?: string;
 }
 
-interface OpenAIAuth {
+export interface OpenAIAuth {
   apiKey: string;
   organizationId?: string;
 }

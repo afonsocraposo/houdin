@@ -86,7 +86,7 @@ workflowEngine.initialize().then(() => {
 
   browser.runtime.onMessage.addListener(
     (message: CustomMessage, sender: any) => {
-    switch (message.type) {
+      switch (message.type) {
         case MessageType.AI_GENERATION_SUBMIT:
           return (async () => {
             const request = message.data as GenerationPromptRequest;
@@ -94,9 +94,9 @@ workflowEngine.initialize().then(() => {
             activeRuns.set(request.workflowId, service);
 
             try {
-              return await service.submitPrompt(
+              return (await service.submitPrompt(
                 request.prompt,
-              ) as GenerationPromptResponse;
+              )) as GenerationPromptResponse;
             } finally {
               if (activeRuns.get(request.workflowId) === service) {
                 activeRuns.delete(request.workflowId);
@@ -104,16 +104,18 @@ workflowEngine.initialize().then(() => {
             }
           })();
         case MessageType.AI_GENERATION_STOP:
-          return Promise.resolve((() => {
-            const request = message.data as StopGenerationRequest;
-            const service = activeRuns.get(request.workflowId);
-            if (!service) {
-              return { stopped: false };
-            }
+          return Promise.resolve(
+            (() => {
+              const request = message.data as StopGenerationRequest;
+              const service = activeRuns.get(request.workflowId);
+              if (!service) {
+                return { stopped: false };
+              }
 
-            activeRuns.delete(request.workflowId);
-            return service.stop();
-          })());
+              activeRuns.delete(request.workflowId);
+              return service.stop();
+            })(),
+          );
         case MessageType.AI_ELEMENT_SELECTED:
           return Promise.resolve(
             (async () => {
@@ -130,7 +132,10 @@ workflowEngine.initialize().then(() => {
                 try {
                   await browser.action.openPopup();
                 } catch (error) {
-                  console.error("Failed to reopen popup after element selection:", error);
+                  console.error(
+                    "Failed to reopen popup after element selection:",
+                    error,
+                  );
                 }
               }
 

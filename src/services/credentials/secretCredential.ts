@@ -5,7 +5,7 @@ interface SecretConfig {
   secretValue: string;
 }
 
-interface SecretAuth {
+export interface SecretAuth {
   value: string;
 }
 

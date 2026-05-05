@@ -1,13 +1,5 @@
 import { WorkflowExecutionStatus } from "@/types/workflow";
 
-export type GenerationSessionStatus =
-  | "idle"
-  | "drafting"
-  | "testing"
-  | "paused"
-  | "completed"
-  | "failed";
-
 export type GenerationMessageRole = "system" | "user" | "assistant" | "tool";
 
 export type GenerationMessageKind =
@@ -64,7 +56,6 @@ export interface GenerationExecutionRef {
 
 export interface GenerationSession {
   id: string;
-  status: GenerationSessionStatus;
   workflowId: string | null;
   messages: GenerationMessage[];
   pageContext: PageContextSnapshot | null;
