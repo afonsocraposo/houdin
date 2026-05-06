@@ -1,12 +1,4 @@
-import { WorkflowDefinition, WorkflowExecutionStatus } from "@/types/workflow";
-
-export type GenerationSessionStatus =
-  | "idle"
-  | "drafting"
-  | "testing"
-  | "paused"
-  | "completed"
-  | "failed";
+import { WorkflowExecutionStatus } from "@/types/workflow";
 
 export type GenerationMessageRole = "system" | "user" | "assistant" | "tool";
 
@@ -64,7 +56,6 @@ export interface GenerationExecutionRef {
 
 export interface GenerationSession {
   id: string;
-  status: GenerationSessionStatus;
   workflowId: string | null;
   messages: GenerationMessage[];
   pageContext: PageContextSnapshot | null;
@@ -75,9 +66,8 @@ export interface GenerationSession {
 }
 
 export interface GenerationPromptRequest {
+  workflowId: string;
   prompt: string;
-  session: GenerationSession;
-  workflow?: WorkflowDefinition;
 }
 
 export interface GenerationPromptResponse {
@@ -85,10 +75,5 @@ export interface GenerationPromptResponse {
 }
 
 export interface StopGenerationRequest {
-  sessionId: string;
-}
-
-export interface SelectedElementMessage {
-  source: "inspector" | "ai-chat";
-  selectedElement: SelectedElementContext;
+  workflowId: string;
 }

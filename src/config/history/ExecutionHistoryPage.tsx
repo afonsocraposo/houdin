@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Container,
   Title,
@@ -22,18 +22,22 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import { WorkflowExecution } from "@/types/workflow";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import ExecutionHistoryItem from "./ExecutionHistoryItem";
 import { getStatusColor, getStatusIcon } from "./utils";
 import { useStore } from "@/store";
+import type { ConfigSearch } from "../router";
+
+type SearchUpdater = (prev: ConfigSearch) => ConfigSearch;
 
 function ExecutionHistoryPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const executionId = searchParams.get("execution");
-  const workflowId = searchParams.get("workflow");
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as ConfigSearch;
+  const workflowId = search.workflow;
+  const query = search.query ?? "";
   const [expanded, setExpanded] = useState<string[]>(
-    executionId ? [executionId] : [],
+    query ? [query] : [],
   );
   const workflows = useStore((state) => state.workflows);
   const executions = useStore((state) => state.executions);
@@ -42,7 +46,24 @@ function ExecutionHistoryPage() {
     WorkflowExecution[]
   >([]);
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [searchFilter, setSearchFilter] = useState<string>(executionId || "");
+  const [searchFilter, setSearchFilter] = useState<string>(query);
+  const workflowNames = useMemo(
+    () =>
+      workflows.reduce(
+        (acc, w) => ({ ...acc, [w.id]: w.name }),
+        {} as Record<string, string>,
+      ),
+    [workflows],
+  );
+
+  useEffect(() => {
+    setSearchFilter(query);
+  }, [query]);
+
+  useEffect(() => {
+    const matchingExecution = executions.find((execution) => execution.id === query);
+    setExpanded(matchingExecution ? [matchingExecution.id] : []);
+  }, [executions, query]);
 
   useEffect(() => {
     let filtered = [...executions].reverse();
@@ -67,6 +88,19 @@ function ExecutionHistoryPage() {
 
     setFilteredExecutions(filtered);
   }, [executions, statusFilter, searchFilter, workflowId]);
+
+  const updateHistorySearch = (value: string) => {
+    setSearchFilter(value);
+    navigate({
+      to: "/",
+      search: ((prev: ConfigSearch) => ({
+        ...prev,
+        tab: "history",
+        query: value || undefined,
+      })) as SearchUpdater,
+      replace: true,
+    });
+  };
 
   const toggleExpanded = (executionId: string) => {
     setExpanded((prev) =>
@@ -94,8 +128,7 @@ function ExecutionHistoryPage() {
   });
 
   const getWorkflowName = (workflowId: string) => {
-    const workflow = workflows.find((w) => w.id === workflowId);
-    return workflow?.name || `Workflow ${workflowId}`;
+    return workflowNames[workflowId] || workflowId;
   };
 
   const stats = getStats();
@@ -143,13 +176,15 @@ function ExecutionHistoryPage() {
               placeholder="Search executions..."
               leftSection={<IconSearch size={16} />}
               value={searchFilter}
-              onChange={(event) => setSearchFilter(event.currentTarget.value)}
+              onChange={(event) =>
+                updateHistorySearch(event.currentTarget.value)
+              }
               style={{ flex: 1 }}
               rightSection={
                 searchFilter && (
                   <ActionIcon
                     size="sm"
-                    onClick={() => setSearchFilter("")}
+                    onClick={() => updateHistorySearch("")}
                     title="Clear search"
                     variant="subtle"
                   >
@@ -177,10 +212,14 @@ function ExecutionHistoryPage() {
               ]}
               value={workflowId}
               onChange={(value) => {
-                const newSearchParams = new URLSearchParams(searchParams);
-                if (value) newSearchParams.set("workflow", value);
-                else newSearchParams.delete("workflow");
-                setSearchParams(newSearchParams);
+                navigate({
+                  to: "/",
+                  search: ((prev: ConfigSearch) => ({
+                    ...prev,
+                    tab: "history",
+                    workflow: value || undefined,
+                  })) as SearchUpdater,
+                });
               }}
               style={{ minWidth: 200 }}
             />

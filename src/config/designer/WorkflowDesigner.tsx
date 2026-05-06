@@ -33,7 +33,7 @@ import {
   IconRobot,
   IconLayoutSidebarRightCollapse,
 } from "@tabler/icons-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
 import { EnvironmentVariables } from "./EnvironmentVariables";
@@ -100,6 +100,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
       null,
     [nodes, selectedNodeId],
   );
+  const selectedNodeRef = useRef<WorkflowNode | null>(selectedNode);
   // Track structural changes separately from config changes
   const prevStructuralHashRef = useRef<string>("");
   const nodesWithoutConfigRef = useRef<WorkflowNode[]>([]);
@@ -180,8 +181,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         enabled: workflow.enabled ?? true,
         variables: workflow.variables || {},
       });
+      const nextSelectedNodeId = selectedNodeIdRef.current;
+      const selectedNodeStillExists =
+        nextSelectedNodeId !== null &&
+        (workflow.nodes || []).some((node) => node.id === nextSelectedNodeId);
       set(workflow.nodes || [], workflow.connections || []);
-      setSelectedNodeId(null);
+      setSelectedNodeId(selectedNodeStillExists ? nextSelectedNodeId : null);
       savedSnapshotRef.current = incomingWorkflowSnapshot;
       syncedWorkflowSnapshotRef.current = incomingWorkflowSnapshot;
     } else {
@@ -236,6 +241,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
   useEffect(() => {
     selectedNodeIdRef.current = selectedNodeId;
   }, [selectedNodeId]);
+
+  useEffect(() => {
+    selectedNodeRef.current = selectedNode;
+  }, [selectedNode]);
 
   useEffect(() => {
     schemaErrorsRef.current = schemaErrors;
@@ -339,6 +348,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     [set],
   );
 
+  const handleCopySelectedNode = useCallback(() => {
+    const nodeToCopy = selectedNodeRef.current;
+    if (!nodeToCopy) return;
+
+    navigator.clipboard.writeText(JSON.stringify(nodeToCopy));
+  }, []);
+
   const handleSave = useCallback(() => {
     setSaveState("saving");
     readyToSave.current = false;
@@ -394,7 +410,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const handleViewHistory = () => {
     if (workflow?.id) {
-      navigate(`/?tab=history&workflow=${workflow.id}`);
+      navigate({
+        to: "/",
+        search: { tab: "history", workflow: workflow.id } as never,
+      });
     }
   };
 
@@ -583,7 +602,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
               <ReactFlowCanvas
                 nodes={nodesWithoutConfig}
                 connections={connections}
-                selectedNode={selectedNode}
+                selectedNodeId={selectedNodeId}
+                onCopySelectedNode={handleCopySelectedNode}
                 onNodeSelect={setSelectedNodeId}
                 onNodeCreate={handleNodeCreation}
                 onNodeMove={handleNodeMovement}
@@ -662,7 +682,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 </Group>
                 <AiWorkflowChatPanel
                   workflowId={currentWorkflowId}
-                  workflow={getCurrentWorkflowDefinition()}
                 />
               </Paper>
             )}

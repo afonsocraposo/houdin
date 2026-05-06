@@ -17,7 +17,7 @@ import {
   IconChevronDown,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { ImportModal } from "./ImportModal";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
@@ -25,6 +25,7 @@ import { newWorkflowId } from "@/utils/helpers";
 import { useStore } from "@/store";
 import SyncButton from "@/components/SyncButton";
 import { NotificationService } from "@/services/notification";
+import { PlausibleEvent, trackCustomEvent } from "@/services/plausible";
 
 export default function WorkflowsTab({
   setSaved,
@@ -45,7 +46,7 @@ export default function WorkflowsTab({
   const navigate = useNavigate();
 
   const handleCreateWorkflow = () => {
-    navigate("/designer", { state: { blank: true } });
+    navigate({ to: "/designer", search: { init: "blank" } as never });
   };
 
   const handleCreateFromExample = (example: WorkflowDefinition) => {
@@ -57,16 +58,25 @@ export default function WorkflowsTab({
       lastExecuted: undefined,
     };
 
-    navigate("/designer", { state: { exampleWorkflow: newWorkflow } });
+    sessionStorage.setItem(
+      "workflow-draft-example",
+      JSON.stringify(newWorkflow),
+    );
+    navigate({ to: "/designer", search: { init: "example" } as never });
   };
 
   const handleEditWorkflow = (workflow: WorkflowDefinition) => {
-    navigate(`/designer/${workflow.id}`); // Navigate to designer with workflow ID
+    navigate({
+      to: "/designer/$workflowId",
+      params: { workflowId: workflow.id },
+      search: {},
+    });
   };
 
   const handleDeleteWorkflow = async (id: string) => {
     try {
       deleteWorkflow(id);
+      void trackCustomEvent(PlausibleEvent.WorkflowDeleted, "/config");
     } catch {
       NotificationService.showErrorNotification({
         message: "Couldn't delete workflow. Please try again.",
@@ -104,6 +114,9 @@ export default function WorkflowsTab({
         lastExecuted: undefined,
       } as WorkflowDefinition;
       createWorkflow(newWorkflow);
+      void trackCustomEvent(PlausibleEvent.WorkflowCreated, "/config", {
+        source: "duplicate",
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
@@ -123,6 +136,9 @@ export default function WorkflowsTab({
         lastExecuted: undefined,
       } as WorkflowDefinition;
       createWorkflow(newWorkflow);
+      void trackCustomEvent(PlausibleEvent.WorkflowCreated, "/config", {
+        source: "import",
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {

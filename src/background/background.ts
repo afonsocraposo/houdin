@@ -9,7 +9,6 @@ import { MessageType } from "@/types/messages";
 import {
   type GenerationPromptRequest,
   type GenerationPromptResponse,
-  type SelectedElementMessage,
   type StopGenerationRequest,
 } from "@/types/generation-session";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
@@ -17,8 +16,6 @@ import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 import browser from "@/services/browser";
 import { ApiClient } from "@/api/client";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
-
-const PENDING_AI_SELECTED_ELEMENT_KEY = "pending-ai-selected-element";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -71,6 +68,8 @@ workflowSyncer.init();
 
 ApiClient.startBackgroundProxy();
 
+const activeRuns = new Map<string, WorkflowGenerationService>();
+
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
   browser.webNavigation.onCompleted.addListener(
@@ -84,41 +83,37 @@ workflowEngine.initialize().then(() => {
 
   browser.runtime.onMessage.addListener(
     (message: CustomMessage, sender: any) => {
-    switch (message.type) {
+      switch (message.type) {
         case MessageType.AI_GENERATION_SUBMIT:
-          return WorkflowGenerationService.getInstance().submitPrompt(
-            message.data as GenerationPromptRequest,
-          ) as Promise<GenerationPromptResponse>;
+          return (async () => {
+            const request = message.data as GenerationPromptRequest;
+            const service = new WorkflowGenerationService(request.workflowId);
+            activeRuns.set(request.workflowId, service);
+
+            try {
+              return (await service.submitPrompt(
+                request.prompt,
+              )) as GenerationPromptResponse;
+            } finally {
+              if (activeRuns.get(request.workflowId) === service) {
+                activeRuns.delete(request.workflowId);
+              }
+            }
+          })();
         case MessageType.AI_GENERATION_STOP:
           return Promise.resolve(
-            WorkflowGenerationService.getInstance().stopPrompt(
-              message.data as StopGenerationRequest,
-            ),
-          );
-        case MessageType.AI_ELEMENT_SELECTED:
-          return Promise.resolve(
-            (async () => {
-              const data = message.data as SelectedElementMessage;
-              if (data.source !== "ai-chat") {
-                return { stored: false };
+            (() => {
+              const request = message.data as StopGenerationRequest;
+              const service = activeRuns.get(request.workflowId);
+              if (!service) {
+                return { stopped: false };
               }
 
-              await browser.storage.local.set({
-                [PENDING_AI_SELECTED_ELEMENT_KEY]: data.selectedElement,
-              });
-
-              if (browser.action?.openPopup) {
-                try {
-                  await browser.action.openPopup();
-                } catch (error) {
-                  console.error("Failed to reopen popup after element selection:", error);
-                }
-              }
-
-              return { stored: true };
+              activeRuns.delete(request.workflowId);
+              return service.stop();
             })(),
           );
-        case WorkflowCommandType.TRIGGER_FIRED:
+        case WorkflowCommandType.TRIGGER_FIRED: {
           const tabId = sender.tab.id;
 
           const response = message.data as TriggerFiredCommand;
@@ -138,7 +133,8 @@ workflowEngine.initialize().then(() => {
             duration,
           });
           return;
-        case "REGISTER_HTTP_TRIGGER":
+        }
+        case "REGISTER_HTTP_TRIGGER": {
           console.debug("Background: Registering HTTP trigger", message);
 
           if (!httpListener) {
@@ -171,6 +167,7 @@ workflowEngine.initialize().then(() => {
             triggerCallback,
           );
           return;
+        }
 
         case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
           if (httpListener) {

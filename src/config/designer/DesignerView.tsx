@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
 import { WorkflowDefinition } from "@/types/workflow";
 import { useStore } from "@/store";
 import { newWorkflowId } from "@/utils/helpers";
-
-interface DesignerViewProps {
-  workflowId?: string;
-}
+import type { ConfigSearch } from "../router";
+import { PlausibleEvent, trackCustomEvent } from "@/services/plausible";
 
 function createBlankWorkflow(): WorkflowDefinition {
   return {
@@ -23,14 +21,13 @@ function createBlankWorkflow(): WorkflowDefinition {
   };
 }
 
-function DesignerView({ workflowId }: DesignerViewProps) {
+function DesignerView() {
   const [editingWorkflow, setEditingWorkflow] =
     useState<WorkflowDefinition | null>(null);
   const [newWorkflow, setNewWorkflow] = useState<boolean>(true);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const location = useLocation();
-
+  const { workflowId } = useParams({ strict: false });
+  const search = useSearch({ strict: false }) as ConfigSearch & { init?: string };
   const workflows = useStore((state) => state.workflows);
   const createWorkflow = useStore((state) => state.createWorkflow);
   const updateWorkflow = useStore((state) => state.updateWorkflow);
@@ -45,29 +42,26 @@ function DesignerView({ workflowId }: DesignerViewProps) {
 
   // Set editing workflow based on URL parameter or example from navigation state
   useEffect(() => {
-    // Check if we have an example workflow from navigation state
-    const exampleWorkflow = location.state?.exampleWorkflow as
-      | WorkflowDefinition
-      | undefined;
-    const blankWorkflow = location.state?.blank as boolean | undefined;
-    window.history.replaceState({}, "");
-
     setNewWorkflow(true);
-    if (exampleWorkflow) {
-      setEditingWorkflow(exampleWorkflow);
+    const init = search.init;
+    if (init === "example") {
+      const exampleWorkflow = sessionStorage.getItem("workflow-draft-example");
+      if (exampleWorkflow) {
+        setEditingWorkflow(JSON.parse(exampleWorkflow) as WorkflowDefinition);
+      }
       // Clear the state to prevent re-use on subsequent navigations
     } else if (workflowId) {
       loadWorkflow(workflowId);
       setNewWorkflow(false);
     } else if (!workflowId) {
-      if (blankWorkflow) {
+      if (init === "blank") {
         setEditingWorkflow(createBlankWorkflow());
         clearAutoSave();
       } else {
         restoreAutoSaveWorkflow();
       }
     }
-  }, [workflowId, location.state]);
+  }, [workflowId, search.init]);
 
   useEffect(() => {
     if (workflowId) {
@@ -105,9 +99,13 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     try {
       if (newWorkflow) {
         createWorkflow(workflow);
+        void trackCustomEvent(PlausibleEvent.WorkflowCreated, "/designer", {
+          source: search.init === "example" ? "example" : "designer",
+        });
         setNewWorkflow(false);
       } else {
         updateWorkflow(workflow);
+        void trackCustomEvent(PlausibleEvent.WorkflowEdited, "/designer");
       }
 
       setEditingWorkflow(workflow);
@@ -118,8 +116,8 @@ function DesignerView({ workflowId }: DesignerViewProps) {
   };
 
   const handleCancel = () => {
-    const currentTab = searchParams.get("tab") || "workflows";
-    navigate(`/?tab=${currentTab}`);
+    const currentTab = search.tab || "workflows";
+    navigate({ to: "/", search: { tab: currentTab } as never });
   };
 
   // If a workflowId is specified, only render if we found the workflow to edit

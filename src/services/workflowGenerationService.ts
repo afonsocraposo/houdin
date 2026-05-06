@@ -4,13 +4,12 @@ import { z } from "zod";
 
 import { API_BASE_URL } from "@/api/client";
 import { useStore } from "@/store";
+import { getLayoutedElements } from "@/config/designer/ReactFlowCanvasCallbacks";
 import { getNodeDefinition, nodeCatalog } from "./nodeCatalog";
 import {
   GenerationMessage,
-  GenerationPromptRequest,
   GenerationPromptResponse,
   GenerationSession,
-  StopGenerationRequest,
 } from "@/types/generation-session";
 import type { WorkflowDefinition } from "@/types/workflow";
 import { generateId, newWorkflowId } from "@/utils/helpers";
@@ -32,13 +31,14 @@ import {
   setWorkflowName,
   updateNodeConfig,
 } from "./workflowTools";
+import { CredentialRegistry } from "./credentialRegistry";
+import { OpenAIAuth } from "./credentials/openaiCredential";
+import { SecretAuth } from "./credentials/secretCredential";
 
 const houdinAI = createOpenAI({
   baseURL: `${API_BASE_URL}/ai`,
   apiKey: "houdin-client",
 });
-
-const model = houdinAI.chat("");
 
 function createBaseWorkflow(): WorkflowDefinition {
   return {
@@ -54,19 +54,27 @@ function createBaseWorkflow(): WorkflowDefinition {
   };
 }
 
-function ensureWorkflow(
-  session: GenerationSession,
-  requestWorkflow?: WorkflowDefinition,
-): WorkflowDefinition {
-  if (requestWorkflow) {
-    return requestWorkflow;
-  }
+function createInitialSession(workflowId: string): GenerationSession {
+  const now = Date.now();
 
-  if (!session.workflowId) {
-    return createBaseWorkflow();
-  }
+  return {
+    id: generateId("session", 10),
+    workflowId,
+    messages: [],
+    pageContext: null,
+    executionRefs: [],
+    revision: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function ensureWorkflow(workflowId: string): WorkflowDefinition {
   return (
-    useStore.getState().readWorkflow(session.workflowId) || createBaseWorkflow()
+    useStore.getState().readWorkflow(workflowId) || {
+      ...createBaseWorkflow(),
+      id: workflowId,
+    }
   );
 }
 
@@ -92,25 +100,8 @@ function appendMessage(
   };
 }
 
-function stripPendingThinkingMessage(
-  session: GenerationSession,
-): GenerationSession {
-  const messages = [...session.messages];
-  const lastMessage = messages[messages.length - 1];
-
-  if (lastMessage?.role === "assistant" && lastMessage.kind === "thinking") {
-    messages.pop();
-  }
-
-  return {
-    ...session,
-    messages,
-  };
-}
-
 function historyToPrompt(messages: GenerationMessage[]): string {
   return messages
-    .filter((message) => message.kind !== "thinking")
     .slice(-12)
     .map((message) => {
       const label = `${message.role}${message.kind ? `/${message.kind}` : ""}`;
@@ -163,8 +154,10 @@ function buildNodeVariableReference(): string {
   ].join("\n");
 }
 
-function buildSystemPrompt(session: GenerationSession): string {
-  const workflow = ensureWorkflow(session);
+function buildSystemPrompt(
+  session: GenerationSession,
+  workflow: WorkflowDefinition,
+): string {
   const pageContext = session.pageContext
     ? JSON.stringify(session.pageContext, null, 2)
     : "null";
@@ -193,6 +186,7 @@ function buildSystemPrompt(session: GenerationSession): string {
     "Diagnosing issues: When the user asks why a workflow didn't work, asks to check the execution, or reports unexpected behavior: call getLatestExecution before touching anything else. Do NOT skip to getNodeSchema or updateNodeConfig until after you've checked the execution.",
     "",
     "Building workflows: Use tools in this order when needed: create node, update node config, then connect nodes.",
+    "After creating or rewiring nodes, call autoArrangeNodes once the intended structure is in place so the workflow ends in a clean layout.",
     "Use setWorkflowName, setWorkflowDescription, setUrlPattern, and setWorkflowEnabled for workflow-level changes.",
     "When the workflow is ready, set a clear workflow name and enable it.",
     "When creating nodes, use the exact node-type tool names and fields.",
@@ -223,7 +217,7 @@ function commitSession(
   } as GenerationSession;
 
   useStore.getState().updateWorkflow(nextWorkflow);
-  useStore.getState().setActiveGenerationSession(updatedSession);
+  useStore.getState().setSessionForWorkflow(nextWorkflow.id, updatedSession);
 
   return updatedSession;
 }
@@ -245,6 +239,16 @@ function finalizeGeneratedWorkflow(
   return nextWorkflow;
 }
 
+function autoArrangeWorkflow(workflow: WorkflowDefinition): WorkflowDefinition {
+  const { nodes } = getLayoutedElements(workflow.nodes, workflow.connections);
+
+  return {
+    ...workflow,
+    nodes,
+    modifiedAt: Date.now(),
+  };
+}
+
 function deriveWorkflowName(prompt: string): string {
   const words = prompt
     .trim()
@@ -261,49 +265,98 @@ function deriveWorkflowName(prompt: string): string {
   return words.length > 48 ? `${words.slice(0, 45).trimEnd()}...` : words;
 }
 
-function buildAIRequestMetadata(session: GenerationSession) {
-  const workflowId = session.workflowId ?? "new-workflow";
-
-  return {
-    source: "workflow-builder",
-    sessionId: session.id,
-    workflowId,
-  };
-}
-
 export class WorkflowGenerationService {
-  private static instance: WorkflowGenerationService | null = null;
-  private activeRuns = new Map<string, AbortController>();
+  private readonly workflowId: string;
 
-  static getInstance(): WorkflowGenerationService {
-    if (!WorkflowGenerationService.instance) {
-      WorkflowGenerationService.instance = new WorkflowGenerationService();
+  private abortController: AbortController | null = null;
+
+  constructor(workflowId: string) {
+    this.workflowId = workflowId;
+
+    const store = useStore.getState();
+    console.log(store.getGenerationSessionForWorkflow(workflowId));
+    if (!store.getGenerationSessionForWorkflow(workflowId)) {
+      store.setSessionForWorkflow(workflowId, createInitialSession(workflowId));
     }
-
-    return WorkflowGenerationService.instance;
   }
 
-  stopPrompt(request: StopGenerationRequest): { stopped: boolean } {
-    const controller = this.activeRuns.get(request.sessionId);
-    if (!controller) {
+  stop(): { stopped: boolean } {
+    if (!this.abortController) {
       return { stopped: false };
     }
 
-    controller.abort();
+    this.abortController.abort();
     return { stopped: true };
   }
 
-  async submitPrompt(
-    request: GenerationPromptRequest,
-  ): Promise<GenerationPromptResponse> {
-    const { session, prompt, workflow: requestWorkflow } = request;
-    const cleanedSession = stripPendingThinkingMessage(session);
-    const controller = new AbortController();
-    this.activeRuns.set(cleanedSession.id, controller);
-    const requestMetadata = buildAIRequestMetadata(cleanedSession);
+  private getCredential(): string {
+    const credentialId =
+      useStore.getState().settings.workfowGeneration.credentialId;
+    const credential = useStore
+      .getState()
+      .credentials.find((cred) => cred.id === credentialId);
+    if (!credential) {
+      throw new Error("Credential not found");
+    }
+    const auth = CredentialRegistry.getInstance().getAuth(
+      credential.type,
+      credential.config,
+    );
+    switch (credential?.type) {
+      case "openai":
+        return (auth as OpenAIAuth).apiKey;
+      case "secret":
+        return (auth as SecretAuth).value;
+      default:
+        return "";
+    }
+  }
 
-    let workflow = ensureWorkflow(cleanedSession, requestWorkflow);
-    let workingSession = cleanedSession;
+  private getSettingsCustomProviderUrl(): string {
+    return useStore.getState().settings.workfowGeneration.providerUrl;
+  }
+
+  private getSettingsModel(): string {
+    return useStore.getState().settings.workfowGeneration.model;
+  }
+
+  private buildModel() {
+    const provider = this.getProvider();
+    switch (provider) {
+      case "houdin":
+        return houdinAI.chat("");
+      case "openai":
+        return createOpenAI({ apiKey: this.getCredential() }).chat(
+          this.getSettingsModel(),
+        );
+      case "openrouter":
+        return createOpenAI({
+          apiKey: this.getCredential(),
+          baseURL: "https://openrouter.ai/api/v1",
+        }).chat(this.getSettingsModel());
+      case "custom":
+        return createOpenAI({
+          apiKey: this.getCredential(),
+          baseURL: this.getSettingsCustomProviderUrl(),
+        }).chat(this.getSettingsModel());
+      default:
+        throw new Error(`Unsupported generation provider: ${provider}`);
+    }
+  }
+
+  private getProvider() {
+    return useStore.getState().settings.workfowGeneration.provider;
+  }
+
+  async submitPrompt(prompt: string): Promise<GenerationPromptResponse> {
+    const currentSession = useStore
+      .getState()
+      .getGenerationSessionForWorkflow(this.workflowId)!;
+    const controller = new AbortController();
+    this.abortController = controller;
+
+    let workflow = ensureWorkflow(this.workflowId);
+    let workingSession = currentSession;
 
     const ensureNotAborted = () => {
       if (controller.signal.aborted) {
@@ -334,24 +387,15 @@ export class WorkflowGenerationService {
       persist(message, "tool");
     };
 
+    const model = this.buildModel();
     try {
       const result = await generateText({
         model,
-        system: buildSystemPrompt(workingSession),
+        system: buildSystemPrompt(workingSession, workflow),
         prompt,
         abortSignal: controller.signal,
         temperature: 0.2,
         maxOutputTokens: 2000,
-        headers: {
-          "X-Houdin-AI-Source": requestMetadata.source,
-          "X-Houdin-AI-Session-Id": requestMetadata.sessionId,
-          "X-Houdin-AI-Workflow-Id": requestMetadata.workflowId,
-        },
-        providerOptions: {
-          openai: {
-            metadata: requestMetadata,
-          },
-        },
         stopWhen: stepCountIs(10),
         tools: {
           setWorkflowName: tool({
@@ -403,6 +447,19 @@ export class WorkflowGenerationService {
               return { enabled };
             },
           }),
+          autoArrangeNodes: tool({
+            description:
+              "Automatically arrange workflow nodes using the same layout as the designer auto-arrange action.",
+            inputSchema: z.object({}),
+            execute: async () => {
+              ensureNotAborted();
+              const nextWorkflow = autoArrangeWorkflow(workflow);
+              applyWorkflow(nextWorkflow, "Auto-arranged workflow nodes.");
+              return {
+                nodeCount: nextWorkflow.nodes.length,
+              };
+            },
+          }),
           getNodeSchema: tool({
             description:
               "Inspect a node type's config fields AND its output structure. Use this when you need to know what properties are available in a node's output for variable referencing.",
@@ -437,7 +494,10 @@ export class WorkflowGenerationService {
                 "tool",
               );
 
-              return { configSchema: schema, outputExample: definition.outputExample };
+              return {
+                configSchema: schema,
+                outputExample: definition.outputExample,
+              };
             },
           }),
           getLatestExecution: tool({
@@ -588,11 +648,6 @@ export class WorkflowGenerationService {
       return { session: workingSession };
     } catch (error) {
       if (controller.signal.aborted) {
-        workingSession = {
-          ...stripPendingThinkingMessage(workingSession),
-          status: "idle",
-          updatedAt: Date.now(),
-        };
         workingSession = commitSession(workflow, workingSession);
         return { session: workingSession };
       }
@@ -606,12 +661,12 @@ export class WorkflowGenerationService {
         errorMessage,
         "error",
       );
-      workingSession = { ...workingSession, status: "failed" };
+      workingSession = { ...workingSession };
       workingSession = commitSession(workflow, workingSession);
 
       return { session: workingSession };
     } finally {
-      this.activeRuns.delete(cleanedSession.id);
+      this.abortController = null;
     }
   }
 }

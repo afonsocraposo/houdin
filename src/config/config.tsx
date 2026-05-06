@@ -1,11 +1,9 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { MantineProvider } from "@mantine/core";
-import { HashRouter } from "react-router-dom";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/code-highlight/styles.css";
-import ConfigApp from "./ConfigApp";
 import NotificationDispatcher from "@/components/NotificationDispatcher";
 import {
   CodeHighlightAdapterProvider,
@@ -16,6 +14,8 @@ import "@/style.css";
 
 import jsonLang from "highlight.js/lib/languages/json";
 import { mantineTheme } from "@/theme";
+import { RouterProvider } from "@tanstack/react-router";
+import { router } from "./router";
 
 hljs.registerLanguage("json", jsonLang);
 hljs.registerLanguage("plaintext", () => ({
@@ -32,9 +32,7 @@ if (container) {
     <React.StrictMode>
       <MantineProvider defaultColorScheme="auto" theme={mantineTheme}>
         <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
-          <HashRouter>
-            <ConfigApp />
-          </HashRouter>
+          <RouterProvider router={router} />
           <NotificationDispatcher />
         </CodeHighlightAdapterProvider>
       </MantineProvider>

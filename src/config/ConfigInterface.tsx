@@ -18,9 +18,10 @@ import {
   IconKey,
   IconClock,
   IconTrash,
+  IconSettings,
 } from "@tabler/icons-react";
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CredentialsTab } from "@/config/credentials/CredentialsTab";
 import { APP_VERSION } from "@/utils/version";
 import Logo from "@/components/Logo";
@@ -32,15 +33,21 @@ import { useSessionStore } from "@/store";
 import TrashWorkflowsTab from "./trash/TrashWorkflowsTab";
 import { useDisclosure } from "@mantine/hooks";
 import UpgradeModal from "@/components/modals/upgradeModal";
+import SettingsTab from "./settings/SettingsTab";
+import type { ConfigSearch } from "./router";
+
+type SearchUpdater = (prev: ConfigSearch) => ConfigSearch;
 
 enum TabOption {
   Workflows = "workflows",
   Trash = "trash",
   Credentials = "credentials",
   History = "history",
+  Settings = "settings",
 }
 
 function ConfigInterface() {
+  const navigate = useNavigate();
   const fetchAccount = useSessionStore((state) => state.fetchAccount);
   const account = useSessionStore((state) => state.account);
   const isFree = useMemo(() => !account || account.plan === "free", [account]);
@@ -52,9 +59,9 @@ function ConfigInterface() {
 
   const [saved, setSaved] = useState(false);
   const [showUrlAlert, setShowUrlAlert] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("workflows");
-  const [searchParams, setSearchParams] = useSearchParams();
   const [opened, { open, close }] = useDisclosure(false);
+  const search = useSearch({ strict: false }) as ConfigSearch;
+  const activeTab = search.tab ?? "workflows";
 
   useEffect(() => {
     // Check if URL alert should be shown
@@ -64,34 +71,17 @@ function ConfigInterface() {
     }
   }, []); // Load workflows once on mount
 
-  // Handle tab routing
-  useEffect(() => {
-    const tabParam = searchParams.get("tab");
-    if (tabParam && Object.values(TabOption).includes(tabParam as TabOption)) {
-      if (tabParam === TabOption.Trash && isFree) {
+  const handleTabChange = (value: string | null) => {
+    if (value && Object.values(TabOption).includes(value as TabOption)) {
+      if (value === TabOption.Trash && isFree) {
         open();
-        updateSearchParams("workflows");
+        navigate({ to: "/", search: ((prev: ConfigSearch) => ({ ...prev, tab: "workflows" })) as SearchUpdater });
         return;
       }
-      setActiveTab(tabParam);
+      navigate({ to: "/", search: ((prev: ConfigSearch) => ({ ...prev, tab: value as TabOption })) as SearchUpdater });
     } else {
-      setActiveTab("workflows");
+      navigate({ to: "/", search: ((prev: ConfigSearch) => ({ ...prev, tab: TabOption.Workflows })) as SearchUpdater });
     }
-  }, [searchParams]);
-
-  const handleTabChange = (value: string | null) => {
-    // check if value is one of the TabOption values
-    if (value && Object.values(TabOption).includes(value as TabOption)) {
-      updateSearchParams(value);
-    } else {
-      updateSearchParams(TabOption.Workflows);
-    }
-  };
-
-  const updateSearchParams = (value: string) => {
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set("tab", value);
-    setSearchParams(newSearchParams, { replace: true });
   };
 
   const handleAlertClose = () => {
@@ -140,29 +130,20 @@ function ConfigInterface() {
           <Tabs value={activeTab} onChange={handleTabChange} mt="md">
             <Group>
               <Tabs.List flex={1}>
-                <Tabs.Tab
-                  value={TabOption.Workflows}
-                  leftSection={<IconNetwork size={16} />}
-                >
+                <Tabs.Tab value={TabOption.Workflows} leftSection={<IconNetwork size={16} />}>
                   Workflows
                 </Tabs.Tab>
-                <Tabs.Tab
-                  value={TabOption.Credentials}
-                  leftSection={<IconKey size={16} />}
-                >
+                <Tabs.Tab value={TabOption.Credentials} leftSection={<IconKey size={16} />}>
                   Credentials
                 </Tabs.Tab>
-                <Tabs.Tab
-                  value={TabOption.History}
-                  leftSection={<IconClock size={16} />}
-                >
+                <Tabs.Tab value={TabOption.History} leftSection={<IconClock size={16} />}>
                   History
                 </Tabs.Tab>
-                <Tabs.Tab
-                  value={TabOption.Trash}
-                  leftSection={<IconTrash size={16} />}
-                >
+                <Tabs.Tab value={TabOption.Trash} leftSection={<IconTrash size={16} />}>
                   Trash
+                </Tabs.Tab>
+                <Tabs.Tab value={TabOption.Settings} leftSection={<IconSettings size={16} />}>
+                  Settings
                 </Tabs.Tab>
               </Tabs.List>
               <LoginButton />
@@ -182,6 +163,9 @@ function ConfigInterface() {
 
               <Tabs.Panel value={TabOption.History}>
                 <ExecutionHistoryPage />
+              </Tabs.Panel>
+              <Tabs.Panel value={TabOption.Settings}>
+                <SettingsTab />
               </Tabs.Panel>
             </Box>
           </Tabs>

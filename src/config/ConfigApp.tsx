@@ -1,22 +1,27 @@
-import { Routes, Route, useParams } from "react-router-dom";
-import ConfigInterface from "./ConfigInterface";
-import DesignerView from "./designer/DesignerView";
-import HelpModal from "@/components/HelpModal";
-import { useDisclosure } from "@mantine/hooks";
 import { ActionIcon, Affix, Box, useComputedColorScheme } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { IconQuestionMark } from "@tabler/icons-react";
-import AssetsActions from "./static/actions";
-import AssetsTriggers from "./static/triggers";
-import AssetsIcons from "./static/icons";
+import HelpModal from "@/components/HelpModal";
+import type { ReactNode } from "react";
+import { useEffect } from "react";
+import { useLocation } from "@tanstack/react-router";
+import { trackPageView } from "@/services/plausible";
 
-function DesignerWithParams() {
-  const { workflowId } = useParams<{ workflowId?: string }>();
-  return <DesignerView workflowId={workflowId} />;
-}
-
-function ConfigApp() {
+function ConfigApp({ children }: { children: ReactNode }) {
   const [opened, { open, close }] = useDisclosure(false);
   const colorScheme = useComputedColorScheme();
+  const location = useLocation();
+  useEffect(() => {
+    let path = location.pathname;
+    if (path.startsWith("/designer")) {
+      path = "/designer";
+    } else if (path === "/") {
+      if (location.search.tab) {
+        path = `/config/${location.search.tab}`;
+      }
+    }
+    trackPageView(path);
+  }, [location.pathname, location.search.tab]);
 
   return (
     <Box
@@ -29,14 +34,7 @@ function ConfigApp() {
             : undefined,
       }}
     >
-      <Routes>
-        <Route path="/" element={<ConfigInterface />} />
-        <Route path="/designer" element={<DesignerView />} />
-        <Route path="/designer/:workflowId" element={<DesignerWithParams />} />
-        <Route path="/assets/actions" element={<AssetsActions />} />
-        <Route path="/assets/triggers" element={<AssetsTriggers />} />
-        <Route path="/assets/icons" element={<AssetsIcons />} />
-      </Routes>
+      {children}
       <HelpModal key="help-modal" opened={opened} onClose={close} />
       <Affix position={{ bottom: 20, right: 20 }}>
         <ActionIcon onClick={open} size="lg" radius="xl" variant="light">

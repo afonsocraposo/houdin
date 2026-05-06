@@ -39,7 +39,6 @@ import { generateDefaultConfig } from "@/types/config-properties";
 import {
   getLayoutedElementsCallback,
   getNewNodePosition,
-  onNodeCopyCallback,
   onNodePasteCallback,
   panToShowNodeCallback,
 } from "./ReactFlowCanvasCallbacks";
@@ -57,7 +56,8 @@ interface ReactFlowCanvasProps {
   onBatchUpdateNodePositions: (
     positions: Record<string, { x: number; y: number }>,
   ) => void;
-  selectedNode: WorkflowNode | null;
+  selectedNodeId: string | null;
+  onCopySelectedNode: () => void;
   errors: Record<string, Record<string, string[]>>;
   undo: () => void;
   redo: () => void;
@@ -91,7 +91,8 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   onNodeCreate,
   onNodeDuplicate,
   onBatchUpdateNodePositions,
-  selectedNode,
+  selectedNodeId,
+  onCopySelectedNode,
   errors,
   undo,
   redo,
@@ -118,7 +119,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
       id: node.id,
       type: "custom",
       position: node.position,
-      selected: selectedNode?.id === node.id,
+      selected: selectedNodeId === node.id,
       data: {
         ...node.data,
         ...node,
@@ -138,7 +139,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     }));
   }, [
     workflowNodes, // This is already optimized to only change on structural changes
-    selectedNode?.id, // Only depend on the ID, not the full node object
+    selectedNodeId,
     errors,
     lastActionNodeId,
     onNodeDelete,
@@ -189,8 +190,8 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   }, [reactFlowNodes, reactFlowEdges]);
 
   useEffect(() => {
-    if (opened && selectedNode !== null) setOpened(false);
-  }, [selectedNode, opened]);
+    if (opened && selectedNodeId !== null) setOpened(false);
+  }, [selectedNodeId, opened]);
 
   // Handle React Flow nodes change
   const handleNodesChange = useCallback(
@@ -287,9 +288,9 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   const onPaneClick = useCallback(() => {
     setOpened(false);
     // do nothing if no change
-    if (selectedNode === null) return;
+    if (selectedNodeId === null) return;
     onNodeSelect(null);
-  }, [selectedNode, onNodeSelect]);
+  }, [selectedNodeId, onNodeSelect]);
 
   const getLayoutedElements = getLayoutedElementsCallback();
 
@@ -365,8 +366,6 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
     [workflowNodes, onNodeCreate, pendingConnection],
   );
 
-  const onNodeCopy = onNodeCopyCallback(selectedNode);
-
   const onNodePaste = onNodePasteCallback({
     workflowNodes,
     onNodeCreate,
@@ -374,7 +373,7 @@ const ReactFlowCanvasInner: React.FC<ReactFlowCanvasProps> = ({
   });
 
   useHotkeys([
-    ["mod + C", () => onNodeCopy()],
+    ["mod + C", () => onCopySelectedNode()],
     ["mod + V", () => onNodePaste()],
     ["mod + Z", () => hasPrevious && undo()],
     ["mod + Shift + Z", () => hasNext && redo()],
