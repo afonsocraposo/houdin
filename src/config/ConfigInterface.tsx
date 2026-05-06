@@ -34,6 +34,7 @@ import TrashWorkflowsTab from "./trash/TrashWorkflowsTab";
 import { useDisclosure } from "@mantine/hooks";
 import UpgradeModal from "@/components/modals/upgradeModal";
 import SettingsTab from "./settings/SettingsTab";
+import { trackPageView } from "@/services/plausible";
 
 enum TabOption {
   Workflows = "workflows",
@@ -60,6 +61,7 @@ function ConfigInterface() {
   const [opened, { open, close }] = useDisclosure(false);
 
   useEffect(() => {
+    trackPageView("/config");
     // Check if URL alert should be shown
     const urlAlertDismissed = localStorage.getItem("urlAlertDismissed");
     if (!urlAlertDismissed) {

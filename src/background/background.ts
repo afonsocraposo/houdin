@@ -113,7 +113,7 @@ workflowEngine.initialize().then(() => {
               return service.stop();
             })(),
           );
-        case WorkflowCommandType.TRIGGER_FIRED:
+        case WorkflowCommandType.TRIGGER_FIRED: {
           const tabId = sender.tab.id;
 
           const response = message.data as TriggerFiredCommand;
@@ -133,7 +133,8 @@ workflowEngine.initialize().then(() => {
             duration,
           });
           return;
-        case "REGISTER_HTTP_TRIGGER":
+        }
+        case "REGISTER_HTTP_TRIGGER": {
           console.debug("Background: Registering HTTP trigger", message);
 
           if (!httpListener) {
@@ -166,6 +167,7 @@ workflowEngine.initialize().then(() => {
             triggerCallback,
           );
           return;
+        }
 
         case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
           if (httpListener) {
