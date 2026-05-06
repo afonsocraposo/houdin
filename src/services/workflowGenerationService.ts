@@ -290,7 +290,8 @@ export class WorkflowGenerationService {
   }
 
   private getCredential(): string {
-    const credentialId = useStore.getState().settings.credentialId;
+    const credentialId =
+      useStore.getState().settings.workfowGeneration.credentialId;
     const credential = useStore
       .getState()
       .credentials.find((cred) => cred.id === credentialId);
@@ -312,15 +313,15 @@ export class WorkflowGenerationService {
   }
 
   private getSettingsCustomProviderUrl(): string {
-    return useStore.getState().settings.customProviderUrl;
+    return useStore.getState().settings.workfowGeneration.providerUrl;
   }
 
   private getSettingsModel(): string {
-    return useStore.getState().settings.model;
+    return useStore.getState().settings.workfowGeneration.model;
   }
 
   private buildModel() {
-    const provider = useStore.getState().settings.generationProvider;
+    const provider = useStore.getState().settings.workfowGeneration.provider;
     switch (provider) {
       case "houdin":
         return houdinAI.chat("");

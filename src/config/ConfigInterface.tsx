@@ -34,7 +34,6 @@ import TrashWorkflowsTab from "./trash/TrashWorkflowsTab";
 import { useDisclosure } from "@mantine/hooks";
 import UpgradeModal from "@/components/modals/upgradeModal";
 import SettingsTab from "./settings/SettingsTab";
-import { trackPageView } from "@/services/plausible";
 import type { ConfigSearch } from "./router";
 
 type SearchUpdater = (prev: ConfigSearch) => ConfigSearch;
@@ -65,7 +64,6 @@ function ConfigInterface() {
   const activeTab = search.tab ?? "workflows";
 
   useEffect(() => {
-    trackPageView("/config");
     // Check if URL alert should be shown
     const urlAlertDismissed = localStorage.getItem("urlAlertDismissed");
     if (!urlAlertDismissed) {

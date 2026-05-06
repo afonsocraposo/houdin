@@ -8,9 +8,18 @@ import {
 import { SchemaBasedProperties } from "../designer/SchemaBasedProperties";
 import { Container, Divider, Stack, Text, Title } from "@mantine/core";
 
+const generalSchema = {
+  properties: {
+    analytics: booleanProperty({
+      label: "Enable Analytics",
+      description:
+        "Allow anonymous usage data collection to help us improve the app. No personal data is collected, and you can opt out at any time.",
+    }),
+  },
+};
 const syncSchema = {
   properties: {
-    syncEnabled: booleanProperty({
+    enabled: booleanProperty({
       label: "Enable Sync",
       description:
         "Toggle to enable or disable synchronization across devices. Requires a Houdin Plus subscription 🪄",
@@ -19,7 +28,7 @@ const syncSchema = {
 };
 const aiAssistantSchema = {
   properties: {
-    generationProvider: selectProperty({
+    provider: selectProperty({
       label: "AI Assistant Provider",
       description: "Select the provider for the AI Assistant",
       options: [
@@ -30,12 +39,12 @@ const aiAssistantSchema = {
       ],
       defaultValue: "houdin",
     }),
-    customProviderUrl: textProperty({
+    providerUrl: textProperty({
       label: "Custom Provider URL",
       placeholder: "e.g., https://api.yourprovider.com/v1",
       description: "Specify the API endpoint for the custom provider",
       showWhen: {
-        field: "generationProvider",
+        field: "provider",
         value: "custom",
       },
     }),
@@ -45,7 +54,7 @@ const aiAssistantSchema = {
       description:
         "Select the credentials to use for the AI provider. You can manage credentials in the Credential Manager.",
       showWhen: {
-        field: "generationProvider",
+        field: "provider",
         value: ["openai", "openrouter", "custom"],
       },
     }),
@@ -55,7 +64,7 @@ const aiAssistantSchema = {
       description: "Specify the model name",
       showWhen: [
         {
-          field: "generationProvider",
+          field: "provider",
           value: ["openai", "openrouter", "custom"],
         },
       ],
@@ -75,18 +84,43 @@ export default function SettingsTab() {
           configuration.
         </Text>
         <Divider my="md" />
+        <Title order={3}>General</Title>
+        <SchemaBasedProperties
+          schema={generalSchema}
+          values={settings.general}
+          onChange={(key, value) =>
+            setSettings({
+              ...settings,
+              general: { ...settings.general, [key]: value },
+            })
+          }
+        />
+        <Divider my="md" />
         <Title order={3}>Synchronization</Title>
         <SchemaBasedProperties
           schema={syncSchema}
-          values={settings}
-          onChange={(key, value) => setSettings({ ...settings, [key]: value })}
+          values={settings.sync}
+          onChange={(key, value) =>
+            setSettings({
+              ...settings,
+              sync: { ...settings.sync, [key]: value },
+            })
+          }
         />
         <Divider my="md" />
         <Title order={3}>AI Assistant Configuration</Title>
         <SchemaBasedProperties
           schema={aiAssistantSchema}
-          values={settings}
-          onChange={(key, value) => setSettings({ ...settings, [key]: value })}
+          values={settings.workfowGeneration}
+          onChange={(key, value) =>
+            setSettings({
+              ...settings,
+              workfowGeneration: {
+                ...settings.workfowGeneration,
+                [key]: value,
+              },
+            })
+          }
         />
       </Stack>
     </Container>

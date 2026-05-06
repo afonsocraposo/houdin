@@ -2,22 +2,36 @@ import { StateCreator } from "zustand";
 
 export interface SettingsSlice {
   settings: {
-    syncEnabled: boolean;
-    generationProvider: "houdin" | "openai" | "openrouter" | "custom";
-    model: string;
-    customProviderUrl: string;
-    credentialId: string | null;
+    sync: {
+      enabled: boolean;
+    };
+    workfowGeneration: {
+      provider: "houdin" | "openai" | "openrouter" | "custom";
+      model: string;
+      providerUrl: string;
+      credentialId: string | null;
+    };
+    general: {
+      analytics: boolean;
+    };
   };
   setSettings: (settings: Partial<SettingsSlice["settings"]>) => void;
 }
 
 export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   settings: {
-    syncEnabled: true,
-    generationProvider: "houdin",
-    model: "",
-    customProviderUrl: "",
-    credentialId: null,
+    sync: {
+      enabled: true,
+    },
+    workfowGeneration: {
+      provider: "houdin",
+      model: "",
+      providerUrl: "",
+      credentialId: null,
+    },
+    general: {
+      analytics: true,
+    },
   },
   setSettings: (settings) =>
     set((state) => ({

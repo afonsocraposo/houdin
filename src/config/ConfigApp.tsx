@@ -3,10 +3,17 @@ import { useDisclosure } from "@mantine/hooks";
 import { IconQuestionMark } from "@tabler/icons-react";
 import HelpModal from "@/components/HelpModal";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
+import { useLocation } from "@tanstack/react-router";
+import { trackPageView } from "@/services/plausible";
 
 function ConfigApp({ children }: { children: ReactNode }) {
   const [opened, { open, close }] = useDisclosure(false);
   const colorScheme = useComputedColorScheme();
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
 
   return (
     <Box

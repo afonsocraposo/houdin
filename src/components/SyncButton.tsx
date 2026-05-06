@@ -9,7 +9,7 @@ import UpgradeModal from "./modals/upgradeModal";
 
 export default function SyncButton() {
   const account = useSessionStore((state) => state.account);
-  const syncEnabled = useStore((state) => state.settings.syncEnabled);
+  const syncEnabled = useStore((state) => state.settings.sync.enabled);
   const [opened, { open, close }] = useDisclosure(false);
   const syncResult = useStore((state) => state.syncResult);
   const syncStartedAt = useStore((state) => state.syncStartedAt);

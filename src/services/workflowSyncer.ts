@@ -50,7 +50,7 @@ export class WorkflowSyncer {
   }
 
   private isSyncEnabled(): boolean {
-    return useStore.getState().settings.syncEnabled;
+    return useStore.getState().settings.sync.enabled;
   }
 
   async sync(failQuiet: boolean = false): Promise<void> {

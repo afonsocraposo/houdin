@@ -1,3 +1,4 @@
+import { useStore } from "@/store";
 import { getVersion } from "@/utils/version";
 
 const PLAUSIBLE_ENDPOINT = "https://plausible.afonso.app/api/event";
@@ -17,6 +18,13 @@ const trackPlausible = async (
   url: string,
   props?: Record<string, string>,
 ) => {
+  if (!import.meta.env.PROD) {
+    return;
+  }
+  if (!useStore.getState().settings.general.analytics) {
+    return;
+  }
+
   await fetch(PLAUSIBLE_ENDPOINT, {
     method: "POST",
     headers: {
