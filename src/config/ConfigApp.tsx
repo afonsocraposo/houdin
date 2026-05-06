@@ -13,11 +13,15 @@ function ConfigApp({ children }: { children: ReactNode }) {
   const location = useLocation();
   useEffect(() => {
     let path = location.pathname;
-    if (location.pathname.startsWith("/designer")) {
+    if (path.startsWith("/designer")) {
       path = "/designer";
+    } else if (path === "/") {
+      if (location.search.tab) {
+        path = `/config/${location.search.tab}`;
+      }
     }
     trackPageView(path);
-  }, [location.pathname]);
+  }, [location.pathname, location.search.tab]);
 
   return (
     <Box
