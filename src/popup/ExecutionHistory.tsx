@@ -69,7 +69,7 @@ function ExecutionHistory() {
   const openExecutionDetails = (executionId: string) => {
     const configUrl =
       browser.runtime.getURL("src/config/index.html") +
-      `#/?tab=history&execution=${executionId}`;
+      `#/?tab=history&query=${executionId}`;
     browser.tabs.create({ url: configUrl });
   };
 

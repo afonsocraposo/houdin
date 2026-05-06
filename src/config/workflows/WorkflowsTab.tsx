@@ -57,12 +57,19 @@ export default function WorkflowsTab({
       lastExecuted: undefined,
     };
 
-    sessionStorage.setItem("workflow-draft-example", JSON.stringify(newWorkflow));
+    sessionStorage.setItem(
+      "workflow-draft-example",
+      JSON.stringify(newWorkflow),
+    );
     navigate({ to: "/designer", search: { init: "example" } as never });
   };
 
   const handleEditWorkflow = (workflow: WorkflowDefinition) => {
-    navigate({ to: "/designer/$workflowId", params: { workflowId: workflow.id } });
+    navigate({
+      to: "/designer/$workflowId",
+      params: { workflowId: workflow.id },
+      search: {},
+    });
   };
 
   const handleDeleteWorkflow = async (id: string) => {

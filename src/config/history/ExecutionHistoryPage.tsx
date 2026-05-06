@@ -34,10 +34,10 @@ type SearchUpdater = (prev: ConfigSearch) => ConfigSearch;
 function ExecutionHistoryPage() {
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as ConfigSearch;
-  const executionId = search.execution;
   const workflowId = search.workflow;
+  const query = search.query ?? "";
   const [expanded, setExpanded] = useState<string[]>(
-    executionId ? [executionId] : [],
+    query ? [query] : [],
   );
   const workflows = useStore((state) => state.workflows);
   const executions = useStore((state) => state.executions);
@@ -46,7 +46,7 @@ function ExecutionHistoryPage() {
     WorkflowExecution[]
   >([]);
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [searchFilter, setSearchFilter] = useState<string>(executionId || "");
+  const [searchFilter, setSearchFilter] = useState<string>(query);
   const workflowNames = useMemo(
     () =>
       workflows.reduce(
@@ -55,6 +55,15 @@ function ExecutionHistoryPage() {
       ),
     [workflows],
   );
+
+  useEffect(() => {
+    setSearchFilter(query);
+  }, [query]);
+
+  useEffect(() => {
+    const matchingExecution = executions.find((execution) => execution.id === query);
+    setExpanded(matchingExecution ? [matchingExecution.id] : []);
+  }, [executions, query]);
 
   useEffect(() => {
     let filtered = [...executions].reverse();
@@ -79,6 +88,19 @@ function ExecutionHistoryPage() {
 
     setFilteredExecutions(filtered);
   }, [executions, statusFilter, searchFilter, workflowId]);
+
+  const updateHistorySearch = (value: string) => {
+    setSearchFilter(value);
+    navigate({
+      to: "/",
+      search: ((prev: ConfigSearch) => ({
+        ...prev,
+        tab: "history",
+        query: value || undefined,
+      })) as SearchUpdater,
+      replace: true,
+    });
+  };
 
   const toggleExpanded = (executionId: string) => {
     setExpanded((prev) =>
@@ -154,13 +176,15 @@ function ExecutionHistoryPage() {
               placeholder="Search executions..."
               leftSection={<IconSearch size={16} />}
               value={searchFilter}
-              onChange={(event) => setSearchFilter(event.currentTarget.value)}
+              onChange={(event) =>
+                updateHistorySearch(event.currentTarget.value)
+              }
               style={{ flex: 1 }}
               rightSection={
                 searchFilter && (
                   <ActionIcon
                     size="sm"
-                    onClick={() => setSearchFilter("")}
+                    onClick={() => updateHistorySearch("")}
                     title="Clear search"
                     variant="subtle"
                   >

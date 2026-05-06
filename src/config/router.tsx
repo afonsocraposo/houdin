@@ -15,7 +15,7 @@ import AssetsIcons from "./static/icons";
 export type ConfigSearch = {
   tab?: "workflows" | "trash" | "credentials" | "history" | "settings";
   workflow?: string;
-  execution?: string;
+  query?: string;
 };
 
 const rootRoute = createRootRoute({
@@ -39,8 +39,7 @@ const indexRoute = createRoute({
         ? search.tab
         : undefined,
     workflow: typeof search.workflow === "string" ? search.workflow : undefined,
-    execution:
-      typeof search.execution === "string" ? search.execution : undefined,
+    query: typeof search.query === "string" ? search.query : undefined,
   }),
   component: ConfigInterface,
 });
