@@ -12,7 +12,11 @@ function ConfigApp({ children }: { children: ReactNode }) {
   const colorScheme = useComputedColorScheme();
   const location = useLocation();
   useEffect(() => {
-    trackPageView(location.pathname);
+    let path = location.pathname;
+    if (location.pathname.startsWith("/designer")) {
+      path = "/designer";
+    }
+    trackPageView(path);
   }, [location.pathname]);
 
   return (
