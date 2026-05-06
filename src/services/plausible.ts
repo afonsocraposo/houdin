@@ -10,6 +10,7 @@ export enum PlausibleEvent {
   WorkflowEdited = "workflow_edited",
   WorkflowSuccess = "workflow_success",
   WorkflowError = "workflow_error",
+  AIPromptSubmitted = "ai_prompt_submitted",
 }
 
 const trackPlausible = async (

@@ -99,13 +99,13 @@ function DesignerView() {
     try {
       if (newWorkflow) {
         createWorkflow(workflow);
-        await trackCustomEvent(PlausibleEvent.WorkflowCreated, "/designer", {
+        void trackCustomEvent(PlausibleEvent.WorkflowCreated, "/designer", {
           source: search.init === "example" ? "example" : "designer",
         });
         setNewWorkflow(false);
       } else {
         updateWorkflow(workflow);
-        await trackCustomEvent(PlausibleEvent.WorkflowEdited, "/designer");
+        void trackCustomEvent(PlausibleEvent.WorkflowEdited, "/designer");
       }
 
       setEditingWorkflow(workflow);

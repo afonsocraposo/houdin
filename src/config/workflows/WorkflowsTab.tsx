@@ -76,7 +76,7 @@ export default function WorkflowsTab({
   const handleDeleteWorkflow = async (id: string) => {
     try {
       deleteWorkflow(id);
-      await trackCustomEvent(PlausibleEvent.WorkflowDeleted, "/config");
+      void trackCustomEvent(PlausibleEvent.WorkflowDeleted, "/config");
     } catch {
       NotificationService.showErrorNotification({
         message: "Couldn't delete workflow. Please try again.",
@@ -114,7 +114,7 @@ export default function WorkflowsTab({
         lastExecuted: undefined,
       } as WorkflowDefinition;
       createWorkflow(newWorkflow);
-      await trackCustomEvent(PlausibleEvent.WorkflowCreated, "/config", {
+      void trackCustomEvent(PlausibleEvent.WorkflowCreated, "/config", {
         source: "duplicate",
       });
       setSaved(true);
@@ -136,7 +136,7 @@ export default function WorkflowsTab({
         lastExecuted: undefined,
       } as WorkflowDefinition;
       createWorkflow(newWorkflow);
-      await trackCustomEvent(PlausibleEvent.WorkflowCreated, "/config", {
+      void trackCustomEvent(PlausibleEvent.WorkflowCreated, "/config", {
         source: "import",
       });
       setSaved(true);

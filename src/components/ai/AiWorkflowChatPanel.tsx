@@ -45,6 +45,7 @@ import ThinkingWave from "./ThinkingWave";
 import { MessageType } from "@/types/messages";
 import MarkdownText from "../MarkdownText";
 import WorkingWave from "./WorkingWave";
+import { PlausibleEvent, trackCustomEvent } from "@/services/plausible";
 
 interface AiWorkflowChatPanelProps {
   workflowId?: string | null;
@@ -70,6 +71,9 @@ export default function AiWorkflowChatPanel({
   );
   const updateSessionForWorkflow = useStore(
     (state) => state.updateSessionForWorkflow,
+  );
+  const generationProvider = useStore(
+    (state) => state.settings.workfowGeneration.provider,
   );
   const [prompt, setPrompt] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -265,7 +269,8 @@ export default function AiWorkflowChatPanel({
       const selectedElement = {
         selector: response.data.selector,
         tagName: response.data.element.tagName.toLowerCase(),
-        text: response.data.element.textContent?.trim().slice(0, 50) || undefined,
+        text:
+          response.data.element.textContent?.trim().slice(0, 50) || undefined,
         id: response.data.element.id || undefined,
         className: response.data.element.className || undefined,
       };
@@ -360,6 +365,14 @@ export default function AiWorkflowChatPanel({
         workflowId: currentWorkflowId,
         prompt: trimmedPrompt,
       };
+
+      void trackCustomEvent(
+        PlausibleEvent.AIPromptSubmitted,
+        popup ? "/popup" : "/designer",
+        {
+          provider: generationProvider,
+        },
+      );
 
       await sendMessageToBackground(MessageType.AI_GENERATION_SUBMIT, request);
 

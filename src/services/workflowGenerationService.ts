@@ -321,7 +321,7 @@ export class WorkflowGenerationService {
   }
 
   private buildModel() {
-    const provider = useStore.getState().settings.workfowGeneration.provider;
+    const provider = this.getProvider();
     switch (provider) {
       case "houdin":
         return houdinAI.chat("");
@@ -342,6 +342,10 @@ export class WorkflowGenerationService {
       default:
         throw new Error(`Unsupported generation provider: ${provider}`);
     }
+  }
+
+  private getProvider() {
+    return useStore.getState().settings.workfowGeneration.provider;
   }
 
   async submitPrompt(prompt: string): Promise<GenerationPromptResponse> {
