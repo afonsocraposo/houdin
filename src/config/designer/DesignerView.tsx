@@ -1,14 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
 import { WorkflowDefinition } from "@/types/workflow";
 import { useStore } from "@/store";
 import { newWorkflowId } from "@/utils/helpers";
 import type { ConfigSearch } from "../router";
-
-interface DesignerViewProps {
-  workflowId?: string;
-}
+import { PlausibleEvent, trackCustomEvent } from "@/services/plausible";
 
 function createBlankWorkflow(): WorkflowDefinition {
   return {
@@ -24,11 +21,12 @@ function createBlankWorkflow(): WorkflowDefinition {
   };
 }
 
-function DesignerView({ workflowId }: DesignerViewProps) {
+function DesignerView() {
   const [editingWorkflow, setEditingWorkflow] =
     useState<WorkflowDefinition | null>(null);
   const [newWorkflow, setNewWorkflow] = useState<boolean>(true);
   const navigate = useNavigate();
+  const { workflowId } = useParams({ strict: false });
   const search = useSearch({ strict: false }) as ConfigSearch & { init?: string };
   const workflows = useStore((state) => state.workflows);
   const createWorkflow = useStore((state) => state.createWorkflow);
@@ -101,9 +99,13 @@ function DesignerView({ workflowId }: DesignerViewProps) {
     try {
       if (newWorkflow) {
         createWorkflow(workflow);
+        await trackCustomEvent(PlausibleEvent.WorkflowCreated, "/designer", {
+          source: search.init === "example" ? "example" : "designer",
+        });
         setNewWorkflow(false);
       } else {
         updateWorkflow(workflow);
+        await trackCustomEvent(PlausibleEvent.WorkflowEdited, "/designer");
       }
 
       setEditingWorkflow(workflow);
