@@ -53,8 +53,8 @@ export const useStore = create<StoreState>()(
       merge: (persistedState, currentState) => {
         const persisted = persistedState as any;
         return {
-          ...persisted,
           ...currentState,
+          ...persisted,
           pendingUpdates: new Set(persisted.pendingUpdates || []),
         };
       },

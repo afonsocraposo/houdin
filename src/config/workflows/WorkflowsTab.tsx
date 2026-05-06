@@ -25,6 +25,7 @@ import { newWorkflowId } from "@/utils/helpers";
 import { useStore } from "@/store";
 import SyncButton from "@/components/SyncButton";
 import { NotificationService } from "@/services/notification";
+import { PlausibleEvent, trackCustomEvent } from "@/services/plausible";
 
 export default function WorkflowsTab({
   setSaved,
@@ -75,6 +76,7 @@ export default function WorkflowsTab({
   const handleDeleteWorkflow = async (id: string) => {
     try {
       deleteWorkflow(id);
+      await trackCustomEvent(PlausibleEvent.WorkflowDeleted, "/config");
     } catch {
       NotificationService.showErrorNotification({
         message: "Couldn't delete workflow. Please try again.",
@@ -112,6 +114,9 @@ export default function WorkflowsTab({
         lastExecuted: undefined,
       } as WorkflowDefinition;
       createWorkflow(newWorkflow);
+      await trackCustomEvent(PlausibleEvent.WorkflowCreated, "/config", {
+        source: "duplicate",
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
@@ -131,6 +136,9 @@ export default function WorkflowsTab({
         lastExecuted: undefined,
       } as WorkflowDefinition;
       createWorkflow(newWorkflow);
+      await trackCustomEvent(PlausibleEvent.WorkflowCreated, "/config", {
+        source: "import",
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {

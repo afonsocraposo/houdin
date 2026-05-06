@@ -10,7 +10,6 @@ export enum PlausibleEvent {
   WorkflowEdited = "workflow_edited",
   WorkflowSuccess = "workflow_success",
   WorkflowError = "workflow_error",
-  VersionInstalled = "version_installed",
 }
 
 const trackPlausible = async (
@@ -35,15 +34,16 @@ const trackPlausible = async (
       domain: DOMAIN,
       name,
       url,
-      props,
+      props: {
+        ...props,
+        version: getVersion(),
+      },
     }),
   });
 };
 
 export const trackPageView = async (url: string) => {
-  await trackPlausible("pageview", url, {
-    version: getVersion(),
-  });
+  await trackPlausible("pageview", url);
 };
 
 export const trackCustomEvent = async (

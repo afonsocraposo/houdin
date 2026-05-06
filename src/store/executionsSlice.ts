@@ -3,6 +3,7 @@ import {
   WorkflowExecution,
   WorkflowExecutionStats,
 } from "@/types/workflow";
+import { PlausibleEvent, trackCustomEvent } from "@/services/plausible";
 
 export interface ExecutionsSlice {
   executions: WorkflowExecution[];
@@ -30,6 +31,16 @@ export const createExecutionsSlice: StateCreator<ExecutionsSlice> = (set) => ({
     })),
   addExecution: (execution: WorkflowExecution) =>
     set((state) => {
+      if (execution.status === "completed") {
+        void trackCustomEvent(PlausibleEvent.WorkflowSuccess, "/workflow-execution", {
+          triggerType: execution.triggerType,
+        });
+      } else if (execution.status === "failed") {
+        void trackCustomEvent(PlausibleEvent.WorkflowError, "/workflow-execution", {
+          triggerType: execution.triggerType,
+        });
+      }
+
       const executions = [...state.executions, execution].slice(-50);
 
       return {
