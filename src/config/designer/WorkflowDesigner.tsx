@@ -33,7 +33,7 @@ import {
   IconRobot,
   IconLayoutSidebarRightCollapse,
 } from "@tabler/icons-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
 import { NodeProperties } from "./NodeProperties";
 import { EnvironmentVariables } from "./EnvironmentVariables";
@@ -410,7 +410,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
 
   const handleViewHistory = () => {
     if (workflow?.id) {
-      navigate(`/?tab=history&workflow=${workflow.id}`);
+      navigate({
+        to: "/",
+        search: { tab: "history", workflow: workflow.id } as never,
+      });
     }
   };
 

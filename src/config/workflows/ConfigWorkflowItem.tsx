@@ -17,7 +17,10 @@ import {
   IconHistory,
   IconTrash,
 } from "@tabler/icons-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
+import type { ConfigSearch } from "../router";
+
+type SearchUpdater = (prev: ConfigSearch) => ConfigSearch;
 
 interface ConfigWorkflowItemProps {
   workflow: WorkflowDefinition;
@@ -81,7 +84,16 @@ export default function ConfigWorkflowItem({
           </ActionIcon>
           <ActionIcon
             variant="subtle"
-            onClick={() => navigate(`/?tab=history&workflow=${workflow.id}`)}
+            onClick={() =>
+              navigate({
+                to: "/",
+                search: ((prev: ConfigSearch) => ({
+                  ...prev,
+                  tab: "history",
+                  workflow: workflow.id,
+                })) as SearchUpdater,
+              })
+            }
             title="View execution history"
           >
             <IconHistory size={16} />

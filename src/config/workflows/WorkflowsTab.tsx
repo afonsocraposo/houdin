@@ -17,7 +17,7 @@ import {
   IconChevronDown,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { ImportModal } from "./ImportModal";
 import ConfigWorkflowItem from "./ConfigWorkflowItem";
 import { ExportModal } from "./ExportModal";
@@ -45,7 +45,7 @@ export default function WorkflowsTab({
   const navigate = useNavigate();
 
   const handleCreateWorkflow = () => {
-    navigate("/designer", { state: { blank: true } });
+    navigate({ to: "/designer", search: { init: "blank" } as never });
   };
 
   const handleCreateFromExample = (example: WorkflowDefinition) => {
@@ -57,11 +57,12 @@ export default function WorkflowsTab({
       lastExecuted: undefined,
     };
 
-    navigate("/designer", { state: { exampleWorkflow: newWorkflow } });
+    sessionStorage.setItem("workflow-draft-example", JSON.stringify(newWorkflow));
+    navigate({ to: "/designer", search: { init: "example" } as never });
   };
 
   const handleEditWorkflow = (workflow: WorkflowDefinition) => {
-    navigate(`/designer/${workflow.id}`); // Navigate to designer with workflow ID
+    navigate({ to: "/designer/$workflowId", params: { workflowId: workflow.id } });
   };
 
   const handleDeleteWorkflow = async (id: string) => {

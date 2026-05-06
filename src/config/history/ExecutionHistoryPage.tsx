@@ -22,16 +22,20 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import { WorkflowExecution } from "@/types/workflow";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { TimeAgoText } from "@/components/TimeAgoText";
 import ExecutionHistoryItem from "./ExecutionHistoryItem";
 import { getStatusColor, getStatusIcon } from "./utils";
 import { useStore } from "@/store";
+import type { ConfigSearch } from "../router";
+
+type SearchUpdater = (prev: ConfigSearch) => ConfigSearch;
 
 function ExecutionHistoryPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const executionId = searchParams.get("execution");
-  const workflowId = searchParams.get("workflow");
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as ConfigSearch;
+  const executionId = search.execution;
+  const workflowId = search.workflow;
   const [expanded, setExpanded] = useState<string[]>(
     executionId ? [executionId] : [],
   );
@@ -184,10 +188,14 @@ function ExecutionHistoryPage() {
               ]}
               value={workflowId}
               onChange={(value) => {
-                const newSearchParams = new URLSearchParams(searchParams);
-                if (value) newSearchParams.set("workflow", value);
-                else newSearchParams.delete("workflow");
-                setSearchParams(newSearchParams);
+                navigate({
+                  to: "/",
+                  search: ((prev: ConfigSearch) => ({
+                    ...prev,
+                    tab: "history",
+                    workflow: value || undefined,
+                  })) as SearchUpdater,
+                });
               }}
               style={{ minWidth: 200 }}
             />
