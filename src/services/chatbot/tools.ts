@@ -1,6 +1,5 @@
 import { tool } from "ai";
 import z from "zod";
-import { getWorkflow, saveWorkflow } from "./chat-storage";
 import { getLayoutedElements } from "@/config/designer/ReactFlowCanvasCallbacks";
 import {
   connectNodes,
@@ -9,19 +8,55 @@ import {
   disconnectNodes,
   getLatestExecution,
   inferNodeType,
-  moveNode,
+  setUrlPattern as applyUrlPattern,
+  setWorkflowDescription as applyWorkflowDescription,
+  setWorkflowEnabled as applyWorkflowEnabled,
+  setWorkflowName as applyWorkflowName,
   updateNodeConfig,
+  validateWorkflow,
 } from "./workflowTools";
 import { getNodeDefinition } from "../nodeCatalog";
 import { getNodeSchema } from "../workflowGenerationNodeTools";
 import { newActionId, newTriggerId } from "@/utils/helpers";
+import { WorkflowDefinition } from "@/types/workflow";
 
 type createToolsParams = {
   workflowId: string;
   popup?: boolean;
+  getWorkflowState: () => WorkflowDefinition;
+  saveWorkflowState: (workflow: WorkflowDefinition) => void;
 };
 
-export function createTools({ workflowId, popup = true }: createToolsParams) {
+export function createTools({
+  workflowId,
+  popup = true,
+  getWorkflowState,
+  saveWorkflowState,
+}: createToolsParams) {
+  const applyWorkflowChange = (
+    mutate: (workflow: WorkflowDefinition) => WorkflowDefinition,
+  ) => {
+    const workflow = mutate(getWorkflowState());
+    saveWorkflowState(workflow);
+    return workflow;
+  };
+
+  const runWorkflowTool = <TArgs extends Record<string, any>>(
+    mutate: (
+      workflow: WorkflowDefinition,
+      args: TArgs,
+    ) => {
+      workflow: WorkflowDefinition;
+      result: string;
+    },
+  ) => {
+    return async (args: TArgs) => {
+      const { workflow, result } = mutate(getWorkflowState(), args);
+      saveWorkflowState(workflow);
+      return { message: result };
+    };
+  };
+
   return {
     getCurrentTab: tool({
       description: "Get the current active browser tab title and URL.",
@@ -75,9 +110,7 @@ export function createTools({ workflowId, popup = true }: createToolsParams) {
       description: "Set the workflow name.",
       inputSchema: z.object({ name: z.string().min(1) }),
       execute: async ({ name }) => {
-        const workflow = getWorkflow(workflowId);
-        workflow.name = name;
-        saveWorkflow(workflow);
+        applyWorkflowChange((workflow) => applyWorkflowName(workflow, name));
         return { name };
       },
     }),
@@ -85,9 +118,9 @@ export function createTools({ workflowId, popup = true }: createToolsParams) {
       description: "Set the workflow description.",
       inputSchema: z.object({ description: z.string() }),
       execute: async ({ description }) => {
-        const workflow = getWorkflow(workflowId);
-        workflow.description = description;
-        saveWorkflow(workflow);
+        applyWorkflowChange((workflow) =>
+          applyWorkflowDescription(workflow, description),
+        );
         return { description };
       },
     }),
@@ -95,9 +128,9 @@ export function createTools({ workflowId, popup = true }: createToolsParams) {
       description: "Set the workflow URL pattern.",
       inputSchema: z.object({ urlPattern: z.string().min(1) }),
       execute: async ({ urlPattern }) => {
-        const workflow = getWorkflow(workflowId);
-        workflow.urlPattern = urlPattern;
-        saveWorkflow(workflow);
+        applyWorkflowChange((workflow) =>
+          applyUrlPattern(workflow, urlPattern),
+        );
         return { urlPattern };
       },
     }),
@@ -105,9 +138,9 @@ export function createTools({ workflowId, popup = true }: createToolsParams) {
       description: "Enable or disable the workflow.",
       inputSchema: z.object({ enabled: z.boolean() }),
       execute: async ({ enabled }) => {
-        const workflow = getWorkflow(workflowId);
-        workflow.enabled = enabled;
-        saveWorkflow(workflow);
+        applyWorkflowChange((workflow) =>
+          applyWorkflowEnabled(workflow, enabled),
+        );
         return { enabled };
       },
     }),
@@ -116,19 +149,23 @@ export function createTools({ workflowId, popup = true }: createToolsParams) {
         "Automatically arrange workflow nodes using the same layout as the designer auto-arrange action.",
       inputSchema: z.object({}),
       execute: async () => {
-        const workflow = getWorkflow(workflowId);
-        const { nodes } = getLayoutedElements(
-          workflow.nodes,
-          workflow.connections,
-        );
-        workflow.nodes = nodes;
-        saveWorkflow(workflow);
+        applyWorkflowChange((workflow) => {
+          const { nodes } = getLayoutedElements(
+            workflow.nodes,
+            workflow.connections,
+          );
+          return {
+            ...workflow,
+            nodes,
+            modifiedAt: Date.now(),
+          };
+        });
         return {};
       },
     }),
     getNodeSchema: tool({
       description:
-        "Inspect a node type's config fields AND its output structure. Use this when you need to know what properties are available in a node's output for variable referencing.",
+        "Required before using Liquid variables. Inspect a node type's config fields and exact output structure so you know which output properties are valid for references like {{action-id.property}}. Never guess property names.",
       inputSchema: z.object({
         type: z.string().min(1),
       }),
@@ -159,78 +196,56 @@ export function createTools({ workflowId, popup = true }: createToolsParams) {
       description: "Get the current workflow JSON.",
       inputSchema: z.object({}),
       execute: async () => {
-        return { workflow: getWorkflow(workflowId) };
+        return { workflow: getWorkflowState() };
+      },
+    }),
+    validateWorkflow: tool({
+      description:
+        "Validate the current workflow before enabling it. Checks Liquid variable references, required config fields, missing triggers, and disconnected or unreachable nodes. Always call this after building or modifying a workflow and before setWorkflowEnabled.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        return validateWorkflow(getWorkflowState());
       },
     }),
     createNode: tool({
-      description: "Create a new node in the workflow.",
+      description:
+        "Create a new node in the workflow. Use nodeType for the concrete node name such as 'page-load' or 'write-clipboard'. Use nodeKind for the category and set it to either 'trigger' or 'action'.",
       inputSchema: z.object({
-        type: z.string().min(1),
-        nodeType: z.enum(["trigger", "action"]),
+        nodeType: z.string().min(1),
+        nodeKind: z.enum(["trigger", "action"]),
         position: z.object({ x: z.number(), y: z.number() }),
         config: z.record(z.string(), z.any()).optional(),
         inputs: z.array(z.string()).optional(),
         outputs: z.array(z.string()).optional(),
       }),
-      execute: async (args) => {
-        const { workflow: nextWorkflow, result: message } = createNode(
-          getWorkflow(workflowId),
-          {
-            ...args,
-            id: args.type === "trigger" ? newTriggerId() : newActionId(),
-          },
-        );
-        saveWorkflow(nextWorkflow);
-        return { message };
-      },
+      execute: runWorkflowTool((workflow, args) =>
+        createNode(workflow, {
+          type: args.nodeType,
+          nodeType: args.nodeKind,
+          position: args.position,
+          config: args.config,
+          inputs: args.inputs,
+          outputs: args.outputs,
+          id: args.nodeKind === "trigger" ? newTriggerId() : newActionId(),
+        }),
+      ),
     }),
     updateNodeConfig: tool({
-      description: "Update an existing node config.",
+      description:
+        "Update an existing node config. Always include the node id plus either a full config object or a patch object.",
       inputSchema: z.object({
         id: z.string().optional(),
         config: z.record(z.string(), z.any()).optional(),
         patch: z.record(z.string(), z.any()).optional(),
       }),
-      execute: async (args) => {
-        const workflow = getWorkflow(workflowId);
-        const { workflow: nextWorkflow, result: message } = updateNodeConfig(
-          workflow,
-          args,
-        );
-        saveWorkflow(nextWorkflow);
-        return { message };
-      },
-    }),
-    moveNode: tool({
-      description: "Move an existing node.",
-      inputSchema: z.object({
-        id: z.string().optional(),
-        position: z.object({ x: z.number(), y: z.number() }),
-      }),
-      execute: async (args) => {
-        const workflow = getWorkflow(workflowId);
-        const { workflow: nextWorkflow, result: message } = moveNode(
-          workflow,
-          args,
-        );
-        saveWorkflow(nextWorkflow);
-        return { message };
-      },
+      execute: runWorkflowTool(updateNodeConfig),
     }),
     deleteNode: tool({
       description: "Delete a node and its connections as consequence.",
       inputSchema: z.object({
         id: z.string().optional(),
       }),
-      execute: async (args) => {
-        const workflow = getWorkflow(workflowId);
-        const { workflow: nextWorkflow, result: message } = deleteNode(
-          workflow,
-          args,
-        );
-        saveWorkflow(nextWorkflow);
-        return { message };
-      },
+      execute: runWorkflowTool(deleteNode),
     }),
     connectNodes: tool({
       description: "Connect two nodes in the workflow.",
@@ -238,15 +253,7 @@ export function createTools({ workflowId, popup = true }: createToolsParams) {
         sourceId: z.string().optional(),
         targetId: z.string().optional(),
       }),
-      execute: async (args) => {
-        const workflow = getWorkflow(workflowId);
-        const { workflow: nextWorkflow, result: message } = connectNodes(
-          workflow,
-          args,
-        );
-        saveWorkflow(nextWorkflow);
-        return { message };
-      },
+      execute: runWorkflowTool(connectNodes),
     }),
     disconnectNodes: tool({
       description: "Disconnect nodes or remove a connection.",
@@ -261,15 +268,7 @@ export function createTools({ workflowId, popup = true }: createToolsParams) {
         target_id: z.string().optional(),
         to: z.string().optional(),
       }),
-      execute: async (args) => {
-        const workflow = getWorkflow(workflowId);
-        const { workflow: nextWorkflow, result: message } = disconnectNodes(
-          workflow,
-          args,
-        );
-        saveWorkflow(nextWorkflow);
-        return { message };
-      },
+      execute: runWorkflowTool(disconnectNodes),
     }),
   };
 }

@@ -4,9 +4,17 @@ import {
   WorkflowNode,
 } from "@/types/workflow";
 import { NodeType, WorkflowExecution } from "@/types/workflow";
-import { triggerCatalog } from "../nodeCatalog";
+import { validateConfig } from "@/types/config-properties";
+import { getNodeDefinition, triggerCatalog } from "../nodeCatalog";
 import { useStore } from "@/store";
 import { generateId, newConnectionId } from "@/utils/helpers";
+
+export type WorkflowValidationReport = {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  summary: string;
+};
 
 function isRecord(value: unknown): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -42,6 +50,292 @@ function asPosition(value: unknown): { x: number; y: number } | undefined {
   }
 
   return undefined;
+}
+
+function getNodeDataType(node: WorkflowNode): string {
+  return node.data && "type" in node.data && typeof node.data.type === "string"
+    ? node.data.type
+    : "unknown";
+}
+
+function getNodeConfig(node: WorkflowNode): Record<string, any> {
+  return isRecord(node.data?.config) ? node.data.config : {};
+}
+
+function looksLikeNodeId(value: string): boolean {
+  return /^(action|trigger)-/.test(value.trim());
+}
+
+function isLikelyNodeReference(value: string, workflow: WorkflowDefinition): boolean {
+  return (
+    workflow.nodes.some((node) => node.id === value) || looksLikeNodeId(value)
+  );
+}
+
+function collectStringFields(
+  value: unknown,
+  path: string,
+): Array<{ path: string; value: string }> {
+  if (typeof value === "string") {
+    return [{ path, value }];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) =>
+      collectStringFields(item, `${path}[${index}]`),
+    );
+  }
+
+  if (isRecord(value)) {
+    return Object.entries(value).flatMap(([key, nestedValue]) =>
+      collectStringFields(nestedValue, path ? `${path}.${key}` : key),
+    );
+  }
+
+  return [];
+}
+
+function hasValidLiquidSyntax(value: string): boolean {
+  let depth = 0;
+
+  for (let index = 0; index < value.length - 1; index += 1) {
+    const pair = value.slice(index, index + 2);
+    if (pair === "{{") {
+      if (depth !== 0) {
+        return false;
+      }
+      depth = 1;
+      index += 1;
+      continue;
+    }
+
+    if (pair === "}}") {
+      if (depth !== 1) {
+        return false;
+      }
+      depth = 0;
+      index += 1;
+    }
+  }
+
+  return depth === 0;
+}
+
+function extractLiquidReferences(value: string): string[] {
+  return Array.from(value.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g), (match) =>
+    match[1].trim(),
+  );
+}
+
+function getNestedValue(value: unknown, path: string[]): unknown {
+  let current = value;
+
+  for (const segment of path) {
+    if (!isRecord(current) || !(segment in current)) {
+      return undefined;
+    }
+    current = current[segment];
+  }
+
+  return current;
+}
+
+function validateNodeReference(
+  workflow: WorkflowDefinition,
+  ref: string,
+): { error?: string; warning?: string } {
+  const [nodeId, ...propertyPath] = ref.split(".");
+
+  if (!isLikelyNodeReference(nodeId, workflow)) {
+    return {};
+  }
+
+  const sourceNode = workflow.nodes.find((node) => node.id === nodeId);
+  if (!sourceNode) {
+    return {
+      error: `references non-existent node '${nodeId}'`,
+    };
+  }
+
+  if (propertyPath.length === 0) {
+    return {
+      warning: `references node '${nodeId}' without an output property. Prefer {{${nodeId}.property}} after checking getNodeSchema.`,
+    };
+  }
+
+  const sourceType = getNodeDataType(sourceNode);
+  const definition = getNodeDefinition(sourceNode.type, sourceType);
+  const outputExample = definition?.outputExample;
+
+  if (!outputExample || !isRecord(outputExample)) {
+    return {
+      warning: `references '${nodeId}.${propertyPath.join(".")}', but node type '${sourceType}' does not expose an output example to validate against`,
+    };
+  }
+
+  if (getNestedValue(outputExample, propertyPath) !== undefined) {
+    return {};
+  }
+
+  const availableProperties = Object.keys(outputExample);
+  return {
+    error: availableProperties.length > 0
+      ? `references invalid property '${propertyPath.join(".")}' on node '${nodeId}' (type '${sourceType}'). Available properties: ${availableProperties.join(", ")}`
+      : `references invalid property '${propertyPath.join(".")}' on node '${nodeId}' (type '${sourceType}')`,
+  };
+}
+
+type ConfigValidationOptions = {
+  allowMissingReferencedNodes: boolean;
+};
+
+function validateConfigVariables(
+  workflow: WorkflowDefinition,
+  config: Record<string, any>,
+  options: ConfigValidationOptions,
+): { errors: string[]; warnings: string[]; hasLiquidReferences: boolean } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  let hasLiquidReferences = false;
+
+  for (const field of collectStringFields(config, "config")) {
+    if (!hasValidLiquidSyntax(field.value)) {
+      errors.push(
+        `${field.path} contains malformed Liquid syntax: ${JSON.stringify(field.value)}`,
+      );
+      continue;
+    }
+
+    for (const ref of extractLiquidReferences(field.value)) {
+      hasLiquidReferences = true;
+      const validation = validateNodeReference(workflow, ref);
+
+      if (validation.error) {
+        if (
+          options.allowMissingReferencedNodes &&
+          validation.error.startsWith("references non-existent node")
+        ) {
+          warnings.push(`${field.path} ${validation.error}`);
+          continue;
+        }
+
+        errors.push(`${field.path} ${validation.error}`);
+      }
+
+      if (validation.warning) {
+        warnings.push(`${field.path} ${validation.warning}`);
+      }
+    }
+  }
+
+  return { errors, warnings, hasLiquidReferences };
+}
+
+function validateNodeConfigAgainstSchema(node: WorkflowNode): string[] {
+  const definition = getNodeDefinition(node.type, getNodeDataType(node));
+  if (!definition) {
+    return [
+      `Node '${node.id}' uses unknown ${node.type} type '${getNodeDataType(node)}'`,
+    ];
+  }
+
+  const result = validateConfig(getNodeConfig(node), definition.configSchema);
+  return Object.entries(result.errors).flatMap(([field, fieldErrors]) =>
+    (fieldErrors as string[]).map(
+      (error) => `Node '${node.id}' config '${field}': ${error}`,
+    ),
+  );
+}
+
+function buildValidationSummary(errors: string[], warnings: string[]): string {
+  if (errors.length === 0 && warnings.length === 0) {
+    return "Workflow is valid and ready to enable.";
+  }
+
+  if (errors.length === 0) {
+    return `Workflow is valid but has ${warnings.length} warning(s).`;
+  }
+
+  return `Workflow has ${errors.length} error(s) and ${warnings.length} warning(s).`;
+}
+
+export function validateWorkflow(
+  workflow: WorkflowDefinition,
+): WorkflowValidationReport {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const triggerNodes = workflow.nodes.filter((node) => node.type === "trigger");
+  if (triggerNodes.length === 0) {
+    errors.push(
+      "Workflow has no trigger nodes. Add at least one trigger before enabling it.",
+    );
+  }
+
+  for (const node of workflow.nodes) {
+    errors.push(...validateNodeConfigAgainstSchema(node));
+
+    const variableValidation = validateConfigVariables(
+      workflow,
+      getNodeConfig(node),
+      { allowMissingReferencedNodes: false },
+    );
+    errors.push(
+      ...variableValidation.errors.map((error) => `Node '${node.id}' ${error}`),
+    );
+    warnings.push(
+      ...variableValidation.warnings.map(
+        (warning) => `Node '${node.id}' ${warning}`,
+      ),
+    );
+  }
+
+  for (const node of workflow.nodes) {
+    if (node.type !== "action") {
+      continue;
+    }
+
+    const hasIncoming = workflow.connections.some(
+      (connection) => connection.target === node.id,
+    );
+    if (!hasIncoming) {
+      warnings.push(
+        `Action node '${node.id}' (${getNodeDataType(node)}) has no incoming connections and will never execute.`,
+      );
+    }
+  }
+
+  const reachable = new Set<string>();
+  const queue = triggerNodes.map((node) => node.id);
+
+  while (queue.length > 0) {
+    const nodeId = queue.shift();
+    if (!nodeId || reachable.has(nodeId)) {
+      continue;
+    }
+
+    reachable.add(nodeId);
+    for (const connection of workflow.connections) {
+      if (connection.source === nodeId) {
+        queue.push(connection.target);
+      }
+    }
+  }
+
+  for (const node of workflow.nodes) {
+    if (!reachable.has(node.id)) {
+      warnings.push(
+        `Node '${node.id}' (${getNodeDataType(node)}) is unreachable from any trigger.`,
+      );
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+    summary: buildValidationSummary(errors, warnings),
+  };
 }
 
 function nodeTypeFromArgs(args: Record<string, any>): NodeType | null {
@@ -131,7 +425,9 @@ export function createNode(
 ): { workflow: WorkflowDefinition; result: string } {
   const type = getFirstString(args, ["type", "actionType", "triggerType"]);
   if (!type) {
-    throw new Error("createNode requires type");
+    throw new Error(
+      "createNode requires a node type such as 'page-load', 'get-element-content', or 'write-clipboard'",
+    );
   }
 
   const nodeType = inferNodeType(type, args);
@@ -196,7 +492,16 @@ export function updateNodeConfig(
       ? args.patch
       : null;
   if (!patch) {
-    throw new Error("updateNodeConfig requires config or patch");
+    throw new Error(
+      "updateNodeConfig requires a config or patch object together with the target node id",
+    );
+  }
+
+  const variableValidation = validateConfigVariables(workflow, patch, {
+    allowMissingReferencedNodes: true,
+  });
+  if (variableValidation.errors.length > 0) {
+    throw new Error(variableValidation.errors.join("; "));
   }
 
   let updated = false;
@@ -219,7 +524,12 @@ export function updateNodeConfig(
   });
 
   if (!updated) {
-    throw new Error(`Node '${nodeId}' not found`);
+    const availableNodeIds = workflow.nodes.map((node) => node.id).join(", ");
+    throw new Error(
+      availableNodeIds
+        ? `Node '${nodeId}' not found. Available node ids: ${availableNodeIds}`
+        : `Node '${nodeId}' not found because the workflow currently has no nodes. Create the node first or call getWorkflow to inspect the current state.`,
+    );
   }
 
   return {
@@ -228,7 +538,15 @@ export function updateNodeConfig(
       nodes,
       modifiedAt: Date.now(),
     },
-    result: `Updated config for node '${nodeId}'.`,
+    result: [
+      `Updated config for node '${nodeId}'.`,
+      variableValidation.hasLiquidReferences
+        ? "Config uses Liquid variables. Call validateWorkflow after wiring the workflow to verify node references and output properties before enabling it."
+        : null,
+      ...variableValidation.warnings,
+    ]
+      .filter(Boolean)
+      .join(" "),
   };
 }
 
@@ -330,6 +648,14 @@ export function connectNodes(
 
   if (!sourceId || !targetId) {
     throw new Error("connectNodes requires sourceId and targetId");
+  }
+
+  if (!workflow.nodes.some((node) => node.id === sourceId)) {
+    throw new Error(`connectNodes could not find source node '${sourceId}'`);
+  }
+
+  if (!workflow.nodes.some((node) => node.id === targetId)) {
+    throw new Error(`connectNodes could not find target node '${targetId}'`);
   }
 
   const connection: WorkflowConnection = {

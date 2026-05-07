@@ -664,7 +664,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  zIndex: 201,
+                  zIndex: 200,
                 }}
               >
                 <Stack h="100%" style={{ overflow: "hidden" }}>

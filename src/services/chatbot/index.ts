@@ -8,6 +8,7 @@ import {
   getProviderUrl,
   getSession,
   getWorkflow,
+  saveWorkflow,
   saveSession,
   setStatus,
   upsertAssistantMessage,
@@ -24,6 +25,7 @@ import { API_BASE_URL } from "@/api/client";
 import { generateId } from "@/utils/helpers";
 import buildSystemPrompt from "./system-prompt";
 import { createTools } from "./tools";
+import { WorkflowDefinition } from "@/types/workflow";
 
 export class ChatbotService {
   private static instance: ChatbotService;
@@ -81,11 +83,22 @@ export class ChatbotService {
       const modelMessages = await convertToModelMessages(
         session.messages.slice(-20),
       );
-      const workflow = getWorkflow(workflowId);
+      let workflowState: WorkflowDefinition = getWorkflow(workflowId);
+
+      const getWorkflowState = () => workflowState;
+      const saveWorkflowState = (workflow: WorkflowDefinition) => {
+        workflowState = workflow;
+        saveWorkflow(workflow);
+      };
+
       const result = streamText({
-        system: buildSystemPrompt({ workflow }),
+        system: buildSystemPrompt({ workflow: workflowState }),
         model: this.getModel(),
-        tools: createTools({ workflow }),
+        tools: createTools({
+          workflowId,
+          getWorkflowState,
+          saveWorkflowState,
+        }),
         messages: modelMessages,
         temperature: 0.2,
         maxOutputTokens: 2000,

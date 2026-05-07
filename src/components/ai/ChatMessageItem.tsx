@@ -32,8 +32,8 @@ export default function ChatMessageItem({ message }: ChatMessageItemProps) {
             if (part.type.startsWith("tool-")) {
               return (
                 <Box key={index}>
-                  <Text size="xs" c="dimmed">
-                    {JSON.stringify(part)}
+                  <Text size="xs" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
+                    {JSON.stringify(part, null, 2)}
                   </Text>
                 </Box>
               );
