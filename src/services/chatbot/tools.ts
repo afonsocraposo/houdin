@@ -33,6 +33,15 @@ export function createTools({
   getWorkflowState,
   saveWorkflowState,
 }: createToolsParams) {
+  const buildToolResult = (
+    message: string,
+    details?: Record<string, unknown>,
+  ) => ({
+    ok: true,
+    message,
+    ...details,
+  });
+
   const applyWorkflowChange = (
     mutate: (workflow: WorkflowDefinition) => WorkflowDefinition,
   ) => {
@@ -41,7 +50,7 @@ export function createTools({
     return workflow;
   };
 
-  const runWorkflowTool = <TArgs extends Record<string, any>>(
+  const runWorkflowTool = <TArgs extends Record<string, unknown>>(
     mutate: (
       workflow: WorkflowDefinition,
       args: TArgs,
@@ -111,7 +120,10 @@ export function createTools({
       inputSchema: z.object({ name: z.string().min(1) }),
       execute: async ({ name }) => {
         applyWorkflowChange((workflow) => applyWorkflowName(workflow, name));
-        return { name };
+        return buildToolResult(`Set workflow name to '${name}'.`, {
+          workflowField: "name",
+          value: name,
+        });
       },
     }),
     setWorkflowDescription: tool({
@@ -121,7 +133,10 @@ export function createTools({
         applyWorkflowChange((workflow) =>
           applyWorkflowDescription(workflow, description),
         );
-        return { description };
+        return buildToolResult("Updated workflow description.", {
+          workflowField: "description",
+          value: description,
+        });
       },
     }),
     setUrlPattern: tool({
@@ -131,17 +146,27 @@ export function createTools({
         applyWorkflowChange((workflow) =>
           applyUrlPattern(workflow, urlPattern),
         );
-        return { urlPattern };
+        return buildToolResult(`Set URL pattern to '${urlPattern}'.`, {
+          workflowField: "urlPattern",
+          value: urlPattern,
+        });
       },
     }),
     setWorkflowEnabled: tool({
-      description: "Enable or disable the workflow.",
+      description:
+        "Enable or disable the workflow. Use this sparingly: only when finishing a new workflow, when the user explicitly asks to change enabled state, or when you intentionally disabled it earlier and now need to restore it.",
       inputSchema: z.object({ enabled: z.boolean() }),
       execute: async ({ enabled }) => {
         applyWorkflowChange((workflow) =>
           applyWorkflowEnabled(workflow, enabled),
         );
-        return { enabled };
+        return buildToolResult(
+          enabled ? "Enabled workflow." : "Disabled workflow.",
+          {
+            workflowField: "enabled",
+            value: enabled,
+          },
+        );
       },
     }),
     autoArrangeNodes: tool({
@@ -149,6 +174,7 @@ export function createTools({
         "Automatically arrange workflow nodes using the same layout as the designer auto-arrange action.",
       inputSchema: z.object({}),
       execute: async () => {
+        const before = getWorkflowState();
         applyWorkflowChange((workflow) => {
           const { nodes } = getLayoutedElements(
             workflow.nodes,
@@ -160,7 +186,10 @@ export function createTools({
             modifiedAt: Date.now(),
           };
         });
-        return {};
+        return buildToolResult("Auto-arranged workflow nodes.", {
+          nodeCount: before.nodes.length,
+          connectionCount: before.connections.length,
+        });
       },
     }),
     getNodeSchema: tool({

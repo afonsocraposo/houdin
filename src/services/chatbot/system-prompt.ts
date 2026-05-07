@@ -33,6 +33,8 @@ export default function buildSystemPrompt({ workflow }: SystemPromptProps) {
     "After creating or rewiring nodes, call autoArrangeNodes once the intended structure is in place so the workflow ends in a clean layout.",
     "Use setWorkflowName, setWorkflowDescription, setUrlPattern, and setWorkflowEnabled for workflow-level changes.",
     "When the workflow is ready, set a clear workflow name, call validateWorkflow, fix any reported issues, and only then enable it.",
+    "Do NOT call setWorkflowEnabled after every edit. Preserve the current enabled state during intermediate changes.",
+    "Only call setWorkflowEnabled when you are finishing a newly created workflow, when the user explicitly asks to enable or disable it, or when the workflow must be re-enabled after it was intentionally disabled.",
     "When creating nodes, use the exact node-type tool names and fields.",
     "Workflow variables use Liquid syntax. Use '{{ variableName }}' placeholders in string fields for runtime substitution.",
     "Node IDs are generated automatically by the app as action-* or trigger-*; do not invent node IDs.",

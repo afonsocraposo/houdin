@@ -1,22 +1,25 @@
-import { Box, Group, Paper, Stack, Text } from "@mantine/core";
+import { Group, Paper, Stack, Text } from "@mantine/core";
 import { UIMessage } from "ai";
 import MarkdownText from "../MarkdownText";
+import ToolInvocationCard from "./ToolInvocationCard";
 
 type ChatMessageItemProps = {
   message: UIMessage;
 };
 export default function ChatMessageItem({ message }: ChatMessageItemProps) {
   const isUser = message.role === "user";
+  const hasToolParts = message.parts.some((part) => part.type.startsWith("tool-"));
   return (
     <Group justify={message.role === "user" ? "end" : "start"} align="start">
       <Paper
         p="sm"
         maw="85%"
+        w={!isUser && hasToolParts ? "85%" : undefined}
         px={isUser ? "md" : undefined}
         withBorder={isUser}
         radius="xl"
       >
-        <Stack>
+        <Stack w="100%">
           {message.parts.map((part, index) => {
             if (part.type === "text") {
               if (message.role === "assistant") {
@@ -30,14 +33,10 @@ export default function ChatMessageItem({ message }: ChatMessageItemProps) {
             }
 
             if (part.type.startsWith("tool-")) {
-              return (
-                <Box key={index}>
-                  <Text size="xs" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
-                    {JSON.stringify(part, null, 2)}
-                  </Text>
-                </Box>
-              );
+              return <ToolInvocationCard key={index} part={part} />;
             }
+
+            return null;
           })}
         </Stack>
       </Paper>

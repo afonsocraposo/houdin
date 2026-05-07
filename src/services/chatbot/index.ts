@@ -43,24 +43,29 @@ export class ChatbotService {
   }
 
   init(): void {
-    browser.runtime.onMessage.addListener((message: CustomMessage) => {
-      switch (message.type) {
-        case MessageType.RUN_CHAT: {
-          console.log("Received RUN_CHAT message:", message);
-          // Handle incoming chat messages here
-          const { workflowId, input } = message.data;
-          return this.runChat(workflowId, input);
+    browser.runtime.onMessage.addListener(
+      (message: CustomMessage, sender: any) => {
+        const url = sender?.url || sender?.tab?.url || "";
+        const isPopup =
+          url.startsWith("chrome-extension://") ||
+          url.startsWith("moz-extension://");
+        switch (message.type) {
+          case MessageType.RUN_CHAT: {
+            // Handle incoming chat messages here
+            const { workflowId, input } = message.data;
+            return this.runChat(workflowId, input, isPopup);
+          }
+          case MessageType.STOP_CHAT: {
+            // Handle chat stop messages here
+            const { workflowId } = message.data;
+            return this.stopChat(workflowId);
+          }
         }
-        case MessageType.STOP_CHAT: {
-          // Handle chat stop messages here
-          const { workflowId } = message.data;
-          return this.stopChat(workflowId);
-        }
-      }
-    });
+      },
+    );
   }
 
-  private async runChat(workflowId: string, input: string) {
+  private async runChat(workflowId: string, input: string, isPopup: boolean) {
     if (this.activeRuns[workflowId]) return;
     this.activeRuns[workflowId] = new AbortController();
 
@@ -98,6 +103,7 @@ export class ChatbotService {
           workflowId,
           getWorkflowState,
           saveWorkflowState,
+          popup: isPopup,
         }),
         messages: modelMessages,
         temperature: 0.2,

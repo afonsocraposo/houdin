@@ -239,12 +239,40 @@ function validateNodeConfigAgainstSchema(node: WorkflowNode): string[] {
     ];
   }
 
-  const result = validateConfig(getNodeConfig(node), definition.configSchema);
-  return Object.entries(result.errors).flatMap(([field, fieldErrors]) =>
-    (fieldErrors as string[]).map(
-      (error) => `Node '${node.id}' config '${field}': ${error}`,
-    ),
+  const config = getNodeConfig(node);
+  const allowedKeys = new Set(Object.keys(definition.configSchema.properties));
+  const unknownKeys = Object.keys(config).filter((key) => !allowedKeys.has(key));
+
+  const unknownKeyErrors = unknownKeys.map(
+    (key) =>
+      `Node '${node.id}' config '${key}' is not supported for node type '${getNodeDataType(node)}'. Allowed fields: ${Array.from(allowedKeys).join(", ")}`,
   );
+
+  const result = validateConfig(config, definition.configSchema);
+  return [
+    ...unknownKeyErrors,
+    ...Object.entries(result.errors).flatMap(([field, fieldErrors]) =>
+      (fieldErrors as string[]).map(
+        (error) => `Node '${node.id}' config '${field}': ${error}`,
+      ),
+    ),
+  ];
+}
+
+function validateConfigPatchKeys(node: WorkflowNode, patch: Record<string, any>) {
+  const definition = getNodeDefinition(node.type, getNodeDataType(node));
+  if (!definition) {
+    return;
+  }
+
+  const allowedKeys = new Set(Object.keys(definition.configSchema.properties));
+  const unknownKeys = Object.keys(patch).filter((key) => !allowedKeys.has(key));
+
+  if (unknownKeys.length > 0) {
+    throw new Error(
+      `Node '${node.id}' (${getNodeDataType(node)}) does not support config field(s): ${unknownKeys.join(", ")}. Allowed fields: ${Array.from(allowedKeys).join(", ")}`,
+    );
+  }
 }
 
 function buildValidationSummary(errors: string[], warnings: string[]): string {
@@ -504,13 +532,23 @@ export function updateNodeConfig(
     throw new Error(variableValidation.errors.join("; "));
   }
 
-  let updated = false;
+  const targetNode = workflow.nodes.find((node) => node.id === nodeId);
+  if (!targetNode) {
+    const availableNodeIds = workflow.nodes.map((node) => node.id).join(", ");
+    throw new Error(
+      availableNodeIds
+        ? `Node '${nodeId}' not found. Available node ids: ${availableNodeIds}`
+        : `Node '${nodeId}' not found because the workflow currently has no nodes. Create the node first or call getWorkflow to inspect the current state.`,
+    );
+  }
+
+  validateConfigPatchKeys(targetNode, patch);
+
   const nodes = workflow.nodes.map((node) => {
     if (node.id !== nodeId) {
       return node;
     }
 
-    updated = true;
     return {
       ...node,
       data: {
@@ -522,15 +560,6 @@ export function updateNodeConfig(
       },
     };
   });
-
-  if (!updated) {
-    const availableNodeIds = workflow.nodes.map((node) => node.id).join(", ");
-    throw new Error(
-      availableNodeIds
-        ? `Node '${nodeId}' not found. Available node ids: ${availableNodeIds}`
-        : `Node '${nodeId}' not found because the workflow currently has no nodes. Create the node first or call getWorkflow to inspect the current state.`,
-    );
-  }
 
   return {
     workflow: {
