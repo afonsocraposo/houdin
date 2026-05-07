@@ -3,23 +3,9 @@ import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { SESSION_STORAGE_KEY, WorkflowDesigner } from "./WorkflowDesigner";
 import { WorkflowDefinition } from "@/types/workflow";
 import { useStore } from "@/store";
-import { newWorkflowId } from "@/utils/helpers";
 import type { ConfigSearch } from "../router";
 import { PlausibleEvent, trackCustomEvent } from "@/services/plausible";
-
-function createBlankWorkflow(): WorkflowDefinition {
-  return {
-    id: newWorkflowId(),
-    name: "",
-    description: "",
-    urlPattern: "https://*",
-    nodes: [],
-    connections: [],
-    enabled: true,
-    variables: {},
-    modifiedAt: Date.now(),
-  };
-}
+import { createBlankWorkflow } from "@/utils/workflow";
 
 function DesignerView() {
   const [editingWorkflow, setEditingWorkflow] =
@@ -27,7 +13,9 @@ function DesignerView() {
   const [newWorkflow, setNewWorkflow] = useState<boolean>(true);
   const navigate = useNavigate();
   const { workflowId } = useParams({ strict: false });
-  const search = useSearch({ strict: false }) as ConfigSearch & { init?: string };
+  const search = useSearch({ strict: false }) as ConfigSearch & {
+    init?: string;
+  };
   const workflows = useStore((state) => state.workflows);
   const createWorkflow = useStore((state) => state.createWorkflow);
   const updateWorkflow = useStore((state) => state.updateWorkflow);

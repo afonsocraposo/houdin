@@ -13,23 +13,17 @@ import {
 import { generateId, newWorkflowId } from "@/utils/helpers";
 import {
   ActionIcon,
-  Badge,
   Box,
-  Button,
   Card,
   Group,
-  Select,
   ScrollArea,
   Stack,
-  Text,
   Textarea,
   Tooltip,
 } from "@mantine/core";
 import {
-  IconExternalLink,
   IconFileSearch,
   IconPointer,
-  IconRefresh,
   IconSend2,
   IconSquareFilled,
 } from "@tabler/icons-react";
@@ -506,67 +500,6 @@ export default function AiWorkflowChatPanel({
 
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
-      <Card p="sm">
-        <Stack gap="xs">
-          <Group justify="space-between" align="center" wrap="nowrap">
-            <Group gap="xs" wrap="nowrap" flex={1} miw={0}>
-              <Select
-                value={activeWorkflowValue}
-                onChange={handleWorkflowSelect}
-                data={workflowOptions}
-                size="xs"
-                aria-label="Active workflow draft"
-                disabled={isScopedToWorkflow}
-                style={{ flex: 1, minWidth: 0 }}
-              />
-              {hasMessages && (
-                <Tooltip label="Open in designer" withArrow>
-                  <ActionIcon
-                    variant="subtle"
-                    onClick={openDesigner}
-                    aria-label="Open in designer"
-                    size="input-sm"
-                  >
-                    <IconExternalLink size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-            </Group>
-            {hasMessages && (
-              <Tooltip label="Reset session" withArrow>
-                <Button
-                  size="xs"
-                  variant="subtle"
-                  color="red"
-                  leftSection={<IconRefresh size={14} />}
-                  aria-label="Reset session"
-                  onClick={handleReset}
-                  style={{ flexShrink: 0 }}
-                >
-                  Reset
-                </Button>
-              </Tooltip>
-            )}
-          </Group>
-          <Group gap="xs" wrap="wrap">
-            <Badge variant="light" color="blue" size="sm" radius="sm">
-              {draftSummary.nodeCount} node
-              {draftSummary.nodeCount === 1 ? "" : "s"}
-            </Badge>
-            <Badge
-              variant="light"
-              color="grape"
-              size="sm"
-              radius="sm"
-              maw="100%"
-            >
-              <Text size="xs" truncate="end">
-                {draftSummary.urlPattern}
-              </Text>
-            </Badge>
-          </Group>
-        </Stack>
-      </Card>
       <Box flex={1} ref={ref} style={{ minHeight: 0 }}>
         <ScrollArea h={height} type="scroll">
           <Stack gap="xs">

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { API_BASE_URL } from "@/api/client";
 import { useStore } from "@/store";
+import { getLayoutedElements } from "@/config/designer/ReactFlowCanvasCallbacks";
 import { getNodeDefinition, nodeCatalog } from "./nodeCatalog";
 import {
   GenerationMessage,
@@ -238,9 +239,8 @@ function finalizeGeneratedWorkflow(
   return nextWorkflow;
 }
 
-function autoArrangeWorkflow(
-  workflow: WorkflowDefinition,
-): WorkflowDefinition {}
+function autoArrangeWorkflow(workflow: WorkflowDefinition): WorkflowDefinition {
+}
 
 function deriveWorkflowName(prompt: string): string {
   const words = prompt

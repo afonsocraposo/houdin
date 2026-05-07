@@ -51,7 +51,7 @@ import { useThrottledCallback } from "@mantine/hooks";
 import { newWorkflowId, generateId } from "@/utils/helpers";
 import { nodeCatalog } from "@/services/nodeCatalog";
 import { validateConfig } from "@/types/config-properties";
-import AiWorkflowChatPanel from "@/components/ai/AiWorkflowChatPanel";
+import Chatbot from "@/components/ai/Chatbot";
 
 export const SESSION_STORAGE_KEY = "workflow-draft";
 interface WorkflowDesignerProps {
@@ -667,22 +667,24 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                   zIndex: 201,
                 }}
               >
-                <Group justify="space-between" mb="sm">
-                  <Group>
-                    <IconRobot />
-                    <Text fw={600}>AI Assistant</Text>
+                <Stack h="100%" style={{ overflow: "hidden" }}>
+                  <Group justify="space-between" mb="sm">
+                    <Group>
+                      <IconRobot />
+                      <Text fw={600}>AI Assistant</Text>
+                    </Group>
+                    <ActionIcon
+                      variant="subtle"
+                      onClick={() => setAiWorkflowChatOpened(false)}
+                      aria-label="Close AI drawer"
+                    >
+                      <IconLayoutSidebarRightCollapse />
+                    </ActionIcon>
                   </Group>
-                  <ActionIcon
-                    variant="subtle"
-                    onClick={() => setAiWorkflowChatOpened(false)}
-                    aria-label="Close AI drawer"
-                  >
-                    <IconLayoutSidebarRightCollapse />
-                  </ActionIcon>
-                </Group>
-                <AiWorkflowChatPanel
-                  workflowId={currentWorkflowId}
-                />
+                  <Box flex={1} mih="0" style={{ overflow: "hidden" }}>
+                    <Chatbot workflowId={currentWorkflowId} />
+                  </Box>
+                </Stack>
               </Paper>
             )}
           </Group>

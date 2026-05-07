@@ -1,21 +1,15 @@
 import { HttpListenerWebRequest } from "@/services/httpListenerWebRequest";
 import { BackgroundWorkflowEngine } from "@/services/backgroundEngine";
-import { WorkflowGenerationService } from "@/services/workflowGenerationService";
 import {
   TriggerFiredCommand,
   WorkflowCommandType,
 } from "@/types/background-workflow";
-import { MessageType } from "@/types/messages";
-import {
-  type GenerationPromptRequest,
-  type GenerationPromptResponse,
-  type StopGenerationRequest,
-} from "@/types/generation-session";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
 import { ApiClient } from "@/api/client";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
+import { ChatbotService } from "../services/chatbot";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -66,6 +60,9 @@ const workflowSyncer = WorkflowSyncer.getInstance();
 workflowSyncer.sync(true);
 workflowSyncer.init();
 
+const chatbot = ChatbotService.getInstance();
+chatbot.init();
+
 ApiClient.startBackgroundProxy();
 
 const activeRuns = new Map<string, WorkflowGenerationService>();
@@ -84,35 +81,6 @@ workflowEngine.initialize().then(() => {
   browser.runtime.onMessage.addListener(
     (message: CustomMessage, sender: any) => {
       switch (message.type) {
-        case MessageType.AI_GENERATION_SUBMIT:
-          return (async () => {
-            const request = message.data as GenerationPromptRequest;
-            const service = new WorkflowGenerationService(request.workflowId);
-            activeRuns.set(request.workflowId, service);
-
-            try {
-              return (await service.submitPrompt(
-                request.prompt,
-              )) as GenerationPromptResponse;
-            } finally {
-              if (activeRuns.get(request.workflowId) === service) {
-                activeRuns.delete(request.workflowId);
-              }
-            }
-          })();
-        case MessageType.AI_GENERATION_STOP:
-          return Promise.resolve(
-            (() => {
-              const request = message.data as StopGenerationRequest;
-              const service = activeRuns.get(request.workflowId);
-              if (!service) {
-                return { stopped: false };
-              }
-
-              activeRuns.delete(request.workflowId);
-              return service.stop();
-            })(),
-          );
         case WorkflowCommandType.TRIGGER_FIRED: {
           const tabId = sender.tab.id;
 

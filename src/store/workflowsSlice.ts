@@ -37,16 +37,15 @@ export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (
     get().workflows.find((w) => w.id === workflowId),
   updateWorkflow: (updatedWorkflow: WorkflowDefinition) =>
     set((state) => {
+      const wf = { ...updatedWorkflow, modifiedAt: Date.now() };
       const newSet = new Set(state.pendingUpdates);
-      newSet.add(updatedWorkflow.id);
-      const index = state.workflows.findIndex(
-        (w) => w.id === updatedWorkflow.id,
-      );
+      newSet.add(wf.id);
+      const index = state.workflows.findIndex((w) => w.id === wf.id);
       const newWorkflows = [...state.workflows];
       if (index !== -1) {
-        newWorkflows[index] = updatedWorkflow;
+        newWorkflows[index] = wf;
       } else {
-        newWorkflows.push(updatedWorkflow);
+        newWorkflows.push(wf);
       }
       return {
         workflows: newWorkflows,

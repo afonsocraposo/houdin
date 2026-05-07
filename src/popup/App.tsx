@@ -18,9 +18,9 @@ import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import Logo from "@/components/Logo";
-import AiWorkflowChatPanel from "@/components/ai/AiWorkflowChatPanel";
 import { selectElementInTab } from "@/services/elementSelectionService";
 import browser from "@/services/browser";
+import ChatbotPanel from "./ChatbotPanel";
 
 type Size = {
   width: number;
@@ -160,7 +160,7 @@ function App() {
 
               <Box flex={1} style={{ minHeight: 0 }}>
                 <Tabs.Panel value="ai" pt="sm" h="100%">
-                  {activeTab === "ai" && <AiWorkflowChatPanel popup />}
+                  {activeTab === "ai" && <ChatbotPanel />}
                 </Tabs.Panel>
 
                 <Tabs.Panel value="workflows" pt="sm" h="100%">
