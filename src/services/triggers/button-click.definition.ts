@@ -14,7 +14,7 @@ const definition = {
     label: "Button Click",
     icon: "🔘",
     description:
-      "Injects a button into the page and triggers the workflow when it's clicked.",
+      "Injects a clickable button into the page (inline or floating) and triggers the workflow when clicked. Handles both injection and click detection.",
   },
   configSchema: {
     properties: {
