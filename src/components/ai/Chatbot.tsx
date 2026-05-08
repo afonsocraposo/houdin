@@ -52,7 +52,7 @@ export default function Chatbot({ workflowId }: ChatbotProps) {
             </Group>
           )}
           {session.status === "error" && (
-            <Text size="sm" c="red">
+            <Text size="sm" c="red" style={{ wordBreak: "break-word" }}>
               {session.error || "An error occurred during the chat session."}
             </Text>
           )}

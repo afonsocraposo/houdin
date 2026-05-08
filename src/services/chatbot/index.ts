@@ -53,19 +53,22 @@ export class ChatbotService {
           case MessageType.RUN_CHAT: {
             // Handle incoming chat messages here
             const { workflowId, input } = message.data;
-            return this.runChat(workflowId, input, isPopup);
+            // Fire and forget - don't block the message channel
+            this.runChat(workflowId, input, isPopup);
+            return;
           }
           case MessageType.STOP_CHAT: {
             // Handle chat stop messages here
             const { workflowId } = message.data;
-            return this.stopChat(workflowId);
+            this.stopChat(workflowId);
+            return;
           }
           case MessageType.CLEAR_CHAT: {
             const { workflowId } = message.data;
             this.stopChat(workflowId);
             saveSession({ workflowId, messages: [] });
             setStatus(workflowId, "ready");
-            return Promise.resolve();
+            return;
           }
         }
       },
@@ -89,9 +92,6 @@ export class ChatbotService {
     this.activeRuns[workflowId] = new AbortController();
 
     try {
-      console.log(
-        `Starting chat for workflowId: ${workflowId} with input: ${input}`,
-      );
       const session = getSession(workflowId);
       if (!session) throw new Error();
 
@@ -115,6 +115,7 @@ export class ChatbotService {
         saveWorkflow(workflow);
       };
 
+      let streamError: Error | undefined;
       const result = streamText({
         system: buildSystemPrompt({ workflow: workflowState }),
         model: this.getModel(),
@@ -129,6 +130,10 @@ export class ChatbotService {
         maxOutputTokens: 2000,
         abortSignal: this.activeRuns[workflowId].signal,
         stopWhen: stepCountIs(10),
+        onError({ error }) {
+          streamError =
+            error instanceof Error ? error : new Error(String(error));
+        },
       });
       setStatus(workflowId, "submitted");
 
@@ -141,9 +146,13 @@ export class ChatbotService {
         }
         await upsertAssistantMessage(workflowId, uiMessage);
       }
-      setStatus(workflowId, "ready");
+
+      if (streamError) {
+        setStatus(workflowId, "error", streamError.message);
+      } else {
+        setStatus(workflowId, "ready");
+      }
     } catch (error) {
-      console.log("Error in runChat:", error);
       setStatus(
         workflowId,
         "error",
