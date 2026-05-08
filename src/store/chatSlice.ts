@@ -12,7 +12,7 @@ export interface ChatSlice {
   updateSession: (
     session: Partial<ChatSession> & { workflowId: string },
   ) => void;
-  deleteSession: (id: string) => void;
+  clearSession: (id: string) => void;
   getSessionByWorkflowId: (workflowId: string) => ChatSession;
 }
 
@@ -31,15 +31,20 @@ export const createChatSlice: StateCreator<ChatSlice> = (set, get) => ({
         },
       },
     })),
-  deleteSession: (id) =>
-    set((state) => {
-      const { [id]: _, ...rest } = state.sessions;
-      return {
-        sessions: rest,
-        popupSessionId:
-          state.popupSessionId === id ? null : state.popupSessionId,
-      };
-    }),
+  clearSession: (id) =>
+    set((state) => ({
+      sessions: {
+        ...state.sessions,
+        [id]: {
+          ...state.sessions[id],
+          messages: [],
+          status: "ready",
+          error: undefined,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      },
+    })),
   getSessionByWorkflowId: (workflowId) => {
     const session = get().sessions[workflowId];
     if (!session) {

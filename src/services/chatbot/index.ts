@@ -1,4 +1,4 @@
-import { CustomMessage } from "@/lib/messages";
+import { CustomMessage, sendMessageToBackground } from "@/lib/messages";
 import browser from "../browser";
 import { MessageType } from "@/types/messages";
 import {
@@ -60,9 +60,28 @@ export class ChatbotService {
             const { workflowId } = message.data;
             return this.stopChat(workflowId);
           }
+          case MessageType.CLEAR_CHAT: {
+            const { workflowId } = message.data;
+            this.stopChat(workflowId);
+            saveSession({ workflowId, messages: [] });
+            setStatus(workflowId, "ready");
+            return Promise.resolve();
+          }
         }
       },
     );
+  }
+
+  public static sendChatMessage(workflowId: string, input: string) {
+    return sendMessageToBackground(MessageType.RUN_CHAT, { workflowId, input });
+  }
+
+  public static stopChat(workflowId: string) {
+    return sendMessageToBackground(MessageType.STOP_CHAT, { workflowId });
+  }
+
+  public static clearChat(workflowId: string) {
+    return sendMessageToBackground(MessageType.CLEAR_CHAT, { workflowId });
   }
 
   private async runChat(workflowId: string, input: string, isPopup: boolean) {

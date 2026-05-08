@@ -1,15 +1,14 @@
 import { useStore } from "@/store";
 import { Box, Group, ScrollArea, Stack, Text } from "@mantine/core";
 import ChatInput from "./ChatInput";
-import { sendMessageToBackground } from "@/lib/messages";
-import { MessageType } from "@/types/messages";
 import { useEffect, useMemo, useRef } from "react";
 import { newWorkflowId } from "@/utils/helpers";
 import ChatMessages from "./ChatMessages";
 import ThinkingWave from "./ThinkingWave";
+import { ChatbotService } from "@/services/chatbot";
 
 type ChatbotProps = {
-  workflowId?: string;
+  workflowId?: string | null;
 };
 export default function Chatbot({ workflowId }: ChatbotProps) {
   const id = useMemo(() => workflowId || newWorkflowId(), [workflowId]);
@@ -17,17 +16,10 @@ export default function Chatbot({ workflowId }: ChatbotProps) {
   const session = getSessionByWorkflowId(id);
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  const sendMessage = (input: string) => {
-    sendMessageToBackground(MessageType.RUN_CHAT, {
-      workflowId: session.workflowId,
-      input,
-    });
-  };
+  const sendMessage = (input: string) =>
+    ChatbotService.sendChatMessage(session.workflowId, input);
 
-  const stopChat = () =>
-    sendMessageToBackground(MessageType.STOP_CHAT, {
-      workflowId: session.workflowId,
-    });
+  const stopChat = () => ChatbotService.stopChat(session.workflowId);
 
   // scroll to bottom when chat loads
   useEffect(() => {

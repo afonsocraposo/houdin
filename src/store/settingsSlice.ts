@@ -29,7 +29,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
       model: "",
       providerUrl: "",
       credentialId: null,
-      expandTools: true,
+      expandTools: false,
     },
     general: {
       analytics: true,

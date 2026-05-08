@@ -92,7 +92,7 @@ export const getCredential = () => {
 export const getWorkflow = (workflowId: string) => {
   const workflow = useStore.getState().readWorkflow(workflowId);
   if (!workflow) {
-    return createBlankWorkflow();
+    return createBlankWorkflow(workflowId);
   }
   return workflow;
 };
