@@ -6,7 +6,6 @@ type ChatMessagesProps = {
   messages: UIMessage[];
 };
 export default function ChatMessages({ messages }: ChatMessagesProps) {
-  console.log(messages);
   return (
     <Stack gap="xs">
       {messages.map((message) => (

@@ -8,18 +8,20 @@ type ChatMessageItemProps = {
 };
 export default function ChatMessageItem({ message }: ChatMessageItemProps) {
   const isUser = message.role === "user";
-  const hasToolParts = message.parts.some((part) => part.type.startsWith("tool-"));
+  const hasToolParts = message.parts.some((part) =>
+    part.type.startsWith("tool-"),
+  );
   return (
     <Group justify={message.role === "user" ? "end" : "start"} align="start">
       <Paper
-        p="sm"
+        px={isUser ? "md" : undefined}
+        py="xs"
         maw="85%"
         w={!isUser && hasToolParts ? "85%" : undefined}
-        px={isUser ? "md" : undefined}
         withBorder={isUser}
         radius="xl"
       >
-        <Stack w="100%">
+        <Stack w="100%" gap="xs">
           {message.parts.map((part, index) => {
             if (part.type === "text") {
               if (message.role === "assistant") {

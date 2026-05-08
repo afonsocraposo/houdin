@@ -29,6 +29,15 @@ export default function Chatbot({ workflowId }: ChatbotProps) {
       workflowId: session.workflowId,
     });
 
+  // scroll to bottom when chat loads
+  useEffect(() => {
+    viewportRef.current?.scrollTo({
+      top: viewportRef.current.scrollHeight,
+      behavior: "instant",
+    });
+  }, [workflowId]);
+
+  // scroll to bottom when new message arrives
   useEffect(() => {
     viewportRef.current?.scrollTo({
       top: viewportRef.current.scrollHeight,

@@ -19,6 +19,7 @@ import {
   IconTool,
 } from "@tabler/icons-react";
 import { useState } from "react";
+import { useStore } from "@/store";
 
 type ToolInvocationCardProps = {
   part: {
@@ -75,7 +76,12 @@ function formatJson(value: unknown) {
 }
 
 export default function ToolInvocationCard({ part }: ToolInvocationCardProps) {
-  const [opened, setOpened] = useState(part.state === "output-error");
+  const expandTools = useStore(
+    (state) => state.settings.workfowGeneration.expandTools,
+  );
+  const [opened, setOpened] = useState(
+    part.state === "output-error" || expandTools,
+  );
   const toolName = getToolName(part.type);
   const stateMeta = getStateMeta(part.state);
   const StateIcon = stateMeta.icon;
@@ -91,7 +97,13 @@ export default function ToolInvocationCard({ part }: ToolInvocationCardProps) {
   } as const;
 
   return (
-    <Paper withBorder radius="md" p={8} w="100%" bg="var(--mantine-color-dark-6)">
+    <Paper
+      withBorder
+      radius="md"
+      p={8}
+      w="100%"
+      bg="var(--mantine-color-dark-6)"
+    >
       <Stack gap={6}>
         <UnstyledButton
           onClick={() => hasDetails && setOpened((current) => !current)}
@@ -138,7 +150,11 @@ export default function ToolInvocationCard({ part }: ToolInvocationCardProps) {
                 <Text size="10px" c="dimmed" mb={4} tt="uppercase" fw={700}>
                   Input
                 </Text>
-                <CodeHighlight code={inputJson!} language="json" styles={codeStyles} />
+                <CodeHighlight
+                  code={inputJson!}
+                  language="json"
+                  styles={codeStyles}
+                />
               </Box>
             ) : null}
 
@@ -147,7 +163,11 @@ export default function ToolInvocationCard({ part }: ToolInvocationCardProps) {
                 <Text size="10px" c="dimmed" mb={4} tt="uppercase" fw={700}>
                   Output
                 </Text>
-                <CodeHighlight code={outputJson!} language="json" styles={codeStyles} />
+                <CodeHighlight
+                  code={outputJson!}
+                  language="json"
+                  styles={codeStyles}
+                />
               </Box>
             ) : null}
 
