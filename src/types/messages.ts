@@ -3,4 +3,5 @@ export enum MessageType {
   RUN_CHAT = "RUN_CHAT",
   STOP_CHAT = "STOP_CHAT",
   CLEAR_CHAT = "CLEAR_CHAT",
+  CLOSE_POPUP = "CLOSE_POPUP",
 }

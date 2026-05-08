@@ -13,6 +13,7 @@ let highlightedElement: HTMLElement | null = null;
 let overlay: HTMLDivElement | null = null;
 let selectionSource: "inspector" | "ai-chat" | "workflow-action" = "inspector";
 let isSilent = false;
+let selectionInstruction = "Click on an element to select it. Press ESC to cancel.";
 let pendingMessageResponder:
   | ((response: ElementSelectionResponse) => void)
   | null = null;
@@ -214,6 +215,9 @@ function cleanupWithoutCancelEvent() {
 function startSelection(payload?: ElementSelectionPayload) {
   selectionSource = payload?.source ?? "inspector";
   isSilent = payload?.silent === true;
+  selectionInstruction =
+    payload?.instruction?.trim() ||
+    "Click on an element to select it. Press ESC to cancel.";
   initSelector();
 }
 
@@ -250,7 +254,7 @@ function initSelector() {
         font-family: sans-serif;
         font-size: 14px;
       ">
-        Click on an element to select it. Press ESC to cancel.
+        ${selectionInstruction}
       </div>
     `;
   document.body.appendChild(instructions);

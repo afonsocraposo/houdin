@@ -16,9 +16,11 @@ import {
   validateWorkflow,
 } from "./workflowTools";
 import { getNodeDefinition } from "../nodeCatalog";
-import { getNodeSchema } from "../workflowGenerationNodeTools";
+import { getNodeSchema } from "./node-tools";
 import { newActionId, newTriggerId } from "@/utils/helpers";
 import { WorkflowDefinition } from "@/types/workflow";
+import { selectElementInTab } from "@/services/elementSelectionService";
+import { MessageType } from "@/types/messages";
 
 type createToolsParams = {
   workflowId: string;
@@ -112,6 +114,76 @@ export function createTools({
 
         return {
           text: result.result ?? "",
+        };
+      },
+    }),
+    promptUserToSelectElement: tool({
+      description:
+        "Prompt the user to pick an element on the active page with the element inspector. Use this when the requested page target is ambiguous or the user wants to point at a specific element.",
+      inputSchema: z.object({
+        instruction: z
+          .string()
+          .min(1)
+          .max(160)
+          .optional()
+          .describe(
+            "Short instruction shown in the page overlay, for example 'Select where the button should be injected.'",
+          ),
+      }),
+      execute: async ({ instruction }) => {
+        if (!popup) {
+          throw new Error(
+            "promptUserToSelectElement tool can only be used in popup context",
+          );
+        }
+
+        const [tab] = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+
+        if (!tab?.id) {
+          throw new Error("No active tab available for element selection");
+        }
+
+        // Close the popup so the user can interact with the page
+        await chrome.runtime.sendMessage({
+          type: MessageType.CLOSE_POPUP,
+        }).catch(() => {});
+
+        // Small delay to let the popup close before starting selection
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        const response = await selectElementInTab(tab.id, {
+          source: "ai-chat",
+          silent: true,
+          instruction,
+        });
+
+        // Restore the popup after selection completes
+        try {
+          await chrome.action.openPopup();
+        } catch {
+          // openPopup may not be supported in all browsers; silently ignore
+        }
+
+        if (!response.ok) {
+          throw new Error(response.error || "Failed to select element");
+        }
+
+        if (response.canceled || !response.data) {
+          return {
+            canceled: true,
+          };
+        }
+
+        return {
+          canceled: false,
+          selector: response.data.selector,
+          tagName: response.data.element.tagName,
+          id: response.data.element.id,
+          className: response.data.element.className,
+          textContent: response.data.element.textContent,
         };
       },
     }),
@@ -230,7 +302,7 @@ export function createTools({
     }),
     validateWorkflow: tool({
       description:
-        "Validate the current workflow before enabling it. Checks Liquid variable references, required config fields, missing triggers, and disconnected or unreachable nodes. Always call this after building or modifying a workflow and before setWorkflowEnabled.",
+        "Validate the current workflow. Checks Liquid variable references, required config fields, missing triggers, and disconnected or unreachable nodes. Always call this after building or modifying a workflow, and make it the final workflow step before setWorkflowEnabled or replying that the workflow is done.",
       inputSchema: z.object({}),
       execute: async () => {
         return validateWorkflow(getWorkflowState());

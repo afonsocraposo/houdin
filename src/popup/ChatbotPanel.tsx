@@ -1,10 +1,11 @@
+import browser from "@/services/browser";
 import Chatbot from "@/components/ai/Chatbot";
 import ChatSessionSelect from "@/components/ai/ChatSessionSelect";
 import { ChatbotService } from "@/services/chatbot";
 import { useStore } from "@/store";
 import { newWorkflowId } from "@/utils/helpers";
 import { ActionIcon, Badge, Group, Stack, Tooltip } from "@mantine/core";
-import { IconEraser, IconPlus } from "@tabler/icons-react";
+import { IconEraser, IconExternalLink, IconPlus } from "@tabler/icons-react";
 
 export default function ChatbotPanel() {
   const { popupSessionId, setPopupSessionId } = useStore();
@@ -20,6 +21,15 @@ export default function ChatbotPanel() {
   };
   const handleClearSession = () => {
     if (popupSessionId) ChatbotService.clearChat(popupSessionId);
+  };
+  const handleOpenInDesigner = () => {
+    if (popupSessionId) {
+      const designerUrl =
+        browser.runtime.getURL("src/config/index.html") +
+        `#/designer/${popupSessionId}`;
+      browser.tabs.create({ url: designerUrl });
+      window.close();
+    }
   };
 
   return (
@@ -67,6 +77,16 @@ export default function ChatbotPanel() {
             >
               {workflow.urlPattern}
             </Badge>
+            <Tooltip label="Open workflow in designer">
+              <ActionIcon
+                variant="subtle"
+                size="input-sm"
+                aria-label="Open workflow in designer"
+                onClick={handleOpenInDesigner}
+              >
+                <IconExternalLink size={16} />
+              </ActionIcon>
+            </Tooltip>
           </Group>
         )}
       </Group>

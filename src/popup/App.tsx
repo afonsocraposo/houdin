@@ -20,6 +20,8 @@ import ExecutionHistory from "./ExecutionHistory";
 import Logo from "@/components/Logo";
 import { selectElementInTab } from "@/services/elementSelectionService";
 import browser from "@/services/browser";
+import { MessageType } from "@/types/messages";
+import { CustomMessage } from "@/lib/messages";
 import ChatbotPanel from "./ChatbotPanel";
 
 type Size = {
@@ -39,6 +41,17 @@ function App() {
   useEffect(() => {
     loadCurrentUrl();
     loadSavedTab();
+  }, []);
+
+  // Listen for CLOSE_POPUP messages from the background
+  useEffect(() => {
+    const listener = (message: CustomMessage) => {
+      if (message.type === MessageType.CLOSE_POPUP) {
+        window.close();
+      }
+    };
+    browser.runtime.onMessage.addListener(listener);
+    return () => browser.runtime.onMessage.removeListener(listener);
   }, []);
 
   const loadSavedTab = async () => {

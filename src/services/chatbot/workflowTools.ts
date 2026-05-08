@@ -570,7 +570,7 @@ export function updateNodeConfig(
     result: [
       `Updated config for node '${nodeId}'.`,
       variableValidation.hasLiquidReferences
-        ? "Config uses Liquid variables. Call validateWorkflow after wiring the workflow to verify node references and output properties before enabling it."
+        ? "Config uses Liquid variables. After wiring the workflow, call validateWorkflow to verify node references and output properties, and keep validation as your final workflow step before enabling it or declaring the workflow finished."
         : null,
       ...variableValidation.warnings,
     ]

@@ -3,6 +3,7 @@ export type ElementSelectionSource = "inspector" | "ai-chat" | "workflow-action"
 export interface ElementSelectionPayload {
   source?: ElementSelectionSource;
   silent?: boolean;
+  instruction?: string;
 }
 
 export interface ElementSelectedDetail {

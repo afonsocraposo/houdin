@@ -7,21 +7,56 @@ import type {
 
 const START_ELEMENT_SELECTION = "START_ELEMENT_SELECTION";
 
+const RESTRICTED_URL_PREFIXES = [
+  "chrome://",
+  "chrome-extension://",
+  "moz-extension://",
+  "about:",
+  "edge://",
+  "brave://",
+];
+
+function isRestrictedUrl(url: string | undefined): boolean {
+  if (!url) return true;
+  return RESTRICTED_URL_PREFIXES.some((prefix) => url.startsWith(prefix));
+}
+
 export async function selectElementInTab(
   tabId: number,
   payload: ElementSelectionPayload,
 ): Promise<ElementSelectionResponse> {
-  const response = (await sendMessageToContentScript(
-    tabId,
-    START_ELEMENT_SELECTION,
-    payload,
-  )) as ElementSelectionResponse | null;
-
-  if (!response) {
-    return { ok: false, error: "No response from content script" };
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (isRestrictedUrl(tab.url)) {
+      return {
+        ok: false,
+        error:
+          "Element selection is not available on this page. Navigate to a regular webpage.",
+      };
+    }
+  } catch {
+    return { ok: false, error: "Could not access the active tab." };
   }
 
-  return response;
+  try {
+    const response = (await sendMessageToContentScript(
+      tabId,
+      START_ELEMENT_SELECTION,
+      payload,
+    )) as ElementSelectionResponse | null;
+
+    if (!response) {
+      return { ok: false, error: "No response from content script" };
+    }
+
+    return response;
+  } catch {
+    return {
+      ok: false,
+      error:
+        "Could not reach the page inspector. Try refreshing the page and trying again.",
+    };
+  }
 }
 
 export async function selectElementInPage(
