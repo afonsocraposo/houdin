@@ -65,8 +65,6 @@ chatbot.init();
 
 ApiClient.startBackgroundProxy();
 
-const activeRuns = new Map<string, WorkflowGenerationService>();
-
 const workflowEngine = new BackgroundWorkflowEngine();
 workflowEngine.initialize().then(() => {
   browser.webNavigation.onCompleted.addListener(

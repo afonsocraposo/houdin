@@ -1,25 +1,3 @@
-import { WorkflowExecutionStatus } from "@/types/workflow";
-
-export type GenerationMessageRole = "system" | "user" | "assistant" | "tool";
-
-export type GenerationMessageKind =
-  | "chat"
-  | "plan"
-  | "patch"
-  | "test"
-  | "result"
-  | "error"
-  | "thinking"
-  | "tool";
-
-export interface GenerationMessage {
-  id: string;
-  role: GenerationMessageRole;
-  content: string;
-  createdAt: number;
-  kind?: GenerationMessageKind;
-}
-
 export interface SelectedElementContext {
   selector: string;
   tagName?: string;
@@ -43,37 +21,4 @@ export interface PageContextSnapshot {
   selectedText?: string;
   selectedElement?: SelectedElementContext;
   visibleElements: VisibleElementContext[];
-}
-
-export interface GenerationExecutionRef {
-  executionId: string;
-  workflowId: string;
-  status: WorkflowExecutionStatus;
-  startedAt: number;
-  completedAt?: number;
-  summary?: string;
-}
-
-export interface GenerationSession {
-  id: string;
-  workflowId: string | null;
-  messages: GenerationMessage[];
-  pageContext: PageContextSnapshot | null;
-  executionRefs: GenerationExecutionRef[];
-  revision: number;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface GenerationPromptRequest {
-  workflowId: string;
-  prompt: string;
-}
-
-export interface GenerationPromptResponse {
-  session: GenerationSession;
-}
-
-export interface StopGenerationRequest {
-  workflowId: string;
 }

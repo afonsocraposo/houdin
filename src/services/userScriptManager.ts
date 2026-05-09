@@ -255,8 +255,14 @@ export class UserScriptManager {
             const Return = function(data) {
                 resolve({ success: true, data: data });
             }
-            ${userScript}
-            // If no Return was called, resolve with success
+            const __userFn = function() {
+                ${userScript}
+            };
+            const __result = __userFn();
+            if (__result !== undefined) {
+                resolve({ success: true, data: __result });
+            }
+            // If no Return was called and no value returned, resolve with success
             resolve({ success: true, data: null });
         }).catch(error => ({success: false, error: error.message || error.toString()}));
       })();
@@ -270,8 +276,14 @@ export class UserScriptManager {
         const Return = function(data) {
           resolve({ success: true, data: data });
         };
-        ${userScript}
-        // If no Return was called, auto-resolve
+        const __userFn = function() {
+            ${userScript}
+        };
+        const __result = __userFn();
+        if (__result !== undefined) {
+            resolve({ success: true, data: __result });
+        }
+        // If no Return was called and no value returned, auto-resolve
         resolve({ success: true, data: null });
       }).catch(error => ({success: false, error: error.message || error.toString()}));
 
