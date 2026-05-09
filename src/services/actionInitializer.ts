@@ -17,6 +17,8 @@ import { TypeTextAction } from "./actions/type-text.runtime";
 import { InputAction } from "./actions/input.runtime";
 import { FormAction } from "./actions/form.runtime";
 import { RemoveElementAction } from "./actions/remove-element.runtime";
+import { ReplaceElementContentAction } from "./actions/replace-element-content.runtime";
+import { ReplaceTextAction } from "./actions/replace-text.runtime";
 import { WriteClipboardAction } from "./actions/write-clipboard.runtime";
 import { LocalStorageAction } from "./actions/local-storage.runtime";
 import { SessionStorageAction } from "./actions/session-storage.runtime";
@@ -60,6 +62,8 @@ export function initializeActions(): void {
   registry.register(InputAction);
   registry.register(FormAction);
   registry.register(RemoveElementAction);
+  registry.register(ReplaceElementContentAction);
+  registry.register(ReplaceTextAction);
   registry.register(WriteClipboardAction);
   registry.register(LocalStorageAction);
   registry.register(SessionStorageAction);

@@ -20,6 +20,8 @@ import open_url from "../actions/open-url.definition";
 import paste_clipboard from "../actions/paste-clipboard.definition";
 import press_key from "../actions/press-key.definition";
 import remove_element from "../actions/remove-element.definition";
+import replace_element_content from "../actions/replace-element-content.definition";
+import replace_text from "../actions/replace-text.definition";
 import session_storage from "../actions/session-storage.definition";
 import select_element from "../actions/select-element.definition";
 import show_modal from "../actions/show-modal.definition";
@@ -50,6 +52,8 @@ export const actions: NodeDefinitionRecord = {
   "paste-clipboard": paste_clipboard,
   "press-key": press_key,
   "remove-element": remove_element,
+  "replace-element-content": replace_element_content,
+  "replace-text": replace_text,
   "session-storage": session_storage,
   "select-element": select_element,
   "show-modal": show_modal,
