@@ -78,6 +78,15 @@ workflowEngine.initialize().then(() => {
     { url: [{ schemes: ["http", "https"] }] },
   );
 
+  browser.webNavigation.onHistoryStateUpdated.addListener(
+    (details: { url: string; tabId: number; frameId: number }) => {
+      if (details.frameId === 0) {
+        workflowEngine.onNewUrl(details.tabId, details.url);
+      }
+    },
+    { url: [{ schemes: ["http", "https"] }] },
+  );
+
   browser.runtime.onMessage.addListener(
     (message: CustomMessage, sender: any) => {
       switch (message.type) {
