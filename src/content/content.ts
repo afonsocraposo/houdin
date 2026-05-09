@@ -296,6 +296,16 @@ if ((window as any).houdinExtensionInitialized) {
         sendResponse: (response: StatusMessage) => void,
       ) => {
         switch (message.type) {
+          case WorkflowCommandType.CLEANUP_TRIGGERS: {
+            const triggerRegistry = TriggerRegistry.getInstance();
+            triggerRegistry.cleanupAll().then(() => {
+              sendResponse({ success: true });
+            }).catch((error) => {
+              console.error("Failed to cleanup triggers:", error);
+              sendResponse({ success: false, error: String(error) });
+            });
+            return true; // async response
+          }
           case WorkflowCommandType.INIT_TRIGGER:
             const initTriggerCommand = message.data as TriggerCommand;
             const start = Date.now();

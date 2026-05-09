@@ -13,14 +13,11 @@ export class PopupTrigger extends BaseTrigger<
   PopupTriggerConfig,
   PopupTriggerOutput
 > {
+  private cleanupFns: (() => void)[] = [];
+
   constructor() {
     super(definition);
   }
-  private messageListener?: (
-    message: any,
-    sender: any,
-    sendResponse: any,
-  ) => void;
 
   async setup(
     _config: PopupTriggerConfig,
@@ -28,7 +25,7 @@ export class PopupTrigger extends BaseTrigger<
     _nodeId: string,
     onTrigger: (data: PopupTriggerOutput) => Promise<void>,
   ): Promise<void> {
-    this.messageListener = (
+    const messageListener = (
       message: CustomMessage,
       _sender: any,
       sendResponse: any,
@@ -41,13 +38,12 @@ export class PopupTrigger extends BaseTrigger<
         sendResponse({ success: true });
       }
     };
-    browser.runtime.onMessage.addListener(this.messageListener);
+    browser.runtime.onMessage.addListener(messageListener);
+    this.cleanupFns.push(() => browser.runtime.onMessage.removeListener(messageListener));
   }
 
   async cleanup(): Promise<void> {
-    if (this.messageListener) {
-      browser.runtime.onMessage.removeListener(this.messageListener);
-      this.messageListener = undefined;
-    }
+    this.cleanupFns.forEach((fn) => fn());
+    this.cleanupFns = [];
   }
 }

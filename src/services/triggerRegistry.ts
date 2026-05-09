@@ -116,6 +116,13 @@ export class TriggerRegistry {
     return this.triggers.has(type);
   }
 
+  // Clean up all active triggers (remove event listeners, observers, timeouts, injected elements)
+  async cleanupAll(): Promise<void> {
+    for (const trigger of this.triggers.values()) {
+      await trigger.cleanup();
+    }
+  }
+
   // Get trigger categories for UI (compatible with existing NODE_CATEGORIES)
   getTriggerCategories() {
     return {

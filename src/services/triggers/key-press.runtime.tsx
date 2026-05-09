@@ -13,6 +13,8 @@ export class KeyPressTrigger extends BaseTrigger<
   KeyPressTriggerConfig,
   KeyPressTriggerOutput
 > {
+  private cleanupFns: (() => void)[] = [];
+
   constructor() {
     super(definition);
   }
@@ -36,6 +38,12 @@ export class KeyPressTrigger extends BaseTrigger<
       }
     };
     window.addEventListener("keyup", handleKeyPress);
+    this.cleanupFns.push(() => window.removeEventListener("keyup", handleKeyPress));
+  }
+
+  async cleanup(): Promise<void> {
+    this.cleanupFns.forEach((fn) => fn());
+    this.cleanupFns = [];
   }
 
   private formatKeyCombo(event: KeyboardEvent): string {

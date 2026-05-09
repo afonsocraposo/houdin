@@ -19,6 +19,10 @@ import { initializeBackgroundActions } from "./backgroundActionInitializer";
 
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();
+  private pendingNavigationEvents = new Map<
+    number,
+    { url: string; timeoutId: ReturnType<typeof setTimeout> }
+  >();
   private workflows: WorkflowDefinition[] = [];
 
   constructor() {
@@ -43,6 +47,24 @@ export class BackgroundWorkflowEngine {
   }
 
   async onNewUrl(tabId: number, url: string): Promise<void> {
+    const pendingNavigation = this.pendingNavigationEvents.get(tabId);
+    // Some sites trigger both onCompleted and onHistoryStateUpdated for the same
+    // navigation, so ignore a repeated tab+URL event in a short window.
+    if (pendingNavigation?.url === url) {
+      return;
+    }
+
+    if (pendingNavigation) {
+      clearTimeout(pendingNavigation.timeoutId);
+    }
+
+    this.pendingNavigationEvents.set(tabId, {
+      url,
+      timeoutId: setTimeout(() => {
+        this.pendingNavigationEvents.delete(tabId);
+      }, 100),
+    });
+
     // Get the active workflow IDs for this tab
     const runningWorkflowIds = Array.from(this.activeExecutors.values())
       .filter((executor) => executor.tabId === tabId)
@@ -66,6 +88,19 @@ export class BackgroundWorkflowEngine {
         message: `Could not initialize content script for workflows on this page.`,
       });
       return;
+    }
+
+    // Clean up any previously active triggers before setting up new ones,
+    // so that SPA navigations (back/forward/pushState) don't accumulate
+    // duplicate event listeners.
+    try {
+      await sendMessageToContentScript(
+        tabId,
+        WorkflowCommandType.CLEANUP_TRIGGERS,
+        { type: WorkflowCommandType.CLEANUP_TRIGGERS },
+      );
+    } catch (error) {
+      console.warn("Failed to cleanup triggers:", error);
     }
 
     matchingWorkflows.forEach((workflow) => {
