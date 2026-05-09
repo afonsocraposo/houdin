@@ -17,6 +17,7 @@ import { ActionRegistry } from "../actionRegistry";
 import { NotificationService } from "../notification";
 import { ExecutionContext } from "./executionContext";
 import { BackgroundWorkflowEngine } from "../backgroundEngine";
+import { useSessionStore } from "@/store";
 
 export class WorkflowExecutor {
   public readonly id: string;
@@ -60,6 +61,7 @@ export class WorkflowExecutor {
     duration: number,
     config: Record<string, any>,
   ): Promise<void> {
+    useSessionStore.getState().addRunningWorkflow(this.workflowId);
     console.debug(
       "Trigger fired for workflow:",
       this.workflow.name,
@@ -303,5 +305,6 @@ export class WorkflowExecutor {
     }
     this.onDone?.(this.id);
     this.executionTracker.completeExecution(success);
+    useSessionStore.getState().removeRunningWorkflow(this.workflowId);
   }
 }

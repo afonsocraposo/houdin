@@ -1,5 +1,5 @@
 import { TriggerNodeData, WorkflowDefinition } from "@/types/workflow";
-import { ActionIcon, Card, Group, Stack, Text } from "@mantine/core";
+import { ActionIcon, Card, Group, Loader, Stack, Text } from "@mantine/core";
 import browser from "@/services/browser";
 import { sendMessageToContentScript } from "@/lib/messages";
 import { MessageType } from "@/types/messages";
@@ -7,11 +7,14 @@ import { PopupTriggerMessage } from "@/types/background-workflow";
 import { IconPlayerPlay } from "@tabler/icons-react";
 import { useMemo } from "react";
 
+type ActiveWorkflowItemProps = {
+  workflow: WorkflowDefinition;
+  running?: boolean;
+};
 export default function ActiveWorkflowItem({
   workflow,
-}: {
-  workflow: WorkflowDefinition;
-}) {
+  running = false,
+}: ActiveWorkflowItemProps) {
   const popupTrigger = useMemo(
     () =>
       workflow.nodes.find(
@@ -81,9 +84,10 @@ export default function ActiveWorkflowItem({
             size="sm"
             title="Trigger workflow"
           >
-            <IconPlayerPlay />
+            {running ? <Loader size="xs" /> : <IconPlayerPlay />}
           </ActionIcon>
         )}
+        {!popupTrigger && running && <Loader size="xs" />}
       </Group>
     </Card>
   );

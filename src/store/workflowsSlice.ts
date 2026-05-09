@@ -16,6 +16,9 @@ export interface WorkflowsSlice {
   clearPendingUpdates: () => void;
   pendingDeletes: Record<string, number>;
   clearPendingDeletes: () => void;
+  runningWorkflows: Set<string>;
+  addRunningWorkflow: (workflowId: string) => void;
+  removeRunningWorkflow: (workflowId: string) => void;
 }
 
 export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (
@@ -89,4 +92,17 @@ export const createWorkflowsSlice: StateCreator<WorkflowsSlice> = (
   clearPendingUpdates: () => set(() => ({ pendingUpdates: new Set<string>() })),
   pendingDeletes: {},
   clearPendingDeletes: () => set(() => ({ pendingDeletes: {} })),
+  runningWorkflows: new Set<string>(),
+  addRunningWorkflow: (workflowId: string) =>
+    set((state) => {
+      return {
+        runningWorkflows: new Set(state.runningWorkflows).add(workflowId),
+      };
+    }),
+  removeRunningWorkflow: (workflowId: string) =>
+    set((state) => {
+      const newSet = new Set(state.runningWorkflows);
+      newSet.delete(workflowId);
+      return { runningWorkflows: newSet };
+    }),
 });

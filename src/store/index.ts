@@ -9,6 +9,7 @@ import { createExecutionsSlice, ExecutionsSlice } from "./executionsSlice";
 import { createSyncSlice, SyncSlice } from "./syncSlice";
 import { createSettingsSlice, SettingsSlice } from "./settingsSlice";
 import { ChatSlice, createChatSlice } from "./chatSlice";
+import { createRunningSlice, RunningSlice } from "./runningSlice";
 
 type StoreState = WorkflowsSlice &
   CredentialsSlice &
@@ -17,7 +18,7 @@ type StoreState = WorkflowsSlice &
   SettingsSlice &
   ChatSlice;
 
-type SessionStoreState = AccountSlice;
+type SessionStoreState = AccountSlice & RunningSlice;
 
 const browserStorageAdapter: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
@@ -29,6 +30,19 @@ const browserStorageAdapter: StateStorage = {
   },
   removeItem: async (name: string): Promise<void> => {
     await browser.storage.local.remove([name]);
+  },
+};
+
+const browserSessionStorageAdapter: StateStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    const result = await browser.storage.session.get([name]);
+    return result[name] || null;
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    await browser.storage.session.set({ [name]: value });
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await browser.storage.session.remove([name]);
   },
 };
 
@@ -64,10 +78,23 @@ export const useSessionStore = create<SessionStoreState>()(
   persist(
     (...a) => ({
       ...createAccountSlice(...a),
+      ...createRunningSlice(...a),
     }),
     {
       name: "houdin-session-store",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => browserSessionStorageAdapter),
+      partialize: (state) => ({
+        ...state,
+        runningWorkflows: Array.from(state.runningWorkflows),
+      }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as any;
+        return {
+          ...currentState,
+          ...persisted,
+          runningWorkflows: new Set(persisted.runningWorkflows || []),
+        };
+      },
     },
   ),
 );
@@ -77,8 +104,16 @@ type StoreWithPersist = Mutate<
   [["zustand/persist", unknown]]
 >;
 
+type SessionStoreWithPersist = Mutate<
+  StoreApi<SessionStoreState>,
+  [["zustand/persist", unknown]]
+>;
+
 browser.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === "local" && changes["houdin-store"]) {
     (useStore as StoreWithPersist).persist.rehydrate();
+  }
+  if (areaName === "session" && changes["houdin-session-store"]) {
+    (useSessionStore as SessionStoreWithPersist).persist.rehydrate();
   }
 });
