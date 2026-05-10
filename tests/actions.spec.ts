@@ -9,6 +9,7 @@ import { DEMO_INJECT_COMPONENT_WORKFLOW } from "./demoWorkflows/injectComponent"
 import { DEMO_HTTP_REQUEST_WORKFLOW } from "./demoWorkflows/httpRequest";
 import { DEMO_COOKIE_WORKFLOW } from "./demoWorkflows/cookie";
 import { DEMO_CREATE_VARIABLE_WORKFLOW } from "./demoWorkflows/createVariable";
+import { DEMO_SAVE_FILE_WORKFLOW } from "./demoWorkflows/saveFile";
 
 test.describe("Actions execution", () => {
   test("can execute custom script action", async ({ page, baseUrl }) => {
@@ -53,17 +54,18 @@ test.describe("Actions execution", () => {
     await expect(page.locator('text="Hello world"')).toBeVisible();
   });
 
-  test("can execute clipboard action", async ({ page, baseUrl }) => {
+  test("can execute clipboard action", async ({ page, baseUrl, context }) => {
     await importWorkflow(baseUrl, page, DEMO_CLIPBOARD_WORKFLOW);
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("https://example.com");
-    await page.waitForTimeout(10); // wait for clipboard action to complete
 
-    // Read from clipboard
-    const clipboardText = await page.evaluate(async () => {
-      return await navigator.clipboard.readText();
-    });
-
-    expect(clipboardText).toBe("Hello world");
+    await expect
+      .poll(async () => {
+        return page.evaluate(async () => {
+          return navigator.clipboard.readText();
+        });
+      })
+      .toBe("Hello world");
   });
 
   test("can execute inject component action", async ({ page, baseUrl }) => {
@@ -102,5 +104,16 @@ test.describe("Actions execution", () => {
     await expect(
       page.locator('text="Hello World from Variable Action!"'),
     ).toBeVisible();
+  });
+
+  test("can execute save file action", async ({ page, baseUrl, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    const downloadPromise = page.waitForEvent("download");
+    await importWorkflow(baseUrl, page, DEMO_SAVE_FILE_WORKFLOW);
+    await page.goto("https://example.com");
+
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe("hello-world.txt");
   });
 });

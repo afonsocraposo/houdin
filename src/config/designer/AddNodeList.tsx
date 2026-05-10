@@ -215,7 +215,12 @@ export default function AddNodeList({
                             variant="subtle"
                             fullWidth
                             justify="start"
-                            style={{ minWidth: 0 }}
+                            style={{
+                              minWidth: 0,
+                              height: "auto",
+                              whiteSpace: "normal",
+                              textAlign: "start",
+                            }}
                             leftSection={
                               <NodeIcon icon={item.icon} size={22} />
                             }
@@ -244,7 +249,10 @@ export default function AddNodeList({
                                 c="dimmed"
                                 title={item.description}
                                 lineClamp={2}
-                                truncate="end"
+                                style={{
+                                  whiteSpace: "normal",
+                                  wordBreak: "break-word",
+                                }}
                               >
                                 {item.description}
                               </Text>

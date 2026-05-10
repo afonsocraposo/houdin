@@ -10,6 +10,7 @@ export interface SettingsSlice {
       model: string;
       providerUrl: string;
       credentialId: string | null;
+      expandTools: boolean;
     };
     general: {
       analytics: boolean;
@@ -28,6 +29,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
       model: "",
       providerUrl: "",
       credentialId: null,
+      expandTools: false,
     },
     general: {
       analytics: true,

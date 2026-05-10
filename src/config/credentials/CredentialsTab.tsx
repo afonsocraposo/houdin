@@ -52,6 +52,8 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
     return hash;
   };
 
+  const normalizeCredentialName = (name: string) => name.trim().toLowerCase();
+
   const handleSave = async () => {
     if (!formData.name || !formData.type.trim()) {
       NotificationService.showErrorNotification({
@@ -73,12 +75,17 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
         });
         return;
       }
-      const id = generateCredentialId(
-        formData.type,
-        formData.name.toLowerCase(),
-      ).substr(0, 12);
+      const normalizedName = normalizeCredentialName(formData.name);
+      const id = generateCredentialId(formData.type, normalizedName).substr(0, 12);
       const credentialId = `credential-${id}`;
-      if (credentials.some((c) => c.id === credentialId)) {
+      const duplicateCredential = credentials.find(
+        (credential) =>
+          credential.id !== editingCredential?.id &&
+          credential.type === formData.type &&
+          normalizeCredentialName(credential.name) === normalizedName,
+      );
+
+      if (duplicateCredential) {
         NotificationService.showErrorNotification({
           title: "Credential with this type and name already exists",
         });
@@ -86,7 +93,7 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
       }
 
       const credential: Credential = {
-        id: credentialId,
+        id: editingCredential?.id || credentialId,
         name: formData.name,
         type: formData.type,
         description: formData.description,
@@ -96,7 +103,7 @@ export const CredentialsTab: React.FC<CredentialsTabProps> = ({ onSaved }) => {
       };
 
       const updatedCredentials = editingCredential
-        ? credentials.map((c) => (c.id === credential.id ? credential : c))
+        ? credentials.map((c) => (c.id === editingCredential.id ? credential : c))
         : [...credentials, credential];
 
       setCredentials(updatedCredentials);

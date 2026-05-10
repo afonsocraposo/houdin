@@ -44,6 +44,7 @@
   "license": "FSL-1.1-ALv2",
   "dependencies": {
     "@ai-sdk/openai": "^3.0.58",
+    "@ai-sdk/react": "^3.0.177",
     "@dagrejs/dagre": "^1.1.5",
     "@mantine/code-highlight": "^8.2.4",
     "@mantine/core": "^8.2.4",

@@ -28,6 +28,11 @@ const syncSchema = {
 };
 const aiAssistantSchema = {
   properties: {
+    expandTools: booleanProperty({
+      label: "Expand Tools in AI Assistant",
+      description:
+        "When enabled, the AI Assistant will provide more detailed information about the tools it uses, including their purpose and how it plans to use them in the workflow.",
+    }),
     provider: selectProperty({
       label: "AI Assistant Provider",
       description: "Select the provider for the AI Assistant",

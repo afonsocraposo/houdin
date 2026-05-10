@@ -28,6 +28,8 @@ export class ButtonClickTrigger extends BaseTrigger<
   ButtonClickTriggerConfig,
   ButtonClickTriggerOutput
 > {
+  private cleanupFns: (() => void)[] = [];
+
   constructor() {
     super(definition);
   }
@@ -96,5 +98,19 @@ export class ButtonClickTrigger extends BaseTrigger<
       "workflow-component-trigger",
       handleComponentTrigger,
     );
+
+    this.cleanupFns.push(() => {
+      document.removeEventListener(
+        "workflow-component-trigger",
+        handleComponentTrigger,
+      );
+      const container = document.getElementById(`container-${workflowId}-${nodeId}`);
+      container?.remove();
+    });
+  }
+
+  async cleanup(): Promise<void> {
+    this.cleanupFns.forEach((fn) => fn());
+    this.cleanupFns = [];
   }
 }

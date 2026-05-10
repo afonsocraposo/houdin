@@ -1,5 +1,5 @@
 import { Text, Badge, Group, Stack, ScrollArea } from "@mantine/core";
-import { useStore } from "@/store";
+import { useSessionStore, useStore } from "@/store";
 import ActiveWorkflowItem from "./ActiveWorkflowItem";
 
 interface ActiveWorkflowsProps {
@@ -8,6 +8,7 @@ interface ActiveWorkflowsProps {
 
 function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const workflows = useStore((state) => state.workflows);
+  const { isWorkflowRunning } = useSessionStore();
 
   const getActiveWorkflows = () => {
     if (!currentUrl) return [];
@@ -60,7 +61,11 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
           {activeWorkflows.length > 0 ? (
             <Stack gap="xs">
               {activeWorkflows.map((workflow) => (
-                <ActiveWorkflowItem key={workflow.id} workflow={workflow} />
+                <ActiveWorkflowItem
+                  key={workflow.id}
+                  workflow={workflow}
+                  running={isWorkflowRunning(workflow.id)}
+                />
               ))}
             </Stack>
           ) : (

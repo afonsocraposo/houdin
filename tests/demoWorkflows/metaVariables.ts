@@ -31,8 +31,8 @@ export const DEMO_META_VARIABLES_WORKFLOW = {
     {
       data: {
         config: {
-          modalContent: "{{meta.url}}",
-          modalTitle: "meta.url",
+          modalContent: "{{meta.pageTitle}}",
+          modalTitle: "meta.pageTitle",
         },
         type: "show-modal",
       },

@@ -10,7 +10,7 @@ import {
   actionCatalog,
   getNodeDefinition,
   triggerCatalog,
-} from "./nodeCatalog";
+} from "../nodeCatalog";
 
 type WorkflowNodeToolContext = {
   getWorkflow: () => WorkflowDefinition;

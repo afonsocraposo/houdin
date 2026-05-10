@@ -13,6 +13,7 @@ let highlightedElement: HTMLElement | null = null;
 let overlay: HTMLDivElement | null = null;
 let selectionSource: "inspector" | "ai-chat" | "workflow-action" = "inspector";
 let isSilent = false;
+let selectionInstruction = "Click on an element to select it. Press ESC to cancel.";
 let pendingMessageResponder:
   | ((response: ElementSelectionResponse) => void)
   | null = null;
@@ -214,6 +215,9 @@ function cleanupWithoutCancelEvent() {
 function startSelection(payload?: ElementSelectionPayload) {
   selectionSource = payload?.source ?? "inspector";
   isSilent = payload?.silent === true;
+  selectionInstruction =
+    payload?.instruction?.trim() ||
+    "Click on an element to select it. Press ESC to cancel.";
   initSelector();
 }
 
@@ -236,23 +240,11 @@ function initSelector() {
   // Show instructions
   const instructions = document.createElement("div");
   instructions.id = "houdin-selector-instructions";
-  instructions.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #333;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        z-index: 1000000;
-        font-family: sans-serif;
-        font-size: 14px;
-      ">
-        Click on an element to select it. Press ESC to cancel.
-      </div>
-    `;
+  const instructionText = document.createElement("div");
+  instructionText.style.cssText =
+    "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 20px;border-radius:5px;z-index:1000000;font-family:sans-serif;font-size:14px;";
+  instructionText.textContent = selectionInstruction;
+  instructions.appendChild(instructionText);
   document.body.appendChild(instructions);
 
   // Remove instructions after 3 seconds

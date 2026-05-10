@@ -5,6 +5,7 @@ import { NotificationService } from "@/services/notification";
 interface GetElementContentActionConfig {
   selector: string;
   selectorType: "css" | "xpath" | "text";
+  getInnerHTML: boolean;
 }
 
 interface GetElementContentActionOutput {
@@ -26,13 +27,17 @@ export class GetElementContentAction extends BaseAction<
     onSuccess: (data?: any) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
-    const { selector, selectorType } = config;
+    const { selector, selectorType, getInnerHTML } = config;
 
     const element = getElement(selector, selectorType);
     if (element) {
-      const textContent = element.textContent || "";
+      const content = getInnerHTML
+        ? element.innerHTML
+        : element instanceof HTMLElement
+          ? element.innerText
+          : element.textContent || "";
       // Store the output in the execution context
-      onSuccess({ content: textContent });
+      onSuccess({ content });
     } else {
       NotificationService.showErrorNotification({
         message: "Element not found for content extraction",

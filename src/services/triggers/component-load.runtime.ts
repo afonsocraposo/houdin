@@ -16,6 +16,8 @@ export class ComponentLoadTrigger extends BaseTrigger<
   ComponentLoadTriggerConfig,
   ComponentLoadTriggerOutput
 > {
+  private cleanupFns: (() => void)[] = [];
+
   constructor() {
     super(definition);
   }
@@ -48,7 +50,6 @@ export class ComponentLoadTrigger extends BaseTrigger<
             hasTriggered = true;
             observer.disconnect();
             onTrigger({ element: element.outerHTML });
-            observer.disconnect();
             return;
           }
         }
@@ -59,5 +60,12 @@ export class ComponentLoadTrigger extends BaseTrigger<
       childList: true,
       subtree: true,
     });
+
+    this.cleanupFns.push(() => observer.disconnect());
+  }
+
+  async cleanup(): Promise<void> {
+    this.cleanupFns.forEach((fn) => fn());
+    this.cleanupFns = [];
   }
 }

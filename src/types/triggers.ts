@@ -42,4 +42,7 @@ export abstract class BaseTrigger<
     nodeId: string,
     onTrigger: (data?: TOutput) => Promise<void>,
   ): Promise<void>;
+
+  // Clean up any resources (event listeners, observers, timeouts) created during setup
+  async cleanup(): Promise<void> {}
 }

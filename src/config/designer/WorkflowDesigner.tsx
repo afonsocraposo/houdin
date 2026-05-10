@@ -21,6 +21,7 @@ import {
   Tabs,
   Text,
   ActionIcon,
+  Tooltip,
 } from "@mantine/core";
 import {
   IconDeviceFloppy,
@@ -32,6 +33,7 @@ import {
   IconCheck,
   IconRobot,
   IconLayoutSidebarRightCollapse,
+  IconEraser,
 } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
 import { ReactFlowCanvas } from "./ReactFlowCanvas";
@@ -51,7 +53,8 @@ import { useThrottledCallback } from "@mantine/hooks";
 import { newWorkflowId, generateId } from "@/utils/helpers";
 import { nodeCatalog } from "@/services/nodeCatalog";
 import { validateConfig } from "@/types/config-properties";
-import AiWorkflowChatPanel from "@/components/ai/AiWorkflowChatPanel";
+import Chatbot from "@/components/ai/Chatbot";
+import { ChatbotService } from "@/services/chatbot";
 
 export const SESSION_STORAGE_KEY = "workflow-draft";
 interface WorkflowDesignerProps {
@@ -447,6 +450,10 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     setIsDirty(currentSnapshot !== savedSnapshotRef.current);
   }, [currentSnapshot]);
 
+  const clearWorkflowChatSession = () => {
+    ChatbotService.clearChat(currentWorkflowId);
+  };
+
   const variablesCount = Object.keys(form.values.variables || {}).length;
 
   return (
@@ -664,25 +671,37 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  zIndex: 201,
+                  zIndex: 200,
                 }}
               >
-                <Group justify="space-between" mb="sm">
-                  <Group>
-                    <IconRobot />
-                    <Text fw={600}>AI Assistant</Text>
+                <Stack h="100%" style={{ overflow: "hidden" }}>
+                  <Group justify="space-between" mb="sm">
+                    <Group>
+                      <IconRobot />
+                      <Text fw={600}>AI Assistant</Text>
+                      <Tooltip label="Clear  chat history">
+                        <ActionIcon
+                          variant="light"
+                          onClick={clearWorkflowChatSession}
+                          aria-label="Clear session"
+                        >
+                          <IconEraser size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
+                    <ActionIcon
+                      variant="subtle"
+                      onClick={() => setAiWorkflowChatOpened(false)}
+                      c="dimmed"
+                      aria-label="Close AI drawer"
+                    >
+                      <IconLayoutSidebarRightCollapse />
+                    </ActionIcon>
                   </Group>
-                  <ActionIcon
-                    variant="subtle"
-                    onClick={() => setAiWorkflowChatOpened(false)}
-                    aria-label="Close AI drawer"
-                  >
-                    <IconLayoutSidebarRightCollapse />
-                  </ActionIcon>
-                </Group>
-                <AiWorkflowChatPanel
-                  workflowId={currentWorkflowId}
-                />
+                  <Box flex={1} mih="0" style={{ overflow: "hidden" }}>
+                    <Chatbot workflowId={currentWorkflowId} />
+                  </Box>
+                </Stack>
               </Paper>
             )}
           </Group>

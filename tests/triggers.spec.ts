@@ -13,11 +13,15 @@ test.describe("Actions execution", () => {
 
     await page.goto("https://example.com");
 
-    // fetch https://api.ipify.org from within the page context
-    await page.evaluate(() => {
-      fetch("https://api.ipify.org/");
-    });
-    await expect(page.locator('text="Request detected"')).toBeVisible();
+    await expect
+      .poll(async () => {
+        await page.evaluate(() => {
+          fetch("https://api.ipify.org/");
+        });
+
+        return page.locator('text="Request detected"').isVisible();
+      })
+      .toBe(true);
   });
 
   test("can trigger workflow on fab click", async ({ page, baseUrl }) => {

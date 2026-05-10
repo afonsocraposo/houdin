@@ -18,9 +18,11 @@ import { useEffect, useState } from "react";
 import ActiveWorkflows from "./ActiveWorkflows";
 import ExecutionHistory from "./ExecutionHistory";
 import Logo from "@/components/Logo";
-import AiWorkflowChatPanel from "@/components/ai/AiWorkflowChatPanel";
 import { selectElementInTab } from "@/services/elementSelectionService";
 import browser from "@/services/browser";
+import { MessageType } from "@/types/messages";
+import { CustomMessage } from "@/lib/messages";
+import ChatbotPanel from "./ChatbotPanel";
 
 type Size = {
   width: number;
@@ -39,6 +41,17 @@ function App() {
   useEffect(() => {
     loadCurrentUrl();
     loadSavedTab();
+  }, []);
+
+  // Listen for CLOSE_POPUP messages from the background
+  useEffect(() => {
+    const listener = (message: CustomMessage) => {
+      if (message.type === MessageType.CLOSE_POPUP) {
+        window.close();
+      }
+    };
+    browser.runtime.onMessage.addListener(listener);
+    return () => browser.runtime.onMessage.removeListener(listener);
   }, []);
 
   const loadSavedTab = async () => {
@@ -160,7 +173,7 @@ function App() {
 
               <Box flex={1} style={{ minHeight: 0 }}>
                 <Tabs.Panel value="ai" pt="sm" h="100%">
-                  {activeTab === "ai" && <AiWorkflowChatPanel popup />}
+                  {activeTab === "ai" && <ChatbotPanel />}
                 </Tabs.Panel>
 
                 <Tabs.Panel value="workflows" pt="sm" h="100%">

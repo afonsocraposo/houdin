@@ -36,7 +36,7 @@ function ConfigApp({ children }: { children: ReactNode }) {
     >
       {children}
       <HelpModal key="help-modal" opened={opened} onClose={close} />
-      <Affix position={{ bottom: 20, right: 20 }}>
+      <Affix position={{ bottom: 20, right: 20 }} zIndex={199}>
         <ActionIcon onClick={open} size="lg" radius="xl" variant="light">
           <IconQuestionMark />
         </ActionIcon>

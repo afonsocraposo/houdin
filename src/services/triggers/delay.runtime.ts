@@ -10,6 +10,8 @@ interface DelayTriggerOutput {
 }
 
 export class DelayTrigger extends BaseTrigger<DelayTriggerConfig, DelayTriggerOutput> {
+  private cleanupFns: (() => void)[] = [];
+
   constructor() {
     super(definition);
   }
@@ -24,7 +26,13 @@ export class DelayTrigger extends BaseTrigger<DelayTriggerConfig, DelayTriggerOu
 
     const timeoutId = window.setTimeout(async () => {
       await onTrigger({ delay, timestamp: Date.now() });
-      clearTimeout(timeoutId);
     }, delay * 1000);
+
+    this.cleanupFns.push(() => clearTimeout(timeoutId));
+  }
+
+  async cleanup(): Promise<void> {
+    this.cleanupFns.forEach((fn) => fn());
+    this.cleanupFns = [];
   }
 }

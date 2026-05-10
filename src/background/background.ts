@@ -1,21 +1,15 @@
 import { HttpListenerWebRequest } from "@/services/httpListenerWebRequest";
 import { BackgroundWorkflowEngine } from "@/services/backgroundEngine";
-import { WorkflowGenerationService } from "@/services/workflowGenerationService";
 import {
   TriggerFiredCommand,
   WorkflowCommandType,
 } from "@/types/background-workflow";
-import { MessageType } from "@/types/messages";
-import {
-  type GenerationPromptRequest,
-  type GenerationPromptResponse,
-  type StopGenerationRequest,
-} from "@/types/generation-session";
 import { CustomMessage, sendMessageToContentScript } from "@/lib/messages";
 
 import browser from "@/services/browser";
 import { ApiClient } from "@/api/client";
 import { WorkflowSyncer } from "@/services/workflowSyncer";
+import { ChatbotService } from "../services/chatbot";
 
 let httpListener: HttpListenerWebRequest | null = null;
 if (browser.webRequest.onBeforeRequest) {
@@ -66,11 +60,84 @@ const workflowSyncer = WorkflowSyncer.getInstance();
 workflowSyncer.sync(true);
 workflowSyncer.init();
 
+const chatbot = ChatbotService.getInstance();
+chatbot.init();
+
 ApiClient.startBackgroundProxy();
 
-const activeRuns = new Map<string, WorkflowGenerationService>();
-
 const workflowEngine = new BackgroundWorkflowEngine();
+browser.runtime.onMessage.addListener(
+  (message: CustomMessage, sender: any, sendResponse: (response?: any) => void) => {
+  switch (message.type) {
+    case WorkflowCommandType.TRIGGER_FIRED: {
+      const tabId = sender.tab.id;
+
+          const response = message.data as TriggerFiredCommand;
+          const url = response.url;
+          const pageTitle = sender.tab?.title || "";
+          const workflowId = response.workflowId;
+          const triggerNodeId = response.triggerNodeId;
+      const triggerData = response.data || {};
+      const config = response.config || {};
+      const duration = response.duration || 0;
+      workflowEngine.dispatchExecutor({
+            url,
+            pageTitle,
+            tabId,
+            workflowId,
+            triggerNodeId,
+        triggerData,
+        config,
+        duration,
+      });
+      return;
+    }
+    case "REGISTER_HTTP_TRIGGER": {
+      console.debug("Background: Registering HTTP trigger", message);
+
+      if (!httpListener) {
+        console.error(
+          "Background: Cannot register HTTP trigger - httpListener not available",
+        );
+        sendResponse({ success: false, error: "httpListener not available" });
+        return true;
+      }
+
+      const triggerCallback = async (data: any) => {
+        console.debug("HTTP trigger fired:", {
+          tabId: sender.tab.id,
+          workflowId: message.data.workflowId,
+          triggerNodeId: message.data.triggerNodeId,
+          data,
+        });
+        sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
+          workflowId: message.data.workflowId,
+          triggerNodeId: message.data.triggerNodeId,
+          data,
+        }).catch(() => {});
+      };
+
+      httpListener.registerTrigger(
+        sender.tab.id,
+        message.data.workflowId,
+        message.data.triggerNodeId,
+        message.data.urlPattern,
+        message.data.method,
+        triggerCallback,
+      );
+      sendResponse({ success: true });
+      return true;
+    }
+
+    case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
+      if (httpListener) {
+        httpListener.unregisterTriggers(sender.tab.id);
+      }
+      return;
+  }
+  },
+);
+
 workflowEngine.initialize().then(() => {
   browser.webNavigation.onCompleted.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
@@ -81,100 +148,12 @@ workflowEngine.initialize().then(() => {
     { url: [{ schemes: ["http", "https"] }] },
   );
 
-  browser.runtime.onMessage.addListener(
-    (message: CustomMessage, sender: any) => {
-      switch (message.type) {
-        case MessageType.AI_GENERATION_SUBMIT:
-          return (async () => {
-            const request = message.data as GenerationPromptRequest;
-            const service = new WorkflowGenerationService(request.workflowId);
-            activeRuns.set(request.workflowId, service);
-
-            try {
-              return (await service.submitPrompt(
-                request.prompt,
-              )) as GenerationPromptResponse;
-            } finally {
-              if (activeRuns.get(request.workflowId) === service) {
-                activeRuns.delete(request.workflowId);
-              }
-            }
-          })();
-        case MessageType.AI_GENERATION_STOP:
-          return Promise.resolve(
-            (() => {
-              const request = message.data as StopGenerationRequest;
-              const service = activeRuns.get(request.workflowId);
-              if (!service) {
-                return { stopped: false };
-              }
-
-              activeRuns.delete(request.workflowId);
-              return service.stop();
-            })(),
-          );
-        case WorkflowCommandType.TRIGGER_FIRED: {
-          const tabId = sender.tab.id;
-
-          const response = message.data as TriggerFiredCommand;
-          const url = response.url;
-          const workflowId = response.workflowId;
-          const triggerNodeId = response.triggerNodeId;
-          const triggerData = response.data || {};
-          const config = response.config || {};
-          const duration = response.duration || 0;
-          workflowEngine.dispatchExecutor({
-            url,
-            tabId,
-            workflowId,
-            triggerNodeId,
-            triggerData,
-            config,
-            duration,
-          });
-          return;
-        }
-        case "REGISTER_HTTP_TRIGGER": {
-          console.debug("Background: Registering HTTP trigger", message);
-
-          if (!httpListener) {
-            console.error(
-              "Background: Cannot register HTTP trigger - httpListener not available",
-            );
-            return;
-          }
-
-          const triggerCallback = async (data: any) => {
-            console.debug("HTTP trigger fired:", {
-              tabId: sender.tab.id,
-              workflowId: message.data.workflowId,
-              triggerNodeId: message.data.triggerNodeId,
-              data,
-            });
-            sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
-              workflowId: message.data.workflowId,
-              triggerNodeId: message.data.triggerNodeId,
-              data,
-            }).catch(() => {});
-          };
-
-          httpListener.registerTrigger(
-            sender.tab.id,
-            message.data.workflowId,
-            message.data.triggerNodeId,
-            message.data.urlPattern,
-            message.data.method,
-            triggerCallback,
-          );
-          return;
-        }
-
-        case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
-          if (httpListener) {
-            httpListener.unregisterTriggers(sender.tab.id);
-          }
-          return;
+  browser.webNavigation.onHistoryStateUpdated.addListener(
+    (details: { url: string; tabId: number; frameId: number }) => {
+      if (details.frameId === 0) {
+        workflowEngine.onNewUrl(details.tabId, details.url);
       }
     },
+    { url: [{ schemes: ["http", "https"] }] },
   );
 });

@@ -253,8 +253,8 @@ test.describe("Workflows creation, design and execution", () => {
     // Go to example.com
     await page.goto("https://example.com");
 
-    await expect(page.locator('text="meta.url"')).toBeVisible();
-    await expect(page.locator('text="https://example.com/"')).toBeVisible();
+    await expect(page.locator('text="meta.pageTitle"')).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("Example Domain")).toBeVisible();
   });
 
   test("can use liquid syntax with variables", async ({ page, baseUrl }) => {

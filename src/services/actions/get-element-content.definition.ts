@@ -1,5 +1,5 @@
 import type { NodeDefinition } from '../node-definitions/types';
-import { selectProperty, textProperty } from '@/types/config-properties';
+import { booleanProperty, selectProperty, textProperty } from '@/types/config-properties';
 
 const definition = {
   kind: "action",
@@ -28,6 +28,11 @@ const definition = {
             description: "Selector for the element to extract content from",
             required: true,
             defaultValue: "h1"
+        }),
+        getInnerHTML: booleanProperty({
+            label: "Get Inner HTML",
+            description: "When enabled, returns innerHTML instead of text content",
+            defaultValue: false
         })
     }
 },
