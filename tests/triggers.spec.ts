@@ -12,16 +12,15 @@ test.describe("Actions execution", () => {
     await seedWorkflows(baseUrl, page, [DEMO_HTTP_REQUEST_TRIGGER_WORKFLOW]);
 
     await page.goto("https://example.com");
+    await page.waitForTimeout(1000);
+
+    await page.evaluate(() => {
+      fetch("https://api.ipify.org/");
+    });
 
     await expect
-      .poll(async () => {
-        await page.evaluate(() => {
-          fetch("https://api.ipify.org/");
-        });
-
-        return page.locator('text="Request detected"').isVisible();
-      })
-      .toBe(true);
+      .poll(async () => page.getByText("Request detected").count())
+      .toBeGreaterThan(0);
   });
 
   test("can trigger workflow on fab click", async ({ page, baseUrl }) => {

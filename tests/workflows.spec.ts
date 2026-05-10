@@ -39,12 +39,18 @@ test.describe("Workflows creation, design and execution", () => {
     ).toBeVisible();
 
     // Fill in workflow name
-    await page.getByLabel("Workflow Name").fill("Test Workflow");
+    const workflowNameInput = page.getByLabel("Workflow Name");
+    await workflowNameInput.fill("Test Workflow");
+    await expect(workflowNameInput).toHaveValue("Test Workflow");
+    await workflowNameInput.press("Tab");
 
     // Fill in workflow description
-    await page
-      .getByLabel("Description (Optional)")
-      .fill("This is a test workflow");
+    const workflowDescriptionInput = page.getByLabel("Description (Optional)");
+    await workflowDescriptionInput.fill("This is a test workflow");
+    await expect(workflowDescriptionInput).toHaveValue(
+      "This is a test workflow",
+    );
+    await workflowDescriptionInput.press("Tab");
 
     // Click on add node button, #add-node-button
     await page.locator("#add-node-button").click();
@@ -84,8 +90,11 @@ test.describe("Workflows creation, design and execution", () => {
     // Expect to see node properties drawer with description of Show Modal
     await expect(page.getByText("Display modal with content")).toBeVisible();
 
-    // Write "Hello from Houdin workflow" in the Modal Content field
-    await page.getByLabel("Modal Content").fill("Hello from Houdin workflow");
+    // Wait for the controlled textarea state to settle before closing the drawer.
+    const modalContentInput = page.getByLabel("Modal Content");
+    await modalContentInput.fill("Hello from Houdin workflow");
+    await expect(modalContentInput).toHaveValue("Hello from Houdin workflow");
+    await modalContentInput.press("Tab");
 
     // Close drawer, button aria-label="Close node properties"
     await page.getByRole("button", { name: "Close node properties" }).click();
@@ -141,7 +150,18 @@ test.describe("Workflows creation, design and execution", () => {
       .filter({ hasText: '"id": "workflow-' });
     await expect(textArea).toBeVisible();
 
-    const workflowJson = await textArea.inputValue();
+    let workflowJson = "";
+    await expect.poll(async () => {
+      workflowJson = await textArea.inputValue();
+      const parsed = JSON.parse(workflowJson) as WorkflowDefinition;
+
+      return (
+        parsed.name === "Test Workflow" &&
+        parsed.description === "This is a test workflow" &&
+        (parsed.nodes.find((n) => n.id === actionId)?.data as ActionNodeData)
+          ?.config?.modalContent === "Hello from Houdin workflow"
+      );
+    }).toBe(true);
     const workflow = JSON.parse(workflowJson) as WorkflowDefinition;
 
     expect(workflow).toBeDefined();
