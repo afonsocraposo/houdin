@@ -1,5 +1,5 @@
 import { test, expect } from "./test.base";
-import { importWorkflow } from "./utils";
+import { seedWorkflows } from "./utils";
 import { DEMO_CUSTOM_SCRIPT_WORKFLOW } from "./demoWorkflows/customScript";
 import { DEMO_NOTIFICATION_WORKFLOW } from "./demoWorkflows/notification";
 import { DEMO_MODAL_WORKFLOW } from "./demoWorkflows/modal";
@@ -13,7 +13,7 @@ import { DEMO_SAVE_FILE_WORKFLOW } from "./demoWorkflows/saveFile";
 
 test.describe("Actions execution", () => {
   test("can execute custom script action", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_CUSTOM_SCRIPT_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_CUSTOM_SCRIPT_WORKFLOW]);
 
     // Go to example.com
     await page.goto("https://example.com");
@@ -24,7 +24,7 @@ test.describe("Actions execution", () => {
   });
 
   test("can execute notification action", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_NOTIFICATION_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_NOTIFICATION_WORKFLOW]);
     await page.goto("https://example.com");
 
     await expect(page.locator('text="Test notification"')).toBeVisible();
@@ -32,7 +32,7 @@ test.describe("Actions execution", () => {
   });
 
   test("can execute modal action", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_MODAL_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_MODAL_WORKFLOW]);
     await page.goto("https://example.com");
 
     await expect(page.locator('text="Test modal"')).toBeVisible();
@@ -43,7 +43,7 @@ test.describe("Actions execution", () => {
   });
 
   test("can execute navigate URL action", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_NAVIGATE_URL_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_NAVIGATE_URL_WORKFLOW]);
     await page.goto("https://example.com");
 
     // After page load, should navigate to example.org
@@ -55,7 +55,7 @@ test.describe("Actions execution", () => {
   });
 
   test("can execute clipboard action", async ({ page, baseUrl, context }) => {
-    await importWorkflow(baseUrl, page, DEMO_CLIPBOARD_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_CLIPBOARD_WORKFLOW]);
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("https://example.com");
 
@@ -69,7 +69,7 @@ test.describe("Actions execution", () => {
   });
 
   test("can execute inject component action", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_INJECT_COMPONENT_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_INJECT_COMPONENT_WORKFLOW]);
     await page.goto("https://example.com");
 
     // search for text "Hello world"
@@ -77,7 +77,7 @@ test.describe("Actions execution", () => {
   });
 
   test("can execute http request action", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_HTTP_REQUEST_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_HTTP_REQUEST_WORKFLOW]);
 
     const publicIp = await (await fetch("https://api.ipify.org/")).text();
 
@@ -89,7 +89,7 @@ test.describe("Actions execution", () => {
   });
 
   test("can execute cookie action", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_COOKIE_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_COOKIE_WORKFLOW]);
     await page.goto("https://example.com");
 
     await expect(page.locator('text="Cookie"')).toBeVisible();
@@ -97,7 +97,7 @@ test.describe("Actions execution", () => {
   });
 
   test("can execute create variable action", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_CREATE_VARIABLE_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_CREATE_VARIABLE_WORKFLOW]);
     await page.goto("https://example.com");
 
     await expect(page.locator('text="Variable Test"')).toBeVisible();
@@ -110,7 +110,7 @@ test.describe("Actions execution", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
     const downloadPromise = page.waitForEvent("download");
-    await importWorkflow(baseUrl, page, DEMO_SAVE_FILE_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_SAVE_FILE_WORKFLOW]);
     await page.goto("https://example.com");
 
     const download = await downloadPromise;

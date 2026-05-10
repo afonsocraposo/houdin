@@ -15,6 +15,389 @@ if (!existsSync(screenshotsPath)) {
   mkdirSync(screenshotsPath, { recursive: true });
 }
 
+const apiRequestIP = {
+  connections: [
+    {
+      id: "conn-HlP1wD",
+      source: "trigger-Nocdk7",
+      sourceHandle: "output",
+      target: "action-Hi5qne",
+      targetHandle: "input",
+    },
+    {
+      id: "conn-QgA5iL",
+      source: "action-Hi5qne",
+      sourceHandle: "output",
+      target: "action-aBmfbg",
+      targetHandle: "input",
+    },
+  ],
+  description: "Use ipify public IP to figure out current public IP.",
+  enabled: true,
+  id: "workflow-gapi8s9c2ukY",
+  modifiedAt: 1759441266664,
+  name: "API Request IP",
+  nodes: [
+    {
+      data: {
+        config: {
+          buttonColor: "#868e96",
+          buttonTextColor: "#ffffff",
+          componentText: "🌍",
+          componentType: "fab",
+          selectorType: "css",
+          targetSelector: "body",
+        },
+        type: "button-click",
+      },
+      id: "trigger-Nocdk7",
+      inputs: [],
+      outputs: ["output"],
+      position: { x: 0, y: 0 },
+      type: "trigger",
+    },
+    {
+      data: {
+        config: {
+          url: "https://api.ipify.org?format=json",
+        },
+        type: "http-request",
+      },
+      id: "action-Hi5qne",
+      inputs: ["input"],
+      outputs: ["output"],
+      position: { x: 300, y: 0 },
+      type: "action",
+    },
+    {
+      data: {
+        config: {
+          modalContent: "{{action-Hi5qne.data.ip}}",
+          modalTitle: "My Public IP is...",
+        },
+        type: "show-modal",
+      },
+      id: "action-aBmfbg",
+      inputs: ["input"],
+      outputs: ["output"],
+      position: { x: 600, y: 0 },
+      type: "action",
+    },
+  ],
+  urlPattern: "https://*",
+};
+
+const copyUrlClipboard = {
+  connections: [
+    {
+      id: "conn-4jcwE0",
+      source: "trigger-nIiFrD",
+      sourceHandle: "output",
+      target: "action-yuYRUq",
+      targetHandle: "input",
+    },
+    {
+      id: "conn-mgt7HS",
+      source: "action-yuYRUq",
+      sourceHandle: "output",
+      target: "action-eWGxxw",
+      targetHandle: "input",
+    },
+  ],
+  description: "",
+  enabled: true,
+  id: "workflow-DEEvluCY1ZUo",
+  modifiedAt: 1759681061210,
+  name: "Copy current URL to clipboard",
+  nodes: [
+    {
+      data: {
+        config: { keyCombo: "Ctrl + C" },
+        type: "key-press",
+      },
+      id: "trigger-nIiFrD",
+      inputs: [],
+      outputs: ["output"],
+      position: { x: 300, y: 100 },
+      type: "trigger",
+    },
+    {
+      data: {
+        config: { text: "{{meta.url}}" },
+        type: "write-clipboard",
+      },
+      id: "action-yuYRUq",
+      inputs: ["input"],
+      outputs: ["output"],
+      position: { x: 600, y: 100 },
+      type: "action",
+    },
+    {
+      data: {
+        config: {
+          notificationContent: "{{action-yuYRUq.text}}",
+          notificationTitle: "✅ Copied URL!",
+        },
+        type: "show-notification",
+      },
+      id: "action-eWGxxw",
+      inputs: ["input"],
+      outputs: ["output"],
+      position: { x: 900, y: 100 },
+      type: "action",
+    },
+  ],
+  urlPattern: "https://*",
+};
+
+const welcomeMessage = {
+  id: "example-welcome-message",
+  name: "Welcome Message",
+  description: "Show a welcome modal when the page loads",
+  urlPattern: "https://*",
+  enabled: true,
+  nodes: [
+    {
+      id: "trigger-example-welcome",
+      type: "trigger",
+      position: { x: 300, y: 100 },
+      data: {
+        type: "page-load",
+        config: {},
+      },
+      inputs: [],
+      outputs: ["output"],
+    },
+    {
+      id: "action-example-welcome",
+      type: "action",
+      position: { x: 600, y: 100 },
+      data: {
+        type: "show-modal",
+        config: {
+          modalContent: "Welcome! This workflow was created from an example.",
+        },
+      },
+      inputs: ["input"],
+      outputs: ["output"],
+    },
+  ],
+  connections: [
+    {
+      id: "conn-example-welcome",
+      source: "trigger-example-welcome",
+      sourceHandle: "output",
+      target: "action-example-welcome",
+      targetHandle: "input",
+    },
+  ],
+  modifiedAt: 0,
+};
+
+const summarizeNews = {
+  connections: [
+    {
+      id: "conn-Hd2cD3",
+      source: "trigger-vwidyP",
+      sourceHandle: "output",
+      target: "action-wARdUQ",
+      targetHandle: "input",
+    },
+    {
+      id: "conn-EjQFtu",
+      source: "trigger-6CrmZl",
+      sourceHandle: "output",
+      target: "action-qjORtw",
+      targetHandle: "input",
+    },
+    {
+      id: "conn-WXNqri",
+      source: "action-qjORtw",
+      sourceHandle: "output",
+      target: "action-Tc6M6H",
+      targetHandle: "input",
+    },
+    {
+      id: "conn-wzAe5A",
+      source: "action-Tc6M6H",
+      sourceHandle: "output",
+      target: "action-xAspFI",
+      targetHandle: "input",
+    },
+  ],
+  description:
+    "Uses OpenAI to summarize CNN's news article and injects the summary at the top of the page",
+  enabled: true,
+  id: "workflow-Wdf7eudQPW0r",
+  modifiedAt: 1758988717106,
+  name: "Summarize News",
+  nodes: [
+    {
+      data: {
+        config: {},
+        type: "page-load",
+      },
+      id: "trigger-6CrmZl",
+      inputs: [],
+      outputs: ["output"],
+      position: { x: 0, y: 0 },
+      type: "trigger",
+    },
+    {
+      data: {
+        config: {
+          selector: ".article__content",
+        },
+        type: "get-element-content",
+      },
+      id: "action-qjORtw",
+      inputs: ["input"],
+      outputs: ["output"],
+      position: { x: 300, y: 0 },
+      type: "action",
+    },
+    {
+      data: {
+        config: {
+          credentialId: "",
+          prompt: "Summarize this news article:\n{{action-qjORtw}}",
+        },
+        type: "llm-openai",
+      },
+      id: "action-Tc6M6H",
+      inputs: ["input"],
+      outputs: ["output"],
+      position: { x: 600, y: 0 },
+      type: "action",
+    },
+    {
+      data: {
+        config: {
+          componentHtml: "<b>Hello</b>, <i>world</i>!",
+          componentText: "{{action-Tc6M6H.response}}",
+          componentType: "text",
+          selectorType: "css",
+          targetSelector: ".headline__wrapper",
+          textColor: "#000000",
+          useMarkdown: true,
+        },
+        type: "inject-component",
+      },
+      id: "action-xAspFI",
+      inputs: ["input"],
+      outputs: ["output"],
+      position: { x: 900, y: 0 },
+      type: "action",
+    },
+  ],
+  urlPattern: "https://edition.cnn.com/*",
+};
+
+function createStoredState(workflows, executions) {
+  return {
+    state: {
+      workflows,
+      lastServerTime: 0,
+      pendingUpdates: [],
+      pendingDeletes: {},
+      executions,
+      executionStats: {
+        total: executions.length,
+        successful: executions.filter((execution) => execution.status === "completed")
+          .length,
+        failed: executions.filter((execution) => execution.status === "failed").length,
+      },
+      syncStartedAt: undefined,
+      syncCompletedAt: undefined,
+      syncResult: null,
+      settings: {
+        sync: { enabled: true },
+        workfowGeneration: {
+          provider: "houdin",
+          model: "",
+          providerUrl: "",
+          credentialId: null,
+          expandTools: false,
+        },
+        general: { analytics: true },
+      },
+      popupSessionId: null,
+      sessions: {},
+    },
+    version: 0,
+  };
+}
+
+async function seedStore(page, workflows, executions = []) {
+  const storeValue = JSON.stringify(createStoredState(workflows, executions));
+  await page.evaluate(async ({ storeValue }) => {
+    localStorage.setItem("urlAlertDismissed", "true");
+    await new Promise((resolve, reject) => {
+      chrome.storage.local.set({ "houdin-store": storeValue }, () => {
+        const error = chrome.runtime.lastError;
+        if (error) {
+          reject(new Error(error.message));
+          return;
+        }
+        resolve();
+      });
+    });
+  }, { storeValue });
+}
+
+async function seedDesignerDraft(page, workflow) {
+  await page.evaluate((draft) => {
+    sessionStorage.setItem("workflow-draft-example", JSON.stringify(draft));
+  }, workflow);
+}
+
+function createSampleExecution() {
+  const startedAt = Date.now() - 5000;
+  const completedAt = startedAt + 1840;
+
+  return {
+    id: "execution-screenshot-sample",
+    workflowId: apiRequestIP.id,
+    triggerType: "button-click",
+    startedAt,
+    completedAt,
+    status: "completed",
+    url: "https://example.com",
+    nodeResults: [
+      {
+        nodeId: "trigger-Nocdk7",
+        nodeType: "trigger",
+        nodeName: "Button Click",
+        nodeConfig: apiRequestIP.nodes[0].data.config,
+        status: "success",
+        data: { clicked: true },
+        executedAt: startedAt + 120,
+        duration: 120,
+      },
+      {
+        nodeId: "action-Hi5qne",
+        nodeType: "action",
+        nodeName: "HTTP Request",
+        nodeConfig: apiRequestIP.nodes[1].data.config,
+        status: "success",
+        data: { data: { ip: "203.0.113.42" }, status: 200 },
+        executedAt: startedAt + 720,
+        duration: 540,
+      },
+      {
+        nodeId: "action-aBmfbg",
+        nodeType: "action",
+        nodeName: "Show Modal",
+        nodeConfig: apiRequestIP.nodes[2].data.config,
+        status: "success",
+        data: { title: "My Public IP is...", content: "203.0.113.42" },
+        executedAt: completedAt,
+        duration: 180,
+      },
+    ],
+  };
+}
+
 async function simulateExecution(page) {
   // open new tab on example.com
   const newPage = await page.context().newPage();
@@ -66,24 +449,10 @@ async function captureScreenshots() {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
 
-    // Go to the extension's config page
     await page.goto(baseUrl);
-
-    // Click button, aria-label="Create workflow from example"
-    await page.click('button[aria-label="Create workflow from example"]');
-    // Click button with text "API Request IP"
-    await page.getByRole("menuitem", { name: "API Request IP" }).click();
-    await page.getByRole("button", { name: "Save & Apply Workflow" }).click();
-
-    await page.click('button[aria-label="Create workflow from example"]');
-    await page
-      .getByRole("menuitem", { name: "Copy current URL to clipboard" })
-      .click();
-    await page.getByRole("button", { name: "Save & Apply Workflow" }).click();
-
-    await page.click('button[aria-label="Create workflow from example"]');
-    await page.getByRole("menuitem", { name: "Welcome Message" }).click();
-    await page.getByRole("button", { name: "Save & Apply Workflow" }).click();
+    await seedStore(page, [apiRequestIP, copyUrlClipboard, welcomeMessage], [
+      createSampleExecution(),
+    ]);
 
     // Add execution history
     await simulateExecution(page);
@@ -104,9 +473,9 @@ async function captureScreenshots() {
     // 2. Screenshot: Workflow designer with complex workflow
     console.log("📸 Capturing workflow designer with complex workflow...");
 
-    // Add Summarize News workflow for designer screenshot
-    await page.click('button[aria-label="Create workflow from example"]');
-    await page.getByRole("menuitem", { name: "Summarize News" }).click();
+    await page.goto(baseUrl);
+    await seedDesignerDraft(page, summarizeNews);
+    await page.goto(`${baseUrl}designer?init=example`);
 
     // Wait for designer to load
     await page

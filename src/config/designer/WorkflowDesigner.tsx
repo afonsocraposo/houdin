@@ -502,7 +502,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
                   miw="6rem"
                   leftSection={<IconDeviceFloppy size={16} />}
                   onClick={handleSave}
-                  disabled={!isDirty || saveState === "saving"}
+                  disabled={(autoSave ? false : !isDirty) || saveState === "saving"}
                 >
                   {saveState === "saved" ? (
                     <IconCheck size={16} />
