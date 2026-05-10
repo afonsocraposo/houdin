@@ -173,9 +173,11 @@ export class BackgroundWorkflowEngine {
       // Get current tab URL for metadata
       const tab = await chrome.tabs.get(tabId);
       const url = tab.url || "";
+      const pageTitle = tab.title || "";
 
       const metadata = {
         url,
+        pageTitle,
         workflowId: workflow.id,
         executionId: `trigger-${Date.now()}`,
         startedAt: Date.now(),
@@ -226,6 +228,7 @@ export class BackgroundWorkflowEngine {
 
   public dispatchExecutor({
     url,
+    pageTitle,
     tabId,
     workflowId,
     triggerNodeId,
@@ -234,6 +237,7 @@ export class BackgroundWorkflowEngine {
     config,
   }: {
     url: string;
+    pageTitle: string;
     tabId: number;
     workflowId: string;
     triggerNodeId: string;
@@ -258,6 +262,7 @@ export class BackgroundWorkflowEngine {
       workflow,
       triggerNode,
       url,
+      pageTitle,
       this.removeActiveExecutor,
     );
     this.activeExecutors.set(executor.id, executor);

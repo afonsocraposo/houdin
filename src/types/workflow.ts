@@ -102,10 +102,12 @@ export interface ExecutionMetadata {
   workflowId: string;
   executionId: string;
   url: string;
+  pageTitle: string;
   startedAt: number;
 }
 export const ExecutionMetadataKeys = [
   "executionId",
+  "pageTitle",
   "startedAt",
   "url",
   "workflowId",
@@ -114,5 +116,6 @@ export const ExecutionMetadataExamples = {
   workflowId: newWorkflowId(),
   executionId: newExecutionId(),
   url: "https://example.com",
+  pageTitle: "Example Domain",
   startedAt: Date.now(),
 };

@@ -29,6 +29,7 @@ import { CreateVariableAction } from "./actions/create-variable.runtime";
 import { OpenUrlAction } from "./actions/open-url.runtime";
 import { PasteClipboardAction } from "./actions/paste-clipboard.runtime";
 import { SelectElementAction } from "./actions/select-element.runtime";
+import { SaveFileAction } from "./actions/save-file.runtime";
 
 // Initialize and register all actions
 export function initializeActions(): void {
@@ -73,6 +74,7 @@ export function initializeActions(): void {
   registry.register(CreateVariableAction);
   registry.register(PasteClipboardAction);
   registry.register(SelectElementAction);
+  registry.register(SaveFileAction);
 }
 
 // Export registry instance for convenience

@@ -33,6 +33,7 @@ export class WorkflowExecutor {
     workflow: WorkflowDefinition,
     private triggerNode: WorkflowNode,
     url: string,
+    pageTitle: string,
     private onDone?: (executorId: string) => void,
   ) {
     this.id = newExecutionId();
@@ -44,6 +45,7 @@ export class WorkflowExecutor {
         workflowId: this.workflowId,
         executionId: this.id,
         url: url,
+        pageTitle,
         startedAt: Date.now(),
       },
       workflow.variables || {},

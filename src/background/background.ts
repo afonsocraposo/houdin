@@ -72,18 +72,20 @@ browser.runtime.onMessage.addListener(
     case WorkflowCommandType.TRIGGER_FIRED: {
       const tabId = sender.tab.id;
 
-      const response = message.data as TriggerFiredCommand;
-      const url = response.url;
-      const workflowId = response.workflowId;
-      const triggerNodeId = response.triggerNodeId;
+          const response = message.data as TriggerFiredCommand;
+          const url = response.url;
+          const pageTitle = sender.tab?.title || "";
+          const workflowId = response.workflowId;
+          const triggerNodeId = response.triggerNodeId;
       const triggerData = response.data || {};
       const config = response.config || {};
       const duration = response.duration || 0;
       workflowEngine.dispatchExecutor({
-        url,
-        tabId,
-        workflowId,
-        triggerNodeId,
+            url,
+            pageTitle,
+            tabId,
+            workflowId,
+            triggerNodeId,
         triggerData,
         config,
         duration,

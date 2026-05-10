@@ -1,47 +1,48 @@
-export const DEMO_META_VARIABLES_WORKFLOW = {
+export const DEMO_SAVE_FILE_WORKFLOW = {
   connections: [
     {
-      id: "conn-GqJwsY",
-      source: "trigger-ZQd3c8",
+      id: "conn-save-file",
+      source: "trigger-save-file",
       sourceHandle: "output",
-      target: "action-hy33RB",
+      target: "action-save-file",
       targetHandle: "input",
     },
   ],
   description: "",
   enabled: true,
-  id: "workflow-tk2LATvt1GsV",
-  modifiedAt: 1760994837561,
-  name: "Test meta variables",
+  id: "workflow-save-file-demo",
+  modifiedAt: 1760992353944,
+  name: "Test save file",
   nodes: [
     {
       data: {
         config: {},
         type: "page-load",
       },
-      id: "trigger-ZQd3c8",
+      id: "trigger-save-file",
       inputs: [],
       outputs: ["output"],
       position: {
-        x: 0,
-        y: 0,
+        x: 300,
+        y: 100,
       },
       type: "trigger",
     },
     {
       data: {
         config: {
-          modalContent: "{{meta.pageTitle}}",
-          modalTitle: "meta.pageTitle",
+          content: "Hello world",
+          filename: "hello-world.txt",
+          mimeType: "text/plain",
         },
-        type: "show-modal",
+        type: "save-file",
       },
-      id: "action-hy33RB",
+      id: "action-save-file",
       inputs: ["input"],
       outputs: ["output"],
       position: {
-        x: 300,
-        y: 0,
+        x: 600,
+        y: 100,
       },
       type: "action",
     },

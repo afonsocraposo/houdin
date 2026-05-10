@@ -24,6 +24,7 @@ import replace_element_content from "../actions/replace-element-content.definiti
 import replace_text from "../actions/replace-text.definition";
 import session_storage from "../actions/session-storage.definition";
 import select_element from "../actions/select-element.definition";
+import save_file from "../actions/save-file.definition";
 import show_modal from "../actions/show-modal.definition";
 import show_notification from "../actions/show-notification.definition";
 import type_text from "../actions/type-text.definition";
@@ -56,6 +57,7 @@ export const actions: NodeDefinitionRecord = {
   "replace-text": replace_text,
   "session-storage": session_storage,
   "select-element": select_element,
+  "save-file": save_file,
   "show-modal": show_modal,
   "show-notification": show_notification,
   "type-text": type_text,
