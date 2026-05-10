@@ -31,7 +31,11 @@ export class GetElementContentAction extends BaseAction<
 
     const element = getElement(selector, selectorType);
     if (element) {
-      const content = getInnerHTML ? element.innerHTML : (element.textContent || "");
+      const content = getInnerHTML
+        ? element.innerHTML
+        : element instanceof HTMLElement
+          ? element.innerText
+          : element.textContent || "";
       // Store the output in the execution context
       onSuccess({ content });
     } else {
