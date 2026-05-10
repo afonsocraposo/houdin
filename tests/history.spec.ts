@@ -1,6 +1,6 @@
 import { DEMO_FAILING_WORKFLOW as DEMO_FAILING_WORKFLOW } from "./demoWorkflows/index";
 import { test, expect } from "./test.base";
-import { Destinations, importWorkflow, UrlBuilder } from "./utils";
+import { Destinations, importWorkflow, seedWorkflows, UrlBuilder } from "./utils";
 
 test.describe("Execution history", () => {
   // always go to config page before each test
@@ -24,7 +24,7 @@ test.describe("Execution history", () => {
     popupUrl,
   }) => {
     // import demo workflow
-    await importWorkflow(baseUrl, page);
+    await seedWorkflows(baseUrl, page);
 
     // Click on button "View execution history"
     await page.getByRole("button", { name: "View execution history" }).click();
@@ -80,7 +80,7 @@ test.describe("Execution history", () => {
     popupUrl,
   }) => {
     // import demo workflow
-    await importWorkflow(baseUrl, page);
+    await seedWorkflows(baseUrl, page);
 
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
@@ -179,7 +179,7 @@ test.describe("Execution history", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
     // import demo failing workflow
-    await importWorkflow(baseUrl, page, DEMO_FAILING_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_FAILING_WORKFLOW]);
 
     // Go to example.com to trigger the workflow
     await page.goto("https://example.com");

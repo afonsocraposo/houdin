@@ -4,7 +4,7 @@ import {
   TriggerNodeData,
   WorkflowDefinition,
 } from "../src/types/workflow";
-import { Destinations, importWorkflow, UrlBuilder } from "./utils";
+import { Destinations, importWorkflow, seedWorkflows, UrlBuilder } from "./utils";
 import { DEMO_META_VARIABLES_WORKFLOW } from "./demoWorkflows/metaVariables";
 import { DEMO_LIQUID_WORKFLOW } from "./demoWorkflows/liquid";
 
@@ -238,7 +238,7 @@ test.describe("Workflows creation, design and execution", () => {
   });
 
   test("can run a workflow", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page);
+    await seedWorkflows(baseUrl, page);
 
     // Go to example.com
     await page.goto("https://example.com");
@@ -248,7 +248,7 @@ test.describe("Workflows creation, design and execution", () => {
   });
 
   test("can access workflow meta variables", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_META_VARIABLES_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_META_VARIABLES_WORKFLOW]);
 
     // Go to example.com
     await page.goto("https://example.com");
@@ -258,7 +258,7 @@ test.describe("Workflows creation, design and execution", () => {
   });
 
   test("can use liquid syntax with variables", async ({ page, baseUrl }) => {
-    await importWorkflow(baseUrl, page, DEMO_LIQUID_WORKFLOW);
+    await seedWorkflows(baseUrl, page, [DEMO_LIQUID_WORKFLOW]);
 
     // Go to example.com
     await page.goto("https://example.com");
