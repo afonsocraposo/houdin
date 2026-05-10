@@ -71,6 +71,7 @@
     "react-router-dom": "^7.7.1",
     "rehype-sanitize": "^6.0.0",
     "rollbar": "^2.3.8",
+    "turndown": "^7.2.4",
     "vite-tsconfig-paths": "^5.1.4",
     "webextension-polyfill": "^0.12.0",
     "zod": "^4.1.12",

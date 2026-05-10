@@ -1,11 +1,12 @@
 import definition from "./get-element-content.definition";
+import TurndownService from "turndown";
 import { BaseAction } from "@/types/actions";
 import { getElement } from "@/utils/helpers";
 import { NotificationService } from "@/services/notification";
 interface GetElementContentActionConfig {
   selector: string;
   selectorType: "css" | "xpath" | "text";
-  getInnerHTML: boolean;
+  format: "text" | "markdown" | "html";
 }
 
 interface GetElementContentActionOutput {
@@ -27,15 +28,24 @@ export class GetElementContentAction extends BaseAction<
     onSuccess: (data?: any) => void,
     onError: (error: Error) => void,
   ): Promise<void> {
-    const { selector, selectorType, getInnerHTML } = config;
+    const { selector, selectorType, format } = config;
 
     const element = getElement(selector, selectorType);
-    if (element) {
-      const content = getInnerHTML
-        ? element.innerHTML
-        : element instanceof HTMLElement
-          ? element.innerText
-          : element.textContent || "";
+    if (element && element instanceof HTMLElement) {
+      let content = "";
+      switch (format) {
+        case "markdown": {
+          const turndownService = new TurndownService();
+          content = turndownService.turndown(element.innerHTML || "");
+          break;
+        }
+        case "html":
+          content = element.innerHTML || "";
+          break;
+        default:
+          content = element.innerText || "";
+          break;
+      }
       // Store the output in the execution context
       onSuccess({ content });
     } else {
