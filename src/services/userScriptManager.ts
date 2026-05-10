@@ -251,19 +251,29 @@ export class UserScriptManager {
   private createWrappedScript(userScript: string): string {
     return `
       (async function() {
-        return await new Promise(resolve => {
-            const Return = function(data) {
-                resolve({ success: true, data: data });
-            }
-            const __userFn = function() {
-                ${userScript}
+        return await new Promise(async (resolve) => {
+            let __settled = false;
+            const __settle = (value) => {
+                if (__settled) return;
+                __settled = true;
+                resolve(value);
             };
-            const __result = __userFn();
-            if (__result !== undefined) {
-                resolve({ success: true, data: __result });
+            const Return = function(data) {
+                __settle({ success: true, data: data });
+            };
+            try {
+                const __userFn = async function() {
+                    ${userScript}
+                };
+                const __result = await __userFn();
+                if (__result !== undefined) {
+                    __settle({ success: true, data: __result });
+                }
+                // If no Return was called and no value returned, resolve with success
+                __settle({ success: true, data: null });
+            } catch (error) {
+                __settle({ success: false, error: error.message || error.toString() });
             }
-            // If no Return was called and no value returned, resolve with success
-            resolve({ success: true, data: null });
         }).catch(error => ({success: false, error: error.message || error.toString()}));
       })();
     `;
@@ -272,19 +282,29 @@ export class UserScriptManager {
   private createFallbackScript(userScript: string, nodeId: string): string {
     return `
     (async function() {
-      const promiseResult = await new Promise(resolve => {
+      const promiseResult = await new Promise(async (resolve) => {
+        let __settled = false;
+        const __settle = (value) => {
+            if (__settled) return;
+            __settled = true;
+            resolve(value);
+        };
         const Return = function(data) {
-          resolve({ success: true, data: data });
+          __settle({ success: true, data: data });
         };
-        const __userFn = function() {
-            ${userScript}
-        };
-        const __result = __userFn();
-        if (__result !== undefined) {
-            resolve({ success: true, data: __result });
+        try {
+            const __userFn = async function() {
+                ${userScript}
+            };
+            const __result = await __userFn();
+            if (__result !== undefined) {
+                __settle({ success: true, data: __result });
+            }
+            // If no Return was called and no value returned, auto-resolve
+            __settle({ success: true, data: null });
+        } catch (error) {
+            __settle({ success: false, error: error.message || error.toString() });
         }
-        // If no Return was called and no value returned, auto-resolve
-        resolve({ success: true, data: null });
       }).catch(error => ({success: false, error: error.message || error.toString()}));
 
       // Send the result back to the background script

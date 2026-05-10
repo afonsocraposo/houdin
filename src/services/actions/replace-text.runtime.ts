@@ -57,10 +57,14 @@ export class ReplaceTextAction extends BaseAction<
     const flags = caseSensitive ? "g" : "gi";
     const regex = new RegExp(escapeRegExp(searchText), flags);
 
+    const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "OPTION"]);
+
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
     let node: Text | null;
     while ((node = walker.nextNode() as Text | null)) {
+      const parent = node.parentElement;
+      if (!parent || SKIP_TAGS.has(parent.tagName)) continue;
       if (regex.test(node.nodeValue || "")) {
         textNodes.push(node);
       }

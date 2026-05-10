@@ -1,23 +1,31 @@
 import { StateCreator } from "zustand";
 
+const RUNNING_TTL_MS = 60_000; // 1 minute
+
 export interface RunningSlice {
-  runningWorkflows: Set<string>;
+  runningWorkflows: Record<string, number>;
   addRunningWorkflow: (workflowId: string) => void;
   removeRunningWorkflow: (workflowId: string) => void;
+  isWorkflowRunning: (workflowId: string) => boolean;
 }
 
-export const createRunningSlice: StateCreator<RunningSlice> = (set) => ({
-  runningWorkflows: new Set<string>(),
+export const createRunningSlice: StateCreator<RunningSlice> = (set, get) => ({
+  runningWorkflows: {},
   addRunningWorkflow: (workflowId: string) =>
-    set((state) => {
-      return {
-        runningWorkflows: new Set(state.runningWorkflows).add(workflowId),
-      };
-    }),
+    set((state) => ({
+      runningWorkflows: {
+        ...state.runningWorkflows,
+        [workflowId]: Date.now(),
+      },
+    })),
   removeRunningWorkflow: (workflowId: string) =>
     set((state) => {
-      const newSet = new Set(state.runningWorkflows);
-      newSet.delete(workflowId);
-      return { runningWorkflows: newSet };
+      const { [workflowId]: _, ...rest } = state.runningWorkflows;
+      return { runningWorkflows: rest };
     }),
+  isWorkflowRunning: (workflowId: string) => {
+    const startedAt = get().runningWorkflows[workflowId];
+    if (!startedAt) return false;
+    return Date.now() - startedAt < RUNNING_TTL_MS;
+  },
 });

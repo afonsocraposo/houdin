@@ -12,7 +12,7 @@ export interface ChatSlice {
   updateSession: (
     session: Partial<ChatSession> & { workflowId: string },
   ) => void;
-  clearSession: (id: string) => void;
+  clearSession: (workflowId: string) => void;
   getSessionByWorkflowId: (workflowId: string) => ChatSession;
 }
 
@@ -31,12 +31,12 @@ export const createChatSlice: StateCreator<ChatSlice> = (set, get) => ({
         },
       },
     })),
-  clearSession: (id) =>
+  clearSession: (workflowId) =>
     set((state) => ({
       sessions: {
         ...state.sessions,
-        [id]: {
-          ...state.sessions[id],
+        [workflowId]: {
+          ...state.sessions[workflowId],
           messages: [],
           status: "ready",
           error: undefined,

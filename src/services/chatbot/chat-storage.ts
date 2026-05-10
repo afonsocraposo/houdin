@@ -37,7 +37,6 @@ export const upsertAssistantMessage = async (
     last?.role === "assistant"
       ? [...messages.slice(0, -1), assistantMessage]
       : [...messages, assistantMessage];
-  console.log("Saving session with messages:", nextMessages);
 
   saveSession({ workflowId, messages: nextMessages });
 };

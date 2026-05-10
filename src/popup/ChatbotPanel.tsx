@@ -6,9 +6,18 @@ import { useStore } from "@/store";
 import { newWorkflowId } from "@/utils/helpers";
 import { ActionIcon, Badge, Group, Stack, Tooltip } from "@mantine/core";
 import { IconEraser, IconExternalLink, IconPlus } from "@tabler/icons-react";
+import { useEffect } from "react";
 
 export default function ChatbotPanel() {
   const { popupSessionId, setPopupSessionId } = useStore();
+
+  // Initialize a stable session id on first mount if none exists
+  useEffect(() => {
+    if (!popupSessionId) {
+      setPopupSessionId(newWorkflowId());
+    }
+  }, [popupSessionId, setPopupSessionId]);
+
   const session = useStore((state) =>
     popupSessionId ? state.getSessionByWorkflowId(popupSessionId) : null,
   );

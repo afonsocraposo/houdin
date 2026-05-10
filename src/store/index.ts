@@ -85,14 +85,12 @@ export const useSessionStore = create<SessionStoreState>()(
       storage: createJSONStorage(() => browserSessionStorageAdapter),
       partialize: (state) => ({
         ...state,
-        runningWorkflows: Array.from(state.runningWorkflows),
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as any;
         return {
           ...currentState,
           ...persisted,
-          runningWorkflows: new Set(persisted.runningWorkflows || []),
         };
       },
     },

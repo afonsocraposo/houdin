@@ -672,8 +672,8 @@ export function connectNodes(
     "to",
     "target",
   ]);
-  const sourceHandle = getFirstString(args, ["sourceHandle", "source_handle"]);
-  const targetHandle = getFirstString(args, ["targetHandle", "target_handle"]);
+  const sourceHandle = getFirstString(args, ["sourceHandle", "source_handle"]) || "output";
+  const targetHandle = getFirstString(args, ["targetHandle", "target_handle"]) || "input";
 
   if (!sourceId || !targetId) {
     throw new Error("connectNodes requires sourceId and targetId");

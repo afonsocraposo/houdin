@@ -240,23 +240,11 @@ function initSelector() {
   // Show instructions
   const instructions = document.createElement("div");
   instructions.id = "houdin-selector-instructions";
-  instructions.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #333;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        z-index: 1000000;
-        font-family: sans-serif;
-        font-size: 14px;
-      ">
-        ${selectionInstruction}
-      </div>
-    `;
+  const instructionText = document.createElement("div");
+  instructionText.style.cssText =
+    "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 20px;border-radius:5px;z-index:1000000;font-family:sans-serif;font-size:14px;";
+  instructionText.textContent = selectionInstruction;
+  instructions.appendChild(instructionText);
   document.body.appendChild(instructions);
 
   // Remove instructions after 3 seconds

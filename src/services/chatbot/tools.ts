@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import z from "zod";
+import { z } from "zod";
 import { getLayoutedElements } from "@/config/designer/ReactFlowCanvasCallbacks";
 import {
   connectNodes,
@@ -349,10 +349,12 @@ export function createTools({
       execute: runWorkflowTool(deleteNode),
     }),
     connectNodes: tool({
-      description: "Connect two nodes in the workflow.",
+      description: "Connect two nodes in the workflow. Handles default to 'output'/'input' if omitted.",
       inputSchema: z.object({
         sourceId: z.string().optional(),
         targetId: z.string().optional(),
+        sourceHandle: z.string().optional().describe("Source handle name, defaults to 'output'"),
+        targetHandle: z.string().optional().describe("Target handle name, defaults to 'input'"),
       }),
       execute: runWorkflowTool(connectNodes),
     }),

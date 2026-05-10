@@ -25,7 +25,7 @@ export default function Chatbot({ workflowId }: ChatbotProps) {
   useEffect(() => {
     viewportRef.current?.scrollTo({
       top: viewportRef.current.scrollHeight,
-      behavior: "instant",
+      behavior: "auto",
     });
   }, [workflowId]);
 

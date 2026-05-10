@@ -8,7 +8,7 @@ interface ActiveWorkflowsProps {
 
 function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
   const workflows = useStore((state) => state.workflows);
-  const runningWorkflows = useSessionStore((state) => state.runningWorkflows);
+  const { isWorkflowRunning } = useSessionStore();
 
   const getActiveWorkflows = () => {
     if (!currentUrl) return [];
@@ -64,7 +64,7 @@ function ActiveWorkflows({ currentUrl }: ActiveWorkflowsProps) {
                 <ActiveWorkflowItem
                   key={workflow.id}
                   workflow={workflow}
-                  running={runningWorkflows.has(workflow.id)}
+                  running={isWorkflowRunning(workflow.id)}
                 />
               ))}
             </Stack>
