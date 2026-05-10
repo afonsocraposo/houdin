@@ -42,6 +42,7 @@ const definition = {
     filename: "report.txt",
     mimeType: "text/plain",
     size: 11,
+    savedAt: 1710000000000,
   },
 } satisfies NodeDefinition;
 
