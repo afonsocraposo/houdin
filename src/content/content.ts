@@ -346,6 +346,9 @@ if ((window as any).houdinExtensionInitialized) {
                   });
                 },
               )
+              .then(() => {
+                sendResponse({ success: true });
+              })
               .catch((error: any) => {
                 NotificationService.showErrorNotification({
                   title: `Error setting up trigger ${initTriggerCommand.nodeId}`,
@@ -353,7 +356,7 @@ if ((window as any).houdinExtensionInitialized) {
                 });
                 sendResponse({ success: false, error: error.message });
               });
-            return; // Indicate async response
+            return true; // Indicate async response
           case WorkflowCommandType.EXECUTE_ACTION:
             const executeActionCommand = message.data as ActionCommand;
             const actionRegistry = ActionRegistry.getInstance();

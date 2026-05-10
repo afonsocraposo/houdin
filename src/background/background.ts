@@ -66,6 +66,76 @@ chatbot.init();
 ApiClient.startBackgroundProxy();
 
 const workflowEngine = new BackgroundWorkflowEngine();
+browser.runtime.onMessage.addListener(
+  (message: CustomMessage, sender: any, sendResponse: (response?: any) => void) => {
+  switch (message.type) {
+    case WorkflowCommandType.TRIGGER_FIRED: {
+      const tabId = sender.tab.id;
+
+      const response = message.data as TriggerFiredCommand;
+      const url = response.url;
+      const workflowId = response.workflowId;
+      const triggerNodeId = response.triggerNodeId;
+      const triggerData = response.data || {};
+      const config = response.config || {};
+      const duration = response.duration || 0;
+      workflowEngine.dispatchExecutor({
+        url,
+        tabId,
+        workflowId,
+        triggerNodeId,
+        triggerData,
+        config,
+        duration,
+      });
+      return;
+    }
+    case "REGISTER_HTTP_TRIGGER": {
+      console.debug("Background: Registering HTTP trigger", message);
+
+      if (!httpListener) {
+        console.error(
+          "Background: Cannot register HTTP trigger - httpListener not available",
+        );
+        sendResponse({ success: false, error: "httpListener not available" });
+        return true;
+      }
+
+      const triggerCallback = async (data: any) => {
+        console.debug("HTTP trigger fired:", {
+          tabId: sender.tab.id,
+          workflowId: message.data.workflowId,
+          triggerNodeId: message.data.triggerNodeId,
+          data,
+        });
+        sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
+          workflowId: message.data.workflowId,
+          triggerNodeId: message.data.triggerNodeId,
+          data,
+        }).catch(() => {});
+      };
+
+      httpListener.registerTrigger(
+        sender.tab.id,
+        message.data.workflowId,
+        message.data.triggerNodeId,
+        message.data.urlPattern,
+        message.data.method,
+        triggerCallback,
+      );
+      sendResponse({ success: true });
+      return true;
+    }
+
+    case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
+      if (httpListener) {
+        httpListener.unregisterTriggers(sender.tab.id);
+      }
+      return;
+  }
+  },
+);
+
 workflowEngine.initialize().then(() => {
   browser.webNavigation.onCompleted.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
@@ -83,73 +153,5 @@ workflowEngine.initialize().then(() => {
       }
     },
     { url: [{ schemes: ["http", "https"] }] },
-  );
-
-  browser.runtime.onMessage.addListener(
-    (message: CustomMessage, sender: any) => {
-      switch (message.type) {
-        case WorkflowCommandType.TRIGGER_FIRED: {
-          const tabId = sender.tab.id;
-
-          const response = message.data as TriggerFiredCommand;
-          const url = response.url;
-          const workflowId = response.workflowId;
-          const triggerNodeId = response.triggerNodeId;
-          const triggerData = response.data || {};
-          const config = response.config || {};
-          const duration = response.duration || 0;
-          workflowEngine.dispatchExecutor({
-            url,
-            tabId,
-            workflowId,
-            triggerNodeId,
-            triggerData,
-            config,
-            duration,
-          });
-          return;
-        }
-        case "REGISTER_HTTP_TRIGGER": {
-          console.debug("Background: Registering HTTP trigger", message);
-
-          if (!httpListener) {
-            console.error(
-              "Background: Cannot register HTTP trigger - httpListener not available",
-            );
-            return;
-          }
-
-          const triggerCallback = async (data: any) => {
-            console.debug("HTTP trigger fired:", {
-              tabId: sender.tab.id,
-              workflowId: message.data.workflowId,
-              triggerNodeId: message.data.triggerNodeId,
-              data,
-            });
-            sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
-              workflowId: message.data.workflowId,
-              triggerNodeId: message.data.triggerNodeId,
-              data,
-            }).catch(() => {});
-          };
-
-          httpListener.registerTrigger(
-            sender.tab.id,
-            message.data.workflowId,
-            message.data.triggerNodeId,
-            message.data.urlPattern,
-            message.data.method,
-            triggerCallback,
-          );
-          return;
-        }
-
-        case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
-          if (httpListener) {
-            httpListener.unregisterTriggers(sender.tab.id);
-          }
-          return;
-      }
-    },
   );
 });

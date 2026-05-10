@@ -53,17 +53,18 @@ test.describe("Actions execution", () => {
     await expect(page.locator('text="Hello world"')).toBeVisible();
   });
 
-  test("can execute clipboard action", async ({ page, baseUrl }) => {
+  test("can execute clipboard action", async ({ page, baseUrl, context }) => {
     await importWorkflow(baseUrl, page, DEMO_CLIPBOARD_WORKFLOW);
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("https://example.com");
-    await page.waitForTimeout(10); // wait for clipboard action to complete
 
-    // Read from clipboard
-    const clipboardText = await page.evaluate(async () => {
-      return await navigator.clipboard.readText();
-    });
-
-    expect(clipboardText).toBe("Hello world");
+    await expect
+      .poll(async () => {
+        return page.evaluate(async () => {
+          return navigator.clipboard.readText();
+        });
+      })
+      .toBe("Hello world");
   });
 
   test("can execute inject component action", async ({ page, baseUrl }) => {
