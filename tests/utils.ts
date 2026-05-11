@@ -105,6 +105,43 @@ export const seedWorkflows = async (
   await seedStore(baseUrl, page, { workflows });
 };
 
+export const updateWorkflowsInStore = async (
+  page: Page,
+  workflows: WorkflowDefinition[],
+) => {
+  await page.evaluate(async ({ workflowsJson }) => {
+    return new Promise<void>((resolve, reject) => {
+      chrome.storage.local.get(["houdin-store"], (result) => {
+        const store = JSON.parse(result["houdin-store"] || "{}");
+        if (!store.state) {
+          store.state = { workflows: [] };
+        }
+        for (const workflow of workflowsJson) {
+          const index = store.state.workflows.findIndex(
+            (w: any) => w.id === workflow.id,
+          );
+          if (index !== -1) {
+            store.state.workflows[index] = workflow;
+          } else {
+            store.state.workflows.push(workflow);
+          }
+        }
+        chrome.storage.local.set(
+          { "houdin-store": JSON.stringify(store) },
+          () => {
+            const error = chrome.runtime.lastError;
+            if (error) {
+              reject(new Error(error.message));
+              return;
+            }
+            resolve();
+          },
+        );
+      });
+    });
+  }, { workflowsJson: workflows });
+};
+
 export enum Destinations {
   WORKFLOWS = "?tab=workflows",
   HISTORY = "?tab=history",

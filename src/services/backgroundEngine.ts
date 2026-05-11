@@ -34,28 +34,88 @@ export class BackgroundWorkflowEngine {
     this.setupStoreListener();
   }
 
+  private storeChangeQueue = Promise.resolve();
+
   private setupStoreListener(): void {
     useStore.subscribe((state) => {
-      const currentWorkflowsById = new Map(
-        state.workflows.map((workflow) => [workflow.id, workflow]),
-      );
-      const workflowsToCleanup = this.workflows.filter((workflow) => {
-        const currentWorkflow = currentWorkflowsById.get(workflow.id);
-        return (
-          !currentWorkflow ||
-          !currentWorkflow.enabled ||
-          currentWorkflow.modifiedAt !== workflow.modifiedAt
-        );
-      });
-
-      this.workflows = state.workflows;
-
-      for (const workflow of workflowsToCleanup) {
-        this.cleanupWorkflowEverywhere(workflow.id).catch((error) => {
-          console.warn("Failed to cleanup inactive workflow:", error);
-        });
-      }
+      this.storeChangeQueue = this.storeChangeQueue
+        .catch(() => {})
+        .then(() => this.handleStoreChange(state));
     });
+  }
+
+  private async handleStoreChange(
+    state: ReturnType<typeof useStore.getState>,
+  ): Promise<void> {
+    const currentWorkflowsById = new Map(
+      state.workflows.map((workflow) => [workflow.id, workflow]),
+    );
+    const workflowsToCleanup = this.workflows.filter((workflow) => {
+      const currentWorkflow = currentWorkflowsById.get(workflow.id);
+      return (
+        !currentWorkflow ||
+        !currentWorkflow.enabled ||
+        currentWorkflow.modifiedAt !== workflow.modifiedAt
+      );
+    });
+
+    const workflowsToRefresh = workflowsToCleanup
+      .map((oldWorkflow) => currentWorkflowsById.get(oldWorkflow.id))
+      .filter((wf): wf is WorkflowDefinition => !!wf && wf.enabled);
+
+    // Capture tabs where each workflow-to-refresh is active before cleanup removes them
+    const refreshTabs = new Map<string, { tabId: number; url: string }[]>();
+    for (const workflow of workflowsToRefresh) {
+      const tabs: { tabId: number; url: string }[] = [];
+      for (const [tabId, workflowIds] of this.activeTabWorkflows.entries()) {
+        if (workflowIds.has(workflow.id)) {
+          const url = this.activeTabUrls.get(tabId);
+          if (url) {
+            tabs.push({ tabId, url });
+          }
+        }
+      }
+      refreshTabs.set(workflow.id, tabs);
+    }
+
+    this.workflows = state.workflows;
+
+    for (const workflow of workflowsToCleanup) {
+      try {
+        await this.cleanupWorkflowEverywhere(workflow.id);
+      } catch (error) {
+        console.warn("Failed to cleanup inactive workflow:", error);
+      }
+
+      const refreshWorkflow = currentWorkflowsById.get(workflow.id);
+      if (!refreshWorkflow || !refreshWorkflow.enabled) {
+        continue;
+      }
+
+      const tabs = refreshTabs.get(refreshWorkflow.id) || [];
+      for (const { tabId, url } of tabs) {
+        if (!matchesUrlPattern(url, refreshWorkflow.urlPattern, true)) {
+          continue;
+        }
+        try {
+          await Promise.all(
+            this.getWorkflowTriggers(refreshWorkflow).map((triggerNode) =>
+              this.setupTrigger(tabId, refreshWorkflow, triggerNode),
+            ),
+          );
+          const activeIds =
+            this.activeTabWorkflows.get(tabId) || new Set<string>();
+          activeIds.add(refreshWorkflow.id);
+          this.activeTabWorkflows.set(tabId, activeIds);
+          this.activeTabUrls.set(tabId, url);
+        } catch (error) {
+          console.error(
+            `Failed to refresh workflow ${refreshWorkflow.id} on tab ${tabId}:`,
+            error,
+          );
+        }
+      }
+    }
   }
 
   private loadWorkflows(): void {

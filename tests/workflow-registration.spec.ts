@@ -1,7 +1,7 @@
 import { expect, test } from "./test.base";
 import { DEMO_BUTTON_WORKFLOW } from "./demoWorkflows/button";
 import { DEMO_WORKFLOW } from "./demoWorkflows/index";
-import { seedWorkflows } from "./utils";
+import { seedWorkflows, updateWorkflowsInStore, UrlBuilder, Destinations } from "./utils";
 
 test.describe("Workflow registration and cleanup", () => {
   test("runs a page-load workflow once for a page load", async ({
@@ -79,5 +79,42 @@ test.describe("Workflow registration and cleanup", () => {
       timeout: 30000,
     });
     await expect(page.getByText("Hello from Houdin workflow")).toHaveCount(1);
+  });
+
+  test("re-injects button after workflow is modified without refresh", async ({
+    page,
+    context,
+    baseUrl,
+  }) => {
+    await seedWorkflows(baseUrl, page, [DEMO_BUTTON_WORKFLOW]);
+    await page.goto("https://example.com");
+    await expect(page.getByText("FB")).toHaveCount(1);
+
+    const updatedWorkflow = {
+      ...DEMO_BUTTON_WORKFLOW,
+      modifiedAt: DEMO_BUTTON_WORKFLOW.modifiedAt + 1,
+      nodes: DEMO_BUTTON_WORKFLOW.nodes.map((node) =>
+        node.type === "trigger"
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                config: {
+                  ...node.data.config,
+                  componentText: "Updated",
+                },
+              },
+            }
+          : node,
+      ),
+    };
+
+    const configPage = await context.newPage();
+    await configPage.goto(UrlBuilder(baseUrl, Destinations.WORKFLOWS));
+    await updateWorkflowsInStore(configPage, [updatedWorkflow]);
+    await configPage.close();
+
+    await expect.poll(() => page.getByText("Updated").count()).toBe(1);
+    await expect(page.getByText("FB")).toHaveCount(0);
   });
 });
