@@ -81,6 +81,7 @@ const definition = {
         label: "Button Color",
         description: "Background color of the button",
         defaultValue: "#228be6",
+        alpha: true,
       }),
       buttonTextColor: colorProperty({
         label: "Button Text Color",

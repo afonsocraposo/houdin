@@ -139,7 +139,7 @@ export const SchemaBasedProperties: React.FC<SchemaBasedPropertiesProps> = ({
             label={property.label}
             placeholder={property.placeholder}
             description={<MarkdownText>{property.description}</MarkdownText>}
-            format="hex"
+            format={property.alpha ? "hexa" : "hex"}
             swatches={[
               "#2e2e2e",
               "#868e96",

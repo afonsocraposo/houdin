@@ -38,8 +38,12 @@ function configPropertyToZod(property: ConfigProperty) {
     }
     case "boolean":
       return z.boolean();
-    case "color":
-      return z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/);
+    case "color": {
+      const regex = property.alpha
+        ? /^#([A-Fa-f0-9]{8}|[A-Fa-f0-9]{4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+        : /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+      return z.string().regex(regex);
+    }
     case "select": {
       const values = property.options.map((option) =>
         typeof option === "string" ? option : option.value,

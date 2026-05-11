@@ -50,6 +50,7 @@ export interface BooleanConfigProperty extends BaseConfigProperty {
 
 export interface ColorConfigProperty extends BaseConfigProperty {
   type: "color";
+  alpha?: boolean;
 }
 
 export interface CodeConfigProperty extends BaseConfigProperty {
@@ -198,11 +199,15 @@ export function validateConfig(
         );
       }
     } else if (isColorProperty(property)) {
-      // Validate hex color format (#RRGGBB or #RGB)
-      const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+      // Validate hex color format with optional alpha
+      const hexColorRegex = property.alpha
+        ? /^#([A-Fa-f0-9]{8}|[A-Fa-f0-9]{4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+        : /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
       if (!hexColorRegex.test(value)) {
         propertyErrors.push(
-          `${property.label} must be a valid hex color (e.g., #FF0000 or #F00)`,
+          property.alpha
+            ? `${property.label} must be a valid hex color (e.g., #FF0000 or #F00, with optional alpha like #FF0000AA)`
+            : `${property.label} must be a valid hex color (e.g., #FF0000 or #F00)`,
         );
       }
     }
