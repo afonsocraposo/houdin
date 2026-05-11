@@ -6,9 +6,6 @@ const RECEIVING_END_ERRORS = [
   "Receiving end does not exist",
 ];
 
-const delay = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
-
 const isReceivingEndError = (error: unknown): boolean => {
   const message = error instanceof Error ? error.message : String(error);
   return RECEIVING_END_ERRORS.some((value) => message.includes(value));
@@ -65,7 +62,7 @@ export const sendMessageToContentScript = async <T>(
         type,
         attempt,
       });
-      await delay(retryDelayMs);
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
     }
   }
 };

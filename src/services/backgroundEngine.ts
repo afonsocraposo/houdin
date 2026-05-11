@@ -281,11 +281,9 @@ export class BackgroundWorkflowEngine {
       // Continue with original config if interpolation fails
     }
 
-    // First, check if content script is ready and initialize it if needed
     try {
       console.debug("Setting up trigger:", triggerType);
 
-      // Now send command to content script to set up the trigger
       const message: TriggerCommand = {
         type: WorkflowCommandType.INIT_TRIGGER,
         workflowId: workflow.id,

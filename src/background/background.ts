@@ -116,27 +116,29 @@ browser.runtime.onMessage.addListener(
           return true;
         }
 
-        const triggerCallback = async (data: any) => {
-          console.debug("HTTP trigger fired:", {
-            tabId: sender.tab.id,
-            workflowId: message.data.workflowId,
-            triggerNodeId: message.data.triggerNodeId,
-            data,
-          });
-          sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
-            workflowId: message.data.workflowId,
-            triggerNodeId: message.data.triggerNodeId,
-            data,
-          }).catch(() => {});
-        };
-
         httpListener.registerTrigger(
           sender.tab.id,
           message.data.workflowId,
           message.data.triggerNodeId,
           message.data.urlPattern,
           message.data.method,
-          triggerCallback,
+          async (data: any) => {
+            console.debug("HTTP trigger fired:", {
+              tabId: sender.tab.id,
+              workflowId: message.data.workflowId,
+              triggerNodeId: message.data.triggerNodeId,
+              data,
+            });
+            await sendMessageToContentScript(
+              sender.tab.id,
+              "HTTP_TRIGGER_FIRED",
+              {
+                workflowId: message.data.workflowId,
+                triggerNodeId: message.data.triggerNodeId,
+                data,
+              },
+            ).catch(() => {});
+          },
         );
         sendResponse({ success: true });
         return true;
