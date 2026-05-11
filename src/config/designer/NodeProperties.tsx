@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Stack,
   Text,
+  TextInput,
   Card,
   Group,
+  Box,
   ScrollArea,
   ActionIcon,
 } from "@mantine/core";
@@ -15,7 +17,7 @@ import {
 import { nodeCatalog } from "@/services/nodeCatalog";
 import { SchemaBasedProperties } from "./SchemaBasedProperties";
 import { generateDefaultConfig } from "@/types/config-properties";
-import { IconMinus } from "@tabler/icons-react";
+import { IconCheck, IconMinus, IconPencil, IconX } from "@tabler/icons-react";
 import { CodeHighlight } from "@mantine/code-highlight";
 import VariablesButton from "./VariablesButton";
 import NodeIcon from "@/components/NodeIcon";
@@ -39,6 +41,14 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
   onClose,
   errors,
 }) => {
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [labelDraft, setLabelDraft] = useState("");
+
+  useEffect(() => {
+    setIsEditingLabel(false);
+    setLabelDraft(node?.data.customLabel || "");
+  }, [node?.id, node?.data.customLabel]);
+
   if (!node) {
     return (
       <Card withBorder p="md" style={{ minHeight: "300px" }}>
@@ -63,6 +73,24 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     current[pathParts[pathParts.length - 1]] = value;
 
     onNodeUpdate(updatedNode);
+  };
+
+  const saveCustomLabel = () => {
+    const customLabel = labelDraft.trim();
+    const updatedNode = {
+      ...node,
+      data: { ...node.data },
+    };
+
+    if (customLabel) {
+      updatedNode.data.customLabel = customLabel;
+    } else {
+      delete updatedNode.data.customLabel;
+    }
+
+    onNodeUpdate(updatedNode);
+    setLabelDraft(customLabel);
+    setIsEditingLabel(false);
   };
 
   const renderTriggerProperties = (
@@ -212,7 +240,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
     }
   };
 
-  const getNodeTitle = (node: WorkflowNode): React.ReactNode => {
+  const getNodeMetadata = (node: WorkflowNode): BaseMetadata | null => {
     let metadata: BaseMetadata;
     if (node.type === "trigger") {
       const triggerType = (node.data as TriggerNodeData).type;
@@ -220,7 +248,7 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       if (trigger) {
         metadata = trigger.metadata;
       } else {
-        return "Trigger";
+        return null;
       }
     } else if (node.type === "action") {
       const actionType = (node.data as ActionNodeData).type;
@@ -228,17 +256,102 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       if (action) {
         metadata = action.metadata;
       } else {
-        return "Action";
+        return null;
       }
     } else {
-      return "Unknown";
+      return null;
     }
+
+    return metadata;
+  };
+
+  const renderNodeTitle = (node: WorkflowNode): React.ReactNode => {
+    const metadata = getNodeMetadata(node);
+    const defaultLabel = getDefaultNodeLabel(node);
+    const customLabel = node.data.customLabel?.trim();
+
+    if (isEditingLabel) {
+      return (
+        <Group gap="xs" wrap="nowrap" align="center" style={{ flex: 1 }}>
+          {metadata && <NodeIcon icon={metadata.icon} size={16} />}
+          <TextInput
+            size="xs"
+            aria-label="Custom node label"
+            placeholder={defaultLabel}
+            value={labelDraft}
+            onChange={(event) => setLabelDraft(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                saveCustomLabel();
+              }
+
+              if (event.key === "Escape") {
+                setLabelDraft(node.data.customLabel || "");
+                setIsEditingLabel(false);
+              }
+            }}
+            styles={{ root: { flex: 1 } }}
+          />
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            onClick={saveCustomLabel}
+            aria-label="Save custom node label"
+          >
+            <IconCheck size={16} />
+          </ActionIcon>
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            c="dimmed"
+            onClick={() => {
+              setLabelDraft(node.data.customLabel || "");
+              setIsEditingLabel(false);
+            }}
+            aria-label="Cancel custom node label edit"
+          >
+            <IconX size={16} />
+          </ActionIcon>
+        </Group>
+      );
+    }
+
     return (
       <Group gap="xs" wrap="nowrap">
-        <NodeIcon icon={metadata.icon} size={16} />
-        <Text>{metadata.label}</Text>
+        {metadata && <NodeIcon icon={metadata.icon} size={16} />}
+        <Stack gap={0}>
+          <Text>{customLabel || defaultLabel}</Text>
+          {customLabel ? (
+            <Text size="xs" c="dimmed">
+              {defaultLabel}
+            </Text>
+          ) : null}
+        </Stack>
+        <ActionIcon
+          size="sm"
+          variant="subtle"
+          c="dimmed"
+          onClick={() => setIsEditingLabel(true)}
+          aria-label="Edit custom node label"
+        >
+          <IconPencil size={14} />
+        </ActionIcon>
       </Group>
     );
+  };
+
+  const getDefaultNodeLabel = (node: WorkflowNode): string => {
+    if (node.type === "trigger") {
+      const triggerType = (node.data as TriggerNodeData).type;
+      return nodeCatalog.triggers[triggerType]?.metadata.label || "Trigger";
+    }
+
+    if (node.type === "action") {
+      const actionType = (node.data as ActionNodeData).type;
+      return nodeCatalog.actions[actionType]?.metadata.label || "Action";
+    }
+
+    return "Node";
   };
 
   return (
@@ -251,9 +364,9 @@ export const NodeProperties: React.FC<NodePropertiesProps> = ({
       }}
     >
       <Group mb="md" justify="space-between">
-        <Text fw={500} c={getNodeTypeColor(node.type)}>
-          {getNodeTitle(node)}
-        </Text>
+        <Box c={getNodeTypeColor(node.type)} style={{ flex: 1, minWidth: 0 }}>
+          {renderNodeTitle(node)}
+        </Box>
         <Group>
           <VariablesButton nodes={nodes} workflowVars={workflowVars} />
           <ActionIcon

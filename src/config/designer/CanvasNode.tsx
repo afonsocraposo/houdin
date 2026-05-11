@@ -185,6 +185,15 @@ export default function CanvasNode({
   };
 
   const getNodeLabel = (node: WorkflowNode) => {
+    const customLabel = node.data.customLabel?.trim();
+    if (customLabel) {
+      return customLabel;
+    }
+
+    return getDefaultNodeLabel(node);
+  };
+
+  const getDefaultNodeLabel = (node: WorkflowNode) => {
     if (node.type === "action") {
       const nodeType = (node.data as ActionNodeData).type;
       return nodeCatalog.actions[nodeType]?.metadata.label || "Unknown";

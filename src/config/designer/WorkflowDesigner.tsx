@@ -113,7 +113,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
     const structuralHash = nodes
       .map(
         (n) =>
-          `${n.id}:${n.type}:${n.position.x},${n.position.y}:${(n.inputs || []).join(",")}:${(n.outputs || []).join(",")}:${(n.data as any).type}`,
+          `${n.id}:${n.type}:${n.position.x},${n.position.y}:${(n.inputs || []).join(",")}:${(n.outputs || []).join(",")}:${(n.data as any).type}:${(n.data as any).customLabel || ""}`,
       )
       .sort()
       .join("|");
@@ -129,6 +129,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({
         outputs: n.outputs || [],
         data: {
           type: (n.data as any).type, // Only include the type, not the config
+          customLabel: (n.data as any).customLabel,
           config: {}, // Empty config to avoid re-renders on config changes
         },
       }));

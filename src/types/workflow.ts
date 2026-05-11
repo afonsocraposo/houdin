@@ -11,6 +11,7 @@ export interface WorkflowNode {
 }
 
 interface BaseNodeData {
+  customLabel?: string;
   config: Record<string, any>;
 }
 export interface TriggerNodeData extends BaseNodeData {
