@@ -145,13 +145,17 @@ export class BackgroundWorkflowEngine {
 
     const setupWorkflowIds = new Set<string>();
     for (const workflow of matchingWorkflows) {
-      for (const triggerNode of this.getWorkflowTriggers(workflow)) {
-        await this.setupTrigger(tabId, workflow, triggerNode);
-        if (this.getTabGeneration(tabId) !== generation) {
-          await this.cleanupTabWorkflows(tabId, [workflow.id]);
-          return;
-        }
+      await Promise.all(
+        this.getWorkflowTriggers(workflow).map((triggerNode) =>
+          this.setupTrigger(tabId, workflow, triggerNode),
+        ),
+      );
+
+      if (this.getTabGeneration(tabId) !== generation) {
+        await this.cleanupTabWorkflows(tabId, [workflow.id]);
+        return;
       }
+
       setupWorkflowIds.add(workflow.id);
     }
 
