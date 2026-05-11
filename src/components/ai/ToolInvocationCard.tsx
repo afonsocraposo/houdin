@@ -2,6 +2,7 @@ import {
   Box,
   Collapse,
   Group,
+  Loader,
   Paper,
   rem,
   Stack,
@@ -14,7 +15,6 @@ import {
   IconAlertCircle,
   IconChevronDown,
   IconCheck,
-  IconClockHour4,
   IconPlayerPause,
   IconTool,
 } from "@tabler/icons-react";
@@ -36,7 +36,7 @@ type ToolInvocationCardProps = {
 type ToolStateMeta = {
   label: string;
   color: string;
-  icon: typeof IconTool;
+  icon: typeof IconTool | typeof Loader;
 };
 
 function getToolName(type: string) {
@@ -63,7 +63,7 @@ function getStateMeta(state?: string): ToolStateMeta {
     case "input-available":
     case "input-streaming":
     default:
-      return { label: "Running", color: "blue", icon: IconClockHour4 };
+      return { label: "Running", color: "blue", icon: Loader };
   }
 }
 
