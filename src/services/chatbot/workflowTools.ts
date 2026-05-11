@@ -1,4 +1,5 @@
 import {
+  ExecutionMetadataKeys,
   WorkflowConnection,
   WorkflowDefinition,
   WorkflowNode,
@@ -145,6 +146,36 @@ function validateNodeReference(
   ref: string,
 ): { error?: string; warning?: string } {
   const [nodeId, ...propertyPath] = ref.split(".");
+
+  if (nodeId === "page") {
+    return {
+      error:
+        ref === "page.url"
+          ? "uses invalid variable '{{page.url}}'. Use '{{meta.url}}' for the current page URL."
+          : `uses invalid variable namespace 'page'. Use 'meta' for execution metadata. Available metadata fields: ${ExecutionMetadataKeys.join(", ")}`,
+    };
+  }
+
+  if (nodeId === "meta") {
+    const [metadataKey] = propertyPath;
+    if (!metadataKey) {
+      return {
+        warning: `references metadata namespace 'meta' without a field. Available metadata fields: ${ExecutionMetadataKeys.join(", ")}`,
+      };
+    }
+
+    if (!ExecutionMetadataKeys.includes(metadataKey as any)) {
+      return {
+        error: `references invalid metadata field 'meta.${metadataKey}'. Available metadata fields: ${ExecutionMetadataKeys.join(", ")}`,
+      };
+    }
+
+    return {};
+  }
+
+  if (nodeId === "env" || nodeId === "prev") {
+    return {};
+  }
 
   if (!isLikelyNodeReference(nodeId, workflow)) {
     return {};
@@ -459,6 +490,11 @@ export function createNode(
   }
 
   const nodeType = inferNodeType(type, args);
+  const definition = getNodeDefinition(nodeType, type);
+  if (!definition) {
+    throw new Error(`Unknown ${nodeType} node type '${type}'`);
+  }
+
   const nodeId =
     getFirstString(args, ["id", "nodeId", "node_id"]) ||
     generateId(nodeType, 8);
@@ -489,13 +525,30 @@ export function createNode(
     outputs,
   };
 
+  validateConfigPatchKeys(node, config);
+
+  const variableValidation = validateConfigVariables(workflow, config, {
+    allowMissingReferencedNodes: true,
+  });
+  if (variableValidation.errors.length > 0) {
+    throw new Error(variableValidation.errors.join("; "));
+  }
+
   return {
     workflow: {
       ...workflow,
       nodes: [...workflow.nodes, node],
       modifiedAt: Date.now(),
     },
-    result: `Created ${nodeType} node '${type}' (${nodeId}).`,
+    result: [
+      `Created ${nodeType} node '${type}' (${nodeId}).`,
+      variableValidation.hasLiquidReferences
+        ? "Config uses Liquid variables. After wiring the workflow, call validateWorkflow to verify node references and output properties, and keep validation as your final workflow step before enabling it or declaring the workflow finished."
+        : null,
+      ...variableValidation.warnings,
+    ]
+      .filter(Boolean)
+      .join(" "),
   };
 }
 

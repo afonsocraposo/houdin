@@ -28,8 +28,6 @@ export class ButtonClickTrigger extends BaseTrigger<
   ButtonClickTriggerConfig,
   ButtonClickTriggerOutput
 > {
-  private cleanupFns: (() => void)[] = [];
-
   constructor() {
     super(definition);
   }
@@ -39,7 +37,7 @@ export class ButtonClickTrigger extends BaseTrigger<
     workflowId: string,
     nodeId: string,
     onTrigger: (data?: any) => Promise<void>,
-  ): Promise<void> {
+  ): Promise<(() => void) | void> {
     const {
       selectorType,
       targetSelector,
@@ -50,16 +48,6 @@ export class ButtonClickTrigger extends BaseTrigger<
       customStyle,
       injectionPosition,
     } = config;
-    const targetElement =
-      componentType === "fab"
-        ? document.body
-        : await waitForElement(targetSelector, selectorType, 5000);
-    if (!targetElement) {
-      NotificationService.showErrorNotification({
-        message: "Target element not found for component injection",
-      });
-      return;
-    }
     const componentConfig = {
       componentType,
       componentText,
@@ -67,18 +55,51 @@ export class ButtonClickTrigger extends BaseTrigger<
       buttonTextColor,
       customStyle,
     };
-    const component = ComponentFactory.create(
-      componentConfig,
-      workflowId,
-      nodeId,
-    );
-    ContentInjector.injectMantineComponentInTarget(
-      `container-${workflowId}-${nodeId}`,
-      component,
-      targetElement,
-      true,
-      injectionPosition,
-    );
+    const containerId = `container-${workflowId}-${nodeId}`;
+    let isActive = true;
+    let isInjecting = false;
+    let currentTarget: Element | null = null;
+
+    const injectComponent = async () => {
+      if (!isActive || isInjecting) {
+        return;
+      }
+
+      isInjecting = true;
+
+      try {
+        const targetElement =
+          componentType === "fab"
+            ? document.body
+            : await waitForElement(targetSelector, selectorType, 5000);
+
+        if (!isActive) {
+          return;
+        }
+
+        if (!targetElement) {
+          NotificationService.showErrorNotification({
+            message: "Target element not found for component injection",
+          });
+          return;
+        }
+
+        currentTarget = targetElement;
+        ContentInjector.removeInjectedComponent(containerId);
+        ContentInjector.injectMantineComponentInTarget(
+          containerId,
+          ComponentFactory.create(componentConfig, workflowId, nodeId),
+          targetElement,
+          true,
+          injectionPosition,
+        );
+      } finally {
+        isInjecting = false;
+      }
+    };
+
+    await injectComponent();
+
     const handleComponentTrigger = (
       event: CustomEventInit<ComponentTriggerEventDetail>,
     ) => {
@@ -99,18 +120,33 @@ export class ButtonClickTrigger extends BaseTrigger<
       handleComponentTrigger,
     );
 
-    this.cleanupFns.push(() => {
+    const observer = new MutationObserver(() => {
+      if (!isActive || isInjecting) {
+        return;
+      }
+
+      const container = document.getElementById(containerId);
+      const targetDetached =
+        currentTarget !== null && !document.contains(currentTarget);
+
+      if (!container || !document.contains(container) || targetDetached) {
+        void injectComponent();
+      }
+    });
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      isActive = false;
+      observer.disconnect();
       document.removeEventListener(
         "workflow-component-trigger",
         handleComponentTrigger,
       );
-      const container = document.getElementById(`container-${workflowId}-${nodeId}`);
-      container?.remove();
-    });
-  }
-
-  async cleanup(): Promise<void> {
-    this.cleanupFns.forEach((fn) => fn());
-    this.cleanupFns = [];
+      ContentInjector.removeInjectedComponent(containerId);
+    };
   }
 }

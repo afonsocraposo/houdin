@@ -18,8 +18,7 @@ export class PageLoadTrigger extends BaseTrigger<PageLoadTriggerConfig, PageLoad
     _workflowId: string,
     _nodeId: string,
     onTrigger: (data: PageLoadTriggerOutput) => Promise<void>,
-  ): Promise<void> {
-    // Page is already loaded when this is called, so trigger immediately
+  ): Promise<(() => void) | void> {
     await onTrigger({ url: window.location.href });
   }
 }

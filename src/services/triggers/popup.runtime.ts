@@ -13,8 +13,6 @@ export class PopupTrigger extends BaseTrigger<
   PopupTriggerConfig,
   PopupTriggerOutput
 > {
-  private cleanupFns: (() => void)[] = [];
-
   constructor() {
     super(definition);
   }
@@ -24,7 +22,7 @@ export class PopupTrigger extends BaseTrigger<
     workflowId: string,
     _nodeId: string,
     onTrigger: (data: PopupTriggerOutput) => Promise<void>,
-  ): Promise<void> {
+  ): Promise<() => void> {
     const messageListener = (
       message: CustomMessage,
       _sender: any,
@@ -39,11 +37,6 @@ export class PopupTrigger extends BaseTrigger<
       }
     };
     browser.runtime.onMessage.addListener(messageListener);
-    this.cleanupFns.push(() => browser.runtime.onMessage.removeListener(messageListener));
-  }
-
-  async cleanup(): Promise<void> {
-    this.cleanupFns.forEach((fn) => fn());
-    this.cleanupFns = [];
+    return () => browser.runtime.onMessage.removeListener(messageListener);
   }
 }

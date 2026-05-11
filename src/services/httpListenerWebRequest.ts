@@ -85,6 +85,25 @@ export class HttpListenerWebRequest {
     }
   }
 
+  unregisterTrigger(
+    tabId: number,
+    workflowId: string,
+    triggerNodeId: string,
+  ): void {
+    this.triggers = this.triggers.filter(
+      (trigger) =>
+        !(
+          trigger.tabId === tabId &&
+          trigger.workflowId === workflowId &&
+          trigger.triggerNodeId === triggerNodeId
+        ),
+    );
+
+    if (this.triggers.length === 0) {
+      this.stopListening();
+    }
+  }
+
   private startListening(): void {
     if (this.isListening) return;
 

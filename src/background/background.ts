@@ -12,6 +12,7 @@ import { WorkflowSyncer } from "@/services/workflowSyncer";
 import { ChatbotService } from "../services/chatbot";
 
 let httpListener: HttpListenerWebRequest | null = null;
+
 if (browser.webRequest.onBeforeRequest) {
   try {
     httpListener = HttpListenerWebRequest.getInstance();
@@ -66,83 +67,138 @@ chatbot.init();
 ApiClient.startBackgroundProxy();
 
 const workflowEngine = new BackgroundWorkflowEngine();
+
+browser.tabs.onRemoved.addListener((tabId: number) => {
+  workflowEngine.clearTab(tabId);
+  if (httpListener) {
+    httpListener.unregisterTriggers(tabId);
+  }
+});
+
 browser.runtime.onMessage.addListener(
-  (message: CustomMessage, sender: any, sendResponse: (response?: any) => void) => {
-  switch (message.type) {
-    case WorkflowCommandType.TRIGGER_FIRED: {
-      const tabId = sender.tab.id;
+  (
+    message: CustomMessage,
+    sender: any,
+    sendResponse: (response?: any) => void,
+  ) => {
+    switch (message.type) {
+      case WorkflowCommandType.TRIGGER_FIRED: {
+        const tabId = sender.tab.id;
 
-          const response = message.data as TriggerFiredCommand;
-          const url = response.url;
-          const pageTitle = sender.tab?.title || "";
-          const workflowId = response.workflowId;
-          const triggerNodeId = response.triggerNodeId;
-      const triggerData = response.data || {};
-      const config = response.config || {};
-      const duration = response.duration || 0;
-      workflowEngine.dispatchExecutor({
-            url,
-            pageTitle,
-            tabId,
-            workflowId,
-            triggerNodeId,
-        triggerData,
-        config,
-        duration,
-      });
-      return;
-    }
-    case "REGISTER_HTTP_TRIGGER": {
-      console.debug("Background: Registering HTTP trigger", message);
+        const response = message.data as TriggerFiredCommand;
+        const url = response.url;
+        const pageTitle = sender.tab?.title || "";
+        const workflowId = response.workflowId;
+        const triggerNodeId = response.triggerNodeId;
+        const triggerData = response.data || {};
+        const config = response.config || {};
+        const duration = response.duration || 0;
+        workflowEngine.dispatchExecutor({
+          url,
+          pageTitle,
+          tabId,
+          workflowId,
+          triggerNodeId,
+          triggerData,
+          config,
+          duration,
+        });
+        return;
+      }
+      case "REGISTER_HTTP_TRIGGER": {
+        console.debug("Background: Registering HTTP trigger", message);
 
-      if (!httpListener) {
-        console.error(
-          "Background: Cannot register HTTP trigger - httpListener not available",
+        if (!httpListener) {
+          console.error(
+            "Background: Cannot register HTTP trigger - httpListener not available",
+          );
+          sendResponse({ success: false, error: "httpListener not available" });
+          return true;
+        }
+
+        httpListener.registerTrigger(
+          sender.tab.id,
+          message.data.workflowId,
+          message.data.triggerNodeId,
+          message.data.urlPattern,
+          message.data.method,
+          async (data: any) => {
+            console.debug("HTTP trigger fired:", {
+              tabId: sender.tab.id,
+              workflowId: message.data.workflowId,
+              triggerNodeId: message.data.triggerNodeId,
+              data,
+            });
+            await sendMessageToContentScript(
+              sender.tab.id,
+              "HTTP_TRIGGER_FIRED",
+              {
+                workflowId: message.data.workflowId,
+                triggerNodeId: message.data.triggerNodeId,
+                data,
+              },
+            ).catch(() => {});
+          },
         );
-        sendResponse({ success: false, error: "httpListener not available" });
+        sendResponse({ success: true });
         return true;
       }
 
-      const triggerCallback = async (data: any) => {
-        console.debug("HTTP trigger fired:", {
-          tabId: sender.tab.id,
-          workflowId: message.data.workflowId,
-          triggerNodeId: message.data.triggerNodeId,
-          data,
-        });
-        sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
-          workflowId: message.data.workflowId,
-          triggerNodeId: message.data.triggerNodeId,
-          data,
-        }).catch(() => {});
-      };
-
-      httpListener.registerTrigger(
-        sender.tab.id,
-        message.data.workflowId,
-        message.data.triggerNodeId,
-        message.data.urlPattern,
-        message.data.method,
-        triggerCallback,
-      );
-      sendResponse({ success: true });
-      return true;
-    }
-
-    case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
-      if (httpListener) {
-        httpListener.unregisterTriggers(sender.tab.id);
+      case "UNREGISTER_HTTP_TRIGGER": {
+        if (httpListener) {
+          httpListener.unregisterTrigger(
+            sender.tab.id,
+            message.data.workflowId,
+            message.data.triggerNodeId,
+          );
+        }
+        return;
       }
-      return;
-  }
+
+      case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
+        if (httpListener) {
+          httpListener.unregisterTriggers(sender.tab.id);
+        }
+        return;
+    }
   },
 );
 
 workflowEngine.initialize().then(() => {
+  browser.webNavigation.onCommitted.addListener(
+    (details: {
+      tabId: number;
+      frameId: number;
+      transitionType?: string;
+      transitionQualifiers?: string[];
+    }) => {
+      if (details.frameId !== 0) return;
+
+      // Only clear tab state for cross-document navigations (typed URL,
+      // link click, reload, etc.).  SPA-style back/forward navigations
+      // keep the content script alive, so clearing state would kill
+      // in-flight executors.  Those navigations are handled by
+      // onHistoryStateUpdated → onNewUrl which does its own
+      // delta-based cleanup.
+      const isBackForward =
+        details.transitionQualifiers?.includes("forward_back");
+
+      if (!isBackForward) {
+        workflowEngine.clearTab(details.tabId);
+        if (httpListener) {
+          httpListener.unregisterTriggers(details.tabId);
+        }
+      }
+    },
+    { url: [{ schemes: ["http", "https"] }] },
+  );
+
   browser.webNavigation.onCompleted.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
       if (details.frameId === 0) {
-        workflowEngine.onNewUrl(details.tabId, details.url);
+        workflowEngine.onNewUrl(details.tabId, details.url).catch((error) => {
+          console.warn("Failed to handle completed navigation:", error);
+        });
       }
     },
     { url: [{ schemes: ["http", "https"] }] },
@@ -151,7 +207,9 @@ workflowEngine.initialize().then(() => {
   browser.webNavigation.onHistoryStateUpdated.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
       if (details.frameId === 0) {
-        workflowEngine.onNewUrl(details.tabId, details.url);
+        workflowEngine.onNewUrl(details.tabId, details.url).catch((error) => {
+          console.warn("Failed to handle history state update:", error);
+        });
       }
     },
     { url: [{ schemes: ["http", "https"] }] },

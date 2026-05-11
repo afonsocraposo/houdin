@@ -4,12 +4,17 @@ import CustomMantineProvider from "@/content/mantineProvider";
 
 const MANTINE_INJECTOR_ROOT_ID = "mantine-injector-root";
 export class ContentInjector {
+  private static roots = new Map<string, Root>();
   private urlObserver: MutationObserver | null = null;
   private processTimeout: number | null = null;
+  private isDestroyed = false;
+  private isEnsuringMantineRoot = false;
 
   async initialize(): Promise<void> {
     console.debug("Content injector initialized");
-    this.injectMantineDispatcher(MANTINE_INJECTOR_ROOT_ID);
+    this.isDestroyed = false;
+    this.ensureMantineRoot();
+    this.observeMantineRoot();
   }
 
   private static getParentShadowRoot(
@@ -87,6 +92,21 @@ export class ContentInjector {
         coreOnly,
       }),
     );
+    this.roots.set(rootId, root);
+  }
+
+  public static removeInjectedComponent(rootId: string): void {
+    this.removeInjectedRoot(rootId);
+  }
+
+  private static removeInjectedRoot(rootId: string): void {
+    const root = this.roots.get(rootId);
+    if (root) {
+      root.unmount();
+      this.roots.delete(rootId);
+    }
+
+    document.getElementById(rootId)?.remove();
   }
 
   private injectMantineDispatcher(rootId: string): void {
@@ -104,6 +124,65 @@ export class ContentInjector {
     );
   }
 
+  private ensureMantineRoot(): void {
+    if (this.isDestroyed || this.isEnsuringMantineRoot) {
+      return;
+    }
+
+    const existingRoot = document.getElementById(MANTINE_INJECTOR_ROOT_ID);
+    const hasMountedRoot = ContentInjector.roots.has(MANTINE_INJECTOR_ROOT_ID);
+    if (existingRoot && hasMountedRoot) {
+      return;
+    }
+
+    this.isEnsuringMantineRoot = true;
+    try {
+      if (existingRoot && !hasMountedRoot) {
+        existingRoot.remove();
+      }
+
+      if (!existingRoot && hasMountedRoot) {
+        ContentInjector.removeInjectedComponent(MANTINE_INJECTOR_ROOT_ID);
+      }
+
+      console.debug("Content injector: restoring mantine root");
+      this.injectMantineDispatcher(MANTINE_INJECTOR_ROOT_ID);
+    } finally {
+      this.isEnsuringMantineRoot = false;
+    }
+  }
+
+  private observeMantineRoot(): void {
+    if (this.urlObserver) {
+      this.urlObserver.disconnect();
+    }
+
+    const observerTarget = document.documentElement;
+    if (!observerTarget) {
+      return;
+    }
+
+    this.urlObserver = new MutationObserver(() => {
+      if (this.isDestroyed || this.isEnsuringMantineRoot) {
+        return;
+      }
+
+      if (this.processTimeout !== null) {
+        window.clearTimeout(this.processTimeout);
+      }
+
+      this.processTimeout = window.setTimeout(() => {
+        this.processTimeout = null;
+        this.ensureMantineRoot();
+      }, 50);
+    });
+
+    this.urlObserver.observe(observerTarget, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
   private cleanupInjectedComponents(): void {
     console.debug("Cleaning up injected components");
 
@@ -116,20 +195,24 @@ export class ContentInjector {
       '[data-workflow-injected="true"]:not(#mantine-injector-root)',
     );
     injectedComponents.forEach((component) => {
-      if (component.parentNode) {
-        component.parentNode.removeChild(component);
+      if (component instanceof HTMLElement) {
+        ContentInjector.removeInjectedRoot(component.id);
       }
     });
   }
 
   destroy(): void {
-    this.cleanupInjectedComponents();
+    this.isDestroyed = true;
 
     if (this.urlObserver) {
       this.urlObserver.disconnect();
+      this.urlObserver = null;
     }
     if (this.processTimeout) {
       clearTimeout(this.processTimeout);
+      this.processTimeout = null;
     }
+
+    this.cleanupInjectedComponents();
   }
 }

@@ -2,6 +2,7 @@ import { CustomMessage, sendMessageToBackground } from "@/lib/messages";
 import browser from "../browser";
 import { MessageType } from "@/types/messages";
 import {
+  appendAssistantMessage,
   getCredential,
   getModel,
   getProvider,
@@ -25,7 +26,25 @@ import { API_BASE_URL } from "@/api/client";
 import { generateId } from "@/utils/helpers";
 import buildSystemPrompt from "./system-prompt";
 import { createTools } from "./tools";
+import { validateWorkflow, WorkflowValidationReport } from "./workflowTools";
 import { WorkflowDefinition } from "@/types/workflow";
+
+function formatValidationMessage(report: WorkflowValidationReport) {
+  const lines = ["Workflow validation complete.", report.summary];
+
+  if (report.errors.length > 0) {
+    lines.push("Errors:", ...report.errors.map((error) => `- ${error}`));
+  }
+
+  if (report.warnings.length > 0) {
+    lines.push(
+      "Warnings:",
+      ...report.warnings.map((warning) => `- ${warning}`),
+    );
+  }
+
+  return lines.join("\n");
+}
 
 export class ChatbotService {
   private static instance: ChatbotService;
@@ -108,10 +127,12 @@ export class ChatbotService {
         session.messages.slice(-20),
       );
       let workflowState: WorkflowDefinition = getWorkflow(workflowId);
+      let workflowChanged = false;
 
       const getWorkflowState = () => workflowState;
       const saveWorkflowState = (workflow: WorkflowDefinition) => {
         workflowState = workflow;
+        workflowChanged = true;
         saveWorkflow(workflow);
       };
 
@@ -129,7 +150,7 @@ export class ChatbotService {
         temperature: 0.2,
         maxOutputTokens: 2000,
         abortSignal: this.activeRuns[workflowId].signal,
-        stopWhen: stepCountIs(10),
+        stopWhen: stepCountIs(20),
         onError({ error }) {
           streamError =
             error instanceof Error ? error : new Error(String(error));
@@ -150,6 +171,15 @@ export class ChatbotService {
       if (streamError) {
         setStatus(workflowId, "error", streamError.message);
       } else {
+        if (workflowChanged) {
+          const validation = validateWorkflow(workflowState);
+          if (validation.errors.length > 0 || validation.warnings.length > 0) {
+            appendAssistantMessage(
+              workflowId,
+              formatValidationMessage(validation),
+            );
+          }
+        }
         setStatus(workflowId, "ready");
       }
     } catch (error) {

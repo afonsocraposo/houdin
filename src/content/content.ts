@@ -12,7 +12,7 @@ import { TriggerRegistry } from "@/services/triggerRegistry";
 import { WorkflowScriptMessage } from "@/services/userScriptManager";
 import {
   ActionCommand,
-  ReadinessResponse,
+  CleanupWorkflowTriggersCommand,
   StatusMessage,
   TriggerCommand,
   TriggerFiredCommand,
@@ -34,9 +34,7 @@ if ((window as any).houdinExtensionInitialized) {
 } else {
   (window as any).houdinExtensionInitialized = true;
 
-  let contentInjector: ContentInjector;
-  let isFullyInitialized = false;
-  let isInitializing = false;
+  const contentInjector = new ContentInjector();
   let lastSelectedElement: SelectedElementContext | undefined;
 
   interface ElementSelectedDetail {
@@ -51,57 +49,21 @@ if ((window as any).houdinExtensionInitialized) {
     };
   }
 
-  const initMinimalContentScript = () => {
-    console.debug("Houdin extension minimal initialization");
-
-    // Set up readiness check listener
-    setupReadinessCheckListener();
-    setupElementSelectionBridge();
-  };
-
-  const initFullContentScript = () => {
-    if (isFullyInitialized || isInitializing) return;
-    isInitializing = true;
-
-    console.debug("Houdin extension full initialization");
-
-    // Initialize content injector
-    contentInjector = new ContentInjector();
-    contentInjector.initialize();
-
-    // Set up notification message listener
-    setupNotificationBridge();
-
-    // Set up workflow script bridge (only needed when workflows are active)
-    setupWorkflowScriptBridge();
-
-    // Set up workflow engine bridge
-    setupBackgroundEngineBridge();
-
-    isFullyInitialized = true;
-    isInitializing = false;
-  };
-
-  const setupReadinessCheckListener = () => {
+  const setupPageContextBridge = () => {
     browser.runtime.onMessage.addListener(
       (
         message: CustomMessage<any>,
         _sender,
-        sendResponse: (response: ReadinessResponse) => void,
+        sendResponse: (response: {
+          ready: boolean;
+          data?: PageContextSnapshot;
+        }) => void,
       ) => {
         if (message.type === "GET_PAGE_CONTEXT") {
           sendResponse({ ready: true, data: getPageContextSnapshot() });
           return true;
         }
 
-        if (message.type === WorkflowCommandType.CHECK_READINESS) {
-          if (!isFullyInitialized) {
-            initFullContentScript();
-          }
-
-          sendResponse({ ready: true });
-          return true; // Indicate async response
-        }
         return; // Let other listeners handle other messages
       },
     );
@@ -167,7 +129,11 @@ if ((window as any).houdinExtensionInitialized) {
     }
 
     const active = document.activeElement as HTMLElement | null;
-    if (!active || active === document.body || active === document.documentElement) {
+    if (
+      !active ||
+      active === document.body ||
+      active === document.documentElement
+    ) {
       return undefined;
     }
 
@@ -298,13 +264,34 @@ if ((window as any).houdinExtensionInitialized) {
         switch (message.type) {
           case WorkflowCommandType.CLEANUP_TRIGGERS: {
             const triggerRegistry = TriggerRegistry.getInstance();
-            triggerRegistry.cleanupAll().then(() => {
-              sendResponse({ success: true });
-            }).catch((error) => {
-              console.error("Failed to cleanup triggers:", error);
-              sendResponse({ success: false, error: String(error) });
-            });
+            triggerRegistry
+              .cleanupAll()
+              .then(() => {
+                sendResponse({ success: true });
+              })
+              .catch((error) => {
+                console.error("Failed to cleanup triggers:", error);
+                sendResponse({ success: false, error: String(error) });
+              });
             return true; // async response
+          }
+          case WorkflowCommandType.CLEANUP_WORKFLOW_TRIGGERS: {
+            const cleanupCommand =
+              message.data as unknown as CleanupWorkflowTriggersCommand;
+            const triggerRegistry = TriggerRegistry.getInstance();
+            Promise.all(
+              cleanupCommand.workflowIds.map((workflowId) =>
+                triggerRegistry.cleanupByWorkflow(workflowId),
+              ),
+            )
+              .then(() => {
+                sendResponse({ success: true });
+              })
+              .catch((error) => {
+                console.error("Failed to cleanup workflow triggers:", error);
+                sendResponse({ success: false, error: String(error) });
+              });
+            return true;
           }
           case WorkflowCommandType.INIT_TRIGGER:
             const initTriggerCommand = message.data as TriggerCommand;
@@ -407,11 +394,23 @@ if ((window as any).houdinExtensionInitialized) {
     );
   };
 
-  // Initialize minimal content script when DOM is ready
+  const initializeContentScript = () => {
+    console.debug("Houdin extension initialization");
+    contentInjector.initialize();
+    setupPageContextBridge();
+    setupElementSelectionBridge();
+    setupNotificationBridge();
+    setupWorkflowScriptBridge();
+    setupBackgroundEngineBridge();
+  };
+
+  // Initialize content script when DOM is ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initMinimalContentScript);
+    document.addEventListener("DOMContentLoaded", initializeContentScript, {
+      once: true,
+    });
   } else {
-    initMinimalContentScript();
+    initializeContentScript();
   }
 
   const cleanUpHttpTriggers = () => {
@@ -420,10 +419,6 @@ if ((window as any).houdinExtensionInitialized) {
 
   // Cleanup on page unload
   window.addEventListener("beforeunload", () => {
-    if (contentInjector) {
-      contentInjector.destroy();
-    }
     cleanUpHttpTriggers();
-    (window as any).houdinExtensionInitialized = false;
   });
 }
