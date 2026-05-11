@@ -21,7 +21,6 @@ export enum WorkflowCommandType {
   CLEANUP_WORKFLOW_TRIGGERS = "CLEANUP_WORKFLOW_TRIGGERS",
   TRIGGER_FIRED = "TRIGGER_FIRED",
   CLEAN_HTTP_TRIGGERS = "CLEAN_HTTP_TRIGGERS",
-  CHECK_READINESS = "CHECK_READINESS",
 }
 
 // Command system for content scripts
@@ -71,16 +70,6 @@ export interface StatusMessage {
   error?: string;
   outputHandle?: string;
   config?: Record<string, any>;
-}
-
-export interface ReadinessCheckCommand {
-  type: WorkflowCommandType.CHECK_READINESS;
-  tabId: number;
-}
-
-export interface ReadinessResponse {
-  ready: boolean;
-  data?: any;
 }
 
 export interface HttpTriggerRegistration {

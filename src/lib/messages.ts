@@ -1,5 +1,19 @@
 import browser from "@/services/browser";
 
+const RECEIVING_END_ERRORS = [
+  "Could not establish connection. Receiving end does not exist.",
+  "Could not establish connection",
+  "Receiving end does not exist",
+];
+
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const isReceivingEndError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  return RECEIVING_END_ERRORS.some((value) => message.includes(value));
+};
+
 export const sendMessageToBackground = async <T>(
   type: string,
   data?: T,
@@ -30,10 +44,28 @@ export const sendMessageToContentScript = async <T>(
     type,
     data,
   });
-  return await browser.tabs
-    .sendMessage(tabId, {
-      type,
-      data,
-    } as CustomMessage<T>)
-    .then(responseCallback);
+
+  const maxAttempts = 10;
+  const retryDelayMs = 200;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await browser.tabs.sendMessage(tabId, {
+        type,
+        data,
+      } as CustomMessage<T>);
+      return responseCallback ? responseCallback(response) : response;
+    } catch (error) {
+      if (!isReceivingEndError(error) || attempt === maxAttempts) {
+        throw error;
+      }
+
+      console.debug("Retrying content script message after connection error", {
+        tabId,
+        type,
+        attempt,
+      });
+      await delay(retryDelayMs);
+    }
+  }
 };

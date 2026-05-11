@@ -16,7 +16,6 @@ import {
 import { ActionRegistry } from "../actionRegistry";
 import { NotificationService } from "../notification";
 import { ExecutionContext } from "./executionContext";
-import { BackgroundWorkflowEngine } from "../backgroundEngine";
 import { useSessionStore } from "@/store";
 
 export class WorkflowExecutor {
@@ -204,24 +203,6 @@ export class WorkflowExecutor {
         nodeId: node.id,
       };
       const start = Date.now();
-
-      // For content script actions, ensure content script is ready before executing
-      const isReady = await BackgroundWorkflowEngine.waitForContentScriptReady(
-        this.tabId,
-      );
-      if (!isReady) {
-        this.executionTracker.addNodeResult({
-          nodeId: node.id,
-          nodeType: "action",
-          nodeName: actionType,
-          nodeConfig: actionConfig,
-          data: "Timeout waiting for content script to be ready",
-          status: "error",
-          executedAt: start,
-          duration: Date.now() - start,
-        });
-        throw new Error("Timed out waiting for content script to be ready");
-      }
 
       const result = runBackground
         ? await this.executeActionInBackground(message)

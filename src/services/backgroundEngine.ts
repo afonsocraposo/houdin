@@ -1,7 +1,6 @@
 import { sendMessageToContentScript } from "@/lib/messages";
 import {
   CleanupWorkflowTriggersCommand,
-  ReadinessResponse,
   TriggerCommand,
   WorkflowCommandType,
 } from "@/types/background-workflow";
@@ -13,7 +12,6 @@ import {
 import { WorkflowExecutor } from "./workflow/workflow";
 import { ExecutionContext } from "./workflow/executionContext";
 import { matchesUrlPattern } from "@/utils/helpers";
-import { NotificationService } from "./notification";
 import { initializeCredentials } from "./credentialInitializer";
 import { useStore } from "@/store";
 import { initializeBackgroundActions } from "./backgroundActionInitializer";
@@ -102,16 +100,33 @@ export class BackgroundWorkflowEngine {
       this.activeTabWorkflows.get(tabId) || new Set<string>();
     const activeUrl = this.activeTabUrls.get(tabId);
 
+    console.debug("BackgroundWorkflowEngine: Evaluating URL", {
+      tabId,
+      url,
+      previousUrl: activeUrl,
+      activeWorkflowIds: Array.from(activeWorkflowIds),
+      matchingWorkflowIds: Array.from(matchingWorkflowIds),
+      generation,
+    });
+
     if (
       activeUrl === url &&
       BackgroundWorkflowEngine.setsEqual(activeWorkflowIds, matchingWorkflowIds)
     ) {
+      console.debug("BackgroundWorkflowEngine: URL evaluation unchanged", {
+        tabId,
+        url,
+      });
       return;
     }
 
     const workflowsToCleanup = Array.from(activeWorkflowIds);
 
     if (workflowsToCleanup.length > 0) {
+      console.debug("BackgroundWorkflowEngine: Cleaning up workflows", {
+        tabId,
+        workflowIds: workflowsToCleanup,
+      });
       await this.cleanupTabWorkflows(tabId, workflowsToCleanup);
     }
 
@@ -120,20 +135,11 @@ export class BackgroundWorkflowEngine {
     }
 
     if (matchingWorkflows.length === 0 && runningWorkflowIds.length === 0) {
-      this.activeTabUrls.delete(tabId);
-      return;
-    }
-
-    const success = await this.initializeContentScript(tabId);
-    if (!success) {
-      NotificationService.showErrorNotificationFromBackground({
-        title: "Failed to start workflow",
-        message: `Could not initialize content script for workflows on this page.`,
+      console.debug("BackgroundWorkflowEngine: No matching workflows", {
+        tabId,
+        url,
       });
-      return;
-    }
-
-    if (this.getTabGeneration(tabId) !== generation) {
+      this.activeTabUrls.delete(tabId);
       return;
     }
 
@@ -151,6 +157,11 @@ export class BackgroundWorkflowEngine {
 
     this.activeTabWorkflows.set(tabId, setupWorkflowIds);
     this.activeTabUrls.set(tabId, url);
+    console.debug("BackgroundWorkflowEngine: Activated workflows", {
+      tabId,
+      url,
+      workflowIds: Array.from(setupWorkflowIds),
+    });
   }
 
   public clearTab(tabId: number): void {
@@ -215,45 +226,6 @@ export class BackgroundWorkflowEngine {
 
   private getTabGeneration(tabId: number): number {
     return this.tabGenerations.get(tabId) || 0;
-  }
-
-  private async initializeContentScript(tabId: number): Promise<boolean> {
-    return BackgroundWorkflowEngine.waitForContentScriptReady(tabId);
-  }
-
-  static async waitForContentScriptReady(
-    tabId: number,
-    timeoutMs: number = 10000,
-    retryIntervalMs: number = 500,
-  ): Promise<boolean> {
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < timeoutMs) {
-      try {
-        const readinessResponse = (await sendMessageToContentScript(
-          tabId,
-          WorkflowCommandType.CHECK_READINESS,
-        )) as ReadinessResponse;
-
-        if (readinessResponse?.ready) {
-          console.debug("Content script ready for tab:", tabId);
-          return true;
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        console.debug(
-          "Content script not yet ready for tab:",
-          tabId,
-          errorMessage,
-        );
-      }
-
-      // Wait before retrying
-      await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
-    }
-
-    return false;
   }
 
   private async setupTrigger(

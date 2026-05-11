@@ -13,7 +13,6 @@ import { WorkflowScriptMessage } from "@/services/userScriptManager";
 import {
   ActionCommand,
   CleanupWorkflowTriggersCommand,
-  ReadinessResponse,
   StatusMessage,
   TriggerCommand,
   TriggerFiredCommand,
@@ -35,9 +34,7 @@ if ((window as any).houdinExtensionInitialized) {
 } else {
   (window as any).houdinExtensionInitialized = true;
 
-  let contentInjector: ContentInjector;
-  let isFullyInitialized = false;
-  let isInitializing = false;
+  const contentInjector = new ContentInjector();
   let lastSelectedElement: SelectedElementContext | undefined;
 
   interface ElementSelectedDetail {
@@ -52,60 +49,21 @@ if ((window as any).houdinExtensionInitialized) {
     };
   }
 
-  const initMinimalContentScript = () => {
-    console.debug("Houdin extension minimal initialization");
-
-    // Set up readiness check listener
-    setupReadinessCheckListener();
-    setupElementSelectionBridge();
-  };
-
-  const initFullContentScript = () => {
-    if (isFullyInitialized || isInitializing) return;
-    isInitializing = true;
-
-    console.debug("Houdin extension full initialization");
-
-    // Initialize content injector
-    contentInjector = new ContentInjector();
-    contentInjector.initialize();
-
-    // Set up notification message listener
-    setupNotificationBridge();
-
-    // Set up workflow script bridge (only needed when workflows are active)
-    setupWorkflowScriptBridge();
-
-    // Set up workflow engine bridge
-    setupBackgroundEngineBridge();
-
-    isFullyInitialized = true;
-    isInitializing = false;
-  };
-
-  const setupReadinessCheckListener = () => {
+  const setupPageContextBridge = () => {
     browser.runtime.onMessage.addListener(
       (
         message: CustomMessage<any>,
         _sender,
-        sendResponse: (response: ReadinessResponse) => void,
+        sendResponse: (response: {
+          ready: boolean;
+          data?: PageContextSnapshot;
+        }) => void,
       ) => {
         if (message.type === "GET_PAGE_CONTEXT") {
           sendResponse({ ready: true, data: getPageContextSnapshot() });
           return true;
         }
 
-        if (message.type === WorkflowCommandType.CHECK_READINESS) {
-          console.log(isFullyInitialized);
-          if (isFullyInitialized) {
-            contentInjector?.ensureInitialized();
-          } else {
-            initFullContentScript();
-          }
-
-          sendResponse({ ready: true });
-          return true; // Indicate async response
-        }
         return; // Let other listeners handle other messages
       },
     );
@@ -436,11 +394,23 @@ if ((window as any).houdinExtensionInitialized) {
     );
   };
 
-  // Initialize minimal content script when DOM is ready
+  const initializeContentScript = () => {
+    console.debug("Houdin extension initialization");
+    contentInjector.initialize();
+    setupPageContextBridge();
+    setupElementSelectionBridge();
+    setupNotificationBridge();
+    setupWorkflowScriptBridge();
+    setupBackgroundEngineBridge();
+  };
+
+  // Initialize content script when DOM is ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initMinimalContentScript);
+    document.addEventListener("DOMContentLoaded", initializeContentScript, {
+      once: true,
+    });
   } else {
-    initMinimalContentScript();
+    initializeContentScript();
   }
 
   const cleanUpHttpTriggers = () => {
@@ -450,6 +420,5 @@ if ((window as any).houdinExtensionInitialized) {
   // Cleanup on page unload
   window.addEventListener("beforeunload", () => {
     cleanUpHttpTriggers();
-    (window as any).houdinExtensionInitialized = false;
   });
 }

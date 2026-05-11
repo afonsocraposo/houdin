@@ -12,6 +12,7 @@ import { WorkflowSyncer } from "@/services/workflowSyncer";
 import { ChatbotService } from "../services/chatbot";
 
 let httpListener: HttpListenerWebRequest | null = null;
+
 if (browser.webRequest.onBeforeRequest) {
   try {
     httpListener = HttpListenerWebRequest.getInstance();
@@ -75,85 +76,89 @@ browser.tabs.onRemoved.addListener((tabId: number) => {
 });
 
 browser.runtime.onMessage.addListener(
-  (message: CustomMessage, sender: any, sendResponse: (response?: any) => void) => {
-  switch (message.type) {
-    case WorkflowCommandType.TRIGGER_FIRED: {
-      const tabId = sender.tab.id;
+  (
+    message: CustomMessage,
+    sender: any,
+    sendResponse: (response?: any) => void,
+  ) => {
+    switch (message.type) {
+      case WorkflowCommandType.TRIGGER_FIRED: {
+        const tabId = sender.tab.id;
 
-          const response = message.data as TriggerFiredCommand;
-          const url = response.url;
-          const pageTitle = sender.tab?.title || "";
-          const workflowId = response.workflowId;
-          const triggerNodeId = response.triggerNodeId;
-      const triggerData = response.data || {};
-      const config = response.config || {};
-      const duration = response.duration || 0;
-      workflowEngine.dispatchExecutor({
-            url,
-            pageTitle,
-            tabId,
-            workflowId,
-            triggerNodeId,
-        triggerData,
-        config,
-        duration,
-      });
-      return;
-    }
-    case "REGISTER_HTTP_TRIGGER": {
-      console.debug("Background: Registering HTTP trigger", message);
-
-      if (!httpListener) {
-        console.error(
-          "Background: Cannot register HTTP trigger - httpListener not available",
-        );
-        sendResponse({ success: false, error: "httpListener not available" });
-        return true;
-      }
-
-      const triggerCallback = async (data: any) => {
-        console.debug("HTTP trigger fired:", {
-          tabId: sender.tab.id,
-          workflowId: message.data.workflowId,
-          triggerNodeId: message.data.triggerNodeId,
-          data,
+        const response = message.data as TriggerFiredCommand;
+        const url = response.url;
+        const pageTitle = sender.tab?.title || "";
+        const workflowId = response.workflowId;
+        const triggerNodeId = response.triggerNodeId;
+        const triggerData = response.data || {};
+        const config = response.config || {};
+        const duration = response.duration || 0;
+        workflowEngine.dispatchExecutor({
+          url,
+          pageTitle,
+          tabId,
+          workflowId,
+          triggerNodeId,
+          triggerData,
+          config,
+          duration,
         });
-        sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
-          workflowId: message.data.workflowId,
-          triggerNodeId: message.data.triggerNodeId,
-          data,
-        }).catch(() => {});
-      };
+        return;
+      }
+      case "REGISTER_HTTP_TRIGGER": {
+        console.debug("Background: Registering HTTP trigger", message);
 
-      httpListener.registerTrigger(
-        sender.tab.id,
-        message.data.workflowId,
-        message.data.triggerNodeId,
-        message.data.urlPattern,
-        message.data.method,
-        triggerCallback,
-      );
-      sendResponse({ success: true });
-      return true;
-    }
+        if (!httpListener) {
+          console.error(
+            "Background: Cannot register HTTP trigger - httpListener not available",
+          );
+          sendResponse({ success: false, error: "httpListener not available" });
+          return true;
+        }
 
-    case "UNREGISTER_HTTP_TRIGGER": {
-      if (httpListener) {
-        httpListener.unregisterTrigger(
+        const triggerCallback = async (data: any) => {
+          console.debug("HTTP trigger fired:", {
+            tabId: sender.tab.id,
+            workflowId: message.data.workflowId,
+            triggerNodeId: message.data.triggerNodeId,
+            data,
+          });
+          sendMessageToContentScript(sender.tab.id, "HTTP_TRIGGER_FIRED", {
+            workflowId: message.data.workflowId,
+            triggerNodeId: message.data.triggerNodeId,
+            data,
+          }).catch(() => {});
+        };
+
+        httpListener.registerTrigger(
           sender.tab.id,
           message.data.workflowId,
           message.data.triggerNodeId,
+          message.data.urlPattern,
+          message.data.method,
+          triggerCallback,
         );
+        sendResponse({ success: true });
+        return true;
       }
-      return;
-    }
 
-    case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
-      if (httpListener) {
-        httpListener.unregisterTriggers(sender.tab.id);
+      case "UNREGISTER_HTTP_TRIGGER": {
+        if (httpListener) {
+          httpListener.unregisterTrigger(
+            sender.tab.id,
+            message.data.workflowId,
+            message.data.triggerNodeId,
+          );
+        }
+        return;
       }
-      return;
-  }
+
+      case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
+        if (httpListener) {
+          httpListener.unregisterTriggers(sender.tab.id);
+        }
+        return;
+    }
   },
 );
 
@@ -189,7 +194,9 @@ workflowEngine.initialize().then(() => {
   browser.webNavigation.onCompleted.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
       if (details.frameId === 0) {
-        workflowEngine.onNewUrl(details.tabId, details.url);
+        workflowEngine.onNewUrl(details.tabId, details.url).catch((error) => {
+          console.warn("Failed to handle completed navigation:", error);
+        });
       }
     },
     { url: [{ schemes: ["http", "https"] }] },
@@ -198,8 +205,9 @@ workflowEngine.initialize().then(() => {
   browser.webNavigation.onHistoryStateUpdated.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
       if (details.frameId === 0) {
-        workflowEngine.clearTab(details.tabId);
-        workflowEngine.onNewUrl(details.tabId, details.url);
+        workflowEngine.onNewUrl(details.tabId, details.url).catch((error) => {
+          console.warn("Failed to handle history state update:", error);
+        });
       }
     },
     { url: [{ schemes: ["http", "https"] }] },
