@@ -1,9 +1,10 @@
 import { ValidationResult } from "@/types/config-properties";
-import { BaseTrigger, TriggerMetadata } from "@/types/triggers";
+import { BaseTrigger, TriggerCleanup, TriggerMetadata } from "@/types/triggers";
 
 export class TriggerRegistry {
   private static instance: TriggerRegistry;
   private triggers = new Map<string, BaseTrigger>();
+  private activeTriggerCleanups = new Map<string, TriggerCleanup>();
 
   private constructor() {}
 
@@ -75,15 +76,22 @@ export class TriggerRegistry {
 
     // Setup with defaults applied
     const configWithDefaults = trigger.getConfigWithDefaults(config);
+    const activeKey = this.getActiveTriggerKey(workflowId, nodeId);
+    await this.cleanupByKey(activeKey);
+
     const onTriggerWrapper = async (data?: any) => {
       await onTrigger(configWithDefaults, data);
     };
-    await trigger.setup(
+    const cleanup = await trigger.setup(
       configWithDefaults,
       workflowId,
       nodeId,
       onTriggerWrapper,
     );
+
+    if (cleanup) {
+      this.activeTriggerCleanups.set(activeKey, cleanup);
+    }
   }
 
   // Validate trigger configuration
@@ -118,9 +126,36 @@ export class TriggerRegistry {
 
   // Clean up all active triggers (remove event listeners, observers, timeouts, injected elements)
   async cleanupAll(): Promise<void> {
+    for (const key of Array.from(this.activeTriggerCleanups.keys())) {
+      await this.cleanupByKey(key);
+    }
+
     for (const trigger of this.triggers.values()) {
       await trigger.cleanup();
     }
+  }
+
+  async cleanupByWorkflow(workflowId: string): Promise<void> {
+    const prefix = `${workflowId}:`;
+    const keys = Array.from(this.activeTriggerCleanups.keys()).filter((key) =>
+      key.startsWith(prefix),
+    );
+
+    for (const key of keys) {
+      await this.cleanupByKey(key);
+    }
+  }
+
+  private async cleanupByKey(key: string): Promise<void> {
+    const cleanup = this.activeTriggerCleanups.get(key);
+    if (!cleanup) return;
+
+    this.activeTriggerCleanups.delete(key);
+    await cleanup();
+  }
+
+  private getActiveTriggerKey(workflowId: string, nodeId: string): string {
+    return `${workflowId}:${nodeId}`;
   }
 
   // Get trigger categories for UI (compatible with existing NODE_CATEGORIES)

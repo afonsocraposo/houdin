@@ -4,12 +4,20 @@ import CustomMantineProvider from "@/content/mantineProvider";
 
 const MANTINE_INJECTOR_ROOT_ID = "mantine-injector-root";
 export class ContentInjector {
+  private static roots = new Map<string, Root>();
   private urlObserver: MutationObserver | null = null;
   private processTimeout: number | null = null;
 
   async initialize(): Promise<void> {
     console.debug("Content injector initialized");
     this.injectMantineDispatcher(MANTINE_INJECTOR_ROOT_ID);
+  }
+
+  ensureInitialized(): void {
+    const existing = document.getElementById(MANTINE_INJECTOR_ROOT_ID);
+    if (!existing || !ContentInjector.roots.has(MANTINE_INJECTOR_ROOT_ID)) {
+      this.reinjectMantineDispatcher(MANTINE_INJECTOR_ROOT_ID);
+    }
   }
 
   private static getParentShadowRoot(
@@ -87,6 +95,17 @@ export class ContentInjector {
         coreOnly,
       }),
     );
+    this.roots.set(rootId, root);
+  }
+
+  private static removeInjectedRoot(rootId: string): void {
+    const root = this.roots.get(rootId);
+    if (root) {
+      root.unmount();
+      this.roots.delete(rootId);
+    }
+
+    document.getElementById(rootId)?.remove();
   }
 
   private injectMantineDispatcher(rootId: string): void {
@@ -104,6 +123,11 @@ export class ContentInjector {
     );
   }
 
+  private reinjectMantineDispatcher(rootId: string): void {
+    ContentInjector.removeInjectedRoot(rootId);
+    this.injectMantineDispatcher(rootId);
+  }
+
   private cleanupInjectedComponents(): void {
     console.debug("Cleaning up injected components");
 
@@ -116,8 +140,8 @@ export class ContentInjector {
       '[data-workflow-injected="true"]:not(#mantine-injector-root)',
     );
     injectedComponents.forEach((component) => {
-      if (component.parentNode) {
-        component.parentNode.removeChild(component);
+      if (component instanceof HTMLElement) {
+        ContentInjector.removeInjectedRoot(component.id);
       }
     });
   }

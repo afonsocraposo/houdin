@@ -12,6 +12,7 @@ import { TriggerRegistry } from "@/services/triggerRegistry";
 import { WorkflowScriptMessage } from "@/services/userScriptManager";
 import {
   ActionCommand,
+  CleanupWorkflowTriggersCommand,
   ReadinessResponse,
   StatusMessage,
   TriggerCommand,
@@ -95,7 +96,10 @@ if ((window as any).houdinExtensionInitialized) {
         }
 
         if (message.type === WorkflowCommandType.CHECK_READINESS) {
-          if (!isFullyInitialized) {
+          console.log(isFullyInitialized);
+          if (isFullyInitialized) {
+            contentInjector?.ensureInitialized();
+          } else {
             initFullContentScript();
           }
 
@@ -167,7 +171,11 @@ if ((window as any).houdinExtensionInitialized) {
     }
 
     const active = document.activeElement as HTMLElement | null;
-    if (!active || active === document.body || active === document.documentElement) {
+    if (
+      !active ||
+      active === document.body ||
+      active === document.documentElement
+    ) {
       return undefined;
     }
 
@@ -298,13 +306,34 @@ if ((window as any).houdinExtensionInitialized) {
         switch (message.type) {
           case WorkflowCommandType.CLEANUP_TRIGGERS: {
             const triggerRegistry = TriggerRegistry.getInstance();
-            triggerRegistry.cleanupAll().then(() => {
-              sendResponse({ success: true });
-            }).catch((error) => {
-              console.error("Failed to cleanup triggers:", error);
-              sendResponse({ success: false, error: String(error) });
-            });
+            triggerRegistry
+              .cleanupAll()
+              .then(() => {
+                sendResponse({ success: true });
+              })
+              .catch((error) => {
+                console.error("Failed to cleanup triggers:", error);
+                sendResponse({ success: false, error: String(error) });
+              });
             return true; // async response
+          }
+          case WorkflowCommandType.CLEANUP_WORKFLOW_TRIGGERS: {
+            const cleanupCommand =
+              message.data as unknown as CleanupWorkflowTriggersCommand;
+            const triggerRegistry = TriggerRegistry.getInstance();
+            Promise.all(
+              cleanupCommand.workflowIds.map((workflowId) =>
+                triggerRegistry.cleanupByWorkflow(workflowId),
+              ),
+            )
+              .then(() => {
+                sendResponse({ success: true });
+              })
+              .catch((error) => {
+                console.error("Failed to cleanup workflow triggers:", error);
+                sendResponse({ success: false, error: String(error) });
+              });
+            return true;
           }
           case WorkflowCommandType.INIT_TRIGGER:
             const initTriggerCommand = message.data as TriggerCommand;
@@ -420,9 +449,6 @@ if ((window as any).houdinExtensionInitialized) {
 
   // Cleanup on page unload
   window.addEventListener("beforeunload", () => {
-    if (contentInjector) {
-      contentInjector.destroy();
-    }
     cleanUpHttpTriggers();
     (window as any).houdinExtensionInitialized = false;
   });

@@ -18,6 +18,7 @@ export enum WorkflowCommandType {
   EXECUTE_ACTION = "EXECUTE_ACTION",
   INIT_TRIGGER = "INIT_TRIGGER",
   CLEANUP_TRIGGERS = "CLEANUP_TRIGGERS",
+  CLEANUP_WORKFLOW_TRIGGERS = "CLEANUP_WORKFLOW_TRIGGERS",
   TRIGGER_FIRED = "TRIGGER_FIRED",
   CLEAN_HTTP_TRIGGERS = "CLEAN_HTTP_TRIGGERS",
   CHECK_READINESS = "CHECK_READINESS",
@@ -40,6 +41,11 @@ export interface ActionCommand extends WorkflowCommand {
 
 export interface TriggerCommand extends WorkflowCommand {
   type: WorkflowCommandType.INIT_TRIGGER;
+}
+
+export interface CleanupWorkflowTriggersCommand {
+  type: WorkflowCommandType.CLEANUP_WORKFLOW_TRIGGERS;
+  workflowIds: string[];
 }
 
 export interface TriggerFiredCommand {

@@ -66,6 +66,14 @@ chatbot.init();
 ApiClient.startBackgroundProxy();
 
 const workflowEngine = new BackgroundWorkflowEngine();
+
+browser.tabs.onRemoved.addListener((tabId: number) => {
+  workflowEngine.clearTab(tabId);
+  if (httpListener) {
+    httpListener.unregisterTriggers(tabId);
+  }
+});
+
 browser.runtime.onMessage.addListener(
   (message: CustomMessage, sender: any, sendResponse: (response?: any) => void) => {
   switch (message.type) {
@@ -129,6 +137,17 @@ browser.runtime.onMessage.addListener(
       return true;
     }
 
+    case "UNREGISTER_HTTP_TRIGGER": {
+      if (httpListener) {
+        httpListener.unregisterTrigger(
+          sender.tab.id,
+          message.data.workflowId,
+          message.data.triggerNodeId,
+        );
+      }
+      return;
+    }
+
     case WorkflowCommandType.CLEAN_HTTP_TRIGGERS:
       if (httpListener) {
         httpListener.unregisterTriggers(sender.tab.id);
@@ -139,6 +158,34 @@ browser.runtime.onMessage.addListener(
 );
 
 workflowEngine.initialize().then(() => {
+  browser.webNavigation.onCommitted.addListener(
+    (details: {
+      tabId: number;
+      frameId: number;
+      transitionType?: string;
+      transitionQualifiers?: string[];
+    }) => {
+      if (details.frameId !== 0) return;
+
+      // Only clear tab state for cross-document navigations (typed URL,
+      // link click, reload, etc.).  SPA-style back/forward navigations
+      // keep the content script alive, so clearing state would kill
+      // in-flight executors.  Those navigations are handled by
+      // onHistoryStateUpdated → onNewUrl which does its own
+      // delta-based cleanup.
+      const isBackForward =
+        details.transitionQualifiers?.includes("forward_back");
+
+      if (!isBackForward) {
+        workflowEngine.clearTab(details.tabId);
+        if (httpListener) {
+          httpListener.unregisterTriggers(details.tabId);
+        }
+      }
+    },
+    { url: [{ schemes: ["http", "https"] }] },
+  );
+
   browser.webNavigation.onCompleted.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
       if (details.frameId === 0) {
@@ -151,6 +198,7 @@ workflowEngine.initialize().then(() => {
   browser.webNavigation.onHistoryStateUpdated.addListener(
     (details: { url: string; tabId: number; frameId: number }) => {
       if (details.frameId === 0) {
+        workflowEngine.clearTab(details.tabId);
         workflowEngine.onNewUrl(details.tabId, details.url);
       }
     },

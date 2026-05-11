@@ -1,5 +1,6 @@
 import { sendMessageToContentScript } from "@/lib/messages";
 import {
+  CleanupWorkflowTriggersCommand,
   ReadinessResponse,
   TriggerCommand,
   WorkflowCommandType,
@@ -19,10 +20,10 @@ import { initializeBackgroundActions } from "./backgroundActionInitializer";
 
 export class BackgroundWorkflowEngine {
   private activeExecutors = new Map<string, WorkflowExecutor>();
-  private pendingNavigationEvents = new Map<
-    number,
-    { url: string; timeoutId: ReturnType<typeof setTimeout> }
-  >();
+  private activeTabWorkflows = new Map<number, Set<string>>();
+  private activeTabUrls = new Map<number, string>();
+  private tabQueues = new Map<number, Promise<void>>();
+  private tabGenerations = new Map<number, number>();
   private workflows: WorkflowDefinition[] = [];
 
   constructor() {
@@ -37,7 +38,25 @@ export class BackgroundWorkflowEngine {
 
   private setupStoreListener(): void {
     useStore.subscribe((state) => {
+      const currentWorkflowsById = new Map(
+        state.workflows.map((workflow) => [workflow.id, workflow]),
+      );
+      const workflowsToCleanup = this.workflows.filter((workflow) => {
+        const currentWorkflow = currentWorkflowsById.get(workflow.id);
+        return (
+          !currentWorkflow ||
+          !currentWorkflow.enabled ||
+          currentWorkflow.modifiedAt !== workflow.modifiedAt
+        );
+      });
+
       this.workflows = state.workflows;
+
+      for (const workflow of workflowsToCleanup) {
+        this.cleanupWorkflowEverywhere(workflow.id).catch((error) => {
+          console.warn("Failed to cleanup inactive workflow:", error);
+        });
+      }
     });
   }
 
@@ -47,37 +66,61 @@ export class BackgroundWorkflowEngine {
   }
 
   async onNewUrl(tabId: number, url: string): Promise<void> {
-    const pendingNavigation = this.pendingNavigationEvents.get(tabId);
-    // Some sites trigger both onCompleted and onHistoryStateUpdated for the same
-    // navigation, so ignore a repeated tab+URL event in a short window.
-    if (pendingNavigation?.url === url) {
-      return;
-    }
+    const generation = this.getTabGeneration(tabId);
+    const previousQueue = this.tabQueues.get(tabId) || Promise.resolve();
+    const nextQueue = previousQueue
+      .catch(() => {})
+      .then(() => this.handleNewUrl(tabId, url, generation))
+      .finally(() => {
+        if (this.tabQueues.get(tabId) === nextQueue) {
+          this.tabQueues.delete(tabId);
+        }
+      });
 
-    if (pendingNavigation) {
-      clearTimeout(pendingNavigation.timeoutId);
-    }
+    this.tabQueues.set(tabId, nextQueue);
+    await nextQueue;
+  }
 
-    this.pendingNavigationEvents.set(tabId, {
-      url,
-      timeoutId: setTimeout(() => {
-        this.pendingNavigationEvents.delete(tabId);
-      }, 100),
-    });
-
+  private async handleNewUrl(
+    tabId: number,
+    url: string,
+    generation: number,
+  ): Promise<void> {
     // Get the active workflow IDs for this tab
     const runningWorkflowIds = Array.from(this.activeExecutors.values())
       .filter((executor) => executor.tabId === tabId)
       .map((executor) => executor.workflowId);
     // Find workflows that match the URL pattern
-    const matchingWorkflows = this.workflows
-      .filter(
-        (workflow) =>
-          workflow.enabled && matchesUrlPattern(url, workflow.urlPattern, true),
-      )
-      .filter((workflow) => !runningWorkflowIds.includes(workflow.id));
+    const matchingWorkflows = this.workflows.filter(
+      (workflow) =>
+        workflow.enabled && matchesUrlPattern(url, workflow.urlPattern, true),
+    );
+    const matchingWorkflowIds = new Set(
+      matchingWorkflows.map((workflow) => workflow.id),
+    );
+    const activeWorkflowIds =
+      this.activeTabWorkflows.get(tabId) || new Set<string>();
+    const activeUrl = this.activeTabUrls.get(tabId);
 
-    if (matchingWorkflows.length == 0 && runningWorkflowIds.length == 0) {
+    if (
+      activeUrl === url &&
+      BackgroundWorkflowEngine.setsEqual(activeWorkflowIds, matchingWorkflowIds)
+    ) {
+      return;
+    }
+
+    const workflowsToCleanup = Array.from(activeWorkflowIds);
+
+    if (workflowsToCleanup.length > 0) {
+      await this.cleanupTabWorkflows(tabId, workflowsToCleanup);
+    }
+
+    if (this.getTabGeneration(tabId) !== generation) {
+      return;
+    }
+
+    if (matchingWorkflows.length === 0 && runningWorkflowIds.length === 0) {
+      this.activeTabUrls.delete(tabId);
       return;
     }
 
@@ -90,24 +133,88 @@ export class BackgroundWorkflowEngine {
       return;
     }
 
-    // Clean up any previously active triggers before setting up new ones,
-    // so that SPA navigations (back/forward/pushState) don't accumulate
-    // duplicate event listeners.
-    try {
-      await sendMessageToContentScript(
-        tabId,
-        WorkflowCommandType.CLEANUP_TRIGGERS,
-        { type: WorkflowCommandType.CLEANUP_TRIGGERS },
-      );
-    } catch (error) {
-      console.warn("Failed to cleanup triggers:", error);
+    if (this.getTabGeneration(tabId) !== generation) {
+      return;
     }
 
-    matchingWorkflows.forEach((workflow) => {
-      this.getWorkflowTriggers(workflow).forEach((triggerNode) => {
-        this.setupTrigger(tabId, workflow, triggerNode);
-      });
-    });
+    const setupWorkflowIds = new Set<string>();
+    for (const workflow of matchingWorkflows) {
+      for (const triggerNode of this.getWorkflowTriggers(workflow)) {
+        await this.setupTrigger(tabId, workflow, triggerNode);
+        if (this.getTabGeneration(tabId) !== generation) {
+          await this.cleanupTabWorkflows(tabId, [workflow.id]);
+          return;
+        }
+      }
+      setupWorkflowIds.add(workflow.id);
+    }
+
+    this.activeTabWorkflows.set(tabId, setupWorkflowIds);
+    this.activeTabUrls.set(tabId, url);
+  }
+
+  public clearTab(tabId: number): void {
+    this.activeTabWorkflows.delete(tabId);
+    this.activeTabUrls.delete(tabId);
+    this.tabQueues.delete(tabId);
+    this.tabGenerations.set(tabId, this.getTabGeneration(tabId) + 1);
+
+    for (const [executorId, executor] of this.activeExecutors.entries()) {
+      if (executor.tabId === tabId) {
+        this.activeExecutors.delete(executorId);
+      }
+    }
+  }
+
+  private async cleanupTabWorkflows(
+    tabId: number,
+    workflowIds: string[],
+  ): Promise<void> {
+    try {
+      const message: CleanupWorkflowTriggersCommand = {
+        type: WorkflowCommandType.CLEANUP_WORKFLOW_TRIGGERS,
+        workflowIds,
+      };
+
+      await sendMessageToContentScript(
+        tabId,
+        WorkflowCommandType.CLEANUP_WORKFLOW_TRIGGERS,
+        message,
+      );
+    } catch (error) {
+      console.warn("Failed to cleanup workflow triggers:", error);
+    } finally {
+      const activeWorkflowIds = this.activeTabWorkflows.get(tabId);
+      if (activeWorkflowIds) {
+        workflowIds.forEach((workflowId) =>
+          activeWorkflowIds.delete(workflowId),
+        );
+        if (activeWorkflowIds.size === 0) {
+          this.activeTabWorkflows.delete(tabId);
+          this.activeTabUrls.delete(tabId);
+        }
+      }
+    }
+  }
+
+  private async cleanupWorkflowEverywhere(workflowId: string): Promise<void> {
+    const cleanupTasks = Array.from(this.activeTabWorkflows.entries())
+      .filter(([, workflowIds]) => workflowIds.has(workflowId))
+      .map(([tabId]) => this.cleanupTabWorkflows(tabId, [workflowId]));
+
+    await Promise.all(cleanupTasks);
+  }
+
+  private static setsEqual(first: Set<string>, second: Set<string>): boolean {
+    if (first.size !== second.size) return false;
+    for (const value of first) {
+      if (!second.has(value)) return false;
+    }
+    return true;
+  }
+
+  private getTabGeneration(tabId: number): number {
+    return this.tabGenerations.get(tabId) || 0;
   }
 
   private async initializeContentScript(tabId: number): Promise<boolean> {

@@ -16,8 +16,6 @@ export class ComponentLoadTrigger extends BaseTrigger<
   ComponentLoadTriggerConfig,
   ComponentLoadTriggerOutput
 > {
-  private cleanupFns: (() => void)[] = [];
-
   constructor() {
     super(definition);
   }
@@ -27,7 +25,7 @@ export class ComponentLoadTrigger extends BaseTrigger<
     _workflowId: string,
     _nodeId: string,
     onTrigger: (data: ComponentLoadTriggerOutput) => Promise<void>,
-  ): Promise<void> {
+  ): Promise<(() => void) | void> {
     const selector = config.selector;
     let hasTriggered = false;
 
@@ -61,11 +59,6 @@ export class ComponentLoadTrigger extends BaseTrigger<
       subtree: true,
     });
 
-    this.cleanupFns.push(() => observer.disconnect());
-  }
-
-  async cleanup(): Promise<void> {
-    this.cleanupFns.forEach((fn) => fn());
-    this.cleanupFns = [];
+    return () => observer.disconnect();
   }
 }

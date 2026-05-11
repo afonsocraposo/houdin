@@ -18,6 +18,8 @@ export interface TriggerSetupResult {
   cleanup?: () => void; // Function to clean up resources (observers, timeouts, etc.)
 }
 
+export type TriggerCleanup = () => void | Promise<void>;
+
 // Abstract base class for all triggers
 export abstract class BaseTrigger<
   TConfig = Record<string, any>,
@@ -41,7 +43,7 @@ export abstract class BaseTrigger<
     workflowId: string,
     nodeId: string,
     onTrigger: (data?: TOutput) => Promise<void>,
-  ): Promise<void>;
+  ): Promise<TriggerCleanup | void>;
 
   // Clean up any resources (event listeners, observers, timeouts) created during setup
   async cleanup(): Promise<void> {}

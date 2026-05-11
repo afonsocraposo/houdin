@@ -28,8 +28,6 @@ export class ButtonClickTrigger extends BaseTrigger<
   ButtonClickTriggerConfig,
   ButtonClickTriggerOutput
 > {
-  private cleanupFns: (() => void)[] = [];
-
   constructor() {
     super(definition);
   }
@@ -39,7 +37,7 @@ export class ButtonClickTrigger extends BaseTrigger<
     workflowId: string,
     nodeId: string,
     onTrigger: (data?: any) => Promise<void>,
-  ): Promise<void> {
+  ): Promise<(() => void) | void> {
     const {
       selectorType,
       targetSelector,
@@ -67,14 +65,10 @@ export class ButtonClickTrigger extends BaseTrigger<
       buttonTextColor,
       customStyle,
     };
-    const component = ComponentFactory.create(
-      componentConfig,
-      workflowId,
-      nodeId,
-    );
+    const containerId = `container-${workflowId}-${nodeId}`;
     ContentInjector.injectMantineComponentInTarget(
-      `container-${workflowId}-${nodeId}`,
-      component,
+      containerId,
+      ComponentFactory.create(componentConfig, workflowId, nodeId),
       targetElement,
       true,
       injectionPosition,
@@ -99,18 +93,13 @@ export class ButtonClickTrigger extends BaseTrigger<
       handleComponentTrigger,
     );
 
-    this.cleanupFns.push(() => {
+    return () => {
       document.removeEventListener(
         "workflow-component-trigger",
         handleComponentTrigger,
       );
-      const container = document.getElementById(`container-${workflowId}-${nodeId}`);
+      const container = document.getElementById(containerId);
       container?.remove();
-    });
-  }
-
-  async cleanup(): Promise<void> {
-    this.cleanupFns.forEach((fn) => fn());
-    this.cleanupFns = [];
+    };
   }
 }

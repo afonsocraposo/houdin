@@ -19,8 +19,6 @@ export default class HttpTrigger extends BaseTrigger<
   HttpRequestTriggerConfig,
   HttpRequestTriggerOutput
 > {
-  private cleanupFns: (() => void)[] = [];
-
   constructor() {
     super(definition);
   }
@@ -30,7 +28,7 @@ export default class HttpTrigger extends BaseTrigger<
     workflowId: string,
     nodeId: string,
     onTrigger: (data: HttpRequestTriggerOutput) => Promise<void>,
-  ): Promise<void> {
+  ): Promise<() => void> {
     const { urlPattern, method } = config;
     if (!urlPattern)
       throw new Error("URL pattern is required for HTTP request trigger");
@@ -57,17 +55,18 @@ export default class HttpTrigger extends BaseTrigger<
       return;
     };
     browser.runtime.onMessage.addListener(messageListener);
-    this.cleanupFns.push(() => browser.runtime.onMessage.removeListener(messageListener));
     console.debug("HTTP Request Trigger registered with background script", {
       workflowId,
       triggerNodeId: nodeId,
       urlPattern,
       method,
     });
-  }
-
-  async cleanup(): Promise<void> {
-    this.cleanupFns.forEach((fn) => fn());
-    this.cleanupFns = [];
+    return () => {
+      browser.runtime.onMessage.removeListener(messageListener);
+      sendMessageToBackground("UNREGISTER_HTTP_TRIGGER", {
+        workflowId,
+        triggerNodeId: nodeId,
+      });
+    };
   }
 }
