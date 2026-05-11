@@ -1,4 +1,4 @@
-import { WorkflowDefinition } from "@/types/workflow";
+import { ExecutionMetadataKeys, WorkflowDefinition } from "@/types/workflow";
 import { nodeCatalog } from "../nodeCatalog";
 
 interface SystemPromptProps {
@@ -17,6 +17,10 @@ const availableNodeTypes = {
     description: node.metadata.description,
   })),
 };
+
+const availableMetadataVariables = ExecutionMetadataKeys.map(
+  (key) => `{{meta.${key}}}`,
+);
 
 export default function buildSystemPrompt({ workflow }: SystemPromptProps) {
   return [
@@ -37,12 +41,16 @@ export default function buildSystemPrompt({ workflow }: SystemPromptProps) {
     "Building workflows: Use tools in this order when needed: create node, update node config, then connect nodes.",
     "After creating or rewiring nodes, call autoArrangeNodes once the intended structure is in place so the workflow ends in a clean layout.",
     "Use setWorkflowName, setWorkflowDescription, setUrlPattern, and setWorkflowEnabled for workflow-level changes.",
-    "After any workflow change, finish by calling validateWorkflow. If it reports issues, fix them and call validateWorkflow again so validation is the final workflow step you take.",
-    "When the workflow is ready, set a clear workflow name, make validateWorkflow your final workflow step, and only then enable it.",
+    "After structural or config workflow changes, read the validation feedback returned by the tool. If it reports issues, fix them and call validateWorkflow again so validation is the final workflow step you take.",
+    "When the workflow is ready, set a clear workflow name and make validateWorkflow your final workflow step before replying that the work is done.",
+    "Validation findings do not prevent enabling or running a workflow. The user may still run an invalid workflow to inspect execution errors with getLatestExecution.",
     "Do NOT call setWorkflowEnabled after every edit. Preserve the current enabled state during intermediate changes.",
     "Only call setWorkflowEnabled when you are finishing a newly created workflow, when the user explicitly asks to enable or disable it, or when the workflow must be re-enabled after it was intentionally disabled.",
     "When creating nodes, use the exact node-type tool names and fields.",
-    "Workflow variables use Liquid syntax. Use '{{ variableName }}' placeholders in string fields for runtime substitution.",
+    "Workflow variables use Liquid syntax in string fields.",
+    `Available execution metadata variables: ${availableMetadataVariables.join(", ")}.`,
+    "Workflow-defined variables use {{env.variableName}}.",
+    "Previous node output can be referenced as {{prev.property}} when configuring an action connected after another node.",
     "Node IDs are generated automatically by the app as action-* or trigger-*; do not invent node IDs.",
     "CRITICAL: Before using Liquid variables like {{node-id.property}}, you MUST call getNodeSchema on the source node type to inspect the exact output structure. Never guess property names.",
     "Common mistake: assuming a node outputs {text: ...} when it actually outputs {content: ...}. Always verify with getNodeSchema first.",

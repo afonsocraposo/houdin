@@ -44,6 +44,14 @@ export function createTools({
     ...details,
   });
 
+  const buildWorkflowMutationResult = (message: string) => {
+    const validation = validateWorkflow(getWorkflowState());
+
+    return buildToolResult(message, {
+      validation,
+    });
+  };
+
   const applyWorkflowChange = (
     mutate: (workflow: WorkflowDefinition) => WorkflowDefinition,
   ) => {
@@ -64,7 +72,7 @@ export function createTools({
     return async (args: TArgs) => {
       const { workflow, result } = mutate(getWorkflowState(), args);
       saveWorkflowState(workflow);
-      return { message: result };
+      return buildWorkflowMutationResult(result);
     };
   };
 

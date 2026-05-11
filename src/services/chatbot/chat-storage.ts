@@ -59,6 +59,24 @@ export const appendUserMessage = (workflowId: string, content: string) => {
   });
 };
 
+export const appendAssistantMessage = (workflowId: string, content: string) => {
+  const session = getSession(workflowId);
+  if (!session) {
+    throw new Error(`Session not found for workflowId: ${workflowId}`);
+  }
+
+  const assistantMessage: UIMessage = {
+    id: generateId("message", 16),
+    role: "assistant",
+    parts: [{ type: "text", text: content }],
+  };
+
+  saveSession({
+    workflowId,
+    messages: [...session.messages, assistantMessage],
+  });
+};
+
 export const getProvider = () =>
   useStore.getState().settings.workfowGeneration.provider;
 export const getModel = () =>
